@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 const BOOTCAMP_DAYS = [
@@ -185,12 +187,30 @@ export default function Home() {
           <span className="text-xl font-bold tracking-tight">
             Custodia<span className="text-amber-400">.</span>
           </span>
-          <a
-            href="#apply"
-            className="bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
-          >
-            Apply Now
-          </a>
+          <div className="flex items-center gap-3">
+            <Show when="signed-out">
+              <SignInButton mode="modal">
+                <button className="text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors">
+                  Sign in
+                </button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <button className="bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold px-5 py-2 rounded-lg text-sm transition-colors">
+                  Create account
+                </button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <Link
+                href="/dashboard"
+                prefetch={false}
+                className="bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
+              >
+                Dashboard
+              </Link>
+              <UserButton />
+            </Show>
+          </div>
         </div>
       </nav>
 
@@ -210,9 +230,18 @@ export default function Home() {
             <a href="#apply" className="bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold px-8 py-4 rounded-xl text-lg transition-colors">
               Apply for the Bootcamp →
             </a>
-            <a href="#program" className="text-gray-300 hover:text-white font-medium px-8 py-4 transition-colors">
-              See the program ↓
-            </a>
+            <Show when="signed-out">
+              <SignInButton mode="modal">
+                <button className="text-gray-300 hover:text-white font-medium px-8 py-4 transition-colors">
+                  Founder sign in
+                </button>
+              </SignInButton>
+            </Show>
+            <Show when="signed-in">
+              <Link href="/dashboard" prefetch={false} className="text-gray-300 hover:text-white font-medium px-8 py-4 transition-colors">
+                Open dashboard ↓
+              </Link>
+            </Show>
           </div>
           <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
             {[

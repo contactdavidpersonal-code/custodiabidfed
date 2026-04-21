@@ -1,5 +1,17 @@
 import { neon } from "@neondatabase/serverless";
 
+export const sprintStages = [
+  "lead-intake",
+  "sam-registration",
+  "ssp-draft",
+  "controls-implementation",
+  "evidence-review",
+  "bid-ready",
+  "retainer",
+] as const;
+
+export type SprintStage = (typeof sprintStages)[number];
+
 function getDatabaseUrl() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
@@ -21,6 +33,31 @@ export async function initDb() {
       company TEXT,
       name TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS clients (
+      id SERIAL PRIMARY KEY,
+      owner_user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      company TEXT NOT NULL,
+      email TEXT,
+      sprint_stage TEXT NOT NULL DEFAULT 'lead-intake',
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      CHECK (
+        sprint_stage IN (
+          'lead-intake',
+          'sam-registration',
+          'ssp-draft',
+          'controls-implementation',
+          'evidence-review',
+          'bid-ready',
+          'retainer'
+        )
+      )
     )
   `;
 }
