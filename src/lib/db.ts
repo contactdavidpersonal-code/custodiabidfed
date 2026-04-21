@@ -1,12 +1,19 @@
 import { neon } from "@neondatabase/serverless";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL environment variable is not set");
+function getDatabaseUrl() {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+  return databaseUrl;
 }
 
-export const sql = neon(process.env.DATABASE_URL);
+export function getSql() {
+  return neon(getDatabaseUrl());
+}
 
 export async function initDb() {
+  const sql = getSql();
   await sql`
     CREATE TABLE IF NOT EXISTS waitlist (
       id SERIAL PRIMARY KEY,

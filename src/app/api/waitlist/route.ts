@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql, initDb } from "@/lib/db";
+import { getSql, initDb } from "@/lib/db";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
     }
 
     await initDb();
+    const sql = getSql();
 
     await sql`
       INSERT INTO waitlist (email, name, company)

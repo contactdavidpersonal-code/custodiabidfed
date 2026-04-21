@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 
 const BOOTCAMP_DAYS = [
   {
@@ -110,10 +110,10 @@ const MANAGED_FEATURES = [
 
 function WaitlistForm() {
   const [form, setForm] = useState({ name: "", email: "", company: "" });
-  const [status, setStatus] = useState("idle");
+  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setStatus("loading");
     try {
