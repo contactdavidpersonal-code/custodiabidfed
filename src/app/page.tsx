@@ -202,11 +202,11 @@ export default function Home() {
             </Show>
             <Show when="signed-in">
               <Link
-                href="/dashboard"
+                href="/assessments"
                 prefetch={false}
                 className="bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
               >
-                Dashboard
+                Open workspace
               </Link>
               <UserButton />
             </Show>
@@ -227,20 +227,33 @@ export default function Home() {
             The intensive 7-day bootcamp that takes your startup from zero to <strong className="text-white">CMMC Level 1 compliant</strong> — registered, documented, and ready to bid on federal contracts.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <a href="#apply" className="bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold px-8 py-4 rounded-xl text-lg transition-colors">
-              Apply for the Bootcamp →
-            </a>
+            <Show when="signed-in">
+              <Link
+                href="/assessments"
+                prefetch={false}
+                className="bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold px-8 py-4 rounded-xl text-lg transition-colors"
+              >
+                Open your workspace →
+              </Link>
+              <a
+                href="#program"
+                className="text-gray-300 hover:text-white font-medium px-8 py-4 transition-colors"
+              >
+                See the program ↓
+              </a>
+            </Show>
             <Show when="signed-out">
+              <a
+                href="#apply"
+                className="bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold px-8 py-4 rounded-xl text-lg transition-colors"
+              >
+                Apply for the Bootcamp →
+              </a>
               <SignInButton mode="modal">
                 <button className="text-gray-300 hover:text-white font-medium px-8 py-4 transition-colors">
                   Founder sign in
                 </button>
               </SignInButton>
-            </Show>
-            <Show when="signed-in">
-              <Link href="/dashboard" prefetch={false} className="text-gray-300 hover:text-white font-medium px-8 py-4 transition-colors">
-                Open dashboard ↓
-              </Link>
             </Show>
           </div>
           <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
