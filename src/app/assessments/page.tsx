@@ -3,11 +3,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   ensureOrgForUser,
+  getBusinessProfile,
+  isOnboardingComplete,
   listAssessmentsWithProgress,
   type AssessmentWithProgress,
 } from "@/lib/assessment";
+import { defaultCycleLabel, fiscalYearOf, listMilestonesForOrg } from "@/lib/fiscal";
+import { listActiveEscalationsForOrg } from "@/lib/escalations";
 import { practiceCount } from "@/lib/playbook";
 import { createAssessmentAction } from "./actions";
+import { FiscalCompass } from "./FiscalCompass";
+import { OfficerUpsellBanner } from "./OfficerUpsellBanner";
 
 const statusCopy: Record<
   AssessmentWithProgress["status"],
@@ -32,10 +38,17 @@ export default async function AssessmentsIndexPage() {
   if (!userId) redirect("/sign-in");
 
   const org = await ensureOrgForUser(userId);
-  const assessments = await listAssessmentsWithProgress(org.id);
+  const profile = await getBusinessProfile(org.id);
+  if (!isOnboardingComplete(org, profile)) {
+    redirect("/onboard");
+  }
+  const [assessments, milestones, escalations] = await Promise.all([
+    listAssessmentsWithProgress(org.id),
+    listMilestonesForOrg(org.id),
+    listActiveEscalationsForOrg(org.id),
+  ]);
 
-  const currentYear = new Date().getFullYear();
-  const defaultCycle = `${currentYear} Annual Affirmation`;
+  const defaultCycle = defaultCycleLabel(fiscalYearOf());
 
   const hasAnyAssessment = assessments.length > 0;
 
@@ -56,6 +69,10 @@ export default async function AssessmentsIndexPage() {
             : `One cycle, ${practiceCount} practices, and a signed SPRS affirmation. We'll walk you through each step in plain English — the same way you'd do your taxes, except the prize is federal contracts.`}
         </p>
       </section>
+
+      <OfficerUpsellBanner escalations={escalations} />
+
+      {hasAnyAssessment && <FiscalCompass milestones={milestones} />}
 
       <section className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
         <div>

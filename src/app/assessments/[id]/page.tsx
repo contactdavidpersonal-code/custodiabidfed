@@ -9,7 +9,6 @@ import {
   type OrganizationRow,
 } from "@/lib/assessment";
 import { controlDomains, playbook } from "@/lib/playbook";
-import { updateOrgProfileAction } from "../actions";
 
 const statusLabels: Record<ControlResponseRow["status"], string> = {
   unanswered: "Not started",
@@ -117,7 +116,6 @@ export default async function AssessmentOverviewPage(
       </section>
 
       <ProfileSection
-        assessmentId={ctx.assessment.id}
         organization={ctx.organization}
         profileDone={profileDone}
       />
@@ -337,19 +335,19 @@ function NextStepBanner({
             Step 1 of 3
           </div>
           <h2 className="mt-1 text-lg font-bold text-slate-900">
-            Set up your business profile
+            Finish telling the officer about your business
           </h2>
           <p className="mt-1 text-sm text-slate-700">
-            Legal name, UEI/CAGE, and the systems in scope — these appear on
-            your SSP verbatim.
+            Legal name, UEI/CAGE, and the systems in scope — captured through a
+            quick chat, not a form.
           </p>
         </div>
-        <a
-          href="#profile"
+        <Link
+          href="/onboard"
           className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-800"
         >
-          Complete profile &rarr;
-        </a>
+          Open onboarding &rarr;
+        </Link>
       </div>
     );
   }
@@ -429,14 +427,22 @@ function ProgressPill({
 }
 
 function ProfileSection({
-  assessmentId,
   organization,
   profileDone,
 }: {
-  assessmentId: string;
   organization: OrganizationRow;
   profileDone: boolean;
 }) {
+  const rows: Array<{ label: string; value: string | null }> = [
+    { label: "Legal name", value: organization.name !== "My Organization" ? organization.name : null },
+    { label: "Entity type", value: organization.entity_type },
+    { label: "SAM UEI", value: organization.sam_uei },
+    { label: "CAGE code", value: organization.cage_code },
+    {
+      label: "NAICS codes",
+      value: organization.naics_codes.length > 0 ? organization.naics_codes.join(", ") : null,
+    },
+  ];
   return (
     <section
       id="profile"
@@ -448,126 +454,54 @@ function ProfileSection({
             Business profile
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            This information goes directly onto your SSP and SPRS affirmation —
-            make sure it&apos;s accurate.
+            Captured conversationally through your officer. Ask them to update
+            anything — no forms.
           </p>
         </div>
-        {profileDone && (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Complete
-          </span>
-        )}
-      </div>
-      <form
-        action={updateOrgProfileAction}
-        className="grid gap-4 md:grid-cols-2"
-      >
-        <input type="hidden" name="assessmentId" value={assessmentId} />
-        <ProfileField
-          label="Legal name"
-          name="name"
-          defaultValue={
-            organization.name === "My Organization" ? "" : organization.name
-          }
-          placeholder="Acme Defense LLC"
-          required
-        />
-        <ProfileField
-          label="Entity type"
-          name="entityType"
-          defaultValue={organization.entity_type ?? ""}
-          placeholder="LLC, Corp, Sole proprietor"
-        />
-        <ProfileField
-          label="SAM UEI"
-          name="samUei"
-          defaultValue={organization.sam_uei ?? ""}
-          placeholder="12-character UEI"
-          hint="From your active SAM.gov registration."
-        />
-        <ProfileField
-          label="CAGE code"
-          name="cageCode"
-          defaultValue={organization.cage_code ?? ""}
-          placeholder="5-character CAGE"
-          hint="Assigned by DLA when SAM.gov registration completes."
-        />
-        <ProfileField
-          label="NAICS codes"
-          name="naicsCodes"
-          defaultValue={organization.naics_codes.join(", ")}
-          placeholder="541330, 561730"
-          hint="Comma-separated list. Use the codes on your SAM.gov profile."
-          full
-        />
-        <label className="block md:col-span-2">
-          <span className="mb-1.5 flex items-baseline justify-between">
-            <span className="text-sm font-semibold text-slate-900">
-              Systems in scope
+        <div className="flex items-center gap-2">
+          {profileDone && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Complete
             </span>
-            <span className="text-xs text-slate-500">Required</span>
-          </span>
-          <textarea
-            name="scopedSystems"
-            rows={4}
-            defaultValue={organization.scoped_systems ?? ""}
-            required
-            placeholder="E.g. Microsoft 365 Business Premium tenant, two company laptops, one shared printer, and a locked office in Tampa. List every system and place that processes or stores federal contract information."
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
-          />
-          <span className="mt-1.5 block text-xs text-slate-500">
-            Describe the environment where federal contract info lives. The
-            narrower you keep this, the smaller your compliance surface.
-          </span>
-        </label>
-        <div className="md:col-span-2">
-          <button
-            type="submit"
-            className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-800"
+          )}
+          <Link
+            href="/onboard"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
           >
-            Save profile
-          </button>
+            Refine with officer
+          </Link>
         </div>
-      </form>
+      </div>
+      <dl className="grid gap-4 md:grid-cols-2">
+        {rows.map((r) => (
+          <div
+            key={r.label}
+            className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3"
+          >
+            <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              {r.label}
+            </dt>
+            <dd className="mt-1 text-sm font-semibold text-slate-900">
+              {r.value ?? (
+                <span className="italic font-normal text-slate-400">
+                  Not captured yet
+                </span>
+              )}
+            </dd>
+          </div>
+        ))}
+        <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 md:col-span-2">
+          <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            Systems in scope
+          </dt>
+          <dd className="mt-1 whitespace-pre-wrap text-sm text-slate-900">
+            {organization.scoped_systems ?? (
+              <span className="italic text-slate-400">Not captured yet</span>
+            )}
+          </dd>
+        </div>
+      </dl>
     </section>
-  );
-}
-
-function ProfileField({
-  label,
-  name,
-  defaultValue,
-  placeholder,
-  hint,
-  required = false,
-  full = false,
-}: {
-  label: string;
-  name: string;
-  defaultValue: string;
-  placeholder: string;
-  hint?: string;
-  required?: boolean;
-  full?: boolean;
-}) {
-  return (
-    <label className={`block ${full ? "md:col-span-2" : ""}`}>
-      <span className="mb-1.5 flex items-baseline justify-between">
-        <span className="text-sm font-semibold text-slate-900">{label}</span>
-        {required && <span className="text-xs text-slate-500">Required</span>}
-      </span>
-      <input
-        type="text"
-        name={name}
-        defaultValue={defaultValue}
-        placeholder={placeholder}
-        required={required}
-        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
-      />
-      {hint && (
-        <span className="mt-1.5 block text-xs text-slate-500">{hint}</span>
-      )}
-    </label>
   );
 }

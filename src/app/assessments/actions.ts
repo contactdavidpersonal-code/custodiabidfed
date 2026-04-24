@@ -12,10 +12,14 @@ import {
 import {
   createAssessmentForOrg,
   ensureOrgForUser,
+  evidenceReviewBlockers,
   getAssessmentForUser,
+  getBusinessProfile,
+  listEvidenceForAssessment,
   listResponsesForAssessment,
 } from "@/lib/assessment";
 import { playbookById } from "@/lib/playbook";
+import { reviewEvidenceArtifact } from "@/lib/ai/evidence-review";
 
 async function requireUserId(): Promise<string> {
   const { userId } = await auth();
@@ -33,42 +37,6 @@ export async function createAssessmentAction(formData: FormData) {
 
   revalidatePath("/assessments");
   redirect(`/assessments/${assessment.id}`);
-}
-
-export async function updateOrgProfileAction(formData: FormData) {
-  const userId = await requireUserId();
-  const assessmentId = String(formData.get("assessmentId") ?? "");
-  const name = String(formData.get("name") ?? "").trim();
-  const entityType = String(formData.get("entityType") ?? "").trim();
-  const cageCode = String(formData.get("cageCode") ?? "").trim();
-  const samUei = String(formData.get("samUei") ?? "").trim();
-  const naicsRaw = String(formData.get("naicsCodes") ?? "").trim();
-  const scopedSystems = String(formData.get("scopedSystems") ?? "").trim();
-
-  const ctx = await getAssessmentForUser(assessmentId, userId);
-  if (!ctx) throw new Error("Not found");
-
-  const naicsCodes = naicsRaw
-    ? naicsRaw
-        .split(/[,\s]+/)
-        .map((s) => s.trim())
-        .filter(Boolean)
-    : [];
-
-  const sql = getSql();
-  await sql`
-    UPDATE organizations
-    SET name = ${name || ctx.organization.name},
-        entity_type = ${entityType || null},
-        cage_code = ${cageCode || null},
-        sam_uei = ${samUei || null},
-        naics_codes = ${naicsCodes},
-        scoped_systems = ${scopedSystems || null},
-        updated_at = NOW()
-    WHERE id = ${ctx.organization.id}
-  `;
-
-  revalidatePath(`/assessments/${assessmentId}`);
 }
 
 export async function saveControlResponseAction(formData: FormData) {
@@ -163,16 +131,101 @@ export async function uploadEvidenceAction(formData: FormData) {
   });
 
   const sql = getSql();
-  await sql`
+  const inserted = (await sql`
     INSERT INTO evidence_artifacts
       (assessment_id, control_id, filename, blob_url, mime_type, size_bytes, uploaded_by_user_id)
     VALUES
       (${assessmentId}, ${controlId}, ${file.name}, ${blob.url},
        ${file.type || null}, ${file.size}, ${userId})
-  `;
+    RETURNING id
+  `) as Array<{ id: string }>;
+  const artifactId = inserted[0].id;
+
+  // Every upload is reviewed immediately — see feedback_evidence_gating.md.
+  // We block the action until the review returns so the user sees the verdict
+  // inline rather than discovering it later at attestation time.
+  const profile = await getBusinessProfile(ctx.organization.id);
+  const companyContext = summarizeBusinessContext(
+    ctx.organization.name,
+    ctx.organization.scoped_systems,
+    profile?.data,
+  );
+  try {
+    await reviewEvidenceArtifact({
+      artifactId,
+      claimedControlId: controlId,
+      blobUrl: blob.url,
+      mimeType: file.type || null,
+      filename: file.name,
+      companyContext,
+    });
+  } catch (err) {
+    // Review persistence already wraps its own errors; this catches any
+    // outer failure. Leave the row in 'pending review' state (null verdict)
+    // so the UI prompts a retry.
+    console.error("reviewEvidenceArtifact threw:", err);
+  }
 
   revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
   revalidatePath(`/assessments/${assessmentId}`);
+}
+
+export async function reReviewEvidenceAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const controlId = String(formData.get("controlId") ?? "");
+  const artifactId = String(formData.get("artifactId") ?? "");
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Not found");
+
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT id, control_id, blob_url, mime_type, filename
+    FROM evidence_artifacts
+    WHERE id = ${artifactId} AND assessment_id = ${assessmentId}
+    LIMIT 1
+  `) as Array<{
+    id: string;
+    control_id: string;
+    blob_url: string;
+    mime_type: string | null;
+    filename: string;
+  }>;
+  if (rows.length === 0) throw new Error("Artifact not found");
+  const row = rows[0];
+
+  const profile = await getBusinessProfile(ctx.organization.id);
+  const companyContext = summarizeBusinessContext(
+    ctx.organization.name,
+    ctx.organization.scoped_systems,
+    profile?.data,
+  );
+
+  await reviewEvidenceArtifact({
+    artifactId: row.id,
+    claimedControlId: row.control_id,
+    blobUrl: row.blob_url,
+    mimeType: row.mime_type,
+    filename: row.filename,
+    companyContext,
+  });
+
+  revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
+  revalidatePath(`/assessments/${assessmentId}`);
+}
+
+function summarizeBusinessContext(
+  orgName: string,
+  scopedSystems: string | null,
+  profileData: Record<string, unknown> | undefined,
+): string {
+  const parts: string[] = [`Organization: ${orgName}.`];
+  if (scopedSystems) parts.push(`Scope: ${scopedSystems}.`);
+  if (profileData && Object.keys(profileData).length > 0) {
+    parts.push(`Business profile: ${JSON.stringify(profileData)}`);
+  }
+  return parts.join(" ");
 }
 
 export async function deleteEvidenceAction(formData: FormData) {
@@ -238,6 +291,21 @@ export async function submitAffirmationAction(formData: FormData) {
   if (notMet > 0 || partial > 0) {
     throw new Error(
       "All practices must be Met or N/A before signing. Fix any Not met or Partial answers first.",
+    );
+  }
+
+  // Evidence gate: every uploaded artifact must have passed AI review. See
+  // feedback_evidence_gating.md. No cat-pic affirmations.
+  const evidence = await listEvidenceForAssessment(assessmentId);
+  const blockers = evidenceReviewBlockers(evidence);
+  if (blockers.length > 0) {
+    const sample = blockers
+      .slice(0, 3)
+      .map((b) => `${b.filename} — ${b.reason}`)
+      .join("; ");
+    const more = blockers.length > 3 ? ` (+${blockers.length - 3} more)` : "";
+    throw new Error(
+      `Evidence review not complete. Resolve these before signing: ${sample}${more}`,
     );
   }
 

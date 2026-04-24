@@ -1,3 +1,5 @@
+import type { Framework } from "@/lib/db";
+
 export const controlDomains = ["AC", "IA", "MP", "PE", "SC", "SI"] as const;
 export type ControlDomain = (typeof controlDomains)[number];
 
@@ -27,6 +29,7 @@ export type NarrativeContext = {
 
 export type ControlPlaybook = {
   id: string;
+  framework: Framework;
   domain: ControlDomain;
   shortName: string;
   title: string;
@@ -42,6 +45,7 @@ export type ControlPlaybook = {
 export const playbook: ControlPlaybook[] = [
   {
     id: "AC.L1-3.1.1",
+    framework: "cmmc_l1",
     domain: "AC",
     shortName: "Authorized Access Control",
     title:
@@ -99,6 +103,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "AC.L1-3.1.2",
+    framework: "cmmc_l1",
     domain: "AC",
     shortName: "Transaction & Function Control",
     title:
@@ -155,6 +160,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "AC.L1-3.1.20",
+    framework: "cmmc_l1",
     domain: "AC",
     shortName: "External Connections",
     title:
@@ -211,6 +217,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "AC.L1-3.1.22",
+    framework: "cmmc_l1",
     domain: "AC",
     shortName: "Control Public Information",
     title:
@@ -255,6 +262,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "IA.L1-3.5.1",
+    framework: "cmmc_l1",
     domain: "IA",
     shortName: "Identification",
     title:
@@ -311,6 +319,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "IA.L1-3.5.2",
+    framework: "cmmc_l1",
     domain: "IA",
     shortName: "Authentication",
     title:
@@ -368,6 +377,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "MP.L1-3.8.3",
+    framework: "cmmc_l1",
     domain: "MP",
     shortName: "Media Disposal",
     title:
@@ -411,6 +421,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "PE.L1-3.10.1",
+    framework: "cmmc_l1",
     domain: "PE",
     shortName: "Limit Physical Access",
     title:
@@ -445,6 +456,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "PE.L1-3.10.3",
+    framework: "cmmc_l1",
     domain: "PE",
     shortName: "Escort Visitors",
     title: "Escort visitors and monitor visitor activity",
@@ -478,6 +490,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "PE.L1-3.10.4",
+    framework: "cmmc_l1",
     domain: "PE",
     shortName: "Physical Access Logs",
     title: "Maintain audit logs of physical access",
@@ -521,6 +534,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "PE.L1-3.10.5",
+    framework: "cmmc_l1",
     domain: "PE",
     shortName: "Manage Physical Access",
     title: "Control and manage physical access devices",
@@ -554,6 +568,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "SC.L1-3.13.1",
+    framework: "cmmc_l1",
     domain: "SC",
     shortName: "Boundary Protection",
     title:
@@ -609,6 +624,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "SC.L1-3.13.5",
+    framework: "cmmc_l1",
     domain: "SC",
     shortName: "Public-Access System Separation",
     title:
@@ -653,6 +669,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "SI.L1-3.14.1",
+    framework: "cmmc_l1",
     domain: "SI",
     shortName: "Flaw Remediation",
     title:
@@ -708,6 +725,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "SI.L1-3.14.2",
+    framework: "cmmc_l1",
     domain: "SI",
     shortName: "Malicious Code Protection",
     title:
@@ -762,6 +780,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "SI.L1-3.14.4",
+    framework: "cmmc_l1",
     domain: "SI",
     shortName: "Update Malicious Code Protection",
     title:
@@ -805,6 +824,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "SI.L1-3.14.5",
+    framework: "cmmc_l1",
     domain: "SI",
     shortName: "System & File Scanning",
     title:
@@ -853,3 +873,25 @@ export const playbookById: Record<string, ControlPlaybook> = Object.fromEntries(
 );
 
 export const practiceCount = playbook.length;
+
+// Framework-aware helpers. Today we only ship CMMC L1 practices; when L2 lands,
+// add entries with framework: "cmmc_l2" above and these helpers automatically
+// filter correctly. Do NOT special-case L2 anywhere else in the codebase.
+export function getPlaybookForFramework(
+  framework: Framework,
+): ControlPlaybook[] {
+  return playbook.filter((p) => p.framework === framework);
+}
+
+export function getPracticeCount(framework: Framework): number {
+  return getPlaybookForFramework(framework).length;
+}
+
+export function getControlDomainsForFramework(
+  framework: Framework,
+): readonly ControlDomain[] {
+  const entries = getPlaybookForFramework(framework);
+  const seen = new Set<ControlDomain>();
+  for (const p of entries) seen.add(p.domain);
+  return controlDomains.filter((d) => seen.has(d));
+}

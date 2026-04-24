@@ -10,8 +10,10 @@ import {
   type EvidenceArtifactRow,
 } from "@/lib/assessment";
 import { playbook, playbookById, type EvidenceProvider } from "@/lib/playbook";
+import type { EvidenceVerdict } from "@/lib/db";
 import {
   deleteEvidenceAction,
+  reReviewEvidenceAction,
   saveControlResponseAction,
   uploadEvidenceAction,
   useSuggestedNarrativeAction,
@@ -68,6 +70,55 @@ function formatBytes(n: number | null): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+type VerdictKey = EvidenceVerdict | "pending";
+
+const verdictStyles: Record<
+  VerdictKey,
+  { label: string; pill: string; box: string }
+> = {
+  sufficient: {
+    label: "Sufficient",
+    pill: "bg-emerald-100 text-emerald-800 ring-1 ring-inset ring-emerald-200",
+    box: "border-emerald-200 bg-emerald-50 text-emerald-900",
+  },
+  insufficient: {
+    label: "Insufficient",
+    pill: "bg-rose-100 text-rose-800 ring-1 ring-inset ring-rose-200",
+    box: "border-rose-200 bg-rose-50 text-rose-900",
+  },
+  unclear: {
+    label: "Unclear",
+    pill: "bg-amber-100 text-amber-900 ring-1 ring-inset ring-amber-200",
+    box: "border-amber-200 bg-amber-50 text-amber-900",
+  },
+  not_relevant: {
+    label: "Not relevant",
+    pill: "bg-slate-200 text-slate-700 ring-1 ring-inset ring-slate-300",
+    box: "border-slate-200 bg-slate-50 text-slate-700",
+  },
+  pending: {
+    label: "Pending",
+    pill: "bg-slate-100 text-slate-500 ring-1 ring-inset ring-slate-200",
+    box: "border-slate-200 bg-slate-50 text-slate-600",
+  },
+};
+
+function VerdictBadge({
+  verdict,
+}: {
+  verdict: EvidenceVerdict | null;
+}) {
+  const key: VerdictKey = verdict ?? "pending";
+  const style = verdictStyles[key];
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${style.pill}`}
+    >
+      {style.label}
+    </span>
+  );
 }
 
 export default async function ControlDetailPage(
@@ -403,59 +454,114 @@ function EvidenceSection({
       {artifacts.length > 0 && (
         <ul className="mt-5 divide-y divide-slate-100 rounded-xl border border-slate-200">
           {artifacts.map((a) => (
-            <li
-              key={a.id}
-              className="flex flex-wrap items-center justify-between gap-3 px-4 py-3"
-            >
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <span className="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-slate-100 text-base">
-                  {a.mime_type?.startsWith("image/")
-                    ? "IMG"
-                    : a.mime_type?.includes("pdf")
-                      ? "PDF"
-                      : "DOC"}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <a
-                    href={a.blob_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block truncate text-sm font-semibold text-slate-900 hover:text-amber-600"
-                  >
-                    {a.filename}
-                  </a>
-                  <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
-                    <span>
-                      {new Date(a.captured_at).toLocaleDateString(undefined, {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
-                    {a.size_bytes && (
-                      <>
-                        <span>·</span>
-                        <span>{formatBytes(a.size_bytes)}</span>
-                      </>
-                    )}
+            <li key={a.id} className="px-4 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <span className="flex h-9 w-9 flex-none items-center justify-center rounded-lg bg-slate-100 text-base">
+                    {a.mime_type?.startsWith("image/")
+                      ? "IMG"
+                      : a.mime_type?.includes("pdf")
+                        ? "PDF"
+                        : "DOC"}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={a.blob_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="truncate text-sm font-semibold text-slate-900 hover:text-amber-600"
+                      >
+                        {a.filename}
+                      </a>
+                      <VerdictBadge verdict={a.ai_review_verdict} />
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
+                      <span>
+                        {new Date(a.captured_at).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                      {a.size_bytes && (
+                        <>
+                          <span>·</span>
+                          <span>{formatBytes(a.size_bytes)}</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
+                <div className="flex items-center gap-1.5">
+                  <form action={reReviewEvidenceAction}>
+                    <input
+                      type="hidden"
+                      name="assessmentId"
+                      value={assessmentId}
+                    />
+                    <input type="hidden" name="controlId" value={controlId} />
+                    <input type="hidden" name="artifactId" value={a.id} />
+                    <button
+                      type="submit"
+                      title="Re-run AI review"
+                      className="rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition-colors hover:bg-amber-50 hover:text-amber-700"
+                    >
+                      Re-review
+                    </button>
+                  </form>
+                  <form action={deleteEvidenceAction}>
+                    <input
+                      type="hidden"
+                      name="assessmentId"
+                      value={assessmentId}
+                    />
+                    <input type="hidden" name="controlId" value={controlId} />
+                    <input type="hidden" name="artifactId" value={a.id} />
+                    <button
+                      type="submit"
+                      className="rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-700"
+                    >
+                      Remove
+                    </button>
+                  </form>
+                </div>
               </div>
-              <form action={deleteEvidenceAction}>
-                <input
-                  type="hidden"
-                  name="assessmentId"
-                  value={assessmentId}
-                />
-                <input type="hidden" name="controlId" value={controlId} />
-                <input type="hidden" name="artifactId" value={a.id} />
-                <button
-                  type="submit"
-                  className="rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-700"
+              {a.ai_review_summary && (
+                <div
+                  className={`mt-2.5 rounded-lg border px-3 py-2 text-xs leading-relaxed ${
+                    verdictStyles[a.ai_review_verdict ?? "pending"].box
+                  }`}
                 >
-                  Remove
-                </button>
-              </form>
+                  <div className="mb-0.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider">
+                    <span>AI review</span>
+                    {a.ai_reviewed_at && (
+                      <span className="font-normal tracking-normal text-slate-500">
+                        ·{" "}
+                        {new Date(a.ai_reviewed_at).toLocaleString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    )}
+                  </div>
+                  <p>{a.ai_review_summary}</p>
+                  {a.ai_review_mapped_controls.length > 0 &&
+                    !a.ai_review_mapped_controls.includes(controlId) && (
+                      <p className="mt-1.5 text-[11px] text-slate-600">
+                        Better fit:{" "}
+                        {a.ai_review_mapped_controls.join(", ")}
+                      </p>
+                    )}
+                </div>
+              )}
+              {!a.ai_reviewed_at && (
+                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  AI review pending. Click Re-review if this is stuck.
+                </p>
+              )}
             </li>
           ))}
         </ul>

@@ -1,5 +1,13 @@
-import { getSql, initDb, type AssessmentStatus, type ControlResponseStatus } from "@/lib/db";
-import { playbook } from "@/lib/playbook";
+import {
+  getSql,
+  initDb,
+  type AssessmentStatus,
+  type ControlResponseStatus,
+  type EvidenceVerdict,
+  type Framework,
+} from "@/lib/db";
+import { getPlaybookForFramework } from "@/lib/playbook";
+import { fiscalYearOf, seedMilestonesForAssessment } from "@/lib/fiscal";
 
 export type OrganizationRow = {
   id: string;
@@ -20,6 +28,8 @@ export type AssessmentRow = {
   organization_id: string;
   cycle_label: string;
   status: AssessmentStatus;
+  framework: Framework;
+  fiscal_year: number;
   submitted_at: string | null;
   affirmed_at: string | null;
   affirmed_by_name: string | null;
@@ -53,7 +63,10 @@ export async function ensureOrgForUser(userId: string): Promise<OrganizationRow>
     LIMIT 1
   `) as OrganizationRow[];
 
-  if (existing.length > 0) return existing[0];
+  if (existing.length > 0) {
+    await ensureBusinessProfile(existing[0].id);
+    return existing[0];
+  }
 
   const inserted = (await sql`
     INSERT INTO organizations (owner_user_id, name, tier)
@@ -61,7 +74,84 @@ export async function ensureOrgForUser(userId: string): Promise<OrganizationRow>
     RETURNING id, owner_user_id, name, entity_type, cage_code, sam_uei,
               naics_codes, tier, scoped_systems, created_at, updated_at
   `) as OrganizationRow[];
+
+  await ensureBusinessProfile(inserted[0].id);
   return inserted[0];
+}
+
+export type BusinessProfileRow = {
+  organization_id: string;
+  data: Record<string, unknown>;
+  completeness_score: number;
+  last_updated_at: string;
+  last_updated_by: "user" | "ai";
+};
+
+/**
+ * Ensures a business_profile row exists for an org. Empty JSON to start; the
+ * conversational onboarding flow rewrites the `data` blob over time.
+ */
+export async function ensureBusinessProfile(
+  organizationId: string,
+): Promise<void> {
+  const sql = getSql();
+  await sql`
+    INSERT INTO business_profile (organization_id)
+    VALUES (${organizationId}::uuid)
+    ON CONFLICT (organization_id) DO NOTHING
+  `;
+}
+
+export async function getBusinessProfile(
+  organizationId: string,
+): Promise<BusinessProfileRow | null> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT organization_id, data, completeness_score, last_updated_at, last_updated_by
+    FROM business_profile
+    WHERE organization_id = ${organizationId}
+    LIMIT 1
+  `) as BusinessProfileRow[];
+  return rows[0] ?? null;
+}
+
+/**
+ * Onboarding is "complete enough" to drop the user into the workspace when the
+ * business profile has any meaningful captured data AND the org has a real
+ * legal name + a scoped_systems paragraph. The completeness_score threshold is
+ * intentionally low (40) — the officer can keep enriching the profile inside
+ * the workspace; we just need enough to personalize.
+ */
+export function isOnboardingComplete(
+  org: OrganizationRow,
+  profile: BusinessProfileRow | null,
+): boolean {
+  const hasLegalName =
+    org.name.trim().length > 0 && org.name !== "My Organization";
+  const hasScopedSystems =
+    (org.scoped_systems ?? "").trim().length > 0;
+  const hasProfile = (profile?.completeness_score ?? 0) >= 40;
+  return hasLegalName && hasScopedSystems && hasProfile;
+}
+
+export async function updateBusinessProfile(
+  organizationId: string,
+  data: Record<string, unknown>,
+  completenessScore: number,
+  updatedBy: "user" | "ai",
+): Promise<void> {
+  const sql = getSql();
+  await sql`
+    INSERT INTO business_profile
+      (organization_id, data, completeness_score, last_updated_at, last_updated_by)
+    VALUES (${organizationId}::uuid, ${JSON.stringify(data)}::jsonb,
+            ${completenessScore}, NOW(), ${updatedBy})
+    ON CONFLICT (organization_id) DO UPDATE
+    SET data = EXCLUDED.data,
+        completeness_score = EXCLUDED.completeness_score,
+        last_updated_at = EXCLUDED.last_updated_at,
+        last_updated_by = EXCLUDED.last_updated_by
+  `;
 }
 
 export async function listAssessmentsForOrg(
@@ -69,8 +159,9 @@ export async function listAssessmentsForOrg(
 ): Promise<AssessmentRow[]> {
   const sql = getSql();
   return (await sql`
-    SELECT id, organization_id, cycle_label, status, submitted_at, affirmed_at,
-           affirmed_by_name, affirmed_by_title, sprs_score, created_at, updated_at
+    SELECT id, organization_id, cycle_label, status, framework, fiscal_year,
+           submitted_at, affirmed_at, affirmed_by_name, affirmed_by_title,
+           sprs_score, created_at, updated_at
     FROM assessments
     WHERE organization_id = ${organizationId}
     ORDER BY created_at DESC
@@ -88,9 +179,9 @@ export async function listAssessmentsWithProgress(
 ): Promise<AssessmentWithProgress[]> {
   const sql = getSql();
   const rows = (await sql`
-    SELECT a.id, a.organization_id, a.cycle_label, a.status, a.submitted_at,
-           a.affirmed_at, a.affirmed_by_name, a.affirmed_by_title, a.sprs_score,
-           a.created_at, a.updated_at,
+    SELECT a.id, a.organization_id, a.cycle_label, a.status, a.framework,
+           a.fiscal_year, a.submitted_at, a.affirmed_at, a.affirmed_by_name,
+           a.affirmed_by_title, a.sprs_score, a.created_at, a.updated_at,
            COUNT(cr.*) FILTER (WHERE cr.status != 'unanswered')::int AS answered,
            COUNT(cr.*)::int AS total
     FROM assessments a
@@ -109,23 +200,28 @@ export async function listAssessmentsWithProgress(
 export async function createAssessmentForOrg(
   organizationId: string,
   cycleLabel: string,
+  framework: Framework = "cmmc_l1",
+  fiscalYear: number = fiscalYearOf(),
 ): Promise<AssessmentRow> {
   const sql = getSql();
 
   const inserted = (await sql`
-    INSERT INTO assessments (organization_id, cycle_label, status)
-    VALUES (${organizationId}, ${cycleLabel}, 'in_progress')
-    RETURNING id, organization_id, cycle_label, status, submitted_at, affirmed_at,
-              affirmed_by_name, affirmed_by_title, sprs_score, created_at, updated_at
+    INSERT INTO assessments (organization_id, cycle_label, status, framework, fiscal_year)
+    VALUES (${organizationId}, ${cycleLabel}, 'in_progress', ${framework}, ${fiscalYear})
+    RETURNING id, organization_id, cycle_label, status, framework, fiscal_year,
+              submitted_at, affirmed_at, affirmed_by_name, affirmed_by_title,
+              sprs_score, created_at, updated_at
   `) as AssessmentRow[];
   const assessment = inserted[0];
 
-  const controlIds = playbook.map((entry) => entry.id);
+  const controlIds = getPlaybookForFramework(framework).map((entry) => entry.id);
   await sql`
     INSERT INTO control_responses (assessment_id, control_id)
     SELECT ${assessment.id}::uuid, cid
     FROM UNNEST(${controlIds}::text[]) AS t(cid)
   `;
+
+  await seedMilestonesForAssessment(organizationId, assessment.id, fiscalYear);
 
   return assessment;
 }
@@ -137,6 +233,7 @@ export async function getAssessmentForUser(
   const sql = getSql();
   const rows = (await sql`
     SELECT a.id AS a_id, a.organization_id, a.cycle_label, a.status AS a_status,
+           a.framework, a.fiscal_year,
            a.submitted_at, a.affirmed_at, a.affirmed_by_name, a.affirmed_by_title,
            a.sprs_score, a.created_at AS a_created_at, a.updated_at AS a_updated_at,
            o.id AS o_id, o.owner_user_id, o.name AS o_name, o.entity_type,
@@ -157,6 +254,8 @@ export async function getAssessmentForUser(
       organization_id: r.organization_id as string,
       cycle_label: r.cycle_label as string,
       status: r.a_status as AssessmentStatus,
+      framework: r.framework as Framework,
+      fiscal_year: r.fiscal_year as number,
       submitted_at: r.submitted_at as string | null,
       affirmed_at: r.affirmed_at as string | null,
       affirmed_by_name: r.affirmed_by_name as string | null,
@@ -204,6 +303,11 @@ export type EvidenceArtifactRow = {
   size_bytes: number | null;
   captured_at: string;
   uploaded_by_user_id: string;
+  ai_review_verdict: EvidenceVerdict | null;
+  ai_review_summary: string | null;
+  ai_review_mapped_controls: string[];
+  ai_reviewed_at: string | null;
+  ai_review_model: string | null;
 };
 
 export async function listEvidenceForControl(
@@ -213,7 +317,9 @@ export async function listEvidenceForControl(
   const sql = getSql();
   return (await sql`
     SELECT id, assessment_id, control_id, filename, blob_url, mime_type,
-           size_bytes, captured_at, uploaded_by_user_id
+           size_bytes, captured_at, uploaded_by_user_id,
+           ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
+           ai_reviewed_at, ai_review_model
     FROM evidence_artifacts
     WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
     ORDER BY captured_at DESC
@@ -226,11 +332,44 @@ export async function listEvidenceForAssessment(
   const sql = getSql();
   return (await sql`
     SELECT id, assessment_id, control_id, filename, blob_url, mime_type,
-           size_bytes, captured_at, uploaded_by_user_id
+           size_bytes, captured_at, uploaded_by_user_id,
+           ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
+           ai_reviewed_at, ai_review_model
     FROM evidence_artifacts
     WHERE assessment_id = ${assessmentId}
     ORDER BY control_id, captured_at DESC
   `) as EvidenceArtifactRow[];
+}
+
+/**
+ * An artifact counts toward attestation readiness only if the AI vision review
+ * has rendered a non-insufficient, non-not_relevant verdict. See
+ * feedback_evidence_gating.md.
+ */
+export function isEvidencePassing(row: EvidenceArtifactRow): boolean {
+  return (
+    row.ai_review_verdict === "sufficient" ||
+    row.ai_review_verdict === "unclear"
+  );
+}
+
+export function evidenceReviewBlockers(
+  rows: EvidenceArtifactRow[],
+): Array<{ id: string; filename: string; reason: string }> {
+  return rows
+    .filter((r) => !isEvidencePassing(r))
+    .map((r) => ({
+      id: r.id,
+      filename: r.filename,
+      reason:
+        r.ai_review_verdict === null
+          ? "Pending AI review"
+          : r.ai_review_verdict === "insufficient"
+            ? "AI flagged insufficient — replace or supplement"
+            : r.ai_review_verdict === "not_relevant"
+              ? "AI could not map this artifact to any practice"
+              : "Not passing",
+    }));
 }
 
 export async function getResponse(

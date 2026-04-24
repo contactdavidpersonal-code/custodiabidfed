@@ -42,6 +42,50 @@ export const guaranteeClaimStatuses = [
 ] as const;
 export type GuaranteeClaimStatus = (typeof guaranteeClaimStatuses)[number];
 
+export const frameworks = ["cmmc_l1", "cmmc_l2"] as const;
+export type Framework = (typeof frameworks)[number];
+
+export const evidenceVerdicts = [
+  "sufficient",
+  "insufficient",
+  "unclear",
+  "not_relevant",
+] as const;
+export type EvidenceVerdict = (typeof evidenceVerdicts)[number];
+
+export const conversationKinds = [
+  "onboarding",
+  "workspace",
+  "evidence_review",
+] as const;
+export type ConversationKind = (typeof conversationKinds)[number];
+
+export const messageRoles = ["user", "assistant", "tool", "system"] as const;
+export type MessageRole = (typeof messageRoles)[number];
+
+export const escalationUrgencies = ["routine", "priority", "urgent"] as const;
+export type EscalationUrgency = (typeof escalationUrgencies)[number];
+
+export const escalationStatuses = [
+  "open",
+  "acknowledged",
+  "scheduled",
+  "resolved",
+  "dismissed",
+] as const;
+export type EscalationStatus = (typeof escalationStatuses)[number];
+
+export const milestoneKinds = [
+  "affirmation_due",
+  "q1_evidence_refresh",
+  "q2_check",
+  "q3_prime_readiness",
+  "q4_prep",
+  "onboarding",
+  "custom",
+] as const;
+export type MilestoneKind = (typeof milestoneKinds)[number];
+
 function getDatabaseUrl() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
@@ -165,6 +209,24 @@ export async function initDb() {
     )
   `;
 
+  // Phase 0 additions: framework + fiscal_year on assessments.
+  // FY runs Oct 1 → Sep 30 (US fed). FY = calendar_year + 1 if month >= 10 else calendar_year.
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS framework TEXT NOT NULL DEFAULT 'cmmc_l1'
+        CHECK (framework IN ('cmmc_l1','cmmc_l2'))
+  `;
+  await sql`ALTER TABLE assessments ADD COLUMN IF NOT EXISTS fiscal_year INT`;
+  await sql`
+    UPDATE assessments
+    SET fiscal_year = CASE
+      WHEN EXTRACT(MONTH FROM created_at) >= 10
+        THEN EXTRACT(YEAR FROM created_at)::int + 1
+      ELSE EXTRACT(YEAR FROM created_at)::int
+    END
+    WHERE fiscal_year IS NULL
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS control_responses (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -198,6 +260,21 @@ export async function initDb() {
     )
   `;
 
+  // Phase 0: AI vision review columns on evidence. Every upload gets a verdict
+  // before it can count toward attestation. See feedback_evidence_gating.md.
+  await sql`
+    ALTER TABLE evidence_artifacts
+      ADD COLUMN IF NOT EXISTS ai_review_verdict TEXT
+        CHECK (ai_review_verdict IN ('sufficient','insufficient','unclear','not_relevant'))
+  `;
+  await sql`ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS ai_review_summary TEXT`;
+  await sql`
+    ALTER TABLE evidence_artifacts
+      ADD COLUMN IF NOT EXISTS ai_review_mapped_controls TEXT[] NOT NULL DEFAULT '{}'
+  `;
+  await sql`ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS ai_reviewed_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS ai_review_model TEXT`;
+
   await sql`
     CREATE TABLE IF NOT EXISTS ai_generations (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -228,6 +305,108 @@ export async function initDb() {
       diff_summary TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
+  `;
+
+  // Phase 0: per-org structured business understanding maintained by the AI.
+  // One row per org; `data` is a JSONB snapshot the AI rewrites over time.
+  await sql`
+    CREATE TABLE IF NOT EXISTS business_profile (
+      organization_id UUID PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
+      data JSONB NOT NULL DEFAULT '{}'::jsonb,
+      completeness_score INT NOT NULL DEFAULT 0,
+      last_updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_updated_by TEXT NOT NULL DEFAULT 'user'
+        CHECK (last_updated_by IN ('user','ai'))
+    )
+  `;
+
+  // Phase 0: persistent AI officer conversations.
+  await sql`
+    CREATE TABLE IF NOT EXISTS ai_conversations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL DEFAULT 'workspace'
+        CHECK (kind IN ('onboarding','workspace','evidence_review')),
+      title TEXT,
+      archived BOOLEAN NOT NULL DEFAULT FALSE,
+      started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_message_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_ai_conversations_org_kind
+      ON ai_conversations (organization_id, kind, archived)
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS ai_messages (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      conversation_id UUID NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
+      role TEXT NOT NULL CHECK (role IN ('user','assistant','tool','system')),
+      content JSONB NOT NULL,
+      tool_use_id TEXT,
+      input_tokens INT,
+      output_tokens INT,
+      cache_read_tokens INT,
+      cache_creation_tokens INT,
+      model TEXT,
+      stop_reason TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_ai_messages_conv
+      ON ai_messages (conversation_id, created_at)
+  `;
+
+  // Phase 0: fiscal-calendar milestones keeping orgs compliant year-over-year.
+  await sql`
+    CREATE TABLE IF NOT EXISTS compliance_milestones (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      assessment_id UUID REFERENCES assessments(id) ON DELETE SET NULL,
+      fiscal_year INT NOT NULL,
+      kind TEXT NOT NULL,
+      title TEXT NOT NULL,
+      description TEXT,
+      due_date DATE NOT NULL,
+      completed_at TIMESTAMPTZ,
+      snoozed_until DATE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_milestones_org_due
+      ON compliance_milestones (organization_id, due_date)
+  `;
+  // Debounce column for the reminder cron — we only post to the officer rail
+  // at most once every few days per milestone, no matter how often the cron runs.
+  await sql`
+    ALTER TABLE compliance_milestones
+      ADD COLUMN IF NOT EXISTS last_reminded_at TIMESTAMPTZ
+  `;
+
+  // Phase 2: officer-handoff requests surfaced by the AI's escalate_to_officer
+  // tool. Drives the upsell to Bootcamp / Command services.
+  await sql`
+    CREATE TABLE IF NOT EXISTS officer_escalations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      conversation_id UUID REFERENCES ai_conversations(id) ON DELETE SET NULL,
+      topic TEXT NOT NULL,
+      urgency TEXT NOT NULL DEFAULT 'routine'
+        CHECK (urgency IN ('routine','priority','urgent')),
+      summary TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open'
+        CHECK (status IN ('open','acknowledged','scheduled','resolved','dismissed')),
+      assigned_officer_user_id TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      resolved_at TIMESTAMPTZ
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_escalations_org_status
+      ON officer_escalations (organization_id, status)
   `;
 
   await sql`

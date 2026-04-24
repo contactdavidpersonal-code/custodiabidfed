@@ -2,6 +2,7 @@ import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ComplianceOfficerRail } from "./ComplianceOfficerRail";
 
 export default async function AssessmentsLayout({
   children,
@@ -13,8 +14,8 @@ export default async function AssessmentsLayout({
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4">
           <Link href="/assessments" className="flex items-center gap-3">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-sm font-black text-amber-400">
               C
@@ -42,7 +43,10 @@ export default async function AssessmentsLayout({
           </nav>
         </div>
       </header>
-      {children}
+      <div className="flex">
+        <ComplianceOfficerRail />
+        <div className="min-w-0 flex-1">{children}</div>
+      </div>
     </div>
   );
 }
