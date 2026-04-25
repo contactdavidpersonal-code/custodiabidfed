@@ -10,14 +10,25 @@ import {
   getSql,
 } from "@/lib/db";
 import {
+  controlsMissingEvidence,
   createAssessmentForOrg,
+  deleteRemediationPlan,
   ensureOrgForUser,
   evidenceReviewBlockers,
   getAssessmentForUser,
   getBusinessProfile,
   listEvidenceForAssessment,
   listResponsesForAssessment,
+  setArtifactCarryStatus,
+  setResponseCarryStatus,
+  upsertRemediationPlan,
 } from "@/lib/assessment";
+import {
+  carryForwardStatuses,
+  remediationStatuses,
+  type CarryForwardStatus,
+  type RemediationStatus,
+} from "@/lib/db";
 import { playbookById } from "@/lib/playbook";
 import { reviewEvidenceArtifact } from "@/lib/ai/evidence-review";
 
@@ -284,6 +295,9 @@ export async function submitAffirmationAction(formData: FormData) {
   const notMet = responses.filter((r) => r.status === "no").length;
   const partial = responses.filter((r) => r.status === "partial").length;
   const met = responses.filter((r) => r.status === "yes").length;
+  const notApplicable = responses.filter(
+    (r) => r.status === "not_applicable",
+  ).length;
 
   if (unanswered > 0) {
     throw new Error("Answer every practice before signing");
@@ -294,10 +308,23 @@ export async function submitAffirmationAction(formData: FormData) {
     );
   }
 
+  // Carry-forward gate: any imported response/artifact still in pending_review
+  // must be resolved before this cycle counts as a clean affirmation.
+  const pendingResponses = responses.filter(
+    (r) => r.carry_forward_status === "pending_review",
+  );
+  if (pendingResponses.length > 0) {
+    throw new Error(
+      `Review last year's imported answers first — ${pendingResponses.length} practice${pendingResponses.length === 1 ? "" : "s"} still pending review.`,
+    );
+  }
+
   // Evidence gate: every uploaded artifact must have passed AI review. See
   // feedback_evidence_gating.md. No cat-pic affirmations.
   const evidence = await listEvidenceForAssessment(assessmentId);
-  const blockers = evidenceReviewBlockers(evidence);
+  const blockers = evidenceReviewBlockers(
+    evidence.filter((e) => e.carry_forward_status !== "removed"),
+  );
   if (blockers.length > 0) {
     const sample = blockers
       .slice(0, 3)
@@ -309,7 +336,28 @@ export async function submitAffirmationAction(formData: FormData) {
     );
   }
 
-  const sprsScore = met === total ? 110 : null;
+  // Min-evidence gate: a "Met" answer with zero passing artifacts and no
+  // narrative justification is a paper claim. Block at sign-time.
+  const missingEvidence = controlsMissingEvidence(responses, evidence);
+  if (missingEvidence.length > 0) {
+    const ids = missingEvidence
+      .slice(0, 5)
+      .map((m) => m.control_id)
+      .join(", ");
+    const more =
+      missingEvidence.length > 5 ? ` (+${missingEvidence.length - 5} more)` : "";
+    throw new Error(
+      `Practices marked Met need at least one passing artifact (or a 200+ char narrative explaining why none applies): ${ids}${more}`,
+    );
+  }
+
+  // CMMC L1 affirmation is binary: implements all 17, yes/no. We track the
+  // outcome on `implements_all_17`. The legacy `sprs_score` column is only
+  // populated for L2/DFARS-7012 cycles which use NIST 800-171 110-point
+  // scoring; for L1 it stays NULL.
+  const allAccountedFor = met + notApplicable === total;
+  const implementsAll17 =
+    ctx.assessment.framework === "cmmc_l1" ? allAccountedFor : null;
 
   const sql = getSql();
   await sql`
@@ -319,7 +367,8 @@ export async function submitAffirmationAction(formData: FormData) {
         affirmed_at = NOW(),
         affirmed_by_name = ${signerName},
         affirmed_by_title = ${signerTitle},
-        sprs_score = ${sprsScore},
+        sprs_score = NULL,
+        implements_all_17 = ${implementsAll17},
         updated_at = NOW()
     WHERE id = ${assessmentId}
   `;
@@ -327,4 +376,130 @@ export async function submitAffirmationAction(formData: FormData) {
   revalidatePath(`/assessments/${assessmentId}`);
   revalidatePath("/assessments");
   redirect(`/assessments/${assessmentId}?signed=1`);
+}
+
+export async function upsertRemediationPlanAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const controlId = String(formData.get("controlId") ?? "");
+  const gapSummary = String(formData.get("gapSummary") ?? "").trim();
+  const plannedActions = String(formData.get("plannedActions") ?? "").trim();
+  const targetCloseDate = String(formData.get("targetCloseDate") ?? "").trim();
+  const status = String(formData.get("status") ?? "open") as RemediationStatus;
+
+  if (!gapSummary) throw new Error("Describe the gap");
+  if (!plannedActions) throw new Error("Describe the planned actions");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(targetCloseDate)) {
+    throw new Error("Target close date must be YYYY-MM-DD");
+  }
+  if (!remediationStatuses.includes(status)) {
+    throw new Error("Invalid remediation status");
+  }
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Not found");
+  if (!playbookById[controlId]) throw new Error("Unknown control");
+
+  await upsertRemediationPlan({
+    assessmentId,
+    controlId,
+    gapSummary,
+    plannedActions,
+    targetCloseDate,
+    status,
+  });
+
+  revalidatePath(`/assessments/${assessmentId}`);
+  revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
+  revalidatePath(`/assessments/${assessmentId}/sign`);
+}
+
+export async function deleteRemediationPlanAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const controlId = String(formData.get("controlId") ?? "");
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Not found");
+
+  await deleteRemediationPlan(assessmentId, controlId);
+
+  revalidatePath(`/assessments/${assessmentId}`);
+  revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
+  revalidatePath(`/assessments/${assessmentId}/sign`);
+}
+
+export async function decideCarryForwardResponseAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const controlId = String(formData.get("controlId") ?? "");
+  const decision = String(formData.get("decision") ?? "") as CarryForwardStatus;
+
+  if (!carryForwardStatuses.includes(decision)) {
+    throw new Error("Invalid carry-forward decision");
+  }
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Not found");
+
+  // 'needs_replacement' resets the response so the user re-answers this cycle.
+  if (decision === "needs_replacement") {
+    const sql = getSql();
+    await sql`
+      UPDATE control_responses
+      SET status = 'unanswered',
+          narrative = NULL,
+          carry_forward_status = 'needs_replacement',
+          updated_at = NOW()
+      WHERE assessment_id = ${assessmentId}::uuid AND control_id = ${controlId}
+    `;
+  } else {
+    await setResponseCarryStatus(assessmentId, controlId, decision);
+  }
+
+  revalidatePath(`/assessments/${assessmentId}`);
+  revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
+  revalidatePath(`/assessments/${assessmentId}/sign`);
+}
+
+export async function decideCarryForwardArtifactAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const artifactId = String(formData.get("artifactId") ?? "");
+  const decision = String(formData.get("decision") ?? "") as CarryForwardStatus;
+
+  if (!carryForwardStatuses.includes(decision)) {
+    throw new Error("Invalid carry-forward decision");
+  }
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Not found");
+
+  // Confirm the artifact actually belongs to this assessment before mutating.
+  const sql = getSql();
+  const owner = (await sql`
+    SELECT control_id FROM evidence_artifacts
+    WHERE id = ${artifactId}::uuid AND assessment_id = ${assessmentId}::uuid
+    LIMIT 1
+  `) as Array<{ control_id: string }>;
+  if (owner.length === 0) throw new Error("Artifact not found");
+
+  await setArtifactCarryStatus(artifactId, decision);
+  // 'kept' triggers a re-review since the artifact applies to a new fiscal
+  // year (currency check). The current pipeline runs review on upload only;
+  // we mark the row to surface "needs re-review" in UI without re-fetching
+  // the blob here.
+  if (decision === "kept") {
+    await sql`
+      UPDATE evidence_artifacts
+      SET ai_review_verdict = NULL,
+          ai_review_summary = NULL,
+          ai_reviewed_at = NULL
+      WHERE id = ${artifactId}::uuid
+    `;
+  }
+
+  revalidatePath(`/assessments/${assessmentId}`);
+  revalidatePath(`/assessments/${assessmentId}/controls/${owner[0].control_id}`);
+  revalidatePath(`/assessments/${assessmentId}/sign`);
 }

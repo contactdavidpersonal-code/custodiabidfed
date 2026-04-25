@@ -3,19 +3,25 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
   getAssessmentForUser,
+  getRemediationPlan,
   getResponse,
   listEvidenceForControl,
   listResponsesForAssessment,
   type ControlResponseRow,
   type EvidenceArtifactRow,
+  type RemediationPlanRow,
 } from "@/lib/assessment";
 import { playbook, playbookById, type EvidenceProvider } from "@/lib/playbook";
-import type { EvidenceVerdict } from "@/lib/db";
+import type { EvidenceVerdict, RemediationStatus } from "@/lib/db";
 import {
+  decideCarryForwardArtifactAction,
+  decideCarryForwardResponseAction,
   deleteEvidenceAction,
+  deleteRemediationPlanAction,
   reReviewEvidenceAction,
   saveControlResponseAction,
   uploadEvidenceAction,
+  upsertRemediationPlanAction,
   useSuggestedNarrativeAction,
 } from "../../../actions";
 
@@ -139,6 +145,7 @@ export default async function ControlDetailPage(
 
   const evidence = await listEvidenceForControl(id, controlId);
   const allResponses = await listResponsesForAssessment(id);
+  const remediationPlan = await getRemediationPlan(id, controlId);
   const orderedIds = playbook.map((p) => p.id);
   const currentIdx = orderedIds.indexOf(controlId);
   const prevId = currentIdx > 0 ? orderedIds[currentIdx - 1] : null;
@@ -242,6 +249,14 @@ export default async function ControlDetailPage(
             ))}
           </div>
         </section>
+      )}
+
+      {response.carry_forward_status === "pending_review" && (
+        <CarryForwardResponseBanner
+          assessmentId={id}
+          controlId={controlId}
+          response={response}
+        />
       )}
 
       <EvidenceSection
@@ -349,6 +364,17 @@ export default async function ControlDetailPage(
         </form>
       </section>
 
+      {(response.status === "no" ||
+        response.status === "partial" ||
+        remediationPlan) && (
+        <RemediationSection
+          assessmentId={id}
+          controlId={controlId}
+          plan={remediationPlan}
+          responseStatus={response.status}
+        />
+      )}
+
       {practice.commonGotchas.length > 0 && (
         <section className="mb-8 rounded-2xl border border-slate-200 bg-slate-50 p-5">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
@@ -390,6 +416,222 @@ export default async function ControlDetailPage(
         )}
       </nav>
     </main>
+  );
+}
+
+function CarryForwardResponseBanner({
+  assessmentId,
+  controlId,
+  response,
+}: {
+  assessmentId: string;
+  controlId: string;
+  response: ControlResponseRow;
+}) {
+  return (
+    <section className="mb-8 rounded-2xl border border-sky-300 bg-sky-50 p-5">
+      <div className="text-xs font-semibold uppercase tracking-wider text-sky-800">
+        Imported from last cycle — review needed
+      </div>
+      <h2 className="mt-1 text-base font-bold text-slate-900">
+        We carried over your prior answer ({response.status === "yes" ? "Met" : "N/A"}).
+        Is it still accurate for this fiscal year?
+      </h2>
+      {response.narrative && (
+        <p className="mt-2 whitespace-pre-wrap rounded-lg border border-sky-200 bg-white px-3 py-2 text-sm text-slate-700">
+          {response.narrative}
+        </p>
+      )}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <form action={decideCarryForwardResponseAction}>
+          <input type="hidden" name="assessmentId" value={assessmentId} />
+          <input type="hidden" name="controlId" value={controlId} />
+          <input type="hidden" name="decision" value="kept" />
+          <button
+            type="submit"
+            className="rounded-lg bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-500"
+          >
+            Still accurate — keep
+          </button>
+        </form>
+        <form action={decideCarryForwardResponseAction}>
+          <input type="hidden" name="assessmentId" value={assessmentId} />
+          <input type="hidden" name="controlId" value={controlId} />
+          <input type="hidden" name="decision" value="needs_replacement" />
+          <button
+            type="submit"
+            className="rounded-lg bg-amber-500 px-3.5 py-2 text-xs font-bold text-white transition-colors hover:bg-amber-400"
+          >
+            Re-answer this practice
+          </button>
+        </form>
+      </div>
+    </section>
+  );
+}
+
+function CarryForwardArtifactButton({
+  assessmentId,
+  artifactId,
+  decision,
+  label,
+  tone,
+}: {
+  assessmentId: string;
+  artifactId: string;
+  decision: "kept" | "needs_replacement" | "removed";
+  label: string;
+  tone: "emerald" | "amber" | "rose";
+}) {
+  const toneClass: Record<typeof tone, string> = {
+    emerald:
+      "bg-emerald-600 text-white hover:bg-emerald-500",
+    amber: "bg-amber-500 text-white hover:bg-amber-400",
+    rose: "bg-rose-600 text-white hover:bg-rose-500",
+  };
+  return (
+    <form action={decideCarryForwardArtifactAction}>
+      <input type="hidden" name="assessmentId" value={assessmentId} />
+      <input type="hidden" name="artifactId" value={artifactId} />
+      <input type="hidden" name="decision" value={decision} />
+      <button
+        type="submit"
+        className={`rounded-md px-2.5 py-1 text-[11px] font-bold transition-colors ${toneClass[tone]}`}
+      >
+        {label}
+      </button>
+    </form>
+  );
+}
+
+const remediationStatusOptions: Array<{
+  value: RemediationStatus;
+  label: string;
+}> = [
+  { value: "open", label: "Open — not started" },
+  { value: "in_progress", label: "In progress" },
+  { value: "closed", label: "Closed" },
+  { value: "abandoned", label: "Abandoned" },
+];
+
+function RemediationSection({
+  assessmentId,
+  controlId,
+  plan,
+  responseStatus,
+}: {
+  assessmentId: string;
+  controlId: string;
+  plan: RemediationPlanRow | null;
+  responseStatus: ControlResponseRow["status"];
+}) {
+  const today = new Date();
+  const defaultTarget = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+  const note =
+    responseStatus === "no"
+      ? "This practice is Not met. CMMC L1 affirmation is binary — every practice must be Met or N/A before signing. Document a remediation plan with a target close date so primes can see your roadmap."
+      : responseStatus === "partial"
+        ? "This practice is Partial. CMMC L1 has no half-credit — you must close the gap to Met before signing. Use this plan to track your closure work."
+        : "Plan retained for the record. You can mark it closed once the practice is fully Met.";
+
+  return (
+    <section className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-6">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-slate-900">
+            Remediation plan
+          </h2>
+          <p className="mt-1 text-sm text-amber-900">{note}</p>
+        </div>
+        {plan && (
+          <form action={deleteRemediationPlanAction}>
+            <input type="hidden" name="assessmentId" value={assessmentId} />
+            <input type="hidden" name="controlId" value={controlId} />
+            <button
+              type="submit"
+              className="rounded-md border border-rose-300 bg-white px-2.5 py-1 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50"
+            >
+              Discard plan
+            </button>
+          </form>
+        )}
+      </div>
+
+      <form action={upsertRemediationPlanAction} className="space-y-4">
+        <input type="hidden" name="assessmentId" value={assessmentId} />
+        <input type="hidden" name="controlId" value={controlId} />
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-amber-900">
+            Gap summary
+          </span>
+          <textarea
+            name="gapSummary"
+            rows={2}
+            required
+            defaultValue={plan?.gap_summary ?? ""}
+            placeholder="What's missing today? E.g. MFA is enabled for admins but not all general users."
+            className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+          />
+        </label>
+
+        <label className="block">
+          <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-amber-900">
+            Planned actions
+          </span>
+          <textarea
+            name="plannedActions"
+            rows={3}
+            required
+            defaultValue={plan?.planned_actions ?? ""}
+            placeholder="Concrete steps. E.g. Enable Conditional Access policy 'Require MFA for all users' on 2026-05-15. Send 2-week notice to staff."
+            className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+          />
+        </label>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-amber-900">
+              Target close date
+            </span>
+            <input
+              type="date"
+              name="targetCloseDate"
+              required
+              defaultValue={plan?.target_close_date ?? defaultTarget}
+              className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold uppercase tracking-wider text-amber-900">
+              Status
+            </span>
+            <select
+              name="status"
+              defaultValue={plan?.status ?? "open"}
+              className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+            >
+              {remediationStatusOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800"
+          >
+            {plan ? "Update plan" : "Save plan"}
+          </button>
+        </div>
+      </form>
+    </section>
   );
 }
 
@@ -527,6 +769,39 @@ function EvidenceSection({
                   </form>
                 </div>
               </div>
+              {a.carry_forward_status === "pending_review" && (
+                <div className="mt-2.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span>
+                      <strong>Carried over from last cycle.</strong> Confirm
+                      this is still valid for the current fiscal year.
+                    </span>
+                    <span className="flex flex-wrap gap-1.5">
+                      <CarryForwardArtifactButton
+                        assessmentId={assessmentId}
+                        artifactId={a.id}
+                        decision="kept"
+                        label="Still valid"
+                        tone="emerald"
+                      />
+                      <CarryForwardArtifactButton
+                        assessmentId={assessmentId}
+                        artifactId={a.id}
+                        decision="needs_replacement"
+                        label="Needs replacement"
+                        tone="amber"
+                      />
+                      <CarryForwardArtifactButton
+                        assessmentId={assessmentId}
+                        artifactId={a.id}
+                        decision="removed"
+                        label="Remove"
+                        tone="rose"
+                      />
+                    </span>
+                  </div>
+                </div>
+              )}
               {a.ai_review_summary && (
                 <div
                   className={`mt-2.5 rounded-lg border px-3 py-2 text-xs leading-relaxed ${

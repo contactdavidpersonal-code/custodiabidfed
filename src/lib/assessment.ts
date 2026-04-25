@@ -2,9 +2,11 @@ import {
   getSql,
   initDb,
   type AssessmentStatus,
+  type CarryForwardStatus,
   type ControlResponseStatus,
   type EvidenceVerdict,
   type Framework,
+  type RemediationStatus,
 } from "@/lib/db";
 import { getPlaybookForFramework } from "@/lib/playbook";
 import { fiscalYearOf, seedMilestonesForAssessment } from "@/lib/fiscal";
@@ -35,6 +37,8 @@ export type AssessmentRow = {
   affirmed_by_name: string | null;
   affirmed_by_title: string | null;
   sprs_score: number | null;
+  implements_all_17: boolean | null;
+  carried_forward_from: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -48,7 +52,21 @@ export type ControlResponseRow = {
   officer_reviewed: boolean;
   officer_reviewed_at: string | null;
   officer_reviewer_user_id: string | null;
+  carry_forward_status: CarryForwardStatus;
   updated_at: string;
+};
+
+export type RemediationPlanRow = {
+  id: string;
+  assessment_id: string;
+  control_id: string;
+  gap_summary: string;
+  planned_actions: string;
+  target_close_date: string;
+  status: RemediationStatus;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
 };
 
 export async function ensureOrgForUser(userId: string): Promise<OrganizationRow> {
@@ -161,7 +179,8 @@ export async function listAssessmentsForOrg(
   return (await sql`
     SELECT id, organization_id, cycle_label, status, framework, fiscal_year,
            submitted_at, affirmed_at, affirmed_by_name, affirmed_by_title,
-           sprs_score, created_at, updated_at
+           sprs_score, implements_all_17, carried_forward_from,
+           created_at, updated_at
     FROM assessments
     WHERE organization_id = ${organizationId}
     ORDER BY created_at DESC
@@ -181,7 +200,8 @@ export async function listAssessmentsWithProgress(
   const rows = (await sql`
     SELECT a.id, a.organization_id, a.cycle_label, a.status, a.framework,
            a.fiscal_year, a.submitted_at, a.affirmed_at, a.affirmed_by_name,
-           a.affirmed_by_title, a.sprs_score, a.created_at, a.updated_at,
+           a.affirmed_by_title, a.sprs_score, a.implements_all_17,
+           a.carried_forward_from, a.created_at, a.updated_at,
            COUNT(cr.*) FILTER (WHERE cr.status != 'unanswered')::int AS answered,
            COUNT(cr.*)::int AS total
     FROM assessments a
@@ -210,7 +230,8 @@ export async function createAssessmentForOrg(
     VALUES (${organizationId}, ${cycleLabel}, 'in_progress', ${framework}, ${fiscalYear})
     RETURNING id, organization_id, cycle_label, status, framework, fiscal_year,
               submitted_at, affirmed_at, affirmed_by_name, affirmed_by_title,
-              sprs_score, created_at, updated_at
+              sprs_score, implements_all_17, carried_forward_from,
+              created_at, updated_at
   `) as AssessmentRow[];
   const assessment = inserted[0];
 
@@ -226,6 +247,92 @@ export async function createAssessmentForOrg(
   return assessment;
 }
 
+/**
+ * Annual rollover: create a new cycle that imports the prior cycle's responses
+ * and evidence artifacts as drafts pending user review. The user must walk
+ * each carried row to "kept" or "needs_replacement" before it counts toward
+ * the new cycle's evidence gate. Mirrors TurboTax's "import last year's return"
+ * — most fields are stable year-over-year, but the user has to confirm.
+ */
+export async function createAssessmentWithCarryForward(
+  organizationId: string,
+  cycleLabel: string,
+  framework: Framework,
+  fiscalYear: number,
+  priorAssessmentId: string,
+): Promise<AssessmentRow> {
+  const sql = getSql();
+
+  const inserted = (await sql`
+    INSERT INTO assessments
+      (organization_id, cycle_label, status, framework, fiscal_year, carried_forward_from)
+    VALUES
+      (${organizationId}, ${cycleLabel}, 'in_progress', ${framework},
+       ${fiscalYear}, ${priorAssessmentId}::uuid)
+    RETURNING id, organization_id, cycle_label, status, framework, fiscal_year,
+              submitted_at, affirmed_at, affirmed_by_name, affirmed_by_title,
+              sprs_score, implements_all_17, carried_forward_from,
+              created_at, updated_at
+  `) as AssessmentRow[];
+  const assessment = inserted[0];
+
+  // Carry forward responses: every prior response copied with status preserved
+  // EXCEPT 'no' / 'partial' / 'unanswered' — those reset to 'unanswered' so
+  // the user must re-answer this year. 'yes' / 'not_applicable' carry over
+  // but flagged 'pending_review'.
+  await sql`
+    INSERT INTO control_responses
+      (assessment_id, control_id, status, narrative, carry_forward_status)
+    SELECT ${assessment.id}::uuid,
+           prior.control_id,
+           CASE WHEN prior.status IN ('yes','not_applicable')
+                THEN prior.status
+                ELSE 'unanswered'
+           END,
+           CASE WHEN prior.status IN ('yes','not_applicable')
+                THEN prior.narrative
+                ELSE NULL
+           END,
+           CASE WHEN prior.status IN ('yes','not_applicable')
+                THEN 'pending_review'
+                ELSE 'kept'
+           END
+    FROM control_responses prior
+    WHERE prior.assessment_id = ${priorAssessmentId}::uuid
+  `;
+
+  // Backfill any practices that exist in the playbook but weren't in the prior
+  // cycle (framework expansion). They start unanswered.
+  const controlIds = getPlaybookForFramework(framework).map((entry) => entry.id);
+  await sql`
+    INSERT INTO control_responses (assessment_id, control_id)
+    SELECT ${assessment.id}::uuid, cid
+    FROM UNNEST(${controlIds}::text[]) AS t(cid)
+    ON CONFLICT (assessment_id, control_id) DO NOTHING
+  `;
+
+  // Carry forward evidence artifacts pointing to the same blob URLs. Each new
+  // row gets prior_artifact_id set and carry_forward_status='pending_review'.
+  // AI verdicts are reset to NULL — vision review re-runs against the new
+  // cycle for currency.
+  await sql`
+    INSERT INTO evidence_artifacts
+      (assessment_id, control_id, filename, blob_url, mime_type, size_bytes,
+       captured_at, uploaded_by_user_id, ai_suggested_controls,
+       prior_artifact_id, carry_forward_status)
+    SELECT ${assessment.id}::uuid, prior.control_id, prior.filename,
+           prior.blob_url, prior.mime_type, prior.size_bytes,
+           prior.captured_at, prior.uploaded_by_user_id,
+           prior.ai_suggested_controls, prior.id, 'pending_review'
+    FROM evidence_artifacts prior
+    WHERE prior.assessment_id = ${priorAssessmentId}::uuid
+      AND prior.carry_forward_status != 'removed'
+  `;
+
+  await seedMilestonesForAssessment(organizationId, assessment.id, fiscalYear);
+  return assessment;
+}
+
 export async function getAssessmentForUser(
   assessmentId: string,
   userId: string,
@@ -235,7 +342,8 @@ export async function getAssessmentForUser(
     SELECT a.id AS a_id, a.organization_id, a.cycle_label, a.status AS a_status,
            a.framework, a.fiscal_year,
            a.submitted_at, a.affirmed_at, a.affirmed_by_name, a.affirmed_by_title,
-           a.sprs_score, a.created_at AS a_created_at, a.updated_at AS a_updated_at,
+           a.sprs_score, a.implements_all_17, a.carried_forward_from,
+           a.created_at AS a_created_at, a.updated_at AS a_updated_at,
            o.id AS o_id, o.owner_user_id, o.name AS o_name, o.entity_type,
            o.cage_code, o.sam_uei, o.naics_codes, o.tier, o.scoped_systems,
            o.created_at AS o_created_at, o.updated_at AS o_updated_at
@@ -261,6 +369,8 @@ export async function getAssessmentForUser(
       affirmed_by_name: r.affirmed_by_name as string | null,
       affirmed_by_title: r.affirmed_by_title as string | null,
       sprs_score: r.sprs_score as number | null,
+      implements_all_17: r.implements_all_17 as boolean | null,
+      carried_forward_from: r.carried_forward_from as string | null,
       created_at: r.a_created_at as string,
       updated_at: r.a_updated_at as string,
     },
@@ -286,7 +396,8 @@ export async function listResponsesForAssessment(
   const sql = getSql();
   return (await sql`
     SELECT id, assessment_id, control_id, status, narrative, officer_reviewed,
-           officer_reviewed_at, officer_reviewer_user_id, updated_at
+           officer_reviewed_at, officer_reviewer_user_id, carry_forward_status,
+           updated_at
     FROM control_responses
     WHERE assessment_id = ${assessmentId}
     ORDER BY control_id
@@ -308,6 +419,8 @@ export type EvidenceArtifactRow = {
   ai_review_mapped_controls: string[];
   ai_reviewed_at: string | null;
   ai_review_model: string | null;
+  prior_artifact_id: string | null;
+  carry_forward_status: CarryForwardStatus;
 };
 
 export async function listEvidenceForControl(
@@ -319,7 +432,8 @@ export async function listEvidenceForControl(
     SELECT id, assessment_id, control_id, filename, blob_url, mime_type,
            size_bytes, captured_at, uploaded_by_user_id,
            ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
-           ai_reviewed_at, ai_review_model
+           ai_reviewed_at, ai_review_model,
+           prior_artifact_id, carry_forward_status
     FROM evidence_artifacts
     WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
     ORDER BY captured_at DESC
@@ -334,7 +448,8 @@ export async function listEvidenceForAssessment(
     SELECT id, assessment_id, control_id, filename, blob_url, mime_type,
            size_bytes, captured_at, uploaded_by_user_id,
            ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
-           ai_reviewed_at, ai_review_model
+           ai_reviewed_at, ai_review_model,
+           prior_artifact_id, carry_forward_status
     FROM evidence_artifacts
     WHERE assessment_id = ${assessmentId}
     ORDER BY control_id, captured_at DESC
@@ -379,12 +494,215 @@ export async function getResponse(
   const sql = getSql();
   const rows = (await sql`
     SELECT id, assessment_id, control_id, status, narrative, officer_reviewed,
-           officer_reviewed_at, officer_reviewer_user_id, updated_at
+           officer_reviewed_at, officer_reviewer_user_id, carry_forward_status,
+           updated_at
     FROM control_responses
     WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
     LIMIT 1
   `) as ControlResponseRow[];
   return rows[0] ?? null;
+}
+
+/**
+ * Identifies practices marked "Met" that have no passing evidence on file.
+ * CMMC L1 self-attestation does not legally require uploaded artifacts, but
+ * a bid-ready package without proof is worthless to a prime — and a signer
+ * who claims "Met" with zero evidence is one questionnaire away from
+ * embarrassment. We treat this as a sign-time blocker. The user can override
+ * by writing an explicit narrative justifying why no artifact applies.
+ *
+ * A response satisfies the gate if EITHER:
+ *   - status is 'not_applicable' (N/A practices need no artifact)
+ *   - status is 'unanswered'/'no'/'partial' (other gates fire first)
+ *   - status is 'yes' AND it has at least one passing artifact
+ *   - status is 'yes' AND the narrative contains an explicit no-evidence
+ *     justification (>=200 chars including the phrase 'no artifact')
+ */
+export function controlsMissingEvidence(
+  responses: ControlResponseRow[],
+  evidence: EvidenceArtifactRow[],
+): Array<{ control_id: string; reason: string }> {
+  const passingByControl = new Map<string, number>();
+  for (const e of evidence) {
+    if (!isEvidencePassing(e)) continue;
+    if (e.carry_forward_status === "pending_review") continue;
+    if (e.carry_forward_status === "needs_replacement") continue;
+    if (e.carry_forward_status === "removed") continue;
+    passingByControl.set(
+      e.control_id,
+      (passingByControl.get(e.control_id) ?? 0) + 1,
+    );
+  }
+
+  const missing: Array<{ control_id: string; reason: string }> = [];
+  for (const r of responses) {
+    if (r.status !== "yes") continue;
+    const count = passingByControl.get(r.control_id) ?? 0;
+    if (count > 0) continue;
+    const narrative = (r.narrative ?? "").trim();
+    const hasJustification =
+      narrative.length >= 200 && /no artifact/i.test(narrative);
+    if (hasJustification) continue;
+    missing.push({
+      control_id: r.control_id,
+      reason:
+        "Marked Met but has no passing evidence on file. Upload an artifact or write a narrative (200+ chars including 'no artifact') explaining why none applies.",
+    });
+  }
+  return missing;
+}
+
+/**
+ * Practices that need a remediation plan: any 'no' or 'partial' response.
+ * Returns control IDs for the caller to surface in the UI. Sign-time gate
+ * remains hard — partial/no still blocks affirmation — but this exposes the
+ * roadmap in a structured way for prime questionnaires.
+ */
+export function controlsNeedingRemediation(
+  responses: ControlResponseRow[],
+): string[] {
+  return responses
+    .filter((r) => r.status === "no" || r.status === "partial")
+    .map((r) => r.control_id);
+}
+
+export async function listRemediationPlansForAssessment(
+  assessmentId: string,
+): Promise<RemediationPlanRow[]> {
+  const sql = getSql();
+  return (await sql`
+    SELECT id, assessment_id, control_id, gap_summary, planned_actions,
+           target_close_date::text AS target_close_date, status,
+           created_at, updated_at, closed_at
+    FROM remediation_plans
+    WHERE assessment_id = ${assessmentId}
+    ORDER BY target_close_date ASC, control_id ASC
+  `) as RemediationPlanRow[];
+}
+
+export async function getRemediationPlan(
+  assessmentId: string,
+  controlId: string,
+): Promise<RemediationPlanRow | null> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT id, assessment_id, control_id, gap_summary, planned_actions,
+           target_close_date::text AS target_close_date, status,
+           created_at, updated_at, closed_at
+    FROM remediation_plans
+    WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
+    LIMIT 1
+  `) as RemediationPlanRow[];
+  return rows[0] ?? null;
+}
+
+export async function upsertRemediationPlan(input: {
+  assessmentId: string;
+  controlId: string;
+  gapSummary: string;
+  plannedActions: string;
+  targetCloseDate: string;
+  status: RemediationStatus;
+}): Promise<void> {
+  const sql = getSql();
+  await sql`
+    INSERT INTO remediation_plans
+      (assessment_id, control_id, gap_summary, planned_actions,
+       target_close_date, status, updated_at)
+    VALUES
+      (${input.assessmentId}::uuid, ${input.controlId},
+       ${input.gapSummary}, ${input.plannedActions},
+       ${input.targetCloseDate}::date, ${input.status}, NOW())
+    ON CONFLICT (assessment_id, control_id) DO UPDATE
+    SET gap_summary = EXCLUDED.gap_summary,
+        planned_actions = EXCLUDED.planned_actions,
+        target_close_date = EXCLUDED.target_close_date,
+        status = EXCLUDED.status,
+        updated_at = NOW(),
+        closed_at = CASE
+          WHEN EXCLUDED.status IN ('closed','abandoned')
+            AND remediation_plans.closed_at IS NULL
+            THEN NOW()
+          WHEN EXCLUDED.status NOT IN ('closed','abandoned')
+            THEN NULL
+          ELSE remediation_plans.closed_at
+        END
+  `;
+}
+
+export async function deleteRemediationPlan(
+  assessmentId: string,
+  controlId: string,
+): Promise<void> {
+  const sql = getSql();
+  await sql`
+    DELETE FROM remediation_plans
+    WHERE assessment_id = ${assessmentId}::uuid AND control_id = ${controlId}
+  `;
+}
+
+/**
+ * Carry-forward decisions on imported responses + artifacts during annual
+ * rollover review. The rollover step seeds rows as 'pending_review'; the user
+ * walks through and marks each as 'kept', 'needs_replacement', or 'removed'.
+ */
+export async function setResponseCarryStatus(
+  assessmentId: string,
+  controlId: string,
+  status: CarryForwardStatus,
+): Promise<void> {
+  const sql = getSql();
+  await sql`
+    UPDATE control_responses
+    SET carry_forward_status = ${status}, updated_at = NOW()
+    WHERE assessment_id = ${assessmentId}::uuid AND control_id = ${controlId}
+  `;
+}
+
+export async function setArtifactCarryStatus(
+  artifactId: string,
+  status: CarryForwardStatus,
+): Promise<void> {
+  const sql = getSql();
+  await sql`
+    UPDATE evidence_artifacts
+    SET carry_forward_status = ${status}
+    WHERE id = ${artifactId}::uuid
+  `;
+}
+
+/**
+ * Items still pending user review during a rollover cycle. UI uses this to
+ * drive the "review last year's work" panel on the assessment overview.
+ */
+export async function listCarryForwardPending(
+  assessmentId: string,
+): Promise<{
+  responses: ControlResponseRow[];
+  artifacts: EvidenceArtifactRow[];
+}> {
+  const sql = getSql();
+  const responses = (await sql`
+    SELECT id, assessment_id, control_id, status, narrative, officer_reviewed,
+           officer_reviewed_at, officer_reviewer_user_id, carry_forward_status,
+           updated_at
+    FROM control_responses
+    WHERE assessment_id = ${assessmentId}::uuid
+      AND carry_forward_status = 'pending_review'
+    ORDER BY control_id
+  `) as ControlResponseRow[];
+  const artifacts = (await sql`
+    SELECT id, assessment_id, control_id, filename, blob_url, mime_type,
+           size_bytes, captured_at, uploaded_by_user_id,
+           ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
+           ai_reviewed_at, ai_review_model,
+           prior_artifact_id, carry_forward_status
+    FROM evidence_artifacts
+    WHERE assessment_id = ${assessmentId}::uuid
+      AND carry_forward_status = 'pending_review'
+    ORDER BY control_id, captured_at DESC
+  `) as EvidenceArtifactRow[];
+  return { responses, artifacts };
 }
 
 export type ProgressBreakdown = {

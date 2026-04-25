@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { createAssessmentForOrg } from "@/lib/assessment";
+import {
+  createAssessmentForOrg,
+  createAssessmentWithCarryForward,
+} from "@/lib/assessment";
 import { initDb } from "@/lib/db";
 import {
   defaultCycleLabel,
@@ -26,18 +29,31 @@ export async function GET(req: Request) {
   const fy = fiscalYearOf();
   const orgs = await orgsNeedingRollover(fy);
 
-  const created: Array<{ organization_id: string; assessment_id: string }> = [];
+  const created: Array<{
+    organization_id: string;
+    assessment_id: string;
+    carried_from: string | null;
+  }> = [];
   for (const o of orgs) {
     try {
-      const assessment = await createAssessmentForOrg(
-        o.organization_id,
-        defaultCycleLabel(fy),
-        "cmmc_l1",
-        fy,
-      );
+      const assessment = o.prior_assessment_id
+        ? await createAssessmentWithCarryForward(
+            o.organization_id,
+            defaultCycleLabel(fy),
+            "cmmc_l1",
+            fy,
+            o.prior_assessment_id,
+          )
+        : await createAssessmentForOrg(
+            o.organization_id,
+            defaultCycleLabel(fy),
+            "cmmc_l1",
+            fy,
+          );
       created.push({
         organization_id: o.organization_id,
         assessment_id: assessment.id,
+        carried_from: o.prior_assessment_id,
       });
     } catch (err) {
       console.error(

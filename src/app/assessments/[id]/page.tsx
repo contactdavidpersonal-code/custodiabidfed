@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import {
   computeProgress,
   getAssessmentForUser,
+  listCarryForwardPending,
   listResponsesForAssessment,
   type ControlResponseRow,
   type OrganizationRow,
@@ -59,7 +60,10 @@ export default async function AssessmentOverviewPage(
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
 
-  const responses = await listResponsesForAssessment(id);
+  const [responses, carryForward] = await Promise.all([
+    listResponsesForAssessment(id),
+    listCarryForwardPending(id),
+  ]);
   const responseByControl = new Map(responses.map((r) => [r.control_id, r]));
   const progress = computeProgress(responses);
   const profileDone = isProfileComplete(ctx.organization);
@@ -94,6 +98,19 @@ export default async function AssessmentOverviewPage(
           <ProgressRing percent={progress.percentAnswered} />
         </div>
       </section>
+
+      {(carryForward.responses.length > 0 ||
+        carryForward.artifacts.length > 0) && (
+        <CarryForwardReviewBanner
+          assessmentId={ctx.assessment.id}
+          pendingResponseCount={carryForward.responses.length}
+          pendingArtifactCount={carryForward.artifacts.length}
+          firstControlId={
+            carryForward.responses[0]?.control_id ??
+            carryForward.artifacts[0]?.control_id
+          }
+        />
+      )}
 
       <NextStepBanner
         profileDone={profileDone}
@@ -198,6 +215,58 @@ export default async function AssessmentOverviewPage(
         </div>
       </section>
     </main>
+  );
+}
+
+function CarryForwardReviewBanner({
+  assessmentId,
+  pendingResponseCount,
+  pendingArtifactCount,
+  firstControlId,
+}: {
+  assessmentId: string;
+  pendingResponseCount: number;
+  pendingArtifactCount: number;
+  firstControlId: string | undefined;
+}) {
+  const total = pendingResponseCount + pendingArtifactCount;
+  return (
+    <div className="mb-6 rounded-2xl border border-sky-300 bg-sky-50 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-800">
+            Last year&apos;s answers imported
+          </div>
+          <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900">
+            {total} item{total === 1 ? "" : "s"} need a quick currency check.
+          </h2>
+          <p className="mt-1 text-sm text-sky-900">
+            {pendingResponseCount > 0 && (
+              <>
+                {pendingResponseCount} answer
+                {pendingResponseCount === 1 ? "" : "s"} carried over.{" "}
+              </>
+            )}
+            {pendingArtifactCount > 0 && (
+              <>
+                {pendingArtifactCount} evidence file
+                {pendingArtifactCount === 1 ? "" : "s"} need re-confirmation.
+              </>
+            )}{" "}
+            Walk each practice to confirm or replace — same as TurboTax
+            importing last year&apos;s return.
+          </p>
+        </div>
+        {firstControlId && (
+          <Link
+            href={`/assessments/${assessmentId}/controls/${firstControlId}`}
+            className="rounded-lg bg-sky-700 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-sky-600"
+          >
+            Start reviewing &rarr;
+          </Link>
+        )}
+      </div>
+    </div>
   );
 }
 

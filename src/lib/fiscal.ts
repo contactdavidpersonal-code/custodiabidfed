@@ -264,10 +264,23 @@ export async function markMilestonesReminded(ids: string[]): Promise<void> {
  */
 export async function orgsNeedingRollover(
   targetFiscalYear: number,
-): Promise<Array<{ organization_id: string; owner_user_id: string }>> {
+): Promise<
+  Array<{
+    organization_id: string;
+    owner_user_id: string;
+    prior_assessment_id: string | null;
+  }>
+> {
   const sql = getSql();
   return (await sql`
-    SELECT o.id AS organization_id, o.owner_user_id
+    SELECT o.id AS organization_id,
+           o.owner_user_id,
+           (
+             SELECT a.id FROM assessments a
+             WHERE a.organization_id = o.id
+             ORDER BY a.fiscal_year DESC, a.created_at DESC
+             LIMIT 1
+           ) AS prior_assessment_id
     FROM organizations o
     JOIN business_profile bp ON bp.organization_id = o.id
     WHERE o.scoped_systems IS NOT NULL
@@ -277,7 +290,11 @@ export async function orgsNeedingRollover(
         SELECT 1 FROM assessments a
         WHERE a.organization_id = o.id AND a.fiscal_year = ${targetFiscalYear}
       )
-  `) as Array<{ organization_id: string; owner_user_id: string }>;
+  `) as Array<{
+    organization_id: string;
+    owner_user_id: string;
+    prior_assessment_id: string | null;
+  }>;
 }
 
 

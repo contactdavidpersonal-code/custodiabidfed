@@ -86,6 +86,22 @@ export const milestoneKinds = [
 ] as const;
 export type MilestoneKind = (typeof milestoneKinds)[number];
 
+export const remediationStatuses = [
+  "open",
+  "in_progress",
+  "closed",
+  "abandoned",
+] as const;
+export type RemediationStatus = (typeof remediationStatuses)[number];
+
+export const carryForwardStatuses = [
+  "pending_review",
+  "kept",
+  "needs_replacement",
+  "removed",
+] as const;
+export type CarryForwardStatus = (typeof carryForwardStatuses)[number];
+
 function getDatabaseUrl() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
@@ -227,6 +243,30 @@ export async function initDb() {
     WHERE fiscal_year IS NULL
   `;
 
+  // CMMC L1 affirmation is binary — implements all 17 yes/no. The legacy
+  // sprs_score column was being set to 110 (an L2/DFARS-7012 NIST 800-171
+  // scoring artifact that does NOT apply to L1). We keep the column for
+  // forward-compat with L2 cycles but track the L1 outcome explicitly.
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS implements_all_17 BOOLEAN
+  `;
+  // Backfill: any prior attested L1 with sprs_score = 110 was a binary "yes."
+  await sql`
+    UPDATE assessments
+    SET implements_all_17 = TRUE
+    WHERE framework = 'cmmc_l1'
+      AND status = 'attested'
+      AND sprs_score = 110
+      AND implements_all_17 IS NULL
+  `;
+  // Carry-forward link from a new cycle to the prior cycle whose answers we
+  // imported. Lets the rollover review UI know what to surface.
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS carried_forward_from UUID REFERENCES assessments(id) ON DELETE SET NULL
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS control_responses (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -241,6 +281,16 @@ export async function initDb() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE (assessment_id, control_id)
     )
+  `;
+
+  // Carry-forward state for responses imported from the prior cycle. Default
+  // 'kept' means the response originated in this cycle and needs no review.
+  // Rollover sets new copies to 'pending_review' so the user is forced to
+  // re-confirm currency before signing.
+  await sql`
+    ALTER TABLE control_responses
+      ADD COLUMN IF NOT EXISTS carry_forward_status TEXT NOT NULL DEFAULT 'kept'
+        CHECK (carry_forward_status IN ('pending_review','kept','needs_replacement','removed'))
   `;
 
   await sql`
@@ -274,6 +324,46 @@ export async function initDb() {
   `;
   await sql`ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS ai_reviewed_at TIMESTAMPTZ`;
   await sql`ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS ai_review_model TEXT`;
+
+  // Carry-forward bookkeeping for artifacts imported from a prior cycle.
+  // prior_artifact_id points back to the source row; carry_forward_status
+  // begins as 'pending_review' and the user must explicitly keep/replace/remove
+  // before the artifact counts toward the new cycle's evidence gate.
+  await sql`
+    ALTER TABLE evidence_artifacts
+      ADD COLUMN IF NOT EXISTS prior_artifact_id UUID REFERENCES evidence_artifacts(id) ON DELETE SET NULL
+  `;
+  await sql`
+    ALTER TABLE evidence_artifacts
+      ADD COLUMN IF NOT EXISTS carry_forward_status TEXT NOT NULL DEFAULT 'kept'
+        CHECK (carry_forward_status IN ('pending_review','kept','needs_replacement','removed'))
+  `;
+
+  // CMMC L1 remediation plans (POA&M-style visibility, not a sign-bypass).
+  // L1 affirmation is binary — you can't legally sign while practices are
+  // Not met / Partial. Plans give the user a tracked roadmap to closure and
+  // give primes a clean answer when they ask "what's your gap-closure plan?"
+  // Signing remains gated on every practice being Met or N/A.
+  await sql`
+    CREATE TABLE IF NOT EXISTS remediation_plans (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+      control_id TEXT NOT NULL,
+      gap_summary TEXT NOT NULL,
+      planned_actions TEXT NOT NULL,
+      target_close_date DATE NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open'
+        CHECK (status IN ('open','in_progress','closed','abandoned')),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      closed_at TIMESTAMPTZ,
+      UNIQUE (assessment_id, control_id)
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_remediation_plans_assessment
+      ON remediation_plans (assessment_id, status)
+  `;
 
   await sql`
     CREATE TABLE IF NOT EXISTS ai_generations (

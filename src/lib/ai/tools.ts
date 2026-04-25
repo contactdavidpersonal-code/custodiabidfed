@@ -314,7 +314,7 @@ async function handleReadAssessmentState(
       fiscal_year: view.assessment.fiscal_year,
       status: view.assessment.status,
       affirmed_at: view.assessment.affirmed_at,
-      sprs_score: view.assessment.sprs_score,
+      implements_all_17: view.assessment.implements_all_17,
       progress,
       needs_attention: byStatus,
       total_evidence: evidence.length,

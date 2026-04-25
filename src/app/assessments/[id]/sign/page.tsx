@@ -3,7 +3,11 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
   computeProgress,
+  controlsMissingEvidence,
+  evidenceReviewBlockers,
   getAssessmentForUser,
+  listEvidenceForAssessment,
+  listRemediationPlansForAssessment,
   listResponsesForAssessment,
 } from "@/lib/assessment";
 import { submitAffirmationAction } from "../../actions";
@@ -22,18 +26,35 @@ export default async function SignPage(
     redirect(`/assessments/${id}`);
   }
 
-  const responses = await listResponsesForAssessment(id);
+  const [responses, evidence, remediationPlans] = await Promise.all([
+    listResponsesForAssessment(id),
+    listEvidenceForAssessment(id),
+    listRemediationPlansForAssessment(id),
+  ]);
   const progress = computeProgress(responses);
   const profileDone = Boolean(
     ctx.organization.name &&
       ctx.organization.name !== "My Organization" &&
       ctx.organization.scoped_systems,
   );
+  const evidenceBlockers = evidenceReviewBlockers(
+    evidence.filter((e) => e.carry_forward_status !== "removed"),
+  );
+  const missingEvidence = controlsMissingEvidence(responses, evidence);
+  const pendingCarryForward = responses.filter(
+    (r) => r.carry_forward_status === "pending_review",
+  );
+  const openRemediation = remediationPlans.filter(
+    (p) => p.status !== "closed" && p.status !== "abandoned",
+  );
   const ready =
     profileDone &&
     progress.unanswered === 0 &&
     progress.notMet === 0 &&
-    progress.partial === 0;
+    progress.partial === 0 &&
+    evidenceBlockers.length === 0 &&
+    missingEvidence.length === 0 &&
+    pendingCarryForward.length === 0;
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
@@ -88,6 +109,60 @@ export default async function SignPage(
                 Fully implement before signing.
               </li>
             )}
+            {pendingCarryForward.length > 0 && (
+              <li>
+                {pendingCarryForward.length} answer
+                {pendingCarryForward.length === 1 ? "" : "s"} carried over
+                from last cycle still need review:{" "}
+                <span className="font-mono text-xs">
+                  {pendingCarryForward
+                    .slice(0, 5)
+                    .map((r) => r.control_id)
+                    .join(", ")}
+                  {pendingCarryForward.length > 5
+                    ? ` +${pendingCarryForward.length - 5} more`
+                    : ""}
+                </span>
+              </li>
+            )}
+            {evidenceBlockers.length > 0 && (
+              <li>
+                {evidenceBlockers.length} evidence artifact
+                {evidenceBlockers.length === 1 ? "" : "s"} not passing AI
+                review:
+                <ul className="mt-1 list-disc pl-5 space-y-0.5">
+                  {evidenceBlockers.slice(0, 3).map((b) => (
+                    <li key={b.id} className="text-xs">
+                      <span className="font-mono">{b.filename}</span> —{" "}
+                      {b.reason}
+                    </li>
+                  ))}
+                  {evidenceBlockers.length > 3 && (
+                    <li className="text-xs italic">
+                      +{evidenceBlockers.length - 3} more
+                    </li>
+                  )}
+                </ul>
+              </li>
+            )}
+            {missingEvidence.length > 0 && (
+              <li>
+                {missingEvidence.length} practice
+                {missingEvidence.length === 1 ? "" : "s"} marked Met without
+                proof on file. Either upload an artifact or add a 200+
+                character narrative including the phrase &ldquo;no
+                artifact&rdquo;:{" "}
+                <span className="font-mono text-xs">
+                  {missingEvidence
+                    .slice(0, 5)
+                    .map((m) => m.control_id)
+                    .join(", ")}
+                  {missingEvidence.length > 5
+                    ? ` +${missingEvidence.length - 5} more`
+                    : ""}
+                </span>
+              </li>
+            )}
           </ul>
           <Link
             href={`/assessments/${id}`}
@@ -95,6 +170,35 @@ export default async function SignPage(
           >
             Back to overview
           </Link>
+        </div>
+      )}
+
+      {openRemediation.length > 0 && (
+        <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-amber-800">
+            Open remediation plans
+          </h2>
+          <p className="mt-1 text-sm text-amber-900">
+            CMMC L1 affirmation is binary — every practice must be Met or N/A.
+            These plans give you a tracked roadmap to closure but do not
+            unblock signing.
+          </p>
+          <ul className="mt-3 space-y-2 text-sm text-amber-900">
+            {openRemediation.map((p) => (
+              <li
+                key={p.id}
+                className="rounded-lg border border-amber-200 bg-white px-3 py-2"
+              >
+                <span className="font-mono text-xs font-bold">
+                  {p.control_id}
+                </span>{" "}
+                · target close{" "}
+                <span className="font-semibold">{p.target_close_date}</span> ·{" "}
+                <span className="capitalize">{p.status.replace("_", " ")}</span>
+                <div className="mt-1 text-xs text-amber-800">{p.gap_summary}</div>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

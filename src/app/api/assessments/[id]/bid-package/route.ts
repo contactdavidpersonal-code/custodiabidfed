@@ -4,11 +4,13 @@ import { NextResponse } from "next/server";
 import {
   getAssessmentForUser,
   listEvidenceForAssessment,
+  listRemediationPlansForAssessment,
   listResponsesForAssessment,
   type AssessmentRow,
   type ControlResponseRow,
   type EvidenceArtifactRow,
   type OrganizationRow,
+  type RemediationPlanRow,
 } from "@/lib/assessment";
 import { controlDomains, playbook } from "@/lib/playbook";
 
@@ -46,9 +48,10 @@ export async function GET(
     );
   }
 
-  const [responses, evidence] = await Promise.all([
+  const [responses, evidence, remediationPlans] = await Promise.all([
     listResponsesForAssessment(id),
     listEvidenceForAssessment(id),
+    listRemediationPlansForAssessment(id),
   ]);
 
   const zip = new JSZip();
@@ -70,6 +73,7 @@ export async function GET(
   );
   zip.file("03-controls.csv", buildControlsCsv(responses, evidence));
   zip.file("04-evidence-inventory.csv", buildEvidenceCsv(evidence));
+  zip.file("05-remediation-plans.csv", buildRemediationCsv(remediationPlans));
 
   for (const artifact of evidence) {
     try {
@@ -117,12 +121,22 @@ function buildReadme(input: {
   const signedLine = assessment.affirmed_at
     ? `Affirmed ${new Date(assessment.affirmed_at).toISOString().slice(0, 10)} by ${assessment.affirmed_by_name} (${assessment.affirmed_by_title}).`
     : "NOT YET SIGNED — this is a draft preview. Do not submit.";
+  const implementsAll = assessment.implements_all_17 === true;
+  const outcomeLine = assessment.affirmed_at
+    ? implementsAll
+      ? "**Affirmation outcome:** Implements all 17 CMMC Level 1 security requirements (FAR 52.204-21(b)(1)). Eligible to file a positive affirmation in SPRS."
+      : "**Affirmation outcome:** Does NOT implement all 17 CMMC Level 1 security requirements. Do not file a positive affirmation until remediation closes the gap."
+    : "**Affirmation outcome:** Pending — not yet signed.";
+
   return `# ${org.name} — CMMC Level 1 Bid-Ready Package
 
 **Cycle:** ${assessment.cycle_label}
 **Fiscal year:** FY${assessment.fiscal_year}
 **Generated:** ${generatedAt}
 ${draft ? "**⚠  DRAFT — not signed. Do not submit to SPRS.**\n" : ""}${signedLine}
+${outcomeLine}
+
+> CMMC Level 1 affirmation is **binary**: you either implement all 17 practices in FAR 52.204-21(b)(1) or you don't. There is no partial-credit score for L1. The 110-point NIST SP 800-171 scoring methodology applies to **CMMC Level 2 / DFARS 252.204-7012**, not L1.
 
 ---
 
@@ -134,6 +148,7 @@ ${draft ? "**⚠  DRAFT — not signed. Do not submit to SPRS.**\n" : ""}${signe
 | 02-Affirmation.html | Senior Official Annual Affirmation memo (per 32 CFR § 170.22). Print + sign + file. |
 | 03-controls.csv | Per-practice status + narrative (17 rows). Handy for a prime's compliance questionnaire. |
 | 04-evidence-inventory.csv | Every artifact on file with its AI vision-review verdict + summary. |
+| 05-remediation-plans.csv | Open and closed remediation plans (POA&M-style record for prime questionnaires). |
 | evidence/ | All the uploaded evidence files, organized by control ID. |
 
 ## How to submit your annual affirmation in SPRS
@@ -141,14 +156,14 @@ ${draft ? "**⚠  DRAFT — not signed. Do not submit to SPRS.**\n" : ""}${signe
 CMMC Level 1 affirmations are filed in the **Supplier Performance Risk System (SPRS)** at https://www.sprs.csd.disa.mil.
 
 1. Log in to SPRS with your PIEE account. Your CAGE code on file: **${org.cage_code ?? "[not yet issued — complete SAM.gov registration first]"}**.
-2. Navigate to the "NIST SP 800-171 Assessments" module.
-3. Start a new **Basic Self-Assessment** entry.
-4. Enter the assessment date from this package: ${assessment.affirmed_at ? new Date(assessment.affirmed_at).toISOString().slice(0, 10) : "[pending affirmation]"}.
+2. Navigate to the **CMMC Assessments** module (NOT the "NIST SP 800-171 Assessments" module — that one is for L2/DFARS-7012).
+3. Start a new **CMMC Level 1 (Self) Affirmation** entry.
+4. Enter the affirmation date from this package: ${assessment.affirmed_at ? new Date(assessment.affirmed_at).toISOString().slice(0, 10) : "[pending affirmation]"}.
 5. Enter the affirming official's name and title: ${assessment.affirmed_by_name ?? "[pending]"} / ${assessment.affirmed_by_title ?? "[pending]"}.
-6. Attest that you meet all 15 basic safeguarding requirements at FAR 52.204-21(b)(1).
+6. Affirm: ${implementsAll ? "**YES** — implements all 17 CMMC Level 1 security requirements at FAR 52.204-21(b)(1)" : "[Do NOT affirm yes until all 17 practices are implemented]"}.
 7. Submit. SPRS will generate a posting date that primes can look up.
 
-Your affirmation is valid for **one year** from the posting date. Custodia will remind you when FY${assessment.fiscal_year + 1} re-affirmation is due.
+Your affirmation is valid for **one year** from the posting date (32 CFR § 170.15(c)(2)). Custodia will remind you when FY${assessment.fiscal_year + 1} re-affirmation is due.
 
 ## What a prime will typically ask for
 
@@ -156,6 +171,7 @@ Your affirmation is valid for **one year** from the posting date. Custodia will 
 - A copy of **02-Affirmation.html** (printed, signed, scanned).
 - Occasional follow-up on specific evidence — everything is in evidence/ keyed by practice ID (e.g. evidence/AC.L1-3.1.1/).
 - Your SAM UEI (**${org.sam_uei ?? "[not provided]"}**) and CAGE (**${org.cage_code ?? "[not provided]"}**).
+- A POA&M / remediation roadmap if any practices were ever marked Partial or Not met. See 05-remediation-plans.csv.
 
 ## Legal notice
 
@@ -416,6 +432,34 @@ function buildEvidenceCsv(evidence: EvidenceArtifactRow[]): string {
       e.ai_review_verdict ?? "",
       e.ai_review_summary ?? "",
       e.ai_reviewed_at ?? "",
+    ]);
+  }
+  return rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
+}
+
+function buildRemediationCsv(plans: RemediationPlanRow[]): string {
+  const rows = [
+    [
+      "control_id",
+      "status",
+      "target_close_date",
+      "gap_summary",
+      "planned_actions",
+      "created_at",
+      "updated_at",
+      "closed_at",
+    ],
+  ];
+  for (const p of plans) {
+    rows.push([
+      p.control_id,
+      p.status,
+      p.target_close_date,
+      p.gap_summary,
+      p.planned_actions,
+      p.created_at,
+      p.updated_at,
+      p.closed_at ?? "",
     ]);
   }
   return rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
