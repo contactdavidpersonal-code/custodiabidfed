@@ -8,6 +8,7 @@ import {
   listAssessmentsWithProgress,
   type AssessmentWithProgress,
 } from "@/lib/assessment";
+import { ensureWelcomeEmailSent } from "@/lib/email/welcome";
 import { defaultCycleLabel, fiscalYearOf, listMilestonesForOrg } from "@/lib/fiscal";
 import { listActiveEscalationsForOrg } from "@/lib/escalations";
 import { practiceCount } from "@/lib/playbook";
@@ -38,6 +39,7 @@ export default async function AssessmentsIndexPage() {
   if (!userId) redirect("/sign-in");
 
   const org = await ensureOrgForUser(userId);
+  await ensureWelcomeEmailSent(org.id, userId);
   const profile = await getBusinessProfile(org.id);
   if (!isOnboardingComplete(org, profile)) {
     redirect("/onboard");

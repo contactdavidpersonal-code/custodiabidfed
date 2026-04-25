@@ -7,6 +7,7 @@ import {
   getBusinessProfile,
   isOnboardingComplete,
 } from "@/lib/assessment";
+import { ensureWelcomeEmailSent } from "@/lib/email/welcome";
 import { OnboardingChat } from "./OnboardingChat";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ export default async function OnboardPage() {
   if (!userId) redirect("/sign-in");
 
   const org = await ensureOrgForUser(userId);
+  await ensureWelcomeEmailSent(org.id, userId);
   const profile = await getBusinessProfile(org.id);
   if (isOnboardingComplete(org, profile)) {
     redirect("/assessments");

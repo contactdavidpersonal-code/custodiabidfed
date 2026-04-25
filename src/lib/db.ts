@@ -195,6 +195,13 @@ export async function initDb() {
   await sql`ALTER TABLE organizations ALTER COLUMN owner_user_id SET NOT NULL`;
   await sql`DROP TABLE IF EXISTS memberships`;
 
+  // One-shot welcome email dedupe. Set when sendWelcomeEmail succeeds; left
+  // NULL on failure so the next sign-in retries.
+  await sql`
+    ALTER TABLE organizations
+      ADD COLUMN IF NOT EXISTS welcome_email_sent_at TIMESTAMPTZ
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS officer_assignments (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
