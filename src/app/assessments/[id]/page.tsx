@@ -213,22 +213,30 @@ function CelebrationBanner({ assessmentId }: { assessmentId: string }) {
             Congratulations — your affirmation is locked.
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-700">
-            Download your SSP and affirmation memo below, then file them in
-            SPRS. You&apos;re officially CMMC Level 1 compliant for this cycle.
+            Download your bid-ready package below — it bundles your SSP,
+            signed affirmation memo, control inventory, and every evidence
+            artifact in one zip. File it in SPRS and you&apos;re CMMC Level 1
+            compliant for this cycle.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <a
+            href={`/api/assessments/${assessmentId}/bid-package`}
+            className="rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300"
+          >
+            Download bid-ready package (.zip)
+          </a>
           <Link
             href={`/assessments/${assessmentId}/ssp`}
-            className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-slate-800"
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
           >
-            Download SSP
+            SSP only
           </Link>
           <Link
             href={`/assessments/${assessmentId}/affirmation`}
             className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
           >
-            Download affirmation
+            Affirmation only
           </Link>
         </div>
       </div>
@@ -306,21 +314,29 @@ function NextStepBanner({
             This assessment is signed and ready to file.
           </h2>
           <p className="mt-1 text-sm text-slate-700">
-            Download your SSP and SPRS affirmation memo below.
+            The bid-ready package bundles your SSP, signed affirmation, and
+            every evidence artifact — everything a prime or SPRS filing might
+            ask for.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <a
+            href={`/api/assessments/${assessmentId}/bid-package`}
+            className="rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300"
+          >
+            Download bid-ready package (.zip)
+          </a>
           <Link
             href={`/assessments/${assessmentId}/ssp`}
-            className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-800"
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
           >
-            Download SSP
+            SSP only
           </Link>
           <Link
             href={`/assessments/${assessmentId}/affirmation`}
             className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
           >
-            Download affirmation
+            Affirmation only
           </Link>
         </div>
       </div>

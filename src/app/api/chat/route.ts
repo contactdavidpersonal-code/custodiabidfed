@@ -92,7 +92,7 @@ function buildWorkspaceContextBlock(input: {
     parts.push(`- Active assessment: ${input.pageContext.assessmentId}`);
   }
   parts.push(
-    `\n## Tools\nYou have read-mostly tools to inspect the user's actual state (read_assessment_state, describe_evidence, check_readiness), a draft-generator (suggest_narrative), and mutators (propose_milestone, update_organization_fields, update_business_profile, escalate_to_officer). PREFER calling a tool over guessing — if the user asks "where am I", "what's left", or references specific evidence, call the relevant tool before answering.`,
+    `\n## Tools\nYou have read-mostly tools to inspect the user's actual state (read_assessment_state, describe_evidence, check_readiness), a draft-generator (suggest_narrative), a regulatory-citation lookup (cite_regulation), and mutators (propose_milestone, update_organization_fields, update_business_profile, escalate_to_officer). PREFER calling a tool over guessing — if the user asks "where am I", "what's left", or references specific evidence, call the relevant tool before answering. ALWAYS call cite_regulation before quoting FAR / NIST / 32 CFR text.`,
   );
   return parts.join("\n");
 }

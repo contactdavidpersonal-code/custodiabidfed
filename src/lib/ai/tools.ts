@@ -17,6 +17,11 @@ import {
 } from "@/lib/assessment";
 import { playbookById } from "@/lib/playbook";
 import { fiscalYearOf } from "@/lib/fiscal";
+import {
+  controlCitations,
+  frameworkCitations,
+  lookupCitation,
+} from "@/lib/regulations";
 
 /**
  * Tools the left-rail compliance officer can call. Kept deliberately small
@@ -166,6 +171,22 @@ export const officerTools = [
     },
   },
   {
+    name: "cite_regulation",
+    description:
+      "Look up the authoritative regulatory text for a CMMC L1 practice (by practice id like 'AC.L1-3.1.1') OR a program-level topic (slug like 'fci-definition', 'affirmation-liability', 'sprs-submission', 'sam-registration', 'cmmc-l1-scope', 'annual-cadence'). ALWAYS call this before quoting FAR / NIST / 32 CFR text — never paraphrase the regs from memory. Include the returned 'source' field verbatim when you quote in your answer so the user sees the citation.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        key: {
+          type: "string",
+          description:
+            "A control id (e.g. 'AC.L1-3.1.1', 'SI.L1-3.14.5') OR a framework slug ('cmmc-l1-scope', 'fci-definition', 'affirmation-liability', 'sprs-submission', 'sam-registration', 'annual-cadence').",
+        },
+      },
+      required: ["key"],
+    },
+  },
+  {
     name: "escalate_to_officer",
     description:
       "Flag a request for a human Custodia officer (Bootcamp / Command tier). Use when the user's situation needs judgment beyond L1 self-serve — e.g. a prime is demanding an SSP rewrite, a guarantee claim dispute, CUI handling outside L1 scope, or they explicitly ask for human help.",
@@ -231,6 +252,8 @@ export async function executeOfficerTool(
         return await handleUpdateOrganizationFields(input, ctx);
       case "update_business_profile":
         return await handleUpdateBusinessProfile(input, ctx);
+      case "cite_regulation":
+        return await handleCiteRegulation(input);
       case "escalate_to_officer":
         return await handleEscalateToOfficer(input, ctx);
       default:
@@ -593,4 +616,20 @@ async function handleEscalateToOfficer(
         "A Custodia officer has been notified. Typical response: 1 business day for routine, 4h for priority, 1h for urgent.",
     },
   };
+}
+
+async function handleCiteRegulation(
+  input: Record<string, unknown>,
+): Promise<ToolResult> {
+  const key = typeof input.key === "string" ? input.key.trim() : "";
+  if (!key) return { ok: false, error: "key is required." };
+
+  const citation = lookupCitation(key);
+  if (!citation) {
+    return {
+      ok: false,
+      error: `Unknown citation key '${key}'. Valid control ids: ${Object.keys(controlCitations).join(", ")}. Valid framework slugs: ${Object.keys(frameworkCitations).join(", ")}.`,
+    };
+  }
+  return { ok: true, data: citation };
 }

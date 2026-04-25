@@ -30,6 +30,9 @@ const TOOL_LABELS: Record<string, string> = {
   suggest_narrative: "Drafting a narrative",
   check_readiness: "Auditing readiness to sign",
   propose_milestone: "Adding a milestone",
+  update_organization_fields: "Updating your business profile",
+  update_business_profile: "Updating your business profile",
+  cite_regulation: "Looking up the regulation text",
   escalate_to_officer: "Flagging for a human officer",
 };
 

@@ -32,6 +32,7 @@ const TOOL_LABELS: Record<string, string> = {
   describe_evidence: "Reviewing an artifact",
   suggest_narrative: "Drafting a narrative",
   check_readiness: "Auditing readiness",
+  cite_regulation: "Looking up the regulation text",
 };
 
 /**
