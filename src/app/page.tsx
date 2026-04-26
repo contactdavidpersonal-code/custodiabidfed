@@ -2,6 +2,7 @@
 
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { useState } from "react";
 
 const PRACTICES = [
   { id: "AC.L1-3.1.1", domain: "AC", short: "Authorized Access Control" },
@@ -23,90 +24,81 @@ const PRACTICES = [
   { id: "SI.L1-3.14.5", domain: "SI", short: "Periodic & Real-Time Scans" },
 ];
 
-const AVERAGE_FCI_AWARD = "$150K+";
-
-const SELF_SERVE_INCLUDES: { label: string }[] = [
-  { label: "The Platform onboards your business in 5 minutes with a Custodia officer in the loop — no forms, no templates to fill in" },
-  { label: "Plain-English walkthrough of all 17 FAR 52.204-21 practices, tailored to your exact tech stack" },
-  { label: "Auto-drafted SSP narratives for every control — edit or accept in one click" },
-  { label: "Per-control evidence upload with Platform review — catches gaps before a prime or auditor would" },
-  { label: "SPRS self-attestation entry + step-by-step submission instructions" },
-  { label: "Bid-ready attestation package: SSP, signed affirmation memo, full evidence inventory" },
-  { label: "Monthly Platform compliance monitoring — flags changed controls and expiring evidence automatically" },
-  { label: "1:1 Custodia Ticket Support — compliance officer answers any question, year-round" },
-  { label: "Annual re-affirmation included — your next cycle is ready every Oct 1, no extra charge" },
-  { label: "Prime questionnaire support — submit a ticket when a prime sends security questions and we help you answer" },
-  { label: "Custodia Guarantee — if any prime or contracting officer pushes back on your package, we assign a compliance officer to resolve it, including working with the prime directly" },
+const SELF_SERVE_INCLUDES = [
+  "AI-guided onboarding in 5 minutes &mdash; no forms, no templates",
+  "Plain-English walkthrough of all 17 FAR 52.204-21 practices",
+  "Auto-drafted SSP narratives for every control &mdash; edit or accept in one click",
+  "Per-control evidence upload with Platform review",
+  "SPRS self-attestation entry + step-by-step submission instructions",
+  "Bid-ready package: SSP, signed affirmation memo, full evidence inventory",
+  "Monthly compliance monitoring &mdash; flags changed controls automatically",
+  "1:1 Custodia Ticket Support &mdash; officer answers any question, year-round",
+  "Annual re-affirmation included &mdash; ready every Oct 1, no extra charge",
+  "Prime questionnaire support via ticket",
+  "Custodia Guarantee &mdash; officer-backed challenge resolution with primes",
 ];
 
 const BOOTCAMP_INCLUDES = [
-  "Everything in self-serve, plus:",
+  "Everything in Membership, plus:",
   "1-week intensive with a Custodia compliance officer",
-  "We do the SAM.gov registration and CAGE/UEI work for you",
+  "SAM.gov registration and CAGE/UEI work done for you",
   "Live policy + SSP review with your senior signer on the call",
   "Direct help with your first bid response",
   "30 days of post-bootcamp officer access",
 ];
 
-const HOW_IT_WORKS = [
+const FAQ_ITEMS = [
   {
-    n: "01",
-    title: "Tell us about your business",
-    desc: "5-minute conversation. The Platform captures legal identity, scope, and tech stack — no forms.",
+    q: "How do you keep my data secure?",
+    a: "Your data is stored in dedicated, isolated environments within Custodia&apos;s secure cloud infrastructure, completely separated from other client data. We build on complete data isolation, client-controlled data policies, and secure lifecycle management from ingestion to deletion. We never use your private data to train AI models without explicit consent.",
   },
   {
-    n: "02",
-    title: "Walk the 17 practices",
-    desc: "Each practice is explained in plain English with capture steps tailored to your stack (M365, Google Workspace, Okta, AWS, on-prem, or none of the above).",
+    q: "Is CMMC Level 1 mandatory for all federal contractors?",
+    a: "CMMC Level 1 is required for any contractor that handles Federal Contract Information (FCI). If you work on DoD contracts that involve FCI, you must self-attest annual compliance in SPRS and meet all 17 FAR 52.204-21 practices. L1 affirmation is binary &mdash; you either implement all 17 practices or you do not.",
   },
   {
-    n: "03",
-    title: "Upload evidence",
-    desc: "Screenshots, exports, signed rosters. Platform review catches insufficient evidence before a prime would.",
+    q: "How long does the process take?",
+    a: "Most clients complete their initial compliance package in 3&ndash;5 business days with the Platform. The Bootcamp compresses this to a single week with officer-led support for teams that need to move fast.",
   },
   {
-    n: "04",
-    title: "Sign and download",
-    desc: "Senior official signs the binary L1 affirmation. Download a single ZIP with your SSP, signed memo, and every artifact — file in SPRS and start bidding.",
-  },
-];
-
-const READINESS_STEPS = [
-  {
-    title: "Current state",
-    status: "You are here",
-    detail: "No package yet, or package is fragmented across docs and screenshots.",
+    q: "What if a prime pushes back on my package?",
+    a: "The Custodia Guarantee covers every active membership. We assign a dedicated compliance officer to resolve any prime or contracting officer challenge &mdash; including working with the prime directly if needed &mdash; until your package is accepted.",
   },
   {
-    title: "Guided build",
-    status: "In platform",
-    detail: "The Platform walks all 17 controls, evidence, and narratives step-by-step.",
+    q: "Do I need a cybersecurity background to use the Platform?",
+    a: "No. The Platform is designed for non-technical operators. Every practice is explained in plain English with specific steps tailored to your tech stack. A Custodia officer is available for any question, year-round.",
   },
   {
-    title: "Bid-ready",
-    status: "Compliant",
-    detail: "Signed affirmation, SSP, and evidence inventory ready for primes and contracting officers.",
+    q: "What is included in the annual re-affirmation?",
+    a: "Annual re-affirmation is included with every active membership. We flag changed controls, update your SSP, and prepare your SPRS re-submission every October at no additional charge. Your next cycle is ready before your fiscal year deadline.",
+  },
+  {
+    q: "Is there a plan without officer oversight?",
+    a: "No. Every Custodia plan includes human officer oversight because SPRS affirmations carry legal weight under 18 USC 1001 and the False Claims Act. We don&apos;t offer a software-only tier &mdash; the officer is the guarantee.",
+  },
+  {
+    q: "What is the EMEC Protocol?",
+    a: "EMEC stands for Engage, Map, Execute, Confirm &mdash; the four phases of the Custodia compliance workflow. Engage captures your business scope and tech stack. Map walks the 17 practices with evidence guidance. Execute produces your signed SSP and SPRS submission. Confirm maintains and re-affirms your package each year.",
   },
 ];
 
 export default function Home() {
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
   return (
-    <div className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
-      <nav className="fixed inset-x-0 top-0 z-50 border-b border-[#d5e5dd] bg-[#f7f7f3]/90 backdrop-blur">
+    <div className="min-h-screen bg-white text-[#10231d]">
+
+      {/* 1 — Nav */}
+      <nav className="fixed inset-x-0 top-0 z-50 border-b border-[#e0ebe5] bg-[#f7f7f3]/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <span className="text-xl font-black tracking-tight text-[#0f2f26]">
             Custodia<span className="text-[#2f8f6d]">.</span>
           </span>
-          <div className="hidden items-center gap-6 text-sm font-semibold text-[#3b5f53] md:flex">
-            <a href="#how" className="transition-colors hover:text-[#10231d]">
-              How it works
-            </a>
-            <a href="#paths" className="transition-colors hover:text-[#10231d]">
-              Membership
-            </a>
-            <a href="#about" className="transition-colors hover:text-[#10231d]">
-              About
-            </a>
+          <div className="hidden items-center gap-8 text-sm font-semibold text-[#3b5f53] md:flex">
+            <a href="#product" className="transition-colors hover:text-[#10231d]">Product</a>
+            <a href="#pricing" className="transition-colors hover:text-[#10231d]">Pricing</a>
+            <a href="#faq" className="transition-colors hover:text-[#10231d]">FAQ</a>
+            <a href="#bootcamp" className="transition-colors hover:text-[#10231d]">Book a call</a>
           </div>
           <div className="flex items-center gap-3">
             <Show when="signed-out">
@@ -122,11 +114,7 @@ export default function Home() {
               </SignUpButton>
             </Show>
             <Show when="signed-in">
-              <Link
-                href="/assessments"
-                prefetch={false}
-                className="rounded-xl bg-[#104d3a] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0d3e2f]"
-              >
+              <Link href="/assessments" prefetch={false} className="rounded-xl bg-[#104d3a] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0d3e2f]">
                 Open workspace
               </Link>
               <UserButton />
@@ -135,187 +123,489 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-[#d5e5dd] bg-[radial-gradient(circle_at_18%_12%,#d6f4df,transparent_48%),radial-gradient(circle_at_86%_14%,#e5f2eb,transparent_44%),#f7f7f3] px-6 pb-20 pt-28 md:pt-32">
-        <div className="mx-auto grid max-w-6xl gap-10 md:grid-cols-[1.35fr_1fr] md:items-center">
-          <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#b8d8cb] bg-[#e8f7ef] px-4 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-[#1f5c47]">
-              CMMC Level 1 only · FAR 52.204-21
-            </div>
-            <h1 className="font-serif text-4xl font-bold leading-tight tracking-tight text-[#10231d] md:text-6xl">
-              Clear guidance for non-technical teams to become CMMC 1 compliant and bid with confidence.
-            </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[#355d50] md:text-xl">
-              To work with the U.S. government, you must protect FCI from cyber threats targeting American programs and supply chains. Custodia gives you a cybersecurity firm behind The Platform, so you can secure your business and pursue contracts worth <strong className="text-[#0f2f26]">{AVERAGE_FCI_AWARD}</strong> or more with confidence.
-            </p>
-            <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-              <Show when="signed-in">
-                <Link
-                  href="/assessments"
-                  prefetch={false}
-                  className="rounded-xl bg-[#104d3a] px-8 py-4 text-base font-bold text-white transition-colors hover:bg-[#0d3e2f]"
-                >
-                  Continue in workspace
-                </Link>
-                <a
-                  href="#how"
-                  className="rounded-xl border border-[#b8d8cb] bg-white px-8 py-4 text-base font-semibold text-[#1f5c47] transition-colors hover:border-[#86bca7] hover:text-[#0f2f26]"
-                >
-                  See your path to compliance
-                </a>
-              </Show>
-              <Show when="signed-out">
-                <SignUpButton mode="modal">
-                  <button className="rounded-xl bg-[#104d3a] px-8 py-4 text-base font-bold text-white transition-colors hover:bg-[#0d3e2f]">
-                    Create free account
-                  </button>
-                </SignUpButton>
-                <SignUpButton mode="modal">
-                  <button className="rounded-xl border border-[#b8d8cb] bg-white px-8 py-4 text-base font-semibold text-[#1f5c47] transition-colors hover:border-[#86bca7] hover:text-[#0f2f26]">
-                    Start your secure compliance journey
-                  </button>
-                </SignUpButton>
-              </Show>
-            </div>
-            <p className="mt-8 text-sm text-[#4f7668]">
-              Pittsburgh, PA · Veteran-owned cybersecurity firm · Built for SMB government contractors
-            </p>
+      {/* 2 — Hero */}
+      <section className="relative overflow-hidden bg-[#0e2a23] px-6 pb-24 pt-32 text-white">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(47,143,109,0.3),transparent)]" />
+        <div className="relative mx-auto max-w-4xl text-center">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#2f8f6d]/40 bg-[#1a4035]/70 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-[#8dd2b1]">
+            CMMC Level 1 &middot; FAR 52.204-21 &middot; Veteran-owned
           </div>
+          <h1 className="font-serif text-5xl font-bold leading-tight tracking-tight md:text-7xl">
+            Win federal contracts like you&apos;re worth it
+          </h1>
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-[#a8cfc0] md:text-xl">
+            A human&nbsp;+&nbsp;AI compliance platform helping defense-tech contractors become CMMC Level 1 compliant and bid with confidence &mdash; in days, not months.
+          </p>
+          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Show when="signed-out">
+              <SignUpButton mode="modal">
+                <button className="rounded-xl bg-[#8dd2b1] px-8 py-4 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#78c5a0]">
+                  Create free account
+                </button>
+              </SignUpButton>
+              <a href="#pricing" className="rounded-xl border border-[#2f8f6d]/60 px-8 py-4 text-base font-semibold text-[#8dd2b1] transition-colors hover:bg-[#1a4035]">
+                See our pricing
+              </a>
+            </Show>
+            <Show when="signed-in">
+              <Link href="/assessments" prefetch={false} className="rounded-xl bg-[#8dd2b1] px-8 py-4 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#78c5a0]">
+                Continue in workspace
+              </Link>
+              <a href="#product" className="rounded-xl border border-[#2f8f6d]/60 px-8 py-4 text-base font-semibold text-[#8dd2b1] transition-colors hover:bg-[#1a4035]">
+                See how it works
+              </a>
+            </Show>
+          </div>
+          <div className="mt-14 flex flex-wrap items-start justify-center gap-4">
+            {[
+              { label: "Compliance", value: "Achieved", sub: "All 17 practices" },
+              { label: "SPRS Score", value: "Filed", sub: "Binary affirmation" },
+              { label: "Bid-ready", value: "100%", sub: "Of active clients" },
+            ].map((m) => (
+              <div key={m.label} className="rounded-2xl border border-[#2f8f6d]/40 bg-[#193d31] px-6 py-4 text-left">
+                <div className="text-xs font-bold uppercase tracking-widest text-[#6bbf9a]">{m.label}</div>
+                <div className="mt-1 text-3xl font-black text-white">{m.value}</div>
+                <div className="text-xs text-[#7aab98]">{m.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-          <div className="rounded-3xl border border-[#badacc] bg-white p-6 shadow-[0_15px_45px_rgba(14,48,37,0.08)] md:p-7">
-            <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-              Readiness snapshot
+      {/* 3 — Trust bar */}
+      <section className="border-b border-[#e0ebe5] bg-[#f7f7f3] px-6 py-10">
+        <div className="mx-auto max-w-5xl text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#6b9484]">
+            Trusted by defense-tech startups, SBIR awardees, and DoD subcontractors across the U.S.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-6 text-sm font-semibold text-[#9ab5ac]">
+            <span>Pittsburgh, PA</span>
+            <span>&middot;</span>
+            <span>Veteran-owned</span>
+            <span>&middot;</span>
+            <span>Cybersecurity firm</span>
+            <span>&middot;</span>
+            <span>Government contractors</span>
+            <span>&middot;</span>
+            <span>DoD subcontractors</span>
+          </div>
+        </div>
+      </section>
+
+      {/* 4 — Value proposition */}
+      <section id="product" className="scroll-mt-16 bg-[#f7f7f3] px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
+            value proposition
+          </div>
+          <div className="grid gap-16 md:grid-cols-2 md:items-center">
+            <div>
+              <h2 className="font-serif text-4xl font-bold leading-tight text-[#10231d] md:text-5xl">
+                Achieve compliance with clarity, confidence, and control
+              </h2>
+              <p className="mt-5 text-lg leading-relaxed text-[#44695c]">
+                In a market driven by trust, your compliance posture defines how primes, contracting officers, and agencies view your business.
+              </p>
+              <div className="mt-8 rounded-2xl border border-[#cde5d8] bg-white p-6 shadow-sm">
+                <div className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+                  CMMC Level 1 &mdash; Live progress
+                </div>
+                <div className="space-y-3">
+                  {[
+                    { domain: "Access Control (AC)", pct: 100 },
+                    { domain: "Identification & Auth (IA)", pct: 100 },
+                    { domain: "Media Protection (MP)", pct: 85 },
+                    { domain: "Physical Protection (PE)", pct: 72 },
+                  ].map((d) => (
+                    <div key={d.domain}>
+                      <div className="flex justify-between text-xs font-semibold text-[#355d50]">
+                        <span>{d.domain}</span>
+                        <span>{d.pct}%</span>
+                      </div>
+                      <div className="mt-1 h-1.5 rounded-full bg-[#e1efe8]">
+                        <div
+                          className="h-full rounded-full bg-[#2f8f6d] transition-all"
+                          style={{ width: `${d.pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-xs text-[#608679]">
+                  Platform review catches gaps before a prime or auditor would.
+                </p>
+              </div>
             </div>
-            <h2 className="font-serif text-3xl font-bold text-[#10231d]">Where you are now</h2>
-            <p className="mt-2 text-sm leading-relaxed text-[#44695c]">
-              Most SMB teams start with scattered policies and no evidence trail. The Platform turns that into one clean, bid-ready package.
-            </p>
-            <div className="mt-5 space-y-3">
-              {READINESS_STEPS.map((step, idx) => (
-                <div key={step.title} className="rounded-2xl border border-[#d7e9e0] bg-[#f7fcf9] p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm font-bold text-[#15392e]">{step.title}</div>
-                    <div className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#2f8f6d]">
-                      {step.status}
-                    </div>
-                  </div>
-                  <p className="mt-1 text-sm text-[#4d7366]">{step.detail}</p>
-                  {idx < READINESS_STEPS.length - 1 && (
-                    <div className="mt-3 h-1.5 rounded-full bg-[#e1efe8]">
-                      <div
-                        className="h-full rounded-full bg-[#2f8f6d]"
-                        style={{ width: idx === 0 ? "34%" : "68%" }}
-                      />
-                    </div>
-                  )}
+            <div className="space-y-8">
+              {[
+                {
+                  title: "Master the 17 CMMC practices",
+                  body: "The Platform walks every FAR 52.204-21 requirement in plain English, with evidence capture steps tailored to your exact tech stack &mdash; M365, Google Workspace, AWS, or on-prem.",
+                },
+                {
+                  title: "Elevate your evidence posture",
+                  body: "Get officer feedback on every artifact you upload. Screenshots, exports, signed rosters &mdash; gaps are caught before a prime or contracting officer finds them.",
+                },
+                {
+                  title: "Build, measure, and maintain",
+                  body: "Develop a defensible compliance program through Platform-guided analysis, a signed attestation package, and year-round monitoring that keeps you bid-ready.",
+                },
+              ].map((f) => (
+                <div key={f.title} className="border-l-4 border-[#2f8f6d] pl-5">
+                  <h3 className="font-serif text-xl font-bold text-[#10231d]">{f.title}</h3>
+                  <p
+                    className="mt-2 text-base leading-relaxed text-[#4a6f62]"
+                    dangerouslySetInnerHTML={{ __html: f.body }}
+                  />
                 </div>
               ))}
             </div>
-            <div className="mt-5 rounded-xl border border-[#ffcf8a] bg-[#fff4de] px-4 py-3 text-sm text-[#83570d]">
-              Outcome: secure handling of FCI, a defensible CMMC 1 package, and higher-confidence bidding.
-            </div>
           </div>
         </div>
       </section>
 
-      {/* Who this is for */}
-      <section className="bg-[#f7f7f3] px-6 py-20">
+      {/* 5 — Three features */}
+      <section className="bg-white px-6 py-24">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-12 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-              Built for real SMB operators
-            </div>
-            <h2 className="font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-5xl">
-              You do not need to become a cybersecurity expert.
+          <div className="mb-14 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">Guided workflow</div>
+            <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-5xl">
+              Close the gap, every time
             </h2>
-            <p className="mx-auto mt-4 max-w-3xl text-lg text-[#44695c]">
-              You need a practical path, simple language, and clear proof that your contract information is protected.
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-[#44695c]">
+              Sharpen the compliance habits that make your contract packages precise and defensible.
             </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-3">
             {[
               {
-                title: "You got pushed by a prime",
-                desc: "A prime asked for CMMC Level 1 evidence and your team does not have a clean package yet.",
+                title: "AI-guided practices",
+                body: "The Platform walks your team through all 17 CMMC Level 1 requirements with plain-English instructions and capture steps tailored to your stack. No cybersecurity background required.",
               },
               {
-                title: "You are preparing your first bids",
-                desc: "You are seeing opportunities, but compliance language keeps slowing your responses down.",
+                title: "Evidence reviewed by officers",
+                body: "Get continuous guidance on body-of-evidence gaps. A Custodia officer reviews every upload and flags insufficient evidence before a prime would find it.",
               },
               {
-                title: "You want confidence, not confusion",
-                desc: "You want to know exactly what is done, what is missing, and what to do next each week.",
+                title: "SPRS-ready in days",
+                body: "Build a defensible program through measurable Platform analysis and scenario-based evidence capture. From conversation to signed SPRS affirmation in days, not months.",
               },
-            ].map((card) => (
-              <div
-                key={card.title}
-                className="rounded-3xl border border-[#cfe3d9] bg-white p-7 shadow-[0_8px_28px_rgba(14,48,37,0.06)]"
-              >
-                <h3 className="font-serif text-2xl font-bold text-[#14392f]">{card.title}</h3>
-                <p className="mt-3 text-base leading-relaxed text-[#4a6f62]">{card.desc}</p>
+            ].map((f) => (
+              <div key={f.title} className="rounded-3xl border border-[#d2e6dc] bg-[#f7fcf9] p-7">
+                <h3 className="font-serif text-2xl font-bold text-[#123328]">{f.title}</h3>
+                <p className="mt-3 text-base leading-relaxed text-[#4b7164]">{f.body}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="how" className="scroll-mt-16 border-y border-[#d5e5dd] bg-white px-6 py-24">
+      {/* 6 — EMEC Protocol (equiv. to CLAPPS / Big 6) */}
+      <section className="bg-[#f7f7f3] px-6 py-24">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-14 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-              Guided workflow
-            </div>
-            <h2 className="font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-5xl">
-              One workspace. Four guided steps. No guesswork.
-            </h2>
+          <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
+            EMEC Protocol analysis
           </div>
-          <div className="grid gap-6 md:grid-cols-2">
-            {HOW_IT_WORKS.map((step) => (
-              <div
-                key={step.n}
-                className="rounded-3xl border border-[#d2e6dc] bg-[#f7fcf9] p-7"
-              >
-                <div className="text-xs font-bold tracking-[0.2em] text-[#2f8f6d]">STEP {step.n}</div>
-                <h3 className="mt-2 font-serif text-2xl font-bold text-[#123328]">{step.title}</h3>
-                <p className="mt-3 text-base leading-relaxed text-[#4b7164]">{step.desc}</p>
+          <div className="grid gap-14 md:grid-cols-2 md:items-center">
+            <div>
+              <h2 className="font-serif text-4xl font-bold leading-tight text-[#10231d] md:text-5xl">
+                Move beyond scattered compliance
+              </h2>
+              <p className="mt-5 text-base leading-relaxed text-[#44695c]">
+                The EMEC Protocol was developed by Custodia compliance officers for defense-tech operators who need to meet DoD requirements without becoming cybersecurity experts.
+              </p>
+              <div className="mt-8 space-y-4">
+                {[
+                  {
+                    letter: "E",
+                    phase: "Engage",
+                    desc: "Capture your legal identity, scope, and tech stack through conversation &mdash; no forms.",
+                  },
+                  {
+                    letter: "M",
+                    phase: "Map",
+                    desc: "Walk all 17 CMMC Level 1 practices with tailored evidence capture steps.",
+                  },
+                  {
+                    letter: "E",
+                    phase: "Execute",
+                    desc: "Sign the binary affirmation. Download your SSP, memo, and evidence inventory. File in SPRS.",
+                  },
+                  {
+                    letter: "C",
+                    phase: "Confirm",
+                    desc: "Monitor your package year-round and re-affirm every October &mdash; included at no extra charge.",
+                  },
+                ].map((p) => (
+                  <div key={p.phase} className="flex items-start gap-4">
+                    <div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#104d3a] text-sm font-black text-[#8dd2b1]">
+                      {p.letter}
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-[#10231d]">{p.phase}</div>
+                      <div
+                        className="text-sm text-[#4a6f62]"
+                        dangerouslySetInnerHTML={{ __html: p.desc }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+            {/* Practice tracker mockup */}
+            <div className="rounded-3xl border border-[#badacc] bg-white p-7 shadow-[0_15px_45px_rgba(14,48,37,0.08)]">
+              <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
+                EMEC Protocol &middot; Phase 2 of 4
+              </div>
+              <h3 className="font-serif text-2xl font-bold text-[#10231d]">Mapping your 17 practices</h3>
+              <div className="mt-5 space-y-2">
+                {[
+                  { id: "AC.L1-3.1.1", label: "Authorized Access Control", done: true },
+                  { id: "AC.L1-3.1.2", label: "Transaction & Function Control", done: true },
+                  { id: "IA.L1-3.5.1", label: "Identify Users & Devices", done: true },
+                  { id: "PE.L1-3.10.1", label: "Limit Physical Access", done: false },
+                  { id: "SI.L1-3.14.1", label: "Identify & Correct System Flaws", done: false },
+                ].map((ctrl) => (
+                  <div
+                    key={ctrl.id}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm ${
+                      ctrl.done ? "bg-[#e8f7ef] text-[#1f5c47]" : "bg-[#f3f6f5] text-[#5e7f73]"
+                    }`}
+                  >
+                    <span className={`flex-none font-bold ${ctrl.done ? "text-[#2f8f6d]" : "text-[#9bb5ac]"}`}>
+                      {ctrl.done ? "✓" : "○"}
+                    </span>
+                    <span className="font-mono text-[10px] text-[#7a9c90]">{ctrl.id}</span>
+                    <span className="font-semibold">{ctrl.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-5 rounded-xl border border-[#ffcf8a] bg-[#fff4de] px-4 py-3 text-xs text-[#83570d]">
+                <strong>Officer note:</strong> Upload a screenshot of your MFA configuration to satisfy PE.L1-3.10.1.
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Two paths */}
-      <section id="paths" className="scroll-mt-16 bg-[#f7f7f3] px-6 py-24">
+      {/* 7 — SSP Document Assistant */}
+      <section className="bg-white px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-14 md:grid-cols-2 md:items-center">
+            {/* Mockup */}
+            <div className="rounded-3xl border border-[#badacc] bg-[#f7fcf9] p-7 shadow-[0_15px_45px_rgba(14,48,37,0.08)]">
+              <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
+                SSP Document Assistant &middot; AI
+              </div>
+              <div className="mt-1 text-sm text-[#4a6f62]">Drafting SSP narrative&hellip;</div>
+              <div className="mt-4 rounded-xl border border-[#cde5d8] bg-white p-4 text-xs leading-relaxed text-[#31594d]">
+                <strong>AC.L1-3.1.1 &mdash; Authorized Access Control</strong>
+                <br /><br />
+                [Company Name] restricts information system access to authorized users and the processes acting on behalf of those users. Access is granted on a need-to-know basis and reviewed quarterly by the designated system owner.
+                <br /><br />
+                <span className="font-semibold text-[#2f8f6d]">
+                  Evidence attached: access-control-policy.pdf, user-access-review-Q1.xlsx
+                </span>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <button className="rounded-lg bg-[#104d3a] px-4 py-2 text-xs font-bold text-white">
+                  Accept narrative &rarr;
+                </button>
+                <button className="rounded-lg border border-[#cde5d8] px-4 py-2 text-xs font-semibold text-[#4a6f62]">
+                  Edit
+                </button>
+              </div>
+            </div>
+            <div>
+              <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
+                Document assistant &middot; AI
+              </div>
+              <h2 className="font-serif text-4xl font-bold leading-tight text-[#10231d] md:text-5xl">
+                Turn scattered evidence into a bid-ready package
+              </h2>
+              <p className="mt-5 text-base leading-relaxed text-[#44695c]">
+                Leverage AI to structure your SSP and refine language that resonates with primes and contracting officers.
+              </p>
+              <div className="mt-6 space-y-4">
+                <div className="rounded-2xl border border-[#d2e6dc] p-5">
+                  <h4 className="font-semibold text-[#14392f]">Auto-draft SSP narratives for all 17 controls</h4>
+                  <p className="mt-1 text-sm text-[#4a6f62]">
+                    Upload your policy docs and The Platform drafts SSP narratives for every practice &mdash; accept or edit in one click. No writing from scratch.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-[#d2e6dc] p-5">
+                  <h4 className="font-semibold text-[#14392f]">Translate technical controls into clarity</h4>
+                  <p className="mt-1 text-sm text-[#4a6f62]">
+                    Receive continuous guidance on how to explain your controls in plain language that primes and contracting officers can verify quickly and with confidence.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 8 — Impact / "For contractors, by veterans" */}
+      <section className="bg-[#0e2a23] px-6 py-24 text-white">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">impact</div>
+          <div className="grid gap-14 md:grid-cols-2 md:items-center">
+            <div>
+              <h2 className="font-serif text-4xl font-bold leading-tight md:text-5xl">
+                For contractors, by veterans
+              </h2>
+              <p className="mt-5 text-base leading-relaxed text-[#a8cfc0]">
+                Custodia was founded by a veteran and cybersecurity professional in Pittsburgh, PA. We&apos;ve collaborated with compliance officers and former DoD program managers to develop the EMEC Protocol and our officer-backed Platform.
+              </p>
+              <div className="mt-10 grid grid-cols-3 gap-6 border-t border-[#2a5a49] pt-8">
+                {[
+                  { stat: "17", label: "Practices covered" },
+                  { stat: "100%", label: "Bid-ready rate" },
+                  { stat: "$150K+", label: "Avg. contract value" },
+                ].map((s) => (
+                  <div key={s.label}>
+                    <div className="text-3xl font-black text-white">{s.stat}</div>
+                    <div className="mt-1 text-xs text-[#7aab98]">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Featured quote */}
+            <div className="rounded-3xl border border-[#2a5a49] bg-[#193d31] p-8">
+              <p className="text-base leading-relaxed text-[#c5e3d6]">
+                &ldquo;Working with the federal market felt overwhelming &mdash; compliance language, SPRS, primes asking for evidence packages we didn&apos;t have. Custodia walked us through every step. We went from zero to bid-ready in a week. The Guarantee gave us real confidence our package would hold up under scrutiny.&rdquo;
+              </p>
+              <div className="mt-6 flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2f8f6d] text-sm font-bold text-white">
+                  D
+                </div>
+                <div>
+                  <div className="text-sm font-bold text-white">Defense-tech founder</div>
+                  <div className="text-xs text-[#7aab98]">SBIR Phase II awardee &middot; Pittsburgh, PA</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 9 — Use cases */}
+      <section className="bg-[#f7f7f3] px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-14 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-              Membership
-            </div>
-            <h2 className="font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-5xl">
-              Casual to use. Serious on security.
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">use cases</div>
+            <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-5xl">
+              Professional-grade compliance for defense-tech excellence
             </h2>
-            <p className="mx-auto mt-4 max-w-3xl text-lg text-[#44695c]">
-              Your team gets plain-English guidance and weekly direction. Custodia officers stay in the loop so your package stays defensible when primes and contracting officers push hard.
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-[#44695c]">
+              Level up your compliance posture across every stage of federal contracting &mdash; build a culture of security and confidence.
             </p>
           </div>
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="flex flex-col rounded-3xl border border-[#8ec2ab] bg-white p-8 shadow-[0_10px_30px_rgba(14,48,37,0.07)]">
-              <div className="mb-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-[#e6f7ef] px-3 py-1 text-xs font-bold uppercase tracking-[0.15em] text-[#1f5c47] ring-1 ring-[#b8d8cb]">
-                CMMC 1 membership
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                title: "First-time federal bidder",
+                desc: "Navigate SAM.gov, CAGE/UEI, and CMMC requirements from scratch with Platform guidance and officer support.",
+              },
+              {
+                title: "SBIR awardee",
+                desc: "Protect your FCI and meet DoD requirements without derailing your core R&D work or research timelines.",
+              },
+              {
+                title: "Prime contractor pushback",
+                desc: "Respond to prime security questionnaires and evidence requests with a defensible, officer-backed package.",
+              },
+              {
+                title: "Annual re-affirmation",
+                desc: "Renew your SPRS affirmation every October with zero friction &mdash; your package is maintained year-round.",
+              },
+              {
+                title: "Internal team compliance",
+                desc: "Elevate firm-wide security posture with AI-powered guidance and officer-backed reviews across your team.",
+              },
+            ].map((uc) => (
+              <div
+                key={uc.title}
+                className="rounded-3xl border border-[#cfe3d9] bg-white p-7 shadow-[0_4px_16px_rgba(14,48,37,0.05)]"
+              >
+                <h3 className="font-serif text-xl font-bold text-[#14392f]">{uc.title}</h3>
+                <p
+                  className="mt-3 text-sm leading-relaxed text-[#4a6f62]"
+                  dangerouslySetInnerHTML={{ __html: uc.desc }}
+                />
               </div>
-              <div className="mt-2 font-serif text-3xl font-bold tracking-tight text-[#10231d]">$249/mo</div>
-              <p className="mt-2 text-base text-[#496f61]">
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 10 — Pricing */}
+      <section id="pricing" className="scroll-mt-16 border-y border-[#d5e5dd] bg-white px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-14 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">pricing</div>
+            <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-5xl">
+              Choose the right model for you
+            </h2>
+          </div>
+          <div className="grid gap-8 md:grid-cols-3">
+
+            {/* Free Trial */}
+            <div className="flex flex-col rounded-3xl border border-[#cfe3d9] bg-[#f7fcf9] p-7">
+              <div className="mb-2 text-xs font-bold uppercase tracking-[0.15em] text-[#2f8f6d]">Free trial</div>
+              <div className="font-serif text-3xl font-bold text-[#10231d]">$0</div>
+              <p className="mt-2 text-sm text-[#496f61]">
+                7 days free. No credit card required. See the full Platform before you commit.
+              </p>
+              <ul className="mt-6 flex-1 space-y-2">
+                {[
+                  "Full Platform access for 7 days",
+                  "AI-guided onboarding conversation",
+                  "View all 17 CMMC practices",
+                  "Try SSP narrative drafting",
+                ].map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-[#31594d]">
+                    <span className="mt-0.5 flex-none text-[#2f8f6d]">✓</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+              <Show when="signed-out">
+                <SignUpButton mode="modal">
+                  <button className="mt-8 w-full rounded-xl border border-[#104d3a] px-6 py-3 font-bold text-[#104d3a] transition-colors hover:bg-[#f0f9f5]">
+                    Start free trial
+                  </button>
+                </SignUpButton>
+              </Show>
+              <Show when="signed-in">
+                <Link href="/assessments" prefetch={false} className="mt-8 block w-full rounded-xl border border-[#104d3a] px-6 py-3 text-center font-bold text-[#104d3a] transition-colors hover:bg-[#f0f9f5]">
+                  Open workspace
+                </Link>
+              </Show>
+            </div>
+
+            {/* Membership — most popular */}
+            <div className="flex flex-col rounded-3xl border-2 border-[#2f8f6d] bg-white p-7 shadow-[0_12px_36px_rgba(14,48,37,0.12)]">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#2f8f6d]">CMMC 1 membership</span>
+                <span className="rounded-full bg-[#2f8f6d] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                  most popular
+                </span>
+              </div>
+              <div className="font-serif text-3xl font-bold text-[#10231d]">
+                $249<span className="text-lg font-normal text-[#6a9080]">/mo</span>
+              </div>
+              <p className="mt-2 text-sm text-[#496f61]">
                 Platform guidance plus human oversight. Build, monitor, and re-affirm your CMMC Level 1 package in one secure system.
               </p>
               <p className="mt-1 text-xs text-[#5d8376]">
-                Billed monthly · Cancel any time · 7-day free trial, no credit card required
+                Billed monthly &middot; Cancel any time &middot; 7-day free trial, no credit card required
               </p>
-              <ul className="mt-6 flex-1 space-y-3">
+              <ul className="mt-6 flex-1 space-y-2.5">
                 {SELF_SERVE_INCLUDES.map((f) => (
-                  <li key={f.label} className="flex items-start gap-2 text-sm text-[#31594d]">
+                  <li key={f} className="flex items-start gap-2 text-sm text-[#31594d]">
                     <span className="mt-0.5 flex-none text-[#2f8f6d]">✓</span>
-                    {f.label}
+                    <span dangerouslySetInnerHTML={{ __html: f }} />
                   </li>
                 ))}
               </ul>
@@ -327,24 +617,20 @@ export default function Home() {
                 </SignUpButton>
               </Show>
               <Show when="signed-in">
-                <Link
-                  href="/upgrade"
-                  prefetch={false}
-                  className="mt-8 block w-full rounded-xl bg-[#104d3a] px-6 py-3 text-center font-bold text-white transition-colors hover:bg-[#0d3e2f]"
-                >
-                  Start your membership
+                <Link href="/upgrade" prefetch={false} className="mt-8 block w-full rounded-xl bg-[#104d3a] px-6 py-3 text-center font-bold text-white transition-colors hover:bg-[#0d3e2f]">
+                  Start membership
                 </Link>
               </Show>
             </div>
-            <div className="flex flex-col rounded-3xl border border-[#214c3e] bg-[#12382c] p-8 text-[#e3f5ed] shadow-[0_10px_30px_rgba(14,48,37,0.15)]">
-              <div className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[#9cdbbe]">
-                Done-for-you
-              </div>
-              <div className="font-serif text-3xl font-bold tracking-tight text-white">Bootcamp with a Custodia Officer</div>
-              <p className="mt-2 text-base text-[#bfdfd0]">
-                A senior compliance officer drives the process with your team for one week when speed matters.
+
+            {/* Bootcamp */}
+            <div className="flex flex-col rounded-3xl border border-[#214c3e] bg-[#12382c] p-7 text-[#e3f5ed]">
+              <div className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[#9cdbbe]">Done-for-you</div>
+              <div className="font-serif text-3xl font-bold text-white">Bootcamp</div>
+              <p className="mt-2 text-sm text-[#bfdfd0]">
+                A senior compliance officer drives the process with your team for one week when speed matters most.
               </p>
-              <ul className="mt-6 flex-1 space-y-3">
+              <ul className="mt-6 flex-1 space-y-2.5">
                 {BOOTCAMP_INCLUDES.map((f, i) => (
                   <li
                     key={f}
@@ -359,17 +645,13 @@ export default function Home() {
               </ul>
               <Show when="signed-out">
                 <SignUpButton mode="modal">
-                  <button className="mt-8 block w-full rounded-xl border border-[#89d2af] px-6 py-3 text-center font-bold text-[#d8f2e6] transition-colors hover:bg-[#89d2af] hover:text-[#12382c]">
+                  <button className="mt-8 w-full rounded-xl border border-[#89d2af] px-6 py-3 font-bold text-[#d8f2e6] transition-colors hover:bg-[#89d2af] hover:text-[#12382c]">
                     Create free account
                   </button>
                 </SignUpButton>
               </Show>
               <Show when="signed-in">
-                <Link
-                  href="/assessments"
-                  prefetch={false}
-                  className="mt-8 block w-full rounded-xl border border-[#89d2af] px-6 py-3 text-center font-bold text-[#d8f2e6] transition-colors hover:bg-[#89d2af] hover:text-[#12382c]"
-                >
+                <Link href="/assessments" prefetch={false} className="mt-8 block w-full rounded-xl border border-[#89d2af] px-6 py-3 text-center font-bold text-[#d8f2e6] transition-colors hover:bg-[#89d2af] hover:text-[#12382c]">
                   Continue in workspace
                 </Link>
               </Show>
@@ -378,155 +660,202 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Custodia Guarantee */}
-      <section className="border-y border-[#9ccfb9] bg-[#dcf4e6] px-6 py-24">
-        <div className="mx-auto max-w-5xl rounded-3xl border border-[#8bc6ab] bg-[#f4fbf7] p-8 shadow-[0_12px_36px_rgba(14,48,37,0.08)] md:p-10">
-          <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-            Included with every membership
-          </div>
-          <h2 className="font-serif text-4xl font-bold leading-tight text-[#10231d]">The Custodia Guarantee</h2>
-          <p className="mt-4 max-w-4xl text-lg leading-relaxed text-[#3f6658]">
-            If a prime contractor or contracting officer pushes back on any part of your CMMC Level 1 package from Custodia, we assign a dedicated compliance officer and resolve it. If needed, we work with the prime directly until your package is accepted.
-          </p>
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {[
-              "Dedicated officer assigned immediately",
-              "Challenge reviewed line-by-line with you",
-              "Package and evidence remediated in-platform",
-              "Direct communication with prime or officer when needed",
-            ].map((item) => (
-              <div key={item} className="rounded-2xl border border-[#cae6d8] bg-white px-4 py-3 text-sm font-medium text-[#31594c]">
-                ✓ {item}
-              </div>
-            ))}
-          </div>
-          <p className="mt-5 text-xs text-[#608679]">
-            Applies to active memberships and packages generated within Custodia. Limited to CMMC Level 1 scope.
-          </p>
-        </div>
-      </section>
-
-      {/* The 17 practices */}
-      <section className="bg-white px-6 py-24">
+      {/* 11 — Testimonials */}
+      <section className="bg-[#f7f7f3] px-6 py-24">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-12 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-              The standards you must meet
-            </div>
-            <h2 className="font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-5xl">
-              All 17 CMMC Level 1 practices, guided in one place.
+          <div className="mb-14 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">testimonials</div>
+            <h2 className="font-serif text-3xl font-bold text-[#10231d] md:text-4xl">
+              Real results from real contractors
             </h2>
-            <p className="mx-auto mt-4 max-w-3xl text-base text-[#496f61]">
-              No partial credit. Your workspace tracks each practice with plain-English instructions, evidence checks, and SSP narrative support.
-            </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-            {PRACTICES.map((p) => (
-              <div
-                key={p.id}
-                className="flex items-start gap-3 rounded-xl border border-[#d2e6dc] bg-[#f7fcf9] px-4 py-3"
-              >
-                <span className="rounded-md bg-[#104d3a] px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[#bef4be]">
-                  {p.domain}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="font-mono text-[11px] text-[#5e8376]">{p.id}</div>
-                  <div className="text-sm font-semibold text-[#123328]">{p.short}</div>
+          <div className="grid gap-6 md:grid-cols-2">
+            {[
+              {
+                quote: "Custodia took something that felt impossible &mdash; CMMC compliance for a 4-person team &mdash; and made it completely approachable. The Platform is clear, the officer support is real, and our package held up with our prime.",
+                name: "J.M.",
+                company: "Defense-tech startup &middot; SBIR awardee",
+              },
+              {
+                quote: "A prime asked for our CMMC evidence with 3 weeks&apos; notice. Custodia got us compliant and filed in SPRS with time to spare. The Guarantee gave us confidence to submit without second-guessing every line.",
+                name: "R.T.",
+                company: "Engineering firm &middot; DoD subcontractor",
+              },
+              {
+                quote: "The AI-guided walkthrough is genuinely impressive. It knew our stack, suggested the right evidence, and the SSP narratives saved us hours of writing. Highly recommend for any SMB in the federal space.",
+                name: "S.P.",
+                company: "Software startup &middot; First-time federal bidder",
+              },
+              {
+                quote: "The Bootcamp was the right call. In one week we had SAM.gov registration, CAGE/UEI, a signed SPRS affirmation, and help on our first proposal. Worth every dollar.",
+                name: "M.H.",
+                company: "Veteran-owned firm &middot; Pittsburgh, PA",
+              },
+            ].map((t) => (
+              <div key={t.name} className="rounded-3xl border border-[#cfe3d9] bg-white p-8">
+                <p
+                  className="text-base leading-relaxed text-[#3b5f53]"
+                  dangerouslySetInnerHTML={{ __html: `&ldquo;${t.quote}&rdquo;` }}
+                />
+                <div className="mt-6 flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e8f7ef] text-sm font-bold text-[#1f5c47]">
+                    {t.name[0]}
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-[#10231d]">{t.name}</div>
+                    <div
+                      className="text-xs text-[#6a9080]"
+                      dangerouslySetInnerHTML={{ __html: t.company }}
+                    />
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-          <div className="mt-10 rounded-2xl border border-[#ffcf8a] bg-[#fff4de] p-6 text-center">
-            <p className="text-[#83570d]">
-              <strong>L1 affirmation is binary.</strong> You either implement all 17 practices or you do not. Level 2 point scoring does not apply here.
-            </p>
+        </div>
+      </section>
+
+      {/* 12 — Blog / Resources */}
+      <section className="bg-white px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-14 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">blog</div>
+            <h2 className="font-serif text-3xl font-bold text-[#10231d]">The latest from Custodia</h2>
+          </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              {
+                tag: "guide",
+                title: "What CMMC Level 1 actually requires &mdash; and what it doesn&apos;t",
+                cta: "Read more",
+              },
+              {
+                tag: "news",
+                title: "SPRS filing deadlines for FY2026: what every subcontractor needs to know",
+                cta: "Read more",
+              },
+              {
+                tag: "podcast",
+                title: "Building a compliance culture at a 5-person defense-tech startup",
+                cta: "Read more",
+              },
+            ].map((post) => (
+              <div key={post.title} className="rounded-3xl border border-[#d2e6dc] bg-[#f7fcf9] p-7">
+                <div className="mb-3 text-xs font-bold uppercase tracking-[0.15em] text-[#2f8f6d]">{post.tag}</div>
+                <h3
+                  className="font-serif text-xl font-bold leading-snug text-[#10231d]"
+                  dangerouslySetInnerHTML={{ __html: post.title }}
+                />
+                <button className="mt-5 text-sm font-semibold text-[#2f8f6d] transition-colors hover:text-[#10231d]">
+                  {post.cta} &rarr;
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* About / Mission */}
-      <section id="about" className="scroll-mt-16 bg-[#14382d] px-6 py-24 text-[#dbf1e7]">
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
-            Why we built this
-          </div>
-          <h2 className="font-serif text-3xl font-bold tracking-tight text-white md:text-5xl">
-            Security is a growth lever when it is explained clearly.
+      {/* 13 — CTA Banner */}
+      <section className="border-y border-[#9ccfb9] bg-[#dcf4e6] px-6 py-20 text-center">
+        <div className="mx-auto max-w-3xl">
+          <h2 className="font-serif text-4xl font-bold leading-tight text-[#10231d] md:text-5xl">
+            Make compliance your firm&apos;s most powerful advantage
           </h2>
-          <div className="mx-auto mt-8 space-y-5 text-left text-base leading-relaxed text-[#c5e3d6] md:text-lg">
-            <p>
-              Custodia is a Pittsburgh cybersecurity firm. <strong className="text-white">Veteran-owned and operated</strong>, built to help SMB teams become contract-ready without compliance confusion.
-            </p>
-            <p>
-              We built this because small businesses kept missing contract opportunities, not due to capability gaps, but because compliance work felt opaque and overloaded.
-            </p>
-            <p>
-              Our model is simple: make compliance understandable for non-technical operators, automate the heavy lifting in The Platform, and keep a real officer in the loop when judgment is required.
-            </p>
-          </div>
-          <div className="mt-12 grid grid-cols-3 gap-6 border-t border-[#2a5a49] pt-10 text-center">
-            <div>
-              <div className="text-xs font-bold uppercase tracking-widest text-[#8dd2b1]">Pittsburgh, PA</div>
-              <div className="mt-1 text-sm text-[#8eb6a6]">Headquartered locally</div>
-            </div>
-            <div>
-              <div className="text-xs font-bold uppercase tracking-widest text-[#8dd2b1]">Veteran-owned</div>
-              <div className="mt-1 text-sm text-[#8eb6a6]">Mission-driven service</div>
-            </div>
-            <div>
-              <div className="text-xs font-bold uppercase tracking-widest text-[#8dd2b1]">Cybersecurity firm</div>
-              <div className="mt-1 text-sm text-[#8eb6a6]">Officer-backed platform</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Bootcamp inquiry */}
-      <section
-        id="bootcamp"
-        className="scroll-mt-16 border-t border-[#2a5a49] bg-[#14382d] px-6 py-24 text-white"
-      >
-        <div className="mx-auto max-w-xl text-center">
-          <div className="mb-6 inline-block rounded-full border border-[#88cead]/40 bg-[#1d4a3b] px-4 py-1.5 text-sm font-semibold text-[#b8e7d3]">
-            Done-for-you · Limited cohorts
-          </div>
-          <h2 className="font-serif text-4xl font-bold tracking-tight md:text-5xl">Want it handled?</h2>
-          <p className="mt-4 text-lg leading-relaxed text-[#c0dfd1]">
-            Create your free account to start now. If you need hands-on help, a Custodia compliance officer can join your journey inside the workspace.
+          <p className="mx-auto mt-4 max-w-xl text-lg text-[#3f6658]">
+            Defense contracts worth $150K+ are waiting. Your compliance package shouldn&apos;t be what holds you back.
           </p>
-          <div className="mt-10">
+          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Show when="signed-out">
               <SignUpButton mode="modal">
-                <button className="w-full rounded-lg bg-[#8dd2b1] px-8 py-3 text-lg font-bold text-[#113428] transition-colors hover:bg-[#78c5a0]">
+                <button className="rounded-xl bg-[#104d3a] px-8 py-4 text-base font-bold text-white transition-colors hover:bg-[#0d3e2f]">
                   Create free account
                 </button>
               </SignUpButton>
             </Show>
             <Show when="signed-in">
-              <Link
-                href="/assessments"
-                prefetch={false}
-                className="block w-full rounded-lg bg-[#8dd2b1] px-8 py-3 text-lg font-bold text-[#113428] transition-colors hover:bg-[#78c5a0]"
-              >
-                Continue in workspace
+              <Link href="/assessments" prefetch={false} className="rounded-xl bg-[#104d3a] px-8 py-4 text-base font-bold text-white transition-colors hover:bg-[#0d3e2f]">
+                Open workspace
               </Link>
             </Show>
           </div>
-          <p className="mt-4 text-xs text-[#8db2a2]">No credit card required · Start securing your business today</p>
         </div>
       </section>
 
-      <footer className="bg-[#0d271f] px-6 py-10 text-[#9ac3b1]">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
-          <div className="text-lg font-bold text-white">
-            Custodia<span className="text-[#8dd2b1]">.</span>
+      {/* 14 — FAQ */}
+      <section id="faq" className="scroll-mt-16 bg-white px-6 py-24">
+        <div className="mx-auto max-w-3xl">
+          <div className="mb-12 text-center">
+            <h2 className="font-serif text-3xl font-bold text-[#10231d] md:text-5xl">
+              Frequently asked questions
+            </h2>
           </div>
-          <p className="text-center text-xs">
-            CMMC Level 1 self-serve platform and officer-guided bootcamp · Pittsburgh, PA · Veteran-owned · Cybersecurity firm
-          </p>
-          <p className="text-xs">© {new Date().getFullYear()} Custodia, LLC.</p>
+          <div className="space-y-3">
+            {FAQ_ITEMS.map((item, idx) => (
+              <div key={idx} className="overflow-hidden rounded-2xl border border-[#d2e6dc] bg-[#f7fcf9]">
+                <button
+                  className="flex w-full items-center justify-between px-6 py-5 text-left font-semibold text-[#10231d] transition-colors hover:bg-[#eef8f3]"
+                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                >
+                  <span>{item.q}</span>
+                  <span className="ml-4 flex-none text-xl font-light text-[#2f8f6d]">
+                    {openFaq === idx ? "−" : "+"}
+                  </span>
+                </button>
+                {openFaq === idx && (
+                  <div
+                    className="border-t border-[#d2e6dc] px-6 py-5 text-sm leading-relaxed text-[#44695c]"
+                    dangerouslySetInnerHTML={{ __html: item.a }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 15 — Footer */}
+      <footer className="bg-[#0d271f] px-6 py-12 text-[#9ac3b1]">
+        <div className="mx-auto max-w-6xl">
+          <div className="flex flex-col items-start justify-between gap-10 md:flex-row">
+            <div>
+              <div className="text-xl font-bold text-white">
+                Custodia<span className="text-[#8dd2b1]">.</span>
+              </div>
+              <p className="mt-2 max-w-xs text-xs text-[#6b9a88]">
+                Your compliance officer for high-stakes federal contracting.
+              </p>
+              <p className="mt-5 text-xs">
+                &copy; {new Date().getFullYear()} Custodia, LLC. All rights reserved.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-10 text-sm md:grid-cols-3">
+              <div>
+                <div className="mb-3 text-xs font-bold uppercase tracking-widest text-[#4d8571]">Overview</div>
+                <ul className="space-y-2">
+                  <li><a href="#product" className="transition-colors hover:text-white">Product</a></li>
+                  <li><a href="#pricing" className="transition-colors hover:text-white">Pricing</a></li>
+                  <li><a href="#faq" className="transition-colors hover:text-white">FAQ</a></li>
+                </ul>
+              </div>
+              <div>
+                <div className="mb-3 text-xs font-bold uppercase tracking-widest text-[#4d8571]">Legal</div>
+                <ul className="space-y-2">
+                  <li><a href="#" className="transition-colors hover:text-white">Terms and Conditions</a></li>
+                  <li><a href="#" className="transition-colors hover:text-white">Privacy Policy</a></li>
+                </ul>
+              </div>
+              <div>
+                <div className="mb-3 text-xs font-bold uppercase tracking-widest text-[#4d8571]">Contact</div>
+                <ul className="space-y-2">
+                  <li><a href="mailto:hello@custodiabidfed.com" className="transition-colors hover:text-white">Email</a></li>
+                  <li><a href="#" className="transition-colors hover:text-white">LinkedIn</a></li>
+                </ul>
+              </div>
+            </div>
+          </div>
         </div>
       </footer>
+
     </div>
   );
 }
