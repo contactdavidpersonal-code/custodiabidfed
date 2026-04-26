@@ -136,10 +136,9 @@ export default function Home() {
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#bdf2cf] opacity-75" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#bdf2cf]" />
               </span>
-              Ops // Pittsburgh, PA
+              Pittsburgh, PA
             </span>
-            <span className="hidden md:inline">Cybersecurity officer on staff</span>
-            <span className="hidden sm:inline">Veteran-owned</span>
+            <span className="hidden sm:inline">Veteran-owned small businesses</span>
           </div>
         </div>
 
@@ -371,227 +370,242 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 5 — Three features */}
+      {/* 5 — How federal contracting actually works */}
       <section className="bg-white px-6 py-24">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-14 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">Guided workflow</div>
-            <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-5xl">
-              Close the gap, every time
+          <div className="mb-16 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">how it works</div>
+            <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-6xl">
+              How federal contracting actually works
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-lg text-[#44695c]">
-              Sharpen the compliance habits that make your contract packages precise and defensible.
+            <p className="mx-auto mt-5 max-w-2xl text-lg text-[#44695c]">
+              Most SMBs don&apos;t bid because the path looks opaque. Here&apos;s the actual flow &mdash; and where Custodia removes the friction.
             </p>
           </div>
-          <div className="grid gap-8 md:grid-cols-3">
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {[
               {
-                title: "Platform-guided practices",
-                body: "The Platform walks your team through all 17 CMMC Level 1 requirements with plain-English instructions and capture steps tailored to your stack. No cybersecurity background required.",
+                n: "01",
+                step: "Register",
+                desc: "SAM.gov registration. CAGE code. UEI. NAICS codes that match your work.",
+                custodia: "We point you to the right registrations and check your work.",
+                highlight: false,
               },
               {
-                title: "Evidence reviewed by officers",
-                body: "Get continuous guidance on body-of-evidence gaps. A Custodia officer reviews every upload and flags insufficient evidence before a prime would find it.",
+                n: "02",
+                step: "Find opportunities",
+                desc: "SAM.gov, agency portals (DoD SBIR, AFWERX, NavalX, DIU), prime contractor subs.",
+                custodia: "We teach you the search patterns and where to look first.",
+                highlight: false,
               },
               {
-                title: "SPRS-ready in days",
-                body: "Build a defensible program through measurable Platform analysis and scenario-based evidence capture. From conversation to signed SPRS affirmation in days, not months.",
+                n: "03",
+                step: "Bid with compliance proof",
+                desc: "Submit your SSP, SPRS affirmation, and prime security questionnaires. Most SMBs stall here.",
+                custodia: "Your bid-ready package is generated in The Platform &mdash; ready to attach.",
+                highlight: true,
               },
-            ].map((f) => (
-              <div key={f.title} className="rounded-3xl border border-[#d2e6dc] bg-[#f7fcf9] p-7">
-                <h3 className="font-serif text-2xl font-bold text-[#123328]">{f.title}</h3>
-                <p className="mt-3 text-base leading-relaxed text-[#4b7164]">{f.body}</p>
+              {
+                n: "04",
+                step: "Win + maintain",
+                desc: "Stay compliant year-round. File annual re-affirmation. Respond to prime audits when they come.",
+                custodia: "Year-round monitoring + annual re-affirmation, included.",
+                highlight: false,
+              },
+            ].map((step) => (
+              <div
+                key={step.n}
+                className={`relative flex flex-col rounded-3xl border p-6 ${
+                  step.highlight
+                    ? "border-[#2f8f6d] bg-[#0e2a23] text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]"
+                    : "border-[#cfe3d9] bg-[#f7fcf9] text-[#10231d]"
+                }`}
+              >
+                <div
+                  className={`text-[10px] font-bold tracking-[0.22em] ${
+                    step.highlight ? "text-[#8dd2b1]" : "text-[#2f8f6d]"
+                  }`}
+                >
+                  STEP {step.n}
+                </div>
+                <h3
+                  className={`mt-3 font-serif text-2xl font-bold ${
+                    step.highlight ? "text-white" : "text-[#10231d]"
+                  }`}
+                >
+                  {step.step}
+                </h3>
+                <p
+                  className={`mt-3 flex-1 text-sm leading-relaxed ${
+                    step.highlight ? "text-[#cce5da]" : "text-[#4a6f62]"
+                  }`}
+                >
+                  {step.desc}
+                </p>
+                <div
+                  className={`mt-5 rounded-xl px-3 py-2.5 text-xs leading-relaxed ${
+                    step.highlight
+                      ? "bg-[#1a4035] text-[#bdf2cf]"
+                      : "bg-white text-[#1f5c47] ring-1 ring-[#cfe3d9]"
+                  }`}
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+                    Custodia:{" "}
+                  </span>
+                  <span dangerouslySetInnerHTML={{ __html: step.custodia }} />
+                </div>
               </div>
             ))}
           </div>
+
+          <p className="mx-auto mt-10 max-w-3xl text-center text-base text-[#44695c]">
+            Step 3 is where most SMBs stall. The compliance package is the difference between a bid and a no-bid &mdash; and it&apos;s the part Custodia builds for you.
+          </p>
         </div>
       </section>
 
-      {/* 6 — EMEC Protocol (equiv. to CLAPPS / Big 6) */}
+      {/* 6 — How we secure your business for FCI */}
       <section className="bg-[#f7f7f3] px-6 py-24">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-            EMEC Protocol analysis
+          <div className="mb-16 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">FCI security</div>
+            <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-6xl">
+              How we secure your business for federal work
+            </h2>
+            <p className="mx-auto mt-5 max-w-3xl text-lg text-[#44695c]">
+              Federal Contract Information (FCI) is the sensitive contract data DoD trusts you with. CMMC Level 1 is the standard that protects it &mdash; six domains, seventeen practices. We walk you through every one.
+            </p>
           </div>
-          <div className="grid gap-14 md:grid-cols-2 md:items-center">
-            <div>
-              <h2 className="font-serif text-4xl font-bold leading-tight text-[#10231d] md:text-5xl">
-                Move beyond scattered compliance
-              </h2>
-              <p className="mt-5 text-base leading-relaxed text-[#44695c]">
-                The EMEC Protocol was developed by Custodia compliance officers for defense-tech operators who need to meet DoD requirements without becoming cybersecurity experts.
-              </p>
-              <div className="mt-8 space-y-4">
-                {[
-                  {
-                    letter: "E",
-                    phase: "Engage",
-                    desc: "Capture your legal identity, scope, and tech stack through conversation &mdash; no forms.",
-                  },
-                  {
-                    letter: "M",
-                    phase: "Map",
-                    desc: "Walk all 17 CMMC Level 1 practices with tailored evidence capture steps.",
-                  },
-                  {
-                    letter: "E",
-                    phase: "Execute",
-                    desc: "Sign the binary affirmation. Download your SSP, memo, and evidence inventory. File in SPRS.",
-                  },
-                  {
-                    letter: "C",
-                    phase: "Confirm",
-                    desc: "Monitor your package year-round and re-affirm every October &mdash; included at no extra charge.",
-                  },
-                ].map((p) => (
-                  <div key={p.phase} className="flex items-start gap-4">
-                    <div className="flex h-9 w-9 flex-none items-center justify-center rounded-xl bg-[#104d3a] text-sm font-black text-[#8dd2b1]">
-                      {p.letter}
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-[#10231d]">{p.phase}</div>
-                      <div
-                        className="text-sm text-[#4a6f62]"
-                        dangerouslySetInnerHTML={{ __html: p.desc }}
-                      />
-                    </div>
-                  </div>
-                ))}
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                code: "AC",
+                name: "Access Control",
+                count: 4,
+                desc: "Who can do what inside your systems. The first wall against unauthorized data access.",
+              },
+              {
+                code: "IA",
+                name: "Identification & Authentication",
+                count: 2,
+                desc: "Verify users and devices before they touch FCI. Strong authentication is mandatory.",
+              },
+              {
+                code: "MP",
+                name: "Media Protection",
+                count: 1,
+                desc: "Sanitize media containing FCI before disposal or reuse. No data leaks via old hardware.",
+              },
+              {
+                code: "PE",
+                name: "Physical Protection",
+                count: 4,
+                desc: "Limit physical access to FCI. Escort visitors. Maintain access logs and key control.",
+              },
+              {
+                code: "SC",
+                name: "System & Comms Protection",
+                count: 2,
+                desc: "Monitor and control communications at system boundaries. Public-system separation.",
+              },
+              {
+                code: "SI",
+                name: "System & Information Integrity",
+                count: 4,
+                desc: "Identify and correct flaws. Anti-malware. Real-time scans of incoming files.",
+              },
+            ].map((domain) => (
+              <div
+                key={domain.code}
+                className="rounded-3xl border border-[#cfe3d9] bg-white p-6 shadow-[0_4px_16px_rgba(14,48,37,0.04)]"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="rounded-md bg-[#104d3a] px-2 py-1 font-mono text-[11px] font-bold tracking-wider text-[#bef4be]">
+                    {domain.code}
+                  </span>
+                  <span className="font-mono text-[11px] text-[#7a9c90]">
+                    {domain.count} {domain.count === 1 ? "practice" : "practices"}
+                  </span>
+                </div>
+                <h3 className="mt-4 font-serif text-xl font-bold text-[#10231d]">{domain.name}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-[#4a6f62]">{domain.desc}</p>
               </div>
-            </div>
-            {/* Practice tracker mockup */}
-            <div className="rounded-3xl border border-[#badacc] bg-white p-7 shadow-[0_15px_45px_rgba(14,48,37,0.08)]">
-              <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-                EMEC Protocol &middot; Phase 2 of 4
-              </div>
-              <h3 className="font-serif text-2xl font-bold text-[#10231d]">Mapping your 17 practices</h3>
-              <div className="mt-5 space-y-2">
-                {[
-                  { id: "AC.L1-3.1.1", label: "Authorized Access Control", done: true },
-                  { id: "AC.L1-3.1.2", label: "Transaction & Function Control", done: true },
-                  { id: "IA.L1-3.5.1", label: "Identify Users & Devices", done: true },
-                  { id: "PE.L1-3.10.1", label: "Limit Physical Access", done: false },
-                  { id: "SI.L1-3.14.1", label: "Identify & Correct System Flaws", done: false },
-                ].map((ctrl) => (
-                  <div
-                    key={ctrl.id}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm ${
-                      ctrl.done ? "bg-[#e8f7ef] text-[#1f5c47]" : "bg-[#f3f6f5] text-[#5e7f73]"
-                    }`}
-                  >
-                    <span className={`flex-none font-bold ${ctrl.done ? "text-[#2f8f6d]" : "text-[#9bb5ac]"}`}>
-                      {ctrl.done ? "✓" : "○"}
-                    </span>
-                    <span className="font-mono text-[10px] text-[#7a9c90]">{ctrl.id}</span>
-                    <span className="font-semibold">{ctrl.label}</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-5 rounded-xl border border-[#ffcf8a] bg-[#fff4de] px-4 py-3 text-xs text-[#83570d]">
-                <strong>Officer note:</strong> Upload a screenshot of your MFA configuration to satisfy PE.L1-3.10.1.
-              </div>
-            </div>
+            ))}
+          </div>
+
+          <div className="mt-10 rounded-2xl border border-[#ffcf8a] bg-[#fff4de] px-6 py-5 text-center">
+            <p className="text-sm leading-relaxed text-[#83570d]">
+              <strong>L1 affirmation is binary.</strong> All seventeen practices, or none. The Platform gets you to all seventeen &mdash; and an officer signs off before you do.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* 7 — SSP Document Assistant */}
-      <section className="bg-white px-6 py-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="grid gap-14 md:grid-cols-2 md:items-center">
-            {/* Mockup */}
-            <div className="rounded-3xl border border-[#badacc] bg-[#f7fcf9] p-7 shadow-[0_15px_45px_rgba(14,48,37,0.08)]">
-              <div className="mb-1 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-                SSP Document Assistant &middot; The Platform
-              </div>
-              <div className="mt-1 text-sm text-[#4a6f62]">Drafting SSP narrative&hellip;</div>
-              <div className="mt-4 rounded-xl border border-[#cde5d8] bg-white p-4 text-xs leading-relaxed text-[#31594d]">
-                <strong>AC.L1-3.1.1 &mdash; Authorized Access Control</strong>
-                <br /><br />
-                [Company Name] restricts information system access to authorized users and the processes acting on behalf of those users. Access is granted on a need-to-know basis and reviewed quarterly by the designated system owner.
-                <br /><br />
-                <span className="font-semibold text-[#2f8f6d]">
-                  Evidence attached: access-control-policy.pdf, user-access-review-Q1.xlsx
-                </span>
-              </div>
-              <div className="mt-4 flex gap-2">
-                <button className="rounded-lg bg-[#104d3a] px-4 py-2 text-xs font-bold text-white">
-                  Accept narrative &rarr;
-                </button>
-                <button className="rounded-lg border border-[#cde5d8] px-4 py-2 text-xs font-semibold text-[#4a6f62]">
-                  Edit
-                </button>
-              </div>
-            </div>
-            <div>
-              <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-                Document assistant &middot; Custodia
-              </div>
-              <h2 className="font-serif text-4xl font-bold leading-tight text-[#10231d] md:text-5xl">
-                Turn scattered evidence into a bid-ready package
-              </h2>
-              <p className="mt-5 text-base leading-relaxed text-[#44695c]">
-                The Platform structures your SSP and refines language that resonates with primes and contracting officers.
-              </p>
-              <div className="mt-6 space-y-4">
-                <div className="rounded-2xl border border-[#d2e6dc] p-5">
-                  <h4 className="font-semibold text-[#14392f]">Auto-draft SSP narratives for all 17 controls</h4>
-                  <p className="mt-1 text-sm text-[#4a6f62]">
-                    Upload your policy docs and The Platform drafts SSP narratives for every practice &mdash; accept or edit in one click. No writing from scratch.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-[#d2e6dc] p-5">
-                  <h4 className="font-semibold text-[#14392f]">Translate technical controls into clarity</h4>
-                  <p className="mt-1 text-sm text-[#4a6f62]">
-                    Receive continuous guidance on how to explain your controls in plain language that primes and contracting officers can verify quickly and with confidence.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 8 — Impact / "For contractors, by veterans" */}
+      {/* 7 — Why Custodia is different */}
       <section className="bg-[#0e2a23] px-6 py-24 text-white">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">impact</div>
-          <div className="grid gap-14 md:grid-cols-2 md:items-center">
-            <div>
-              <h2 className="font-serif text-4xl font-bold leading-tight md:text-5xl">
-                For contractors, by veterans
-              </h2>
-              <p className="mt-5 text-base leading-relaxed text-[#a8cfc0]">
-                Custodia was founded by a veteran and cybersecurity professional in Pittsburgh, PA. We&apos;ve collaborated with compliance officers and former DoD program managers to develop the EMEC Protocol and our officer-backed Platform.
-              </p>
-              <div className="mt-10 grid grid-cols-3 gap-6 border-t border-[#2a5a49] pt-8">
-                {[
-                  { stat: "17", label: "Practices covered" },
-                  { stat: "100%", label: "Bid-ready rate" },
-                  { stat: "$150K+", label: "Avg. contract value" },
-                ].map((s) => (
-                  <div key={s.label}>
-                    <div className="text-3xl font-black text-white">{s.stat}</div>
-                    <div className="mt-1 text-xs text-[#7aab98]">{s.label}</div>
-                  </div>
-                ))}
+          <div className="mb-16 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">why custodia</div>
+            <h2 className="font-serif text-4xl font-bold tracking-tight md:text-6xl">
+              Built by CMMC professionals. Officer-backed.
+            </h2>
+            <p className="mx-auto mt-5 max-w-3xl text-lg text-[#a8cfc0]">
+              Most compliance products are templates and forms. Custodia is a cybersecurity firm with a Platform built to scale our officers &mdash; not replace them.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                title: "Cybersecurity firm, not a template",
+                body: "Custodia is a veteran-owned cybersecurity firm in Pittsburgh, PA. We staff compliance officers, not customer-success reps. Officers review your evidence and sign off on your package.",
+              },
+              {
+                title: "CMMC Level 1 specialists",
+                body: "We do one thing &mdash; CMMC L1 for FCI handlers &mdash; and we do it all the way. No scope drift into L2 or L3. The seventeen practices are our entire focus.",
+              },
+              {
+                title: "Officer in the loop on every package",
+                body: "The Platform handles the structured 80% of the work. Officer judgment handles the remaining 20% &mdash; the part that decides whether your affirmation holds up under prime or contracting officer scrutiny.",
+              },
+              {
+                title: "The Custodia Guarantee",
+                body: "If a prime or contracting officer challenges your package, we assign a dedicated officer to resolve it &mdash; including direct communication with the prime, until your package is accepted.",
+              },
+              {
+                title: "Veteran-owned, mission-aligned",
+                body: "Built by people who understand federal procurement from the inside. We&apos;re here to expand the small-business defense industrial base, not extract from it.",
+              },
+              {
+                title: "Annual re-affirmation included",
+                body: "Compliance isn&apos;t one-and-done. We monitor changed controls year-round, flag expiring evidence, and prepare your next SPRS re-affirmation every October &mdash; included in your membership.",
+              },
+            ].map((d) => (
+              <div key={d.title} className="rounded-3xl border border-[#2a5a49] bg-[#193d31] p-7">
+                <h3 className="font-serif text-xl font-bold text-white">{d.title}</h3>
+                <p
+                  className="mt-3 text-sm leading-relaxed text-[#c5e3d6]"
+                  dangerouslySetInnerHTML={{ __html: d.body }}
+                />
               </div>
-            </div>
-            {/* Featured quote */}
-            <div className="rounded-3xl border border-[#2a5a49] bg-[#193d31] p-8">
-              <p className="text-base leading-relaxed text-[#c5e3d6]">
-                &ldquo;Working with the federal market felt overwhelming &mdash; compliance language, SPRS, primes asking for evidence packages we didn&apos;t have. Custodia walked us through every step. We went from zero to bid-ready in a week. The Guarantee gave us real confidence our package would hold up under scrutiny.&rdquo;
-              </p>
-              <div className="mt-6 flex items-center gap-4">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2f8f6d] text-sm font-bold text-white">
-                  D
-                </div>
-                <div>
-                  <div className="text-sm font-bold text-white">Defense-tech founder</div>
-                  <div className="text-xs text-[#7aab98]">SBIR Phase II awardee &middot; Pittsburgh, PA</div>
+            ))}
+          </div>
+
+          <div className="mt-14 grid gap-6 border-t border-[#2a5a49] pt-12 md:grid-cols-3">
+            {[
+              { stat: "17", label: "Practices covered" },
+              { stat: "100%", label: "Bid-ready rate" },
+              { stat: "$150K+", label: "Avg. contract value" },
+            ].map((s) => (
+              <div key={s.label} className="text-center">
+                <div className="font-serif text-4xl font-bold text-white md:text-5xl">{s.stat}</div>
+                <div className="mt-2 text-xs font-bold uppercase tracking-[0.18em] text-[#8dd2b1]">
+                  {s.label}
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -752,12 +766,12 @@ export default function Home() {
       <section id="pricing" className="scroll-mt-16 border-y border-[#d5e5dd] bg-white px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-14 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">pricing</div>
-            <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-5xl">
-              Build for free. Pay when it&apos;s time to bid.
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">start today</div>
+            <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-6xl">
+              Start free now. Bid when you&apos;re ready.
             </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-base text-[#44695c]">
-              Use The Platform end-to-end at no cost. Upgrade only when you&apos;re ready to generate the bid-ready package.
+            <p className="mx-auto mt-5 max-w-2xl text-lg text-[#44695c]">
+              Every week you wait is a contract someone else is bidding on. Sign up free, build your package today, and pay only when it&apos;s time to download the bid-ready ZIP and start winning the work.
             </p>
           </div>
           <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-2">
