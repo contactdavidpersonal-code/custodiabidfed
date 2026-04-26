@@ -231,23 +231,63 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3 — Trust bar */}
-      <section className="border-b border-[#e0ebe5] bg-[#f7f7f3] px-6 py-10">
-        <div className="mx-auto max-w-5xl text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#6b9484]">
-            Trusted by defense-tech startups, SBIR awardees, and DoD subcontractors across the U.S.
+      {/* 3 — Federal market bar */}
+      <section className="border-b border-[#e0ebe5] bg-[#f7f7f3] px-6 py-16">
+        <div className="mx-auto max-w-6xl text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+            Open the door to the federal market
           </p>
-          <div className="mt-5 flex flex-wrap items-center justify-center gap-6 text-sm font-semibold text-[#9ab5ac]">
-            <span>Pittsburgh, PA</span>
-            <span>&middot;</span>
-            <span>Veteran-owned</span>
-            <span>&middot;</span>
-            <span>Cybersecurity firm</span>
-            <span>&middot;</span>
-            <span>Government contractors</span>
-            <span>&middot;</span>
-            <span>DoD subcontractors</span>
+          <h3 className="mx-auto mt-3 max-w-3xl font-serif text-2xl font-bold text-[#10231d] md:text-3xl">
+            CMMC Level 1 is the cost of entry. Once you&apos;re compliant, the door opens.
+          </h3>
+
+          <div className="mx-auto mt-12 grid max-w-5xl grid-cols-2 items-start justify-items-center gap-x-6 gap-y-10 sm:grid-cols-4">
+            {[
+              { name: "U.S. Army" },
+              { name: "U.S. Navy" },
+              { name: "U.S. Air Force" },
+              { name: "U.S. Space Force" },
+              { name: "DARPA" },
+              { name: "AFWERX" },
+              { name: "DIU" },
+              { name: "NavalX" },
+            ].map((org) => (
+              <div
+                key={org.name}
+                className="group flex flex-col items-center gap-3 opacity-65 transition-opacity hover:opacity-100"
+              >
+                <svg
+                  viewBox="0 0 36 36"
+                  className="h-10 w-10 text-[#3b5f53] transition-colors group-hover:text-[#2f8f6d]"
+                  aria-hidden
+                >
+                  <path
+                    d="M18 2 L31 7 L31 18 C31 25 26 31 18 34 C10 31 5 25 5 18 L5 7 Z"
+                    fill="currentColor"
+                    opacity="0.12"
+                  />
+                  <path
+                    d="M18 2 L31 7 L31 18 C31 25 26 31 18 34 C10 31 5 25 5 18 L5 7 Z"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M18 12 L19.5 16 L24 16 L20.25 18.5 L22 23 L18 20.25 L14 23 L15.75 18.5 L12 16 L16.5 16 Z"
+                    fill="currentColor"
+                  />
+                </svg>
+                <span className="text-sm font-bold tracking-wide text-[#3b5f53] transition-colors group-hover:text-[#10231d]">
+                  {org.name}
+                </span>
+              </div>
+            ))}
           </div>
+
+          <p className="mx-auto mt-12 max-w-2xl text-xs leading-relaxed text-[#7a9c90]">
+            Examples of the federal contracting market our clients pursue. Custodia is independent and is not affiliated with or endorsed by any agency, service branch, or program shown.
+          </p>
         </div>
       </section>
 
