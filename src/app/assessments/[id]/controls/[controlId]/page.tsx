@@ -71,6 +71,66 @@ const providerLabel: Record<EvidenceProvider, string> = {
   manual: "Manual / any business",
 };
 
+/**
+ * Infers which file formats a piece of guidance is asking for from its
+ * capture text. Only Screenshot and PDF formats can be auto-reviewed by the
+ * Custodia AI; everything else (CSV, Excel) needs an officer to clear it
+ * before the user can sign. Chips are rendered next to each provider so the
+ * user knows what to capture before they capture it.
+ */
+type EvidenceFormat = {
+  key: "screenshot" | "pdf" | "csv" | "signed";
+  label: string;
+  autoReviewable: boolean;
+};
+
+const EVIDENCE_FORMAT_DEFS: Record<EvidenceFormat["key"], EvidenceFormat> = {
+  screenshot: { key: "screenshot", label: "Screenshot", autoReviewable: true },
+  pdf: { key: "pdf", label: "PDF", autoReviewable: true },
+  csv: { key: "csv", label: "CSV export", autoReviewable: false },
+  signed: { key: "signed", label: "Signed paper", autoReviewable: true },
+};
+
+function inferEvidenceFormats(capture: string): EvidenceFormat[] {
+  const lower = capture.toLowerCase();
+  const out: EvidenceFormat[] = [];
+  if (/screenshot|screen capture|screen-cap/.test(lower)) {
+    out.push(EVIDENCE_FORMAT_DEFS.screenshot);
+  }
+  if (/\bpdf\b|signed pdf|scanned pdf/.test(lower)) {
+    out.push(EVIDENCE_FORMAT_DEFS.pdf);
+  }
+  if (/\bcsv\b|exported csv|export.*csv/.test(lower)) {
+    out.push(EVIDENCE_FORMAT_DEFS.csv);
+  }
+  if (/signed (page|matrix|roster|policy|list)|photo of signed|scanned/.test(lower)) {
+    if (!out.some((f) => f.key === "signed")) {
+      out.push(EVIDENCE_FORMAT_DEFS.signed);
+    }
+  }
+  // Default: if nothing matched, assume screenshot is the safe bet.
+  if (out.length === 0) out.push(EVIDENCE_FORMAT_DEFS.screenshot);
+  return out;
+}
+
+function FormatChip({ format }: { format: EvidenceFormat }) {
+  const tone = format.autoReviewable
+    ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+    : "bg-amber-50 text-amber-800 ring-amber-200";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-inset ${tone}`}
+      title={
+        format.autoReviewable
+          ? "AI auto-reviewable"
+          : "Officer review needed before signing"
+      }
+    >
+      {format.autoReviewable ? "✓" : "⚠"} {format.label}
+    </span>
+  );
+}
+
 function formatBytes(n: number | null): string {
   if (!n) return "";
   if (n < 1024) return `${n} B`;
@@ -216,37 +276,43 @@ export default async function ControlDetailPage(
             upload what you capture below.
           </p>
           <div className="space-y-2">
-            {practice.providerGuidance.map((guidance) => (
-              <details
-                key={guidance.provider}
-                className="group rounded-xl border border-slate-200 bg-white shadow-sm"
-              >
-                <summary className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-slate-900">
-                  <span className="flex items-center gap-3">
-                    <span>{guidance.label}</span>
-                    <span className="text-xs font-medium text-slate-500">
-                      {providerLabel[guidance.provider]}
+            {practice.providerGuidance.map((guidance) => {
+              const formats = inferEvidenceFormats(guidance.capture);
+              return (
+                <details
+                  key={guidance.provider}
+                  className="group rounded-xl border border-slate-200 bg-white shadow-sm"
+                >
+                  <summary className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4 text-sm font-semibold text-slate-900">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span>{guidance.label}</span>
+                      <span className="text-xs font-medium text-slate-500">
+                        {providerLabel[guidance.provider]}
+                      </span>
+                      {formats.map((f) => (
+                        <FormatChip key={f.key} format={f} />
+                      ))}
                     </span>
-                  </span>
-                  <span className="text-slate-400 transition-transform group-open:rotate-90">
-                    &rsaquo;
-                  </span>
-                </summary>
-                <div className="border-t border-slate-100 px-5 py-4">
-                  <ol className="list-decimal space-y-2 pl-5 text-sm text-slate-700">
-                    {guidance.steps.map((step, idx) => (
-                      <li key={idx}>{step}</li>
-                    ))}
-                  </ol>
-                  <div className="mt-4 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-800">
-                    <span className="font-semibold text-slate-900">
-                      Capture:{" "}
+                    <span className="text-slate-400 transition-transform group-open:rotate-90">
+                      &rsaquo;
                     </span>
-                    {guidance.capture}
+                  </summary>
+                  <div className="border-t border-slate-100 px-5 py-4">
+                    <ol className="list-decimal space-y-2 pl-5 text-sm text-slate-700">
+                      {guidance.steps.map((step, idx) => (
+                        <li key={idx}>{step}</li>
+                      ))}
+                    </ol>
+                    <div className="mt-4 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-800">
+                      <span className="font-semibold text-slate-900">
+                        Capture:{" "}
+                      </span>
+                      {guidance.capture}
+                    </div>
                   </div>
-                </div>
-              </details>
-            ))}
+                </details>
+              );
+            })}
           </div>
         </section>
       )}
@@ -661,6 +727,24 @@ function EvidenceSection({
         </span>
       </div>
 
+      <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="flex items-start gap-2">
+          <span className="mt-0.5 text-base leading-none">★</span>
+          <div>
+            <div className="font-bold">
+              Preferred for AI auto-review: PNG/JPG screenshots or PDF.
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-amber-900/90">
+              The Custodia AI reviews images and PDFs end-to-end. CSV, Excel,
+              Word, and plain text uploads are accepted but cannot be
+              auto-reviewed — they will need a Custodia officer to clear them
+              before you can sign. When in doubt, take a screenshot of the
+              data on screen.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <form
         action={uploadEvidenceAction}
         encType="multipart/form-data"
@@ -681,7 +765,8 @@ function EvidenceSection({
               className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-800"
             />
             <span className="text-xs text-slate-500">
-              PDF, images, CSV, Word/Excel. 25 MB max per file.
+              PNG/JPG/PDF auto-review. CSV/Excel/Word need officer clearance.
+              25 MB max.
             </span>
           </label>
           <button

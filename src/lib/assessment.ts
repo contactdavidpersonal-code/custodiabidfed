@@ -458,14 +458,21 @@ export async function listEvidenceForAssessment(
 
 /**
  * An artifact counts toward attestation readiness only if the AI vision review
- * has rendered a non-insufficient, non-not_relevant verdict. See
- * feedback_evidence_gating.md.
+ * actually reviewed it AND rendered a non-insufficient, non-not_relevant
+ * verdict. See feedback_evidence_gating.md.
+ *
+ * Verdicts of `unclear` with `ai_review_model = 'none'` are reserved for
+ * unsupported formats (CSV, Excel, Word, plain text) — those bypass the AI
+ * entirely and would otherwise leak through the gate. We treat them as not
+ * passing so the user is forced to re-upload as a screenshot or PDF (or wait
+ * for an officer to manually clear them).
  */
 export function isEvidencePassing(row: EvidenceArtifactRow): boolean {
-  return (
-    row.ai_review_verdict === "sufficient" ||
-    row.ai_review_verdict === "unclear"
-  );
+  if (row.ai_review_verdict === "sufficient") return true;
+  if (row.ai_review_verdict === "unclear" && row.ai_review_model !== "none") {
+    return true;
+  }
+  return false;
 }
 
 export function evidenceReviewBlockers(
@@ -479,11 +486,13 @@ export function evidenceReviewBlockers(
       reason:
         r.ai_review_verdict === null
           ? "Pending AI review"
-          : r.ai_review_verdict === "insufficient"
-            ? "AI flagged insufficient — replace or supplement"
-            : r.ai_review_verdict === "not_relevant"
-              ? "AI could not map this artifact to any practice"
-              : "Not passing",
+          : r.ai_review_model === "none"
+            ? "Format not auto-reviewable — re-upload as PNG, JPG, or PDF"
+            : r.ai_review_verdict === "insufficient"
+              ? "AI flagged insufficient — replace or supplement"
+              : r.ai_review_verdict === "not_relevant"
+                ? "AI could not map this artifact to any practice"
+                : "Not passing",
     }));
 }
 
