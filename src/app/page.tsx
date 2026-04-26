@@ -1,112 +1,67 @@
-﻿"use client";
+"use client";
 
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 
-const BOOTCAMP_DAYS = [
-  {
-    day: "Day 1",
-    title: "Foundation & SAM.gov Registration",
-    items: [
-      "Register your business on SAM.gov (System for Award Management)",
-      "Obtain a CAGE Code and UEI number",
-      "Identify your NAICS codes for defense/federal work",
-      "Set up your secure business email and document storage",
-    ],
-  },
-  {
-    day: "Day 2",
-    title: "CMMC Level 1 Requirements",
-    items: [
-      "Understand the 17 CMMC Level 1 practices (FAR 52.204-21)",
-      "Audit your current IT environment against each control",
-      "Identify gaps across access control, media protection, and incident response",
-      "Create your System Security Plan (SSP) draft",
-    ],
-  },
-  {
-    day: "Day 3",
-    title: "Access Control & Identity",
-    items: [
-      "Implement multi-factor authentication (MFA) on all accounts",
-      "Establish least-privilege access policies",
-      "Configure password management and session controls",
-      "Document user accounts and access rights",
-    ],
-  },
-  {
-    day: "Day 4",
-    title: "Data Protection & Media",
-    items: [
-      "Identify and label all Federal Contract Information (FCI)",
-      "Implement encryption for data at rest and in transit",
-      "Establish removable media policies",
-      "Set up secure data disposal procedures",
-    ],
-  },
-  {
-    day: "Day 5",
-    title: "Configuration & Patching",
-    items: [
-      "Establish baseline configurations for all systems",
-      "Implement automated patch management",
-      "Disable unnecessary services and ports",
-      "Document your configuration management process",
-    ],
-  },
-  {
-    day: "Day 6",
-    title: "Incident Response & Audit",
-    items: [
-      "Draft your Incident Response Plan (IRP)",
-      "Enable audit logging on all critical systems",
-      "Set up log retention (minimum 90 days)",
-      "Test your incident reporting process with DFARS clause 252.204-7012",
-    ],
-  },
-  {
-    day: "Day 7",
-    title: "First Bid & Go-Live",
-    items: [
-      "Review and finalize your System Security Plan",
-      "Complete your self-attestation for CMMC Level 1",
-      "Search SAM.gov for active solicitations matching your NAICS codes",
-      "Submit your first bid with full compliance documentation",
-    ],
-  },
+const PRACTICES = [
+  { id: "AC.L1-3.1.1", domain: "AC", short: "Authorized Access Control" },
+  { id: "AC.L1-3.1.2", domain: "AC", short: "Transaction & Function Control" },
+  { id: "AC.L1-3.1.20", domain: "AC", short: "External Connections" },
+  { id: "AC.L1-3.1.22", domain: "AC", short: "Control Public Information" },
+  { id: "IA.L1-3.5.1", domain: "IA", short: "Identify Users & Devices" },
+  { id: "IA.L1-3.5.2", domain: "IA", short: "Authenticate Users & Devices" },
+  { id: "MP.L1-3.8.3", domain: "MP", short: "Sanitize Media Before Disposal" },
+  { id: "PE.L1-3.10.1", domain: "PE", short: "Limit Physical Access" },
+  { id: "PE.L1-3.10.3", domain: "PE", short: "Escort & Monitor Visitors" },
+  { id: "PE.L1-3.10.4", domain: "PE", short: "Physical Access Logs" },
+  { id: "PE.L1-3.10.5", domain: "PE", short: "Manage Physical Access Devices" },
+  { id: "SC.L1-3.13.1", domain: "SC", short: "Monitor Communications at Boundaries" },
+  { id: "SC.L1-3.13.5", domain: "SC", short: "Public-System Subnetworks" },
+  { id: "SI.L1-3.14.1", domain: "SI", short: "Identify & Correct System Flaws" },
+  { id: "SI.L1-3.14.2", domain: "SI", short: "Malicious Code Protection" },
+  { id: "SI.L1-3.14.4", domain: "SI", short: "Update Anti-Malware" },
+  { id: "SI.L1-3.14.5", domain: "SI", short: "Periodic & Real-Time Scans" },
 ];
 
-const MANAGED_FEATURES = [
+const SELF_SERVE_INCLUDES = [
+  "Conversational onboarding — your AI compliance officer learns your business in 5 minutes",
+  "Plain-English walkthrough of every one of the 17 practices",
+  "Per-control evidence upload with AI vision review on every artifact",
+  "Auto-drafted narratives for your System Security Plan",
+  "Bid-ready ZIP package: SSP, signed affirmation memo, evidence inventory",
+  "SPRS submission instructions and annual re-affirmation reminders",
+];
+
+const BOOTCAMP_INCLUDES = [
+  "Everything in self-serve, plus:",
+  "1-week intensive with a Custodia compliance officer",
+  "We do the SAM.gov registration and CAGE/UEI work for you",
+  "Live policy + SSP review with your senior signer on the call",
+  "Direct help with your first bid response",
+  "30 days of post-bootcamp officer access",
+];
+
+const HOW_IT_WORKS = [
   {
-    icon: "🔒",
-    title: "Continuous Monitoring",
-    desc: "We watch your 17 CMMC Level 1 controls 24/7 and alert you the moment anything drifts out of compliance.",
+    n: "01",
+    title: "Tell us about your business",
+    desc: "5-minute conversation. Your AI officer captures legal identity, scope, and tech stack — no forms.",
   },
   {
-    icon: "📋",
-    title: "Policy Maintenance",
-    desc: "Your SSP, IRP, and all compliance docs stay current. We update them as regulations change — you never touch a policy document again.",
+    n: "02",
+    title: "Walk the 17 practices",
+    desc: "Each practice is explained in plain English with capture steps tailored to your stack (M365, Google Workspace, Okta, AWS, on-prem, or none of the above).",
   },
   {
-    icon: "🛡️",
-    title: "Incident Response Support",
-    desc: "If a cyber incident occurs, we handle the DFARS reporting to DoD within the required 72 hours, protecting your contracts.",
+    n: "03",
+    title: "Upload evidence",
+    desc: "Screenshots, exports, signed rosters. AI vision review catches insufficient evidence before a prime would.",
   },
   {
-    icon: "📊",
-    title: "Monthly Compliance Reports",
-    desc: "Audit-ready reports on your compliance posture sent monthly — ready to show contracting officers on demand.",
-  },
-  {
-    icon: "🔄",
-    title: "Patch & Config Management",
-    desc: "We track your patch status and system configurations against CMMC baselines so you are always bid-ready.",
-  },
-  {
-    icon: "📞",
-    title: "Dedicated Compliance Advisor",
-    desc: "One point of contact for every compliance question, contract requirement, and audit request. No ticket queues.",
+    n: "04",
+    title: "Sign and download",
+    desc: "Senior official signs the binary L1 affirmation. Download a single ZIP with your SSP, signed memo, and every artifact — file in SPRS and start bidding.",
   },
 ];
 
@@ -127,7 +82,7 @@ function WaitlistForm() {
       const data = await res.json();
       if (res.ok) {
         setStatus("success");
-        setMessage("You are on the list! We will be in touch within 24 hours.");
+        setMessage("We will reach out within 1 business day.");
         setForm({ name: "", email: "", company: "" });
       } else {
         setStatus("error");
@@ -140,13 +95,13 @@ function WaitlistForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 w-full max-w-md mx-auto">
+    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-md space-y-4">
       <input
         type="text"
         placeholder="Your name"
         value={form.name}
         onChange={(e) => setForm({ ...form, name: e.target.value })}
-        className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+        className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
       />
       <input
         type="email"
@@ -154,24 +109,28 @@ function WaitlistForm() {
         placeholder="Work email *"
         value={form.email}
         onChange={(e) => setForm({ ...form, email: e.target.value })}
-        className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+        className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
       />
       <input
         type="text"
         placeholder="Company name"
         value={form.company}
         onChange={(e) => setForm({ ...form, company: e.target.value })}
-        className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent"
+        className="w-full rounded-lg border border-slate-700 bg-slate-900/60 px-4 py-3 text-white placeholder-slate-500 outline-none focus:border-amber-400 focus:ring-1 focus:ring-amber-400"
       />
       <button
         type="submit"
         disabled={status === "loading" || status === "success"}
-        className="w-full bg-amber-400 hover:bg-amber-500 disabled:opacity-60 text-gray-900 font-bold py-3 px-8 rounded-lg transition-colors text-lg"
+        className="w-full rounded-lg bg-amber-400 px-8 py-3 text-lg font-bold text-slate-900 transition-colors hover:bg-amber-300 disabled:opacity-60"
       >
-        {status === "loading" ? "Submitting..." : "Apply for the Bootcamp →"}
+        {status === "loading" ? "Submitting…" : "Talk to a Custodia officer →"}
       </button>
       {message && (
-        <p className={`text-sm text-center font-medium ${status === "success" ? "text-green-400" : "text-red-400"}`}>
+        <p
+          className={`text-center text-sm font-medium ${
+            status === "success" ? "text-emerald-400" : "text-rose-400"
+          }`}
+        >
           {message}
         </p>
       )}
@@ -181,22 +140,33 @@ function WaitlistForm() {
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white text-gray-900 font-[family-name:var(--font-geist-sans)]">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-white text-slate-900">
+      <nav className="fixed inset-x-0 top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <span className="text-xl font-bold tracking-tight">
             Custodia<span className="text-amber-400">.</span>
           </span>
+          <div className="hidden items-center gap-6 text-sm font-medium text-slate-600 md:flex">
+            <a href="#how" className="transition-colors hover:text-slate-900">
+              How it works
+            </a>
+            <a href="#paths" className="transition-colors hover:text-slate-900">
+              Self-serve or bootcamp
+            </a>
+            <a href="#about" className="transition-colors hover:text-slate-900">
+              About
+            </a>
+          </div>
           <div className="flex items-center gap-3">
             <Show when="signed-out">
               <SignInButton mode="modal">
-                <button className="text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors">
+                <button className="text-sm font-semibold text-slate-600 transition-colors hover:text-slate-900">
                   Sign in
                 </button>
               </SignInButton>
               <SignUpButton mode="modal">
-                <button className="bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold px-5 py-2 rounded-lg text-sm transition-colors">
-                  Create account
+                <button className="rounded-lg bg-amber-400 px-5 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-amber-300">
+                  Start free
                 </button>
               </SignUpButton>
             </Show>
@@ -204,7 +174,7 @@ export default function Home() {
               <Link
                 href="/assessments"
                 prefetch={false}
-                className="bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold px-5 py-2 rounded-lg text-sm transition-colors"
+                className="rounded-lg bg-amber-400 px-5 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-amber-300"
               >
                 Open workspace
               </Link>
@@ -214,305 +184,332 @@ export default function Home() {
         </div>
       </nav>
 
-      <section className="pt-32 pb-24 px-6 bg-[#0a0f1e] text-white text-center">
-        <div className="max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-amber-400/10 border border-amber-400/30 rounded-full px-4 py-1.5 text-amber-400 text-sm font-medium mb-8">
-            <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-            Now accepting applications - Cohort 1
+      {/* Hero */}
+      <section className="bg-slate-900 px-6 pb-24 pt-32 text-white">
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-1.5 text-sm font-medium text-amber-300">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-amber-400" />
+            CMMC Level 1 · FAR 52.204-21
           </div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight leading-tight mb-6">
-            Win Your First <span className="text-amber-400">Government Contract</span> in One Week
+          <h1 className="mb-6 text-5xl font-black leading-[1.05] tracking-tight md:text-7xl">
+            From zero to bidding on{" "}
+            <span className="text-amber-400">federal contracts</span>.
           </h1>
-          <p className="text-xl md:text-2xl text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-            The intensive 7-day bootcamp that takes your startup from zero to <strong className="text-white">CMMC Level 1 compliant</strong> — registered, documented, and ready to bid on federal contracts.
+          <p className="mx-auto mb-10 max-w-2xl text-xl leading-relaxed text-slate-300 md:text-2xl">
+            We get your business to the cybersecurity standard required to handle Federal Contract Information — so you can win the work, keep the work, and renew every year.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Show when="signed-in">
               <Link
                 href="/assessments"
                 prefetch={false}
-                className="bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold px-8 py-4 rounded-xl text-lg transition-colors"
+                className="rounded-xl bg-amber-400 px-8 py-4 text-lg font-bold text-slate-900 transition-colors hover:bg-amber-300"
               >
                 Open your workspace →
               </Link>
               <a
-                href="#program"
-                className="text-gray-300 hover:text-white font-medium px-8 py-4 transition-colors"
+                href="#how"
+                className="px-8 py-4 text-lg font-medium text-slate-300 transition-colors hover:text-white"
               >
-                See the program ↓
+                See how it works ↓
               </a>
             </Show>
             <Show when="signed-out">
-              <a
-                href="#apply"
-                className="bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold px-8 py-4 rounded-xl text-lg transition-colors"
-              >
-                Apply for the Bootcamp →
-              </a>
-              <SignInButton mode="modal">
-                <button className="text-gray-300 hover:text-white font-medium px-8 py-4 transition-colors">
-                  Founder sign in
+              <SignUpButton mode="modal">
+                <button className="rounded-xl bg-amber-400 px-8 py-4 text-lg font-bold text-slate-900 transition-colors hover:bg-amber-300">
+                  Start free — self-serve
                 </button>
-              </SignInButton>
+              </SignUpButton>
+              <a
+                href="#bootcamp"
+                className="rounded-xl border border-slate-600 px-8 py-4 text-lg font-medium text-white transition-colors hover:border-amber-400 hover:text-amber-400"
+              >
+                Or have us run it for you →
+              </a>
             </Show>
           </div>
-          <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
-            {[
-              { stat: "7 days", label: "to first bid" },
-              { stat: "CMMC 1", label: "compliant" },
-              { stat: "$0", label: "penalties risk" },
-            ].map(({ stat, label }) => (
-              <div key={stat} className="text-center">
-                <div className="text-3xl font-black text-amber-400">{stat}</div>
-                <div className="text-sm text-gray-400 mt-1">{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 px-6 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-black text-center mb-4">
-            The $900B federal market is <span className="text-red-500">locked</span> behind compliance walls
-          </h2>
-          <p className="text-gray-500 text-center text-lg mb-16 max-w-2xl mx-auto">
-            Most startups never bid on government contracts — not because they lack the product, but because they do not know how to navigate CMMC, SAM.gov, and federal procurement.
+          <p className="mt-10 text-sm text-slate-400">
+            Pittsburgh, PA · Veteran-owned · Built by Carnegie Mellon graduates
           </p>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { emoji: "😰", title: "Compliance is overwhelming", desc: "CMMC, DFARS, NIST 800-171 — the acronyms alone stop most founders before they start." },
-              { emoji: "💸", title: "Consultants cost $50k+", desc: "Traditional compliance firms charge enterprise rates. Startups cannot afford to even get in the room." },
-              { emoji: "⏳", title: "Years of waiting", desc: "Most companies take 12-18 months to get contract-ready. By then, competitors have the relationships." },
-            ].map(({ emoji, title, desc }) => (
-              <div key={title} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="text-4xl mb-4">{emoji}</div>
-                <h3 className="font-bold text-lg mb-2">{title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
-      <section className="py-24 px-6 bg-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-block bg-amber-50 text-amber-700 font-semibold text-sm px-4 py-1.5 rounded-full mb-6">
-            The Custodia Method
-          </div>
-          <h2 className="text-3xl md:text-5xl font-black mb-6 leading-tight">
-            We built the fastest path from <span className="text-amber-400">startup to contractor</span>
-          </h2>
-          <p className="text-gray-500 text-lg max-w-2xl mx-auto mb-16 leading-relaxed">
-            Custodia compresses what takes most companies a year into a structured 7-day bootcamp — live workshops, done-for-you documentation, and expert guidance every step of the way.
-          </p>
-          <div className="grid md:grid-cols-2 gap-6 text-left">
-            {[
-              { before: "18 months of DIY compliance", after: "7 days with expert guidance" },
-              { before: "$50k+ traditional consulting", after: "Accessible bootcamp pricing" },
-              { before: "Generic NIST frameworks", after: "CMMC Level 1 — exactly what DoD requires" },
-              { before: "Compliance then forget", after: "Managed year-round so you stay bid-ready" },
-            ].map(({ before, after }) => (
-              <div key={after} className="flex items-start gap-4 bg-gray-50 rounded-xl p-4 border border-gray-100">
-                <div className="flex-1">
-                  <div className="text-red-400 text-sm line-through mb-1">{before}</div>
-                  <div className="text-green-600 font-semibold">✓ {after}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section id="program" className="py-24 px-6 bg-[#0a0f1e] text-white scroll-mt-16">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-block bg-amber-400/10 border border-amber-400/30 text-amber-400 font-semibold text-sm px-4 py-1.5 rounded-full mb-6">
-              The 7-Day Bootcamp
+      {/* Who this is for */}
+      <section className="bg-slate-50 px-6 py-24">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-16 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-amber-600">
+              Who we built this for
             </div>
-            <h2 className="text-3xl md:text-5xl font-black mb-4">Your week, day by day</h2>
-            <p className="text-gray-400 text-lg max-w-xl mx-auto">
-              Every day has a specific deliverable. By end of Day 7, you are compliant and your first bid is submitted.
-            </p>
-          </div>
-          <div className="space-y-4">
-            {BOOTCAMP_DAYS.map((d, i) => (
-              <div key={d.day} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-colors">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-amber-400 rounded-xl flex items-center justify-center font-black text-gray-900 text-sm">
-                    {i + 1}
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-amber-400 text-xs font-bold uppercase tracking-widest mb-1">{d.day}</div>
-                    <h3 className="font-bold text-lg mb-3">{d.title}</h3>
-                    <ul className="space-y-1.5">
-                      {d.items.map((item) => (
-                        <li key={item} className="text-gray-300 text-sm flex items-start gap-2">
-                          <span className="text-amber-400 mt-0.5 flex-shrink-0">→</span>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 px-6 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-black mb-4">
-              What is <span className="text-amber-500">CMMC Level 1</span>?
+            <h2 className="text-3xl font-black tracking-tight md:text-4xl">
+              You don&apos;t have to learn cybersecurity to win federal work.
             </h2>
-            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-              The Cybersecurity Maturity Model Certification (CMMC) is the Department of Defense framework for protecting Federal Contract Information (FCI). Level 1 is the entry point — required for any company handling non-sensitive federal data.
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
+              CMMC Level 1 became a contract requirement in 2025. The acronyms are intimidating, but the path through them is mechanical — and that&apos;s what we automate.
             </p>
           </div>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 mb-8">
-            <h3 className="font-bold text-xl mb-6 text-center">The 17 CMMC Level 1 Practices (FAR 52.204-21)</h3>
-            <div className="grid md:grid-cols-2 gap-3">
-              {[
-                "Limit system access to authorized users",
-                "Limit system access to authorized transactions",
-                "Verify and control external system connections",
-                "Control CUI posted to publicly accessible systems",
-                "Identify and authenticate system users",
-                "Sanitize or destroy media before disposal",
-                "Limit physical access to authorized individuals",
-                "Escort visitors and monitor physical access",
-                "Maintain audit logs of system activity",
-                "Perform periodic scans for malicious code",
-                "Update malicious code protection mechanisms",
-                "Perform ad-hoc scans of files from external sources",
-                "Identify, report, and correct information flaws",
-                "Provide training on security awareness",
-                "Establish baseline configurations",
-                "Restrict, disable, or prevent wireless access",
-                "Control wireless access using authentication",
-              ].map((practice, i) => (
-                <div key={practice} className="flex items-start gap-3 text-sm text-gray-600">
-                  <span className="text-amber-500 font-bold flex-shrink-0">{String(i + 1).padStart(2, "0")}</span>
-                  {practice}
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
-            <p className="text-amber-800 font-medium">
-              <strong>Bottom line:</strong> If your startup handles any federal contract information, CMMC Level 1 is not optional. It is a contract requirement as of 2025. Without it, you cannot bid.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-24 px-6 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <div className="inline-block bg-amber-50 text-amber-700 font-semibold text-sm px-4 py-1.5 rounded-full mb-6">
-              Monthly Managed Service
-            </div>
-            <h2 className="text-3xl md:text-5xl font-black mb-4">
-              We keep you compliant <span className="text-amber-500">year-round</span>
-            </h2>
-            <p className="text-gray-500 text-lg max-w-2xl mx-auto">
-              Winning the first contract is day one. Keeping your CMMC compliance active — while you focus on executing contracts and winning more — is where Custodia becomes your unfair advantage.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {MANAGED_FEATURES.map(({ icon, title, desc }) => (
-              <div key={title} className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:border-amber-200 hover:bg-amber-50/30 transition-colors">
-                <div className="text-3xl mb-4">{icon}</div>
-                <h3 className="font-bold text-lg mb-2">{title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              {
+                title: "You just won an FCI contract",
+                desc: "A prime asked for proof of CMMC Level 1 in your last response. You need to be compliant before kickoff — not in six months.",
+              },
+              {
+                title: "You want to start bidding",
+                desc: "You see opportunities on SAM.gov but every solicitation references CMMC. You need a clean affirmation on file before the bid even gets read.",
+              },
+              {
+                title: "You want it done right",
+                desc: "You don’t have time for a 12-month consulting engagement. You want a professional, defensible path — self-serve or done-for-you.",
+              },
+            ].map((card) => (
+              <div
+                key={card.title}
+                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+              >
+                <h3 className="text-lg font-bold tracking-tight">{card.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  {card.desc}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="py-24 px-6 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-black mb-4">Simple pricing, serious results</h2>
-            <p className="text-gray-500 text-lg">No hidden fees. No long-term lock-in on the bootcamp.</p>
+      {/* How it works */}
+      <section id="how" className="scroll-mt-16 bg-white px-6 py-24">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-16 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-amber-600">
+              How it works
+            </div>
+            <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+              One workspace. Four steps. One bid-ready package.
+            </h2>
           </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-[#0a0f1e] text-white rounded-2xl p-8 flex flex-col">
-              <div className="text-amber-400 text-sm font-bold uppercase tracking-widest mb-2">The Bootcamp</div>
-              <div className="text-4xl font-black mb-1">Coming Soon</div>
-              <div className="text-gray-400 text-sm mb-6">One-time · 7 days</div>
-              <ul className="space-y-3 flex-1 mb-8">
-                {[
-                  "7 live daily workshop sessions",
-                  "Done-for-you System Security Plan",
-                  "SAM.gov registration walkthrough",
-                  "CMMC Level 1 self-attestation guide",
-                  "First bid submission support",
-                  "30-day post-bootcamp access",
-                ].map((f) => (
-                  <li key={f} className="text-gray-300 text-sm flex items-start gap-2">
-                    <span className="text-amber-400 flex-shrink-0 mt-0.5">✓</span>{f}
+          <div className="grid gap-6 md:grid-cols-2">
+            {HOW_IT_WORKS.map((step) => (
+              <div
+                key={step.n}
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-6"
+              >
+                <div className="text-xs font-mono font-bold tracking-widest text-amber-600">
+                  {step.n}
+                </div>
+                <h3 className="mt-1 text-lg font-bold tracking-tight">
+                  {step.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                  {step.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Two paths */}
+      <section id="paths" className="scroll-mt-16 bg-slate-50 px-6 py-24">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-16 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-amber-600">
+              Two ways in
+            </div>
+            <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+              Drive it yourself, or have us run it for you.
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-600">
+              Same destination — a clean SPRS affirmation and a bid-ready package. Pick the path that matches your time and team.
+            </p>
+          </div>
+          <div className="grid gap-8 md:grid-cols-2">
+            <div className="flex flex-col rounded-2xl border-2 border-amber-300 bg-white p-8 shadow-sm">
+              <div className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-700">
+                Most popular
+              </div>
+              <div className="text-2xl font-black tracking-tight">Self-Serve Platform</div>
+              <p className="mt-2 text-sm text-slate-600">
+                You drive. The AI compliance officer guides every step. Designed for founders who want a defensible path without a consultant&apos;s timeline.
+              </p>
+              <ul className="mt-6 flex-1 space-y-3">
+                {SELF_SERVE_INCLUDES.map((f) => (
+                  <li key={f} className="flex items-start gap-2 text-sm text-slate-700">
+                    <span className="mt-0.5 flex-none text-amber-500">✓</span>
+                    {f}
                   </li>
                 ))}
               </ul>
-              <a href="#apply" className="block text-center bg-amber-400 hover:bg-amber-500 text-gray-900 font-bold py-3 px-6 rounded-xl transition-colors">
-                Apply Now →
-              </a>
+              <Show when="signed-out">
+                <SignUpButton mode="modal">
+                  <button className="mt-8 w-full rounded-xl bg-amber-400 px-6 py-3 font-bold text-slate-900 transition-colors hover:bg-amber-300">
+                    Start free — no credit card
+                  </button>
+                </SignUpButton>
+              </Show>
+              <Show when="signed-in">
+                <Link
+                  href="/assessments"
+                  prefetch={false}
+                  className="mt-8 block w-full rounded-xl bg-amber-400 px-6 py-3 text-center font-bold text-slate-900 transition-colors hover:bg-amber-300"
+                >
+                  Open your workspace →
+                </Link>
+              </Show>
             </div>
-            <div className="bg-white border border-gray-200 rounded-2xl p-8 flex flex-col">
-              <div className="text-amber-500 text-sm font-bold uppercase tracking-widest mb-2">Managed Compliance</div>
-              <div className="text-4xl font-black mb-1">Coming Soon</div>
-              <div className="text-gray-400 text-sm mb-6">Per month · Cancel anytime</div>
-              <ul className="space-y-3 flex-1 mb-8">
-                {[
-                  "Continuous CMMC Level 1 monitoring",
-                  "All policy documents maintained",
-                  "Monthly compliance reports",
-                  "DFARS incident response support",
-                  "Configuration and patch tracking",
-                  "Dedicated compliance advisor",
-                  "Audit-ready documentation on demand",
-                ].map((f) => (
-                  <li key={f} className="text-gray-600 text-sm flex items-start gap-2">
-                    <span className="text-green-500 flex-shrink-0 mt-0.5">✓</span>{f}
+            <div className="flex flex-col rounded-2xl border border-slate-200 bg-slate-900 p-8 text-white shadow-sm">
+              <div className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-amber-400">
+                Done-for-you
+              </div>
+              <div className="text-2xl font-black tracking-tight">Bootcamp with a Custodia Officer</div>
+              <p className="mt-2 text-sm text-slate-300">
+                A senior compliance officer runs the workspace alongside you for one week. For founders with a deadline who&apos;d rather pay than learn.
+              </p>
+              <ul className="mt-6 flex-1 space-y-3">
+                {BOOTCAMP_INCLUDES.map((f, i) => (
+                  <li
+                    key={f}
+                    className={`flex items-start gap-2 text-sm ${
+                      i === 0
+                        ? "font-semibold text-white"
+                        : "text-slate-300"
+                    }`}
+                  >
+                    {i !== 0 && <span className="mt-0.5 flex-none text-amber-400">✓</span>}
+                    {f}
                   </li>
                 ))}
               </ul>
-              <a href="#apply" className="block text-center bg-gray-900 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-xl transition-colors">
-                Join Waitlist →
+              <a
+                href="#bootcamp"
+                className="mt-8 block w-full rounded-xl border border-amber-400 px-6 py-3 text-center font-bold text-amber-400 transition-colors hover:bg-amber-400 hover:text-slate-900"
+              >
+                Talk to a Custodia officer →
               </a>
             </div>
           </div>
-          <p className="text-center text-gray-400 text-sm mt-6">
-            Bootcamp graduates receive priority access and a discount on the Managed Compliance plan.
-          </p>
         </div>
       </section>
 
-      <section id="apply" className="py-24 px-6 bg-[#0a0f1e] text-white scroll-mt-16">
-        <div className="max-w-xl mx-auto text-center">
-          <div className="inline-block bg-amber-400/10 border border-amber-400/30 text-amber-400 font-semibold text-sm px-4 py-1.5 rounded-full mb-6">
-            Limited spots · Cohort 1
+      {/* The 17 practices */}
+      <section className="bg-white px-6 py-24">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-12 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-amber-600">
+              The work, made concrete
+            </div>
+            <h2 className="text-3xl font-black tracking-tight md:text-4xl">
+              The 17 CMMC Level 1 practices.
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600">
+              Defined by FAR 52.204-21(b)(1). Inside the workspace, every one of these has plain-English copy, evidence-capture steps for your stack, and an AI-drafted SSP narrative.
+            </p>
           </div>
-          <h2 className="text-3xl md:text-5xl font-black mb-4">Ready to bid on federal contracts?</h2>
-          <p className="text-gray-300 text-lg mb-10">
-            Apply now and we will reach out within 24 hours to confirm your spot in the next bootcamp cohort.
+          <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {PRACTICES.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3"
+              >
+                <span className="rounded-md bg-slate-900 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-amber-400">
+                  {p.domain}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="font-mono text-[11px] text-slate-500">{p.id}</div>
+                  <div className="text-sm font-semibold text-slate-900">{p.short}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="mt-12 rounded-2xl border border-amber-200 bg-amber-50 p-6 text-center">
+            <p className="text-amber-900">
+              <strong>L1 affirmation is binary.</strong> Either you implement all 17 or you don&apos;t — there is no partial credit. The 110-point NIST scoring you&apos;ve seen elsewhere applies to <em>Level 2</em>, not Level 1. We tell you the difference, and we don&apos;t let you sign until you&apos;re actually ready.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* About / Mission */}
+      <section id="about" className="scroll-mt-16 bg-slate-900 px-6 py-24 text-white">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-amber-400">
+            Why we built this
+          </div>
+          <h2 className="text-3xl font-black tracking-tight md:text-4xl">
+            Securing the businesses that secure America.
+          </h2>
+          <div className="mx-auto mt-8 space-y-5 text-left text-base leading-relaxed text-slate-300 md:text-lg">
+            <p>
+              Custodia is a Pittsburgh, PA cybersecurity firm. <strong className="text-white">Veteran-owned and operated</strong>, founded by <strong className="text-white">Carnegie Mellon graduates</strong>.
+            </p>
+            <p>
+              We started this project because we kept watching small American businesses lose contract opportunities — not because their products weren&apos;t good, but because the compliance paperwork in front of those contracts was written for Fortune 500 contractors with full GRC teams.
+            </p>
+            <p>
+              CMMC Level 1 isn&apos;t complicated. It&apos;s 17 practices that any well-run small business can implement. What&apos;s missing is a tool that translates the regulations into plain English, captures the right evidence, and produces the artifacts a Contracting Officer expects — without charging $50,000 for the privilege.
+            </p>
+            <p>
+              That&apos;s what Custodia does. And we built it specifically to support local Pittsburgh and surrounding-region businesses making the transition into federal work, then opened it up to anyone who needs it.
+            </p>
+          </div>
+          <div className="mt-12 grid grid-cols-3 gap-6 border-t border-slate-700 pt-10 text-center">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-widest text-amber-400">
+                Pittsburgh, PA
+              </div>
+              <div className="mt-1 text-sm text-slate-400">Headquartered locally</div>
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-widest text-amber-400">
+                Veteran-owned
+              </div>
+              <div className="mt-1 text-sm text-slate-400">Service informs the mission</div>
+            </div>
+            <div>
+              <div className="text-xs font-bold uppercase tracking-widest text-amber-400">
+                CMU built
+              </div>
+              <div className="mt-1 text-sm text-slate-400">
+                Cybersecurity from the source
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Bootcamp inquiry */}
+      <section
+        id="bootcamp"
+        className="scroll-mt-16 bg-slate-900 border-t border-slate-800 px-6 py-24 text-white"
+      >
+        <div className="mx-auto max-w-xl text-center">
+          <div className="mb-6 inline-block rounded-full border border-amber-400/30 bg-amber-400/10 px-4 py-1.5 text-sm font-semibold text-amber-300">
+            Done-for-you · Limited cohorts
+          </div>
+          <h2 className="text-3xl font-black tracking-tight md:text-5xl">
+            Want it handled?
+          </h2>
+          <p className="mt-4 text-lg leading-relaxed text-slate-300">
+            Tell us about your business and a Custodia officer will reach out within one business day to scope a one-week bootcamp.
           </p>
-          <WaitlistForm />
-          <p className="text-gray-500 text-xs mt-4">
-            No spam. No credit card required to apply. We will reach out to discuss fit.
+          <div className="mt-10">
+            <WaitlistForm />
+          </div>
+          <p className="mt-4 text-xs text-slate-500">
+            No credit card. No commitment. We&apos;ll talk first to confirm fit.
           </p>
         </div>
       </section>
 
-      <footer className="bg-[#07091a] text-gray-500 py-10 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-white font-bold text-lg">Custodia<span className="text-amber-400">.</span></div>
-          <p className="text-sm text-center">CMMC Level 1 Bootcamp and Managed Compliance for Government Contractors</p>
-          <p className="text-sm">© {new Date().getFullYear()} Custodia. All rights reserved.</p>
+      <footer className="bg-slate-950 px-6 py-10 text-slate-400">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 md:flex-row">
+          <div className="text-lg font-bold text-white">
+            Custodia<span className="text-amber-400">.</span>
+          </div>
+          <p className="text-center text-xs">
+            CMMC Level 1 self-serve platform and officer-led bootcamp · Pittsburgh, PA · Veteran-owned · CMU built
+          </p>
+          <p className="text-xs">© {new Date().getFullYear()} Custodia, LLC.</p>
         </div>
       </footer>
     </div>
