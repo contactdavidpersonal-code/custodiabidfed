@@ -291,73 +291,125 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4 — Value proposition */}
+      {/* 4 — Opportunity (the deal + the gap) */}
       <section id="product" className="scroll-mt-16 bg-[#f7f7f3] px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-            value proposition
+            the opportunity
           </div>
-          <div className="grid gap-16 md:grid-cols-2 md:items-center">
-            <div>
-              <h2 className="font-serif text-4xl font-bold leading-tight text-[#10231d] md:text-5xl">
-                Achieve compliance with clarity, confidence, and control
-              </h2>
-              <p className="mt-5 text-lg leading-relaxed text-[#44695c]">
-                In a market driven by trust, your compliance posture defines how primes, contracting officers, and agencies view your business.
-              </p>
-              <div className="mt-8 rounded-2xl border border-[#cde5d8] bg-white p-6 shadow-sm">
-                <div className="mb-4 text-xs font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
-                  CMMC Level 1 &mdash; Live progress
+          <div className="grid gap-10 md:grid-cols-[1.4fr_1fr] md:items-end">
+            <h2 className="font-serif text-4xl font-bold leading-[1.05] text-[#10231d] md:text-6xl">
+              The contracts are there. CMMC Level 1 is the password.
+            </h2>
+            <p className="text-lg leading-relaxed text-[#44695c]">
+              Most defense-tech SMBs leave federal money on the table because compliance feels opaque. Custodia changes the math: build your CMMC Level 1 package free in The Platform, then unlock the bid-ready download when you&apos;re ready.
+            </p>
+          </div>
+
+          {/* Big-stat opportunity row */}
+          <div className="mt-14 grid gap-6 md:grid-cols-3">
+            {[
+              {
+                n: "$80B+",
+                label: "DoD prime contracts to small businesses",
+                sub: "Awarded annually (DoD OSBP, FY23 small business goaling report)",
+              },
+              {
+                n: "220,000+",
+                label: "Defense Industrial Base businesses subject to CMMC",
+                sub: "Per DoD&apos;s CMMC final rule regulatory impact analysis",
+              },
+              {
+                n: "23%",
+                label: "Federal prime contract dollars reserved for small business by law",
+                sub: "Small Business Act, 15 U.S.C. &sect; 644(g) statutory goal",
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="rounded-3xl border border-[#cfe3d9] bg-white p-7 shadow-[0_8px_28px_rgba(14,48,37,0.05)]"
+              >
+                <div className="font-serif text-5xl font-bold tracking-tight text-[#10231d] md:text-6xl">
+                  {s.n}
                 </div>
-                <div className="space-y-3">
-                  {[
-                    { domain: "Access Control (AC)", pct: 100 },
-                    { domain: "Identification & Auth (IA)", pct: 100 },
-                    { domain: "Media Protection (MP)", pct: 85 },
-                    { domain: "Physical Protection (PE)", pct: 72 },
-                  ].map((d) => (
-                    <div key={d.domain}>
-                      <div className="flex justify-between text-xs font-semibold text-[#355d50]">
-                        <span>{d.domain}</span>
-                        <span>{d.pct}%</span>
-                      </div>
-                      <div className="mt-1 h-1.5 rounded-full bg-[#e1efe8]">
-                        <div
-                          className="h-full rounded-full bg-[#2f8f6d] transition-all"
-                          style={{ width: `${d.pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-4 text-xs text-[#608679]">
-                  Platform review catches gaps before a prime or auditor would.
-                </p>
+                <div className="mt-3 text-sm font-bold leading-snug text-[#10231d]">{s.label}</div>
+                <div
+                  className="mt-2 text-xs leading-relaxed text-[#7a9c90]"
+                  dangerouslySetInnerHTML={{ __html: s.sub }}
+                />
               </div>
+            ))}
+          </div>
+
+          <p className="mt-8 text-sm leading-relaxed text-[#5a7d70]">
+            Federal Contract Information (FCI) work &mdash; the contracts CMMC Level 1 unlocks &mdash; is the largest pool of DoD opportunity flowing to small businesses. Subcontracts from primes. Set-aside primes for SDVOSBs and SDBs. SBIR Phase II awards. Agency direct buys. The barrier is the 17 practices, the SSP, and a defensible SPRS affirmation. We remove that barrier in days.
+          </p>
+
+          {/* Barrier vs Fix split */}
+          <div className="mt-14 grid gap-6 md:grid-cols-2">
+            <div className="rounded-3xl border border-[#e8d4a1] bg-[#fff8e8] p-8">
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#a06b1a]">
+                The barrier
+              </div>
+              <h3 className="mt-3 font-serif text-2xl font-bold text-[#10231d]">
+                Why most SMBs never bid
+              </h3>
+              <ul className="mt-5 space-y-3 text-sm text-[#5d4f30]">
+                {[
+                  "17 CMMC practices written in cybersecurity jargon, not plain English",
+                  "No template for SSP narratives, evidence inventories, or affirmation memos",
+                  "No officer in the loop &mdash; easy to file something defensible-looking that isn't",
+                  "SPRS affirmation carries 18 USC 1001 and False Claims Act liability if you sign and you're wrong",
+                  "Compliance work derails the engineering and BD work you actually got funded to do",
+                ].map((b) => (
+                  <li key={b} className="flex items-start gap-2">
+                    <span aria-hidden className="mt-0.5 flex-none font-bold text-[#a06b1a]">&times;</span>
+                    <span dangerouslySetInnerHTML={{ __html: b }} />
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="space-y-8">
-              {[
-                {
-                  title: "Master the 17 CMMC practices",
-                  body: "The Platform walks every FAR 52.204-21 requirement in plain English, with evidence capture steps tailored to your exact tech stack &mdash; M365, Google Workspace, AWS, or on-prem.",
-                },
-                {
-                  title: "Elevate your evidence posture",
-                  body: "Get officer feedback on every artifact you upload. Screenshots, exports, signed rosters &mdash; gaps are caught before a prime or contracting officer finds them.",
-                },
-                {
-                  title: "Build, measure, and maintain",
-                  body: "Develop a defensible compliance program through Platform-guided analysis, a signed attestation package, and year-round monitoring that keeps you bid-ready.",
-                },
-              ].map((f) => (
-                <div key={f.title} className="border-l-4 border-[#2f8f6d] pl-5">
-                  <h3 className="font-serif text-xl font-bold text-[#10231d]">{f.title}</h3>
-                  <p
-                    className="mt-2 text-base leading-relaxed text-[#4a6f62]"
-                    dangerouslySetInnerHTML={{ __html: f.body }}
-                  />
-                </div>
-              ))}
+
+            <div className="rounded-3xl border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]">
+              <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#8dd2b1]">
+                The Custodia answer
+              </div>
+              <h3 className="mt-3 font-serif text-2xl font-bold">
+                Bid-ready in days. Free until you are.
+              </h3>
+              <ul className="mt-5 space-y-3 text-sm text-[#cce5da]">
+                {[
+                  "All 17 practices walked in plain English, tailored to your tech stack",
+                  "SSP narratives drafted for you &mdash; accept or edit in one click",
+                  "Officer review on every artifact before you sign anything",
+                  "Custodia Guarantee &mdash; we resolve any prime or contracting officer challenge after you file",
+                  "Annual re-affirmation included &mdash; your next cycle is ready every Oct 1",
+                ].map((b) => (
+                  <li key={b} className="flex items-start gap-2">
+                    <span aria-hidden className="mt-0.5 flex-none font-bold text-[#8dd2b1]">&#10003;</span>
+                    <span dangerouslySetInnerHTML={{ __html: b }} />
+                  </li>
+                ))}
+              </ul>
+              <Show when="signed-out">
+                <SignUpButton mode="modal">
+                  <button className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-6 py-3 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
+                    Discover your opportunity &mdash; free
+                    <span aria-hidden className="text-lg leading-none">&rarr;</span>
+                  </button>
+                </SignUpButton>
+              </Show>
+              <Show when="signed-in">
+                <Link
+                  href="/assessments"
+                  prefetch={false}
+                  className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-6 py-3 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]"
+                >
+                  Continue in workspace
+                  <span aria-hidden className="text-lg leading-none">&rarr;</span>
+                </Link>
+              </Show>
+              <p className="mt-3 text-xs text-[#7aab98]">No credit card required &middot; Pay only for the bid-ready package</p>
             </div>
           </div>
         </div>
