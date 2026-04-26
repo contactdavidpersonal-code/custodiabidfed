@@ -9,8 +9,9 @@ export default async function AssessmentsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { userId } = await auth();
+  const { userId, has } = await auth();
   if (!userId) redirect("/sign-in");
+  if (!has({ plan: "user:cmmc_lv1_full_access" })) redirect("/upgrade");
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">

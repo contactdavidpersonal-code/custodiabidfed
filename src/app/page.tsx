@@ -29,8 +29,9 @@ const SELF_SERVE_INCLUDES = [
   "Plain-English walkthrough of every one of the 17 practices",
   "Per-control evidence upload with AI vision review on every artifact",
   "Auto-drafted narratives for your System Security Plan",
-  "Bid-ready ZIP package: SSP, signed affirmation memo, evidence inventory",
-  "SPRS submission instructions and annual re-affirmation reminders",
+  "Bid-ready attestation package: SSP, signed affirmation memo, evidence inventory, SPRS submission instructions",
+  "Monthly AI monitoring — automated check-ins flag changed controls and expiring evidence before they become a problem",
+  "Custodia Ticket Support — submit a question any time and a compliance officer reviews and responds, year-round",
 ];
 
 const BOOTCAMP_INCLUDES = [
@@ -166,7 +167,7 @@ export default function Home() {
               </SignInButton>
               <SignUpButton mode="modal">
                 <button className="rounded-lg bg-amber-400 px-5 py-2 text-sm font-semibold text-slate-900 transition-colors hover:bg-amber-300">
-                  Start free
+                  Start free trial
                 </button>
               </SignUpButton>
             </Show>
@@ -217,7 +218,7 @@ export default function Home() {
             <Show when="signed-out">
               <SignUpButton mode="modal">
                 <button className="rounded-xl bg-amber-400 px-8 py-4 text-lg font-bold text-slate-900 transition-colors hover:bg-amber-300">
-                  Start free — self-serve
+                  Start free trial — self-serve
                 </button>
               </SignUpButton>
               <a
@@ -332,6 +333,13 @@ export default function Home() {
               <p className="mt-2 text-sm text-slate-600">
                 You drive. The AI compliance officer guides every step. Designed for founders who want a defensible path without a consultant&apos;s timeline.
               </p>
+              <div className="mt-5 flex items-baseline gap-2">
+                <span className="text-4xl font-black tracking-tight text-slate-900">$449</span>
+                <span className="text-base font-semibold text-slate-500">/mo</span>
+              </div>
+              <p className="mt-1 text-xs text-slate-500">
+                Or <span className="font-semibold text-slate-700">$429/mo</span> billed annually &mdash; save $240/yr. 7-day free trial included.
+              </p>
               <ul className="mt-6 flex-1 space-y-3">
                 {SELF_SERVE_INCLUDES.map((f) => (
                   <li key={f} className="flex items-start gap-2 text-sm text-slate-700">
@@ -343,17 +351,17 @@ export default function Home() {
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <button className="mt-8 w-full rounded-xl bg-amber-400 px-6 py-3 font-bold text-slate-900 transition-colors hover:bg-amber-300">
-                    Start free — no credit card
+                    Start free trial — no credit card
                   </button>
                 </SignUpButton>
               </Show>
               <Show when="signed-in">
                 <Link
-                  href="/assessments"
+                  href="/upgrade"
                   prefetch={false}
                   className="mt-8 block w-full rounded-xl bg-amber-400 px-6 py-3 text-center font-bold text-slate-900 transition-colors hover:bg-amber-300"
                 >
-                  Open your workspace →
+                  Start your membership →
                 </Link>
               </Show>
             </div>

@@ -13,8 +13,9 @@ import { OnboardingChat } from "./OnboardingChat";
 export const dynamic = "force-dynamic";
 
 export default async function OnboardPage() {
-  const { userId } = await auth();
+  const { userId, has } = await auth();
   if (!userId) redirect("/sign-in");
+  if (!has({ plan: "user:cmmc_lv1_full_access" })) redirect("/upgrade");
 
   const org = await ensureOrgForUser(userId);
   await ensureWelcomeEmailSent(org.id, userId);
