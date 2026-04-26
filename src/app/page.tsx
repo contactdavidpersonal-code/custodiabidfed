@@ -123,12 +123,14 @@ export default function Home() {
         </nav>
 
         {/* Hero text */}
-        <div className="relative mx-auto max-w-5xl px-6 pb-10 pt-20 text-center md:pb-16 md:pt-24">
-          <h1 className="font-serif text-6xl font-bold leading-[1.04] tracking-tight md:text-8xl">
-            Bid like you&apos;re worth it
+        <div className="relative mx-auto max-w-5xl px-6 pb-24 pt-20 text-center md:pb-32 md:pt-24">
+          <h1 className="font-serif text-4xl font-bold leading-[1.08] tracking-tight md:text-6xl lg:text-7xl">
+            Access <span className="text-[#bdf2cf]">$80B+</span> in gov contracts,
+            <br className="hidden sm:block" />
+            step by step on this platform.
           </h1>
           <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-[#a8cfc0] md:text-xl">
-            A compliance platform helping defense-tech contractors get CMMC Level 1 ready &mdash; for prime questionnaires, agency RFPs, SPRS filings, and beyond.
+            Custodia walks defense-tech contractors through CMMC Level 1 in plain English. Build your full package free in The Platform. Pay only when you&apos;re ready to bid.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Show when="signed-out">
@@ -157,78 +159,6 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Centerpiece visual + floating metric badges */}
-        <div className="relative mx-auto max-w-4xl px-6 pb-24 md:pb-32">
-          {/* Floating badges (overlay the visual on md+) */}
-          <div className="pointer-events-none absolute left-[6%] top-[18%] z-10 hidden rounded-full bg-white px-4 py-2 text-sm font-bold text-[#0c2219] shadow-[0_10px_30px_rgba(0,0,0,0.35)] md:block">
-            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[#2f8f6d] align-middle" />
-            Compliance&nbsp;&nbsp;<span className="text-[#2f8f6d]">+100%</span>
-          </div>
-          <div className="pointer-events-none absolute right-[5%] top-[44%] z-10 hidden rounded-full bg-white px-4 py-2 text-sm font-bold text-[#0c2219] shadow-[0_10px_30px_rgba(0,0,0,0.35)] md:block">
-            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[#2f8f6d] align-middle" />
-            SPRS&nbsp;&nbsp;<span className="text-[#2f8f6d]">Filed</span>
-          </div>
-          <div className="pointer-events-none absolute bottom-[14%] left-[22%] z-10 hidden rounded-full bg-white px-4 py-2 text-sm font-bold text-[#0c2219] shadow-[0_10px_30px_rgba(0,0,0,0.35)] md:block">
-            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[#2f8f6d] align-middle" />
-            Bid-ready&nbsp;&nbsp;<span className="text-[#2f8f6d]">+35%</span>
-          </div>
-
-          {/* Stylized product preview */}
-          <div className="relative overflow-hidden rounded-3xl border border-[#2f8f6d]/25 bg-gradient-to-br from-[#1a4035] via-[#163428] to-[#0e2a23] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.45)] md:p-10">
-            <div
-              className="absolute inset-0 opacity-25"
-              style={{
-                backgroundImage:
-                  "radial-gradient(circle at 1px 1px, rgba(141, 210, 177, 0.18) 1px, transparent 0)",
-                backgroundSize: "24px 24px",
-              }}
-            />
-            <div className="relative grid gap-6 md:grid-cols-2">
-              {/* Readiness panel */}
-              <div className="rounded-2xl border border-[#2f8f6d]/25 bg-[#0c2219]/50 p-5 text-left backdrop-blur-sm">
-                <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
-                  CMMC Level 1 &middot; Live readiness
-                </div>
-                <div className="space-y-2.5">
-                  {[
-                    { d: "Access Control (AC)", p: 100 },
-                    { d: "Identification & Auth (IA)", p: 100 },
-                    { d: "Media Protection (MP)", p: 85 },
-                    { d: "Physical Protection (PE)", p: 72 },
-                    { d: "System Integrity (SI)", p: 90 },
-                  ].map((row) => (
-                    <div key={row.d}>
-                      <div className="flex justify-between text-xs text-[#a8cfc0]">
-                        <span>{row.d}</span>
-                        <span className="font-bold text-white">{row.p}%</span>
-                      </div>
-                      <div className="mt-1 h-1.5 rounded-full bg-[#0c2219]">
-                        <div
-                          className="h-full rounded-full bg-[#8dd2b1]"
-                          style={{ width: `${row.p}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* SSP narrative panel */}
-              <div className="rounded-2xl border border-[#2f8f6d]/25 bg-[#0c2219]/50 p-5 text-left backdrop-blur-sm">
-                <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
-                  SSP narrative draft
-                </div>
-                <div className="font-mono text-[10px] text-[#7aab98]">AC.L1-3.1.1</div>
-                <p className="mt-2 text-xs leading-relaxed text-[#cce5da]">
-                  [Company] restricts information system access to authorized users and the processes acting on their behalf. Access is reviewed quarterly by the designated system owner.
-                </p>
-                <div className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-[#2f8f6d]/25 px-2 py-1 text-[10px] font-bold text-[#8dd2b1]">
-                  <span aria-hidden>✓</span> Officer reviewed
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* 3 — Federal market bar */}
@@ -640,52 +570,154 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 9 — Use cases */}
+      {/* 9 — Your journey */}
       <section className="bg-[#f7f7f3] px-6 py-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-14 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">use cases</div>
-            <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-5xl">
-              Professional-grade compliance for defense-tech excellence
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-lg text-[#44695c]">
-              Level up your compliance posture across every stage of federal contracting &mdash; build a culture of security and confidence.
-            </p>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mx-auto max-w-5xl">
+          <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">your journey</div>
+          <h2 className="font-serif text-4xl font-bold leading-[1.05] text-[#10231d] md:text-6xl">
+            From signup to signed contracts
+          </h2>
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[#44695c]">
+            Here&apos;s the path you&apos;ll walk inside The Platform. Free for the first five steps. Membership unlocks at step six, when your package is ready to ship.
+          </p>
+
+          <ol className="relative mt-16 space-y-12 border-l-2 border-[#cfe3d9] pl-10 md:pl-14">
             {[
               {
-                title: "First-time federal bidder",
-                desc: "Navigate SAM.gov, CAGE/UEI, and CMMC requirements from scratch with Platform guidance and officer support.",
+                n: "01",
+                tag: "FREE",
+                paid: false,
+                title: "Create your free account",
+                time: "30 seconds",
+                desc: "Email and password through Clerk. No credit card. Land in The Platform and pick up where you left off across devices.",
               },
               {
-                title: "SBIR awardee",
-                desc: "Protect your FCI and meet DoD requirements without derailing your core R&D work or research timelines.",
+                n: "02",
+                tag: "FREE",
+                paid: false,
+                title: "Onboard in conversation",
+                time: "5 minutes",
+                desc: "The Platform asks about your business, the FCI you handle, and your tech stack. It captures the legal-identity details you'd otherwise type into a 40-field form.",
               },
               {
-                title: "Prime contractor pushback",
-                desc: "Respond to prime security questionnaires and evidence requests with a defensible, officer-backed package.",
+                n: "03",
+                tag: "FREE",
+                paid: false,
+                title: "Walk the 17 CMMC practices",
+                time: "30&ndash;60 minutes per session",
+                desc: "Each FAR 52.204-21 requirement is explained in plain English with capture steps tailored to your stack &mdash; M365, Google Workspace, Okta, AWS, on-prem, or no IT at all.",
               },
               {
-                title: "Annual re-affirmation",
-                desc: "Renew your SPRS affirmation every October with zero friction &mdash; your package is maintained year-round.",
+                n: "04",
+                tag: "FREE",
+                paid: false,
+                title: "Upload your evidence",
+                time: "As you go",
+                desc: "Screenshots, exports, signed rosters, policy PDFs. The Platform tags every artifact to a control and tracks your readiness score in real time.",
               },
               {
-                title: "Internal team compliance",
-                desc: "Elevate firm-wide security posture with Platform-guided reviews and officer oversight across your team.",
+                n: "05",
+                tag: "FREE",
+                paid: false,
+                title: "Draft your SSP narratives",
+                time: "Auto-drafted",
+                desc: "Auto-generated SSP narratives for every control, written from your inputs. Accept or edit in one click &mdash; no blank-page panic.",
               },
-            ].map((uc) => (
-              <div
-                key={uc.title}
-                className="rounded-3xl border border-[#cfe3d9] bg-white p-7 shadow-[0_4px_16px_rgba(14,48,37,0.05)]"
-              >
-                <h3 className="font-serif text-xl font-bold text-[#14392f]">{uc.title}</h3>
+              {
+                n: "06",
+                tag: "MEMBERSHIP",
+                paid: true,
+                title: "Officer review + bid-ready package",
+                time: "Days, not months",
+                desc: "A Custodia compliance officer reviews every artifact and your full package. Once cleared, you generate the bid-ready ZIP: SSP, signed affirmation memo, evidence inventory.",
+              },
+              {
+                n: "07",
+                tag: "MEMBERSHIP",
+                paid: true,
+                title: "File in SPRS and start bidding",
+                time: "Same day",
+                desc: "Step-by-step SPRS submission instructions. The moment you affirm, you can respond to prime questionnaires, agency RFPs, SBIR Phase II solicitations, and small-business set-asides &mdash; with a defensible package behind you.",
+              },
+              {
+                n: "08",
+                tag: "MEMBERSHIP",
+                paid: true,
+                title: "Stay compliant, year-round",
+                time: "Re-affirmation included",
+                desc: "Custodia monitors changed controls, flags expiring evidence, and prepares your next SPRS re-submission every October &mdash; at no extra charge while your membership is active.",
+              },
+            ].map((step) => (
+              <li key={step.n} className="relative">
+                <div
+                  className={`absolute -left-[3.45rem] flex h-11 w-11 items-center justify-center rounded-full border-2 text-sm font-black shadow-sm md:-left-[4.45rem] md:h-12 md:w-12 ${
+                    step.paid
+                      ? "border-[#2f8f6d] bg-[#0e2a23] text-[#bdf2cf]"
+                      : "border-[#2f8f6d] bg-white text-[#0e2a23]"
+                  }`}
+                >
+                  {step.n}
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                      step.paid
+                        ? "bg-[#0e2a23] text-[#bdf2cf]"
+                        : "bg-[#e8f7ef] text-[#1f5c47]"
+                    }`}
+                  >
+                    {step.tag}
+                  </span>
+                  <span
+                    className="text-xs font-medium text-[#7a9c90]"
+                    dangerouslySetInnerHTML={{ __html: step.time }}
+                  />
+                </div>
+                <h3 className="mt-2 font-serif text-2xl font-bold text-[#10231d] md:text-3xl">
+                  {step.title}
+                </h3>
                 <p
-                  className="mt-3 text-sm leading-relaxed text-[#4a6f62]"
-                  dangerouslySetInnerHTML={{ __html: uc.desc }}
+                  className="mt-2 max-w-2xl text-base leading-relaxed text-[#44695c]"
+                  dangerouslySetInnerHTML={{ __html: step.desc }}
                 />
-              </div>
+              </li>
             ))}
+          </ol>
+
+          <div className="mt-16 rounded-3xl border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_45px_rgba(14,48,37,0.18)] md:p-12">
+            <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">where it ends</div>
+            <h3 className="mt-3 font-serif text-3xl font-bold leading-tight md:text-4xl">
+              You, bidding on contracts. With a defensible package behind you.
+            </h3>
+            <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#cce5da]">
+              The first five steps are free, forever. You only pay when you&apos;re ready for officer review and your bid-ready package &mdash; at step six.
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+              <Show when="signed-out">
+                <SignUpButton mode="modal">
+                  <button className="inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
+                    Start step 1 &mdash; free
+                    <span aria-hidden className="text-lg leading-none">&rarr;</span>
+                  </button>
+                </SignUpButton>
+                <a href="#pricing" className="rounded-xl border border-[#2f8f6d]/40 px-7 py-3.5 text-base font-semibold text-[#cce5da] transition-colors hover:border-[#8dd2b1]/60 hover:text-white">
+                  See pricing
+                </a>
+              </Show>
+              <Show when="signed-in">
+                <Link
+                  href="/assessments"
+                  prefetch={false}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]"
+                >
+                  Continue your journey
+                  <span aria-hidden className="text-lg leading-none">&rarr;</span>
+                </Link>
+              </Show>
+            </div>
+            <p className="mt-4 text-xs text-[#7aab98]">
+              No credit card required to start &middot; Membership unlocks at step six
+            </p>
           </div>
         </div>
       </section>
@@ -837,77 +869,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 12 — Blog / Resources */}
-      <section className="bg-white px-6 py-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-14 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">blog</div>
-            <h2 className="font-serif text-3xl font-bold text-[#10231d]">The latest from Custodia</h2>
-          </div>
-          <div className="grid gap-6 md:grid-cols-3">
-            {[
-              {
-                tag: "guide",
-                title: "What CMMC Level 1 actually requires &mdash; and what it doesn&apos;t",
-                cta: "Read more",
-              },
-              {
-                tag: "news",
-                title: "SPRS filing deadlines for FY2026: what every subcontractor needs to know",
-                cta: "Read more",
-              },
-              {
-                tag: "podcast",
-                title: "Building a compliance culture at a 5-person defense-tech startup",
-                cta: "Read more",
-              },
-            ].map((post) => (
-              <div key={post.title} className="rounded-3xl border border-[#d2e6dc] bg-[#f7fcf9] p-7">
-                <div className="mb-3 text-xs font-bold uppercase tracking-[0.15em] text-[#2f8f6d]">{post.tag}</div>
-                <h3
-                  className="font-serif text-xl font-bold leading-snug text-[#10231d]"
-                  dangerouslySetInnerHTML={{ __html: post.title }}
-                />
-                <button className="mt-5 text-sm font-semibold text-[#2f8f6d] transition-colors hover:text-[#10231d]">
-                  {post.cta} &rarr;
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 13 — CTA Banner */}
-      <section className="border-y border-[#9ccfb9] bg-[#dcf4e6] px-6 py-20 text-center">
-        <div className="mx-auto max-w-3xl">
-          <h2 className="font-serif text-4xl font-bold leading-tight text-[#10231d] md:text-5xl">
-            Make compliance your firm&apos;s most powerful advantage
-          </h2>
-          <p className="mx-auto mt-4 max-w-xl text-lg text-[#3f6658]">
-            Defense contracts worth $150K+ are waiting. Build your CMMC Level 1 package free in The Platform &mdash; pay only when you&apos;re ready to bid.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <Show when="signed-out">
-              <SignUpButton mode="modal">
-                <button className="rounded-xl bg-[#104d3a] px-8 py-4 text-base font-bold text-white transition-colors hover:bg-[#0d3e2f]">
-                  Create free account
-                </button>
-              </SignUpButton>
-              <a href="#pricing" className="rounded-xl border-2 border-[#104d3a] px-8 py-4 text-base font-semibold text-[#104d3a] transition-colors hover:bg-white">
-                See pricing
-              </a>
-            </Show>
-            <Show when="signed-in">
-              <Link href="/assessments" prefetch={false} className="rounded-xl bg-[#104d3a] px-8 py-4 text-base font-bold text-white transition-colors hover:bg-[#0d3e2f]">
-                Open workspace
-              </Link>
-            </Show>
-          </div>
-          <p className="mt-4 text-xs font-semibold text-[#3f6658]">
-            Free forever &middot; No credit card &middot; Upgrade when you&apos;re ready to download the package
-          </p>
-        </div>
-      </section>
 
       {/* 14 — FAQ */}
       <section id="faq" className="scroll-mt-16 bg-white px-6 py-24">
