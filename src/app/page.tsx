@@ -91,88 +91,142 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white text-[#10231d]">
 
-      {/* 1 — Nav */}
-      <nav className="fixed inset-x-0 top-0 z-50 border-b border-[#e0ebe5] bg-[#f7f7f3]/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <span className="text-xl font-black tracking-tight text-[#0f2f26]">
-            Custodia<span className="text-[#2f8f6d]">.</span>
-          </span>
-          <div className="hidden items-center gap-8 text-sm font-semibold text-[#3b5f53] md:flex">
-            <a href="#product" className="transition-colors hover:text-[#10231d]">Product</a>
-            <a href="#pricing" className="transition-colors hover:text-[#10231d]">Pricing</a>
-            <a href="#faq" className="transition-colors hover:text-[#10231d]">FAQ</a>
-          </div>
-          <div className="flex items-center gap-3">
-            <Show when="signed-out">
-              <SignInButton mode="modal">
-                <button className="text-sm font-semibold text-[#3b5f53] transition-colors hover:text-[#10231d]">
-                  Sign in
-                </button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button className="rounded-xl bg-[#104d3a] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0d3e2f]">
-                  Create free account
-                </button>
-              </SignUpButton>
-            </Show>
-            <Show when="signed-in">
-              <Link href="/assessments" prefetch={false} className="rounded-xl bg-[#104d3a] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0d3e2f]">
-                Open workspace
-              </Link>
-              <UserButton />
-            </Show>
-          </div>
-        </div>
-      </nav>
+      {/* 1 + 2 — Integrated header & hero (one dark green block) */}
+      <section className="relative overflow-hidden bg-[#0e2a23] text-white">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_50%_0%,rgba(47,143,109,0.28),transparent)]" />
 
-      {/* 2 — Hero */}
-      <section className="relative overflow-hidden bg-[#0e2a23] px-6 pb-24 pt-32 text-white">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_0%,rgba(47,143,109,0.3),transparent)]" />
-        <div className="relative mx-auto max-w-4xl text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#2f8f6d]/40 bg-[#1a4035]/70 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-[#8dd2b1]">
-            CMMC Level 1 &middot; FAR 52.204-21 &middot; Veteran-owned
+        {/* Nav */}
+        <nav className="relative">
+          <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-6">
+            <span className="font-serif text-2xl font-bold tracking-tight text-white">
+              Custodia<span className="text-[#8dd2b1]">.</span>
+            </span>
+            <div className="flex items-center gap-7 text-sm font-medium text-[#cce5da]">
+              <a href="#product" className="hidden transition-colors hover:text-white sm:inline">Product</a>
+              <a href="#pricing" className="hidden transition-colors hover:text-white sm:inline">Pricing</a>
+              <a href="#faq" className="hidden transition-colors hover:text-white sm:inline">FAQ</a>
+              <Show when="signed-out">
+                <SignInButton mode="modal">
+                  <button className="text-sm font-medium text-[#cce5da] transition-colors hover:text-white">
+                    Sign in
+                  </button>
+                </SignInButton>
+              </Show>
+              <Show when="signed-in">
+                <Link href="/assessments" prefetch={false} className="rounded-xl bg-[#bdf2cf] px-4 py-2 text-sm font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
+                  Open workspace
+                </Link>
+                <UserButton />
+              </Show>
+            </div>
           </div>
-          <h1 className="font-serif text-5xl font-bold leading-tight tracking-tight md:text-7xl">
-            Win federal contracts like you&apos;re worth it
+        </nav>
+
+        {/* Hero text */}
+        <div className="relative mx-auto max-w-5xl px-6 pb-10 pt-20 text-center md:pb-16 md:pt-24">
+          <h1 className="font-serif text-6xl font-bold leading-[1.04] tracking-tight md:text-8xl">
+            Bid like you&apos;re worth it
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-[#a8cfc0] md:text-xl">
-            Custodia helps defense-tech contractors become CMMC Level 1 compliant and bid with confidence. Build your entire package in The Platform &mdash; free forever. Pay only when you&apos;re ready to download the bid-ready package.
+          <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-[#a8cfc0] md:text-xl">
+            A compliance platform helping defense-tech contractors get CMMC Level 1 ready &mdash; for prime questionnaires, agency RFPs, SPRS filings, and beyond.
           </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Show when="signed-out">
               <SignUpButton mode="modal">
-                <button className="rounded-xl bg-[#8dd2b1] px-8 py-4 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#78c5a0]">
+                <button className="inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
                   Create free account
+                  <span aria-hidden className="text-lg leading-none">&rarr;</span>
                 </button>
               </SignUpButton>
-              <a href="#pricing" className="rounded-xl border border-[#2f8f6d]/60 px-8 py-4 text-base font-semibold text-[#8dd2b1] transition-colors hover:bg-[#1a4035]">
+              <a href="#pricing" className="rounded-xl border border-[#2f8f6d]/40 px-7 py-3.5 text-base font-semibold text-[#cce5da] transition-colors hover:border-[#8dd2b1]/60 hover:text-white">
                 See pricing
               </a>
             </Show>
             <Show when="signed-in">
-              <Link href="/assessments" prefetch={false} className="rounded-xl bg-[#8dd2b1] px-8 py-4 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#78c5a0]">
+              <Link href="/assessments" prefetch={false} className="inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
                 Continue in workspace
+                <span aria-hidden className="text-lg leading-none">&rarr;</span>
               </Link>
-              <a href="#product" className="rounded-xl border border-[#2f8f6d]/60 px-8 py-4 text-base font-semibold text-[#8dd2b1] transition-colors hover:bg-[#1a4035]">
-                See how it works
+              <a href="#pricing" className="rounded-xl border border-[#2f8f6d]/40 px-7 py-3.5 text-base font-semibold text-[#cce5da] transition-colors hover:border-[#8dd2b1]/60 hover:text-white">
+                See pricing
               </a>
             </Show>
           </div>
-          <p className="mt-4 text-xs font-semibold tracking-wide text-[#7aab98]">
-            Free forever &middot; No credit card required &middot; Veteran-owned cybersecurity firm
+          <p className="mt-5 text-xs font-medium text-[#7aab98]">
+            Free forever &middot; No credit card required
           </p>
-          <div className="mt-14 flex flex-wrap items-start justify-center gap-4">
-            {[
-              { label: "Compliance", value: "Achieved", sub: "All 17 practices" },
-              { label: "SPRS Score", value: "Filed", sub: "Binary affirmation" },
-              { label: "Bid-ready", value: "100%", sub: "Of active clients" },
-            ].map((m) => (
-              <div key={m.label} className="rounded-2xl border border-[#2f8f6d]/40 bg-[#193d31] px-6 py-4 text-left">
-                <div className="text-xs font-bold uppercase tracking-widest text-[#6bbf9a]">{m.label}</div>
-                <div className="mt-1 text-3xl font-black text-white">{m.value}</div>
-                <div className="text-xs text-[#7aab98]">{m.sub}</div>
+        </div>
+
+        {/* Centerpiece visual + floating metric badges */}
+        <div className="relative mx-auto max-w-4xl px-6 pb-24 md:pb-32">
+          {/* Floating badges (overlay the visual on md+) */}
+          <div className="pointer-events-none absolute left-[6%] top-[18%] z-10 hidden rounded-full bg-white px-4 py-2 text-sm font-bold text-[#0c2219] shadow-[0_10px_30px_rgba(0,0,0,0.35)] md:block">
+            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[#2f8f6d] align-middle" />
+            Compliance&nbsp;&nbsp;<span className="text-[#2f8f6d]">+100%</span>
+          </div>
+          <div className="pointer-events-none absolute right-[5%] top-[44%] z-10 hidden rounded-full bg-white px-4 py-2 text-sm font-bold text-[#0c2219] shadow-[0_10px_30px_rgba(0,0,0,0.35)] md:block">
+            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[#2f8f6d] align-middle" />
+            SPRS&nbsp;&nbsp;<span className="text-[#2f8f6d]">Filed</span>
+          </div>
+          <div className="pointer-events-none absolute bottom-[14%] left-[22%] z-10 hidden rounded-full bg-white px-4 py-2 text-sm font-bold text-[#0c2219] shadow-[0_10px_30px_rgba(0,0,0,0.35)] md:block">
+            <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[#2f8f6d] align-middle" />
+            Bid-ready&nbsp;&nbsp;<span className="text-[#2f8f6d]">+35%</span>
+          </div>
+
+          {/* Stylized product preview */}
+          <div className="relative overflow-hidden rounded-3xl border border-[#2f8f6d]/25 bg-gradient-to-br from-[#1a4035] via-[#163428] to-[#0e2a23] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.45)] md:p-10">
+            <div
+              className="absolute inset-0 opacity-25"
+              style={{
+                backgroundImage:
+                  "radial-gradient(circle at 1px 1px, rgba(141, 210, 177, 0.18) 1px, transparent 0)",
+                backgroundSize: "24px 24px",
+              }}
+            />
+            <div className="relative grid gap-6 md:grid-cols-2">
+              {/* Readiness panel */}
+              <div className="rounded-2xl border border-[#2f8f6d]/25 bg-[#0c2219]/50 p-5 text-left backdrop-blur-sm">
+                <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
+                  CMMC Level 1 &middot; Live readiness
+                </div>
+                <div className="space-y-2.5">
+                  {[
+                    { d: "Access Control (AC)", p: 100 },
+                    { d: "Identification & Auth (IA)", p: 100 },
+                    { d: "Media Protection (MP)", p: 85 },
+                    { d: "Physical Protection (PE)", p: 72 },
+                    { d: "System Integrity (SI)", p: 90 },
+                  ].map((row) => (
+                    <div key={row.d}>
+                      <div className="flex justify-between text-xs text-[#a8cfc0]">
+                        <span>{row.d}</span>
+                        <span className="font-bold text-white">{row.p}%</span>
+                      </div>
+                      <div className="mt-1 h-1.5 rounded-full bg-[#0c2219]">
+                        <div
+                          className="h-full rounded-full bg-[#8dd2b1]"
+                          style={{ width: `${row.p}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+
+              {/* SSP narrative panel */}
+              <div className="rounded-2xl border border-[#2f8f6d]/25 bg-[#0c2219]/50 p-5 text-left backdrop-blur-sm">
+                <div className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
+                  SSP narrative draft
+                </div>
+                <div className="font-mono text-[10px] text-[#7aab98]">AC.L1-3.1.1</div>
+                <p className="mt-2 text-xs leading-relaxed text-[#cce5da]">
+                  [Company] restricts information system access to authorized users and the processes acting on their behalf. Access is reviewed quarterly by the designated system owner.
+                </p>
+                <div className="mt-4 inline-flex items-center gap-1.5 rounded-md bg-[#2f8f6d]/25 px-2 py-1 text-[10px] font-bold text-[#8dd2b1]">
+                  <span aria-hidden>✓</span> Officer reviewed
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
