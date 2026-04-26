@@ -91,9 +91,57 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white text-[#10231d]">
 
-      {/* 1 + 2 — Integrated header & hero (one dark green block) */}
-      <section className="relative overflow-hidden bg-[#0e2a23] text-white">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_50%_0%,rgba(47,143,109,0.28),transparent)]" />
+      {/* 1 + 2 — Cinematic header & hero */}
+      <section className="relative overflow-hidden bg-[#08201a] text-white">
+        {/* Atmospheric layers */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 70% 55% at 50% -5%, rgba(141,210,177,0.18), transparent 60%)",
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.045]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(141,210,177,1) 1px, transparent 1px), linear-gradient(90deg, rgba(141,210,177,1) 1px, transparent 1px)",
+            backgroundSize: "80px 80px",
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-[8%] top-[18%] h-72 w-72 rounded-full bg-[#2f8f6d]/20 blur-[120px]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute right-[6%] bottom-[16%] h-96 w-96 rounded-full bg-[#1a4035]/55 blur-[140px]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.55) 100%)",
+          }}
+        />
+
+        {/* Top tactical strip */}
+        <div className="relative border-b border-white/[0.06]">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3 font-mono text-[10px] uppercase tracking-[0.24em] text-[#7aab98]">
+            <span className="flex items-center gap-2">
+              <span aria-hidden className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#bdf2cf] opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#bdf2cf]" />
+              </span>
+              Ops // Pittsburgh, PA
+            </span>
+            <span className="hidden md:inline">Cybersecurity officer on staff</span>
+            <span className="hidden sm:inline">Veteran-owned</span>
+          </div>
+        </div>
 
         {/* Nav */}
         <nav className="relative">
@@ -123,42 +171,79 @@ export default function Home() {
         </nav>
 
         {/* Hero text */}
-        <div className="relative mx-auto max-w-5xl px-6 pb-24 pt-20 text-center md:pb-32 md:pt-24">
-          <h1 className="font-serif text-4xl font-bold leading-[1.08] tracking-tight md:text-6xl lg:text-7xl">
-            Access <span className="text-[#bdf2cf]">$80B+</span> in gov contracts,
+        <div className="relative mx-auto max-w-5xl px-6 pb-28 pt-24 text-center md:pb-36 md:pt-32">
+          <h1
+            className="font-serif text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl"
+            style={{ textShadow: "0 4px 40px rgba(0,0,0,0.45)" }}
+          >
+            Access{" "}
+            <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
+              $80B+
+            </span>{" "}
+            in gov contracts,
             <br className="hidden sm:block" />
             step by step on this platform.
           </h1>
-          <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-[#a8cfc0] md:text-xl">
+          <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-[#a8cfc0] md:text-xl">
             Custodia walks defense-tech contractors through CMMC Level 1 in plain English. Build your full package free in The Platform. Pay only when you&apos;re ready to bid.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Show when="signed-out">
               <SignUpButton mode="modal">
-                <button className="inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
+                <button className="group inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.18)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_15px_55px_rgba(189,242,207,0.3)]">
                   Create free account
-                  <span aria-hidden className="text-lg leading-none">&rarr;</span>
+                  <span aria-hidden className="text-lg leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
                 </button>
               </SignUpButton>
-              <a href="#pricing" className="rounded-xl border border-[#2f8f6d]/40 px-7 py-3.5 text-base font-semibold text-[#cce5da] transition-colors hover:border-[#8dd2b1]/60 hover:text-white">
+              <a
+                href="#pricing"
+                className="rounded-xl border border-[#2f8f6d]/50 bg-white/[0.02] px-7 py-3.5 text-base font-semibold text-[#cce5da] backdrop-blur transition-colors hover:border-[#8dd2b1]/70 hover:bg-white/[0.05] hover:text-white"
+              >
                 See pricing
               </a>
             </Show>
             <Show when="signed-in">
-              <Link href="/assessments" prefetch={false} className="inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
+              <Link
+                href="/assessments"
+                prefetch={false}
+                className="group inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.18)] transition-all hover:bg-[#a8e6c0]"
+              >
                 Continue in workspace
-                <span aria-hidden className="text-lg leading-none">&rarr;</span>
+                <span aria-hidden className="text-lg leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
               </Link>
-              <a href="#pricing" className="rounded-xl border border-[#2f8f6d]/40 px-7 py-3.5 text-base font-semibold text-[#cce5da] transition-colors hover:border-[#8dd2b1]/60 hover:text-white">
+              <a
+                href="#pricing"
+                className="rounded-xl border border-[#2f8f6d]/50 bg-white/[0.02] px-7 py-3.5 text-base font-semibold text-[#cce5da] backdrop-blur transition-colors hover:border-[#8dd2b1]/70 hover:bg-white/[0.05] hover:text-white"
+              >
                 See pricing
               </a>
             </Show>
           </div>
-          <p className="mt-5 text-xs font-medium text-[#7aab98]">
-            Free forever &middot; No credit card required
+          <p className="mt-6 text-xs font-medium tracking-wide text-[#7aab98]">
+            Free forever &middot; No credit card required &middot; Cancel anytime
           </p>
         </div>
 
+        {/* Bottom live-data strip */}
+        <div className="relative border-t border-white/[0.08] bg-black/30 backdrop-blur-sm">
+          <div className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-white/[0.08] px-2 md:grid-cols-4 md:px-6">
+            {[
+              { value: "$80B+", label: "DoD small-business contracts" },
+              { value: "220K+", label: "DIB companies subject to CMMC" },
+              { value: "23%", label: "Federal set-aside (statute)" },
+              { value: "17", label: "CMMC Level 1 practices" },
+            ].map((s) => (
+              <div key={s.label} className="px-3 py-7 text-center md:px-4">
+                <div className="font-serif text-3xl font-bold tracking-tight text-white md:text-4xl">
+                  {s.value}
+                </div>
+                <div className="mt-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-[#7aab98]">
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
 
