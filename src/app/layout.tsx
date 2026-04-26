@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Lora, Manrope } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin"],
+});
+
+const lora = Lora({
+  variable: "--font-lora",
   subsets: ["latin"],
 });
 
@@ -14,13 +19,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Custodia | Win Government Contracts in One Week",
+  title: "Custodia | CMMC Level 1 Compliance for SMBs",
   description:
-    "The 7-day bootcamp that takes startups from zero to CMMC Level 1 compliant — ready to bid on federal contracts. Then we manage it year-round.",
+    "Guided CMMC Level 1 compliance for SMBs handling FCI. AI speed plus a Custodia compliance officer in the loop to help you build a defensible, bid-ready package.",
   openGraph: {
-    title: "Custodia | Win Government Contracts in One Week",
+    title: "Custodia | CMMC Level 1 Compliance for SMBs",
     description:
-      "The 7-day bootcamp that takes startups from zero to CMMC Level 1 compliant — ready to bid on federal contracts.",
+      "Guided CMMC Level 1 compliance for SMBs handling FCI, with AI automation and officer support.",
     type: "website",
   },
 };
@@ -33,7 +38,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${manrope.variable} ${lora.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <ClerkProvider
