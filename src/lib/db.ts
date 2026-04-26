@@ -171,16 +171,26 @@ export async function initDb() {
 
   // Migration path: older deployments had clerk_org_id and a memberships table.
   // Backfill owner_user_id from the 'solo:<userId>' convention, then remove the
-  // legacy column and table. No-op on fresh installs.
+  // legacy column and table. Guarded so a fresh database (no clerk_org_id
+  // column) doesn't error at parse time on the UPDATE's WHERE clause.
   await sql`ALTER TABLE organizations ADD COLUMN IF NOT EXISTS owner_user_id TEXT`;
   await sql`
-    UPDATE organizations
-    SET owner_user_id = SUBSTRING(clerk_org_id FROM 6)
-    WHERE owner_user_id IS NULL
-      AND clerk_org_id IS NOT NULL
-      AND clerk_org_id LIKE 'solo:%'
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'organizations'
+          AND column_name = 'clerk_org_id'
+      ) THEN
+        UPDATE organizations
+        SET owner_user_id = SUBSTRING(clerk_org_id FROM 6)
+        WHERE owner_user_id IS NULL
+          AND clerk_org_id IS NOT NULL
+          AND clerk_org_id LIKE 'solo:%';
+        ALTER TABLE organizations DROP COLUMN clerk_org_id;
+      END IF;
+    END $$
   `;
-  await sql`ALTER TABLE organizations DROP COLUMN IF EXISTS clerk_org_id`;
   await sql`
     DO $$ BEGIN
       IF NOT EXISTS (
