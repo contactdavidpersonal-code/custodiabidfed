@@ -122,7 +122,7 @@ function FormatChip({ format }: { format: EvidenceFormat }) {
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-inset ${tone}`}
       title={
         format.autoReviewable
-          ? "AI auto-reviewable"
+          ? "Platform auto-reviewable"
           : "Officer review needed before signing"
       }
     >
@@ -732,10 +732,10 @@ function EvidenceSection({
           <span className="mt-0.5 text-base leading-none">★</span>
           <div>
             <div className="font-bold">
-              Preferred for AI auto-review: PNG/JPG screenshots or PDF.
+              Preferred for Platform auto-review: PNG/JPG screenshots or PDF.
             </div>
             <p className="mt-1 text-xs leading-relaxed text-amber-900/90">
-              The Custodia AI reviews images and PDFs end-to-end. CSV, Excel,
+              The Platform reviews images and PDFs end-to-end. CSV, Excel,
               Word, and plain text uploads are accepted but cannot be
               auto-reviewed — they will need a Custodia officer to clear them
               before you can sign. When in doubt, take a screenshot of the
@@ -831,7 +831,7 @@ function EvidenceSection({
                     <input type="hidden" name="artifactId" value={a.id} />
                     <button
                       type="submit"
-                      title="Re-run AI review"
+                      title="Re-run Platform review"
                       className="rounded-md px-2 py-1 text-xs font-semibold text-slate-500 transition-colors hover:bg-amber-50 hover:text-amber-700"
                     >
                       Re-review
@@ -894,7 +894,7 @@ function EvidenceSection({
                   }`}
                 >
                   <div className="mb-0.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider">
-                    <span>AI review</span>
+                    <span>Platform review</span>
                     {a.ai_reviewed_at && (
                       <span className="font-normal tracking-normal text-slate-500">
                         ·{" "}
@@ -919,7 +919,7 @@ function EvidenceSection({
               )}
               {!a.ai_reviewed_at && (
                 <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                  AI review pending. Click Re-review if this is stuck.
+                  Platform review pending. Click Re-review if this is stuck.
                 </p>
               )}
             </li>

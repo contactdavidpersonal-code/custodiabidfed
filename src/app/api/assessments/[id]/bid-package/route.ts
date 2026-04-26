@@ -147,7 +147,7 @@ ${outcomeLine}
 | 01-SSP.html | System Security Plan. Open in a browser, File → Print → Save as PDF when a prime asks for the SSP. |
 | 02-Affirmation.html | Senior Official Annual Affirmation memo (per 32 CFR § 170.22). Print + sign + file. |
 | 03-controls.csv | Per-practice status + narrative (17 rows). Handy for a prime's compliance questionnaire. |
-| 04-evidence-inventory.csv | Every artifact on file with its AI vision-review verdict + summary. |
+| 04-evidence-inventory.csv | Every artifact on file with its Platform review verdict + summary. |
 | 05-remediation-plans.csv | Open and closed remediation plans (POA&M-style record for prime questionnaires). |
 | evidence/ | All the uploaded evidence files, organized by control ID. |
 

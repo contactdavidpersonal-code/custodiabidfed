@@ -241,8 +241,8 @@ export function ComplianceOfficerRail() {
     >
       <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-gradient-to-b from-amber-50/60 to-white px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-[11px] font-black text-amber-400">
-            AI
+          <span className="inline-flex items-center justify-center rounded-md bg-slate-900 px-1.5 py-1 text-[8px] font-black uppercase tracking-wide text-amber-400">
+            Platform
           </span>
           <div className="leading-tight">
             <div className="text-xs font-semibold uppercase tracking-wider text-amber-700">
@@ -367,8 +367,8 @@ function MessageBubble({
   }
   return (
     <div className="flex gap-2">
-      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[10px] font-bold text-amber-800">
-        AI
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-800">
+        Platform
       </div>
       <div className="flex max-w-[92%] flex-col gap-1.5">
         {tools.length > 0 && (
@@ -416,8 +416,8 @@ function ToolChip({ tool }: { tool: ToolEvent }) {
 function TypingIndicator() {
   return (
     <div className="flex gap-2">
-      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[10px] font-bold text-amber-800">
-        AI
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-800">
+        Platform
       </div>
       <div className="rounded-2xl rounded-tl-md bg-slate-100 px-3 py-2.5">
         <div className="flex gap-1">
@@ -443,8 +443,8 @@ function WelcomeBubble() {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[10px] font-bold text-amber-800">
-          AI
+        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-800">
+          Platform
         </div>
         <div className="max-w-[92%] rounded-2xl rounded-tl-md bg-slate-100 px-3 py-2 text-sm leading-relaxed text-slate-900">
           <p>

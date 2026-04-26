@@ -128,7 +128,7 @@ export default async function SignPage(
             {evidenceBlockers.length > 0 && (
               <li>
                 {evidenceBlockers.length} evidence artifact
-                {evidenceBlockers.length === 1 ? "" : "s"} not passing AI
+                {evidenceBlockers.length === 1 ? "" : "s"} not passing Platform
                 review:
                 <ul className="mt-1 list-disc pl-5 space-y-0.5">
                   {evidenceBlockers.slice(0, 3).map((b) => (

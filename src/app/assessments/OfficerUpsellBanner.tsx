@@ -92,7 +92,7 @@ export function OfficerUpsellBanner({
           tier="Command"
           price="$1,000–1,500"
           cadence="per month"
-          pitch="Fractional officer on retainer. We watch for drift, own your SPRS renewal, and resolve anything the AI flags."
+          pitch="Fractional officer on retainer. We watch for drift, own your SPRS renewal, and resolve anything the Platform flags."
           cta="Start a Command retainer"
           href="mailto:officers@custodia.us?subject=Command%20retainer%20for%20my%20L1"
           accent="slate"

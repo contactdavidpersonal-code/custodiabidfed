@@ -186,8 +186,8 @@ export function OnboardingChat({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-none items-center justify-between border-b border-slate-200 bg-gradient-to-b from-amber-50/60 to-white px-5 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-black text-amber-400">
-            AI
+          <span className="inline-flex items-center justify-center rounded-md bg-slate-900 px-1.5 py-1 text-[8px] font-black uppercase tracking-wide text-amber-400">
+            Platform
           </span>
           <div className="leading-tight">
             <div className="text-sm font-bold text-slate-900">
@@ -336,8 +336,8 @@ function MessageBubble({
   }
   return (
     <div className="flex gap-2.5">
-      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-800">
-        AI
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-800">
+        Platform
       </div>
       <div className="flex max-w-[88%] flex-col gap-2">
         {tools.length > 0 && (
@@ -391,8 +391,8 @@ function StarterBubble({ onPick }: { onPick: (prompt: string) => void }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex gap-2.5">
-        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-800">
-          AI
+        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-800">
+          Platform
         </div>
         <div className="max-w-[88%] rounded-2xl rounded-tl-md bg-slate-100 px-4 py-3 text-sm leading-relaxed text-slate-900">
           <p>
@@ -430,8 +430,8 @@ function StarterBubble({ onPick }: { onPick: (prompt: string) => void }) {
 function TypingIndicator() {
   return (
     <div className="flex gap-2.5">
-      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-[11px] font-bold text-amber-800">
-        AI
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-800">
+        Platform
       </div>
       <div className="rounded-2xl rounded-tl-md bg-slate-100 px-4 py-3">
         <div className="flex gap-1">

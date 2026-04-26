@@ -52,9 +52,9 @@ export type MilestoneTemplate = {
 export const defaultMilestones: MilestoneTemplate[] = [
   {
     kind: "onboarding",
-    title: "Complete onboarding with your AI officer",
+    title: "Complete onboarding in The Platform",
     description:
-      "Tell the officer what your business does so the assessment is tailored to you.",
+      "Tell The Platform what your business does so the assessment is tailored to you.",
     daysFromStart: 0,
   },
   {
@@ -82,7 +82,7 @@ export const defaultMilestones: MilestoneTemplate[] = [
     kind: "q4_prep",
     title: "Q4 affirmation prep",
     description:
-      "Final evidence sweep before you re-affirm. Any AI review verdicts marked 'insufficient' must be resolved.",
+      "Final evidence sweep before you re-affirm. Any Platform review verdicts marked 'insufficient' must be resolved.",
     daysFromStart: 330, // ~Aug 27
   },
   {

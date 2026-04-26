@@ -2,7 +2,6 @@
 
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { FormEvent, useState } from "react";
 
 const PRACTICES = [
   { id: "AC.L1-3.1.1", domain: "AC", short: "Authorized Access Control" },
@@ -27,13 +26,13 @@ const PRACTICES = [
 const AVERAGE_FCI_AWARD = "$150K+";
 
 const SELF_SERVE_INCLUDES: { label: string }[] = [
-  { label: "AI compliance officer onboards your business in 5 minutes — no forms, no templates to fill in" },
+  { label: "The Platform onboards your business in 5 minutes with a Custodia officer in the loop — no forms, no templates to fill in" },
   { label: "Plain-English walkthrough of all 17 FAR 52.204-21 practices, tailored to your exact tech stack" },
   { label: "Auto-drafted SSP narratives for every control — edit or accept in one click" },
-  { label: "Per-control evidence upload with AI vision review — catches gaps before a prime or auditor would" },
+  { label: "Per-control evidence upload with Platform review — catches gaps before a prime or auditor would" },
   { label: "SPRS self-attestation entry + step-by-step submission instructions" },
   { label: "Bid-ready attestation package: SSP, signed affirmation memo, full evidence inventory" },
-  { label: "Monthly AI compliance monitoring — flags changed controls and expiring evidence automatically" },
+  { label: "Monthly Platform compliance monitoring — flags changed controls and expiring evidence automatically" },
   { label: "1:1 Custodia Ticket Support — compliance officer answers any question, year-round" },
   { label: "Annual re-affirmation included — your next cycle is ready every Oct 1, no extra charge" },
   { label: "Prime questionnaire support — submit a ticket when a prime sends security questions and we help you answer" },
@@ -53,7 +52,7 @@ const HOW_IT_WORKS = [
   {
     n: "01",
     title: "Tell us about your business",
-    desc: "5-minute conversation. Your AI officer captures legal identity, scope, and tech stack — no forms.",
+    desc: "5-minute conversation. The Platform captures legal identity, scope, and tech stack — no forms.",
   },
   {
     n: "02",
@@ -63,7 +62,7 @@ const HOW_IT_WORKS = [
   {
     n: "03",
     title: "Upload evidence",
-    desc: "Screenshots, exports, signed rosters. AI vision review catches insufficient evidence before a prime would.",
+    desc: "Screenshots, exports, signed rosters. Platform review catches insufficient evidence before a prime would.",
   },
   {
     n: "04",
@@ -81,7 +80,7 @@ const READINESS_STEPS = [
   {
     title: "Guided build",
     status: "In platform",
-    detail: "Custodia AI officer walks all 17 controls, evidence, and narratives step-by-step.",
+    detail: "The Platform walks all 17 controls, evidence, and narratives step-by-step.",
   },
   {
     title: "Bid-ready",
@@ -89,79 +88,6 @@ const READINESS_STEPS = [
     detail: "Signed affirmation, SSP, and evidence inventory ready for primes and contracting officers.",
   },
 ];
-
-function WaitlistForm() {
-  const [form, setForm] = useState({ name: "", email: "", company: "" });
-  const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
-  const [message, setMessage] = useState("");
-
-  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setStatus("loading");
-    try {
-      const res = await fetch("/api/waitlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setStatus("success");
-        setMessage("We will reach out within 1 business day.");
-        setForm({ name: "", email: "", company: "" });
-      } else {
-        setStatus("error");
-        setMessage(data.error ?? "Something went wrong. Please try again.");
-      }
-    } catch {
-      setStatus("error");
-      setMessage("Network error. Please try again.");
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="mx-auto w-full max-w-md space-y-4">
-      <input
-        type="text"
-        placeholder="Your name"
-        value={form.name}
-        onChange={(e) => setForm({ ...form, name: e.target.value })}
-        className="w-full rounded-lg border border-[#2a5a49] bg-[#103327] px-4 py-3 text-white placeholder-[#88b7a2] outline-none focus:border-[#8dd2b1] focus:ring-1 focus:ring-[#8dd2b1]"
-      />
-      <input
-        type="email"
-        required
-        placeholder="Work email *"
-        value={form.email}
-        onChange={(e) => setForm({ ...form, email: e.target.value })}
-        className="w-full rounded-lg border border-[#2a5a49] bg-[#103327] px-4 py-3 text-white placeholder-[#88b7a2] outline-none focus:border-[#8dd2b1] focus:ring-1 focus:ring-[#8dd2b1]"
-      />
-      <input
-        type="text"
-        placeholder="Company name"
-        value={form.company}
-        onChange={(e) => setForm({ ...form, company: e.target.value })}
-        className="w-full rounded-lg border border-[#2a5a49] bg-[#103327] px-4 py-3 text-white placeholder-[#88b7a2] outline-none focus:border-[#8dd2b1] focus:ring-1 focus:ring-[#8dd2b1]"
-      />
-      <button
-        type="submit"
-        disabled={status === "loading" || status === "success"}
-        className="w-full rounded-lg bg-[#8dd2b1] px-8 py-3 text-lg font-bold text-[#113428] transition-colors hover:bg-[#78c5a0] disabled:opacity-60"
-      >
-        {status === "loading" ? "Submitting…" : "Talk to a Custodia officer →"}
-      </button>
-      {message && (
-        <p
-          className={`text-center text-sm font-medium ${
-            status === "success" ? "text-[#9fe4c2]" : "text-[#ffb6b6]"
-          }`}
-        >
-          {message}
-        </p>
-      )}
-    </form>
-  );
-}
 
 export default function Home() {
   return (
@@ -191,7 +117,7 @@ export default function Home() {
               </SignInButton>
               <SignUpButton mode="modal">
                 <button className="rounded-xl bg-[#104d3a] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0d3e2f]">
-                  Start free trial
+                  Create free account
                 </button>
               </SignUpButton>
             </Show>
@@ -220,7 +146,7 @@ export default function Home() {
               Clear guidance for non-technical teams to become CMMC 1 compliant and bid with confidence.
             </h1>
             <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[#355d50] md:text-xl">
-              Custodia is your cybersecurity partner in the loop: AI handles speed, a real compliance officer handles edge cases. Build a defensible package to compete for contracts worth <strong className="text-[#0f2f26]">{AVERAGE_FCI_AWARD}</strong> or more, securely.
+              To work with the U.S. government, you must protect FCI from cyber threats targeting American programs and supply chains. Custodia gives you a cybersecurity firm behind The Platform, so you can secure your business and pursue contracts worth <strong className="text-[#0f2f26]">{AVERAGE_FCI_AWARD}</strong> or more with confidence.
             </p>
             <div className="mt-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
               <Show when="signed-in">
@@ -241,19 +167,18 @@ export default function Home() {
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <button className="rounded-xl bg-[#104d3a] px-8 py-4 text-base font-bold text-white transition-colors hover:bg-[#0d3e2f]">
-                    Start free trial
+                    Create free account
                   </button>
                 </SignUpButton>
-                <a
-                  href="#bootcamp"
-                  className="rounded-xl border border-[#b8d8cb] bg-white px-8 py-4 text-base font-semibold text-[#1f5c47] transition-colors hover:border-[#86bca7] hover:text-[#0f2f26]"
-                >
-                  Talk to an officer
-                </a>
+                <SignUpButton mode="modal">
+                  <button className="rounded-xl border border-[#b8d8cb] bg-white px-8 py-4 text-base font-semibold text-[#1f5c47] transition-colors hover:border-[#86bca7] hover:text-[#0f2f26]">
+                    Start your secure compliance journey
+                  </button>
+                </SignUpButton>
               </Show>
             </div>
             <p className="mt-8 text-sm text-[#4f7668]">
-              Pittsburgh, PA · Veteran-owned cybersecurity firm · Carnegie Mellon graduates
+              Pittsburgh, PA · Veteran-owned cybersecurity firm · Built for SMB government contractors
             </p>
           </div>
 
@@ -263,7 +188,7 @@ export default function Home() {
             </div>
             <h2 className="font-serif text-3xl font-bold text-[#10231d]">Where you are now</h2>
             <p className="mt-2 text-sm leading-relaxed text-[#44695c]">
-              Most SMB teams start with scattered policies and no evidence trail. This platform turns that into one clean, bid-ready package.
+              Most SMB teams start with scattered policies and no evidence trail. The Platform turns that into one clean, bid-ready package.
             </p>
             <div className="mt-5 space-y-3">
               {READINESS_STEPS.map((step, idx) => (
@@ -371,7 +296,7 @@ export default function Home() {
               Casual to use. Serious on security.
             </h2>
             <p className="mx-auto mt-4 max-w-3xl text-lg text-[#44695c]">
-              Your team gets plain-English guidance and weekly direction. Custodia officers stay in the loop to keep your package defensible when contract pressure shows up.
+              Your team gets plain-English guidance and weekly direction. Custodia officers stay in the loop so your package stays defensible when primes and contracting officers push hard.
             </p>
           </div>
           <div className="grid gap-8 md:grid-cols-2">
@@ -381,7 +306,7 @@ export default function Home() {
               </div>
               <div className="mt-2 font-serif text-3xl font-bold tracking-tight text-[#10231d]">$249/mo</div>
               <p className="mt-2 text-base text-[#496f61]">
-                AI speed plus human oversight. Build, monitor, and re-affirm your CMMC Level 1 package in one secure system.
+                Platform guidance plus human oversight. Build, monitor, and re-affirm your CMMC Level 1 package in one secure system.
               </p>
               <p className="mt-1 text-xs text-[#5d8376]">
                 Billed monthly · Cancel any time · 7-day free trial, no credit card required
@@ -397,7 +322,7 @@ export default function Home() {
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <button className="mt-8 w-full rounded-xl bg-[#104d3a] px-6 py-3 font-bold text-white transition-colors hover:bg-[#0d3e2f]">
-                    Start free trial
+                    Create free account
                   </button>
                 </SignUpButton>
               </Show>
@@ -432,12 +357,22 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <a
-                href="#bootcamp"
-                className="mt-8 block w-full rounded-xl border border-[#89d2af] px-6 py-3 text-center font-bold text-[#d8f2e6] transition-colors hover:bg-[#89d2af] hover:text-[#12382c]"
-              >
-                Talk to a Custodia officer
-              </a>
+              <Show when="signed-out">
+                <SignUpButton mode="modal">
+                  <button className="mt-8 block w-full rounded-xl border border-[#89d2af] px-6 py-3 text-center font-bold text-[#d8f2e6] transition-colors hover:bg-[#89d2af] hover:text-[#12382c]">
+                    Create free account
+                  </button>
+                </SignUpButton>
+              </Show>
+              <Show when="signed-in">
+                <Link
+                  href="/assessments"
+                  prefetch={false}
+                  className="mt-8 block w-full rounded-xl border border-[#89d2af] px-6 py-3 text-center font-bold text-[#d8f2e6] transition-colors hover:bg-[#89d2af] hover:text-[#12382c]"
+                >
+                  Continue in workspace
+                </Link>
+              </Show>
             </div>
           </div>
         </div>
@@ -520,13 +455,13 @@ export default function Home() {
           </h2>
           <div className="mx-auto mt-8 space-y-5 text-left text-base leading-relaxed text-[#c5e3d6] md:text-lg">
             <p>
-              Custodia is a Pittsburgh cybersecurity firm. <strong className="text-white">Veteran-owned and operated</strong>, founded by <strong className="text-white">Carnegie Mellon graduates</strong>.
+              Custodia is a Pittsburgh cybersecurity firm. <strong className="text-white">Veteran-owned and operated</strong>, built to help SMB teams become contract-ready without compliance confusion.
             </p>
             <p>
               We built this because small businesses kept missing contract opportunities, not due to capability gaps, but because compliance work felt opaque and overloaded.
             </p>
             <p>
-              Our model is simple: make compliance understandable for non-technical operators, automate the heavy lifting, and keep a real officer in the loop when judgment is required.
+              Our model is simple: make compliance understandable for non-technical operators, automate the heavy lifting in The Platform, and keep a real officer in the loop when judgment is required.
             </p>
           </div>
           <div className="mt-12 grid grid-cols-3 gap-6 border-t border-[#2a5a49] pt-10 text-center">
@@ -539,8 +474,8 @@ export default function Home() {
               <div className="mt-1 text-sm text-[#8eb6a6]">Mission-driven service</div>
             </div>
             <div>
-              <div className="text-xs font-bold uppercase tracking-widest text-[#8dd2b1]">CMU built</div>
-              <div className="mt-1 text-sm text-[#8eb6a6]">Cybersecurity depth</div>
+              <div className="text-xs font-bold uppercase tracking-widest text-[#8dd2b1]">Cybersecurity firm</div>
+              <div className="mt-1 text-sm text-[#8eb6a6]">Officer-backed platform</div>
             </div>
           </div>
         </div>
@@ -557,12 +492,27 @@ export default function Home() {
           </div>
           <h2 className="font-serif text-4xl font-bold tracking-tight md:text-5xl">Want it handled?</h2>
           <p className="mt-4 text-lg leading-relaxed text-[#c0dfd1]">
-            Share your timeline and a Custodia compliance officer will reach out within one business day.
+            Create your free account to start now. If you need hands-on help, a Custodia compliance officer can join your journey inside the workspace.
           </p>
           <div className="mt-10">
-            <WaitlistForm />
+            <Show when="signed-out">
+              <SignUpButton mode="modal">
+                <button className="w-full rounded-lg bg-[#8dd2b1] px-8 py-3 text-lg font-bold text-[#113428] transition-colors hover:bg-[#78c5a0]">
+                  Create free account
+                </button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <Link
+                href="/assessments"
+                prefetch={false}
+                className="block w-full rounded-lg bg-[#8dd2b1] px-8 py-3 text-lg font-bold text-[#113428] transition-colors hover:bg-[#78c5a0]"
+              >
+                Continue in workspace
+              </Link>
+            </Show>
           </div>
-          <p className="mt-4 text-xs text-[#8db2a2]">No credit card. No commitment. We confirm fit first.</p>
+          <p className="mt-4 text-xs text-[#8db2a2]">No credit card required · Start securing your business today</p>
         </div>
       </section>
 
@@ -572,7 +522,7 @@ export default function Home() {
             Custodia<span className="text-[#8dd2b1]">.</span>
           </div>
           <p className="text-center text-xs">
-            CMMC Level 1 self-serve platform and officer-guided bootcamp · Pittsburgh, PA · Veteran-owned · CMU built
+            CMMC Level 1 self-serve platform and officer-guided bootcamp · Pittsburgh, PA · Veteran-owned · Cybersecurity firm
           </p>
           <p className="text-xs">© {new Date().getFullYear()} Custodia, LLC.</p>
         </div>

@@ -485,13 +485,13 @@ export function evidenceReviewBlockers(
       filename: r.filename,
       reason:
         r.ai_review_verdict === null
-          ? "Pending AI review"
+          ? "Pending Platform review"
           : r.ai_review_model === "none"
             ? "Format not auto-reviewable — re-upload as PNG, JPG, or PDF"
             : r.ai_review_verdict === "insufficient"
-              ? "AI flagged insufficient — replace or supplement"
+              ? "Platform flagged insufficient — replace or supplement"
               : r.ai_review_verdict === "not_relevant"
-                ? "AI could not map this artifact to any practice"
+                ? "Platform could not map this artifact to any practice"
                 : "Not passing",
     }));
 }

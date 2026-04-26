@@ -21,11 +21,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Custodia | CMMC Level 1 Compliance for SMBs",
   description:
-    "Guided CMMC Level 1 compliance for SMBs handling FCI. AI speed plus a Custodia compliance officer in the loop to help you build a defensible, bid-ready package.",
+    "Guided CMMC Level 1 compliance for SMBs handling FCI. Platform guidance plus a Custodia compliance officer in the loop to help you build a defensible, bid-ready package.",
   openGraph: {
     title: "Custodia | CMMC Level 1 Compliance for SMBs",
     description:
-      "Guided CMMC Level 1 compliance for SMBs handling FCI, with AI automation and officer support.",
+      "Guided CMMC Level 1 compliance for SMBs handling FCI, with Platform automation and officer support.",
     type: "website",
   },
 };

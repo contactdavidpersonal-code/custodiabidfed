@@ -43,7 +43,7 @@ export default async function UpgradePage() {
             Clear, guided compliance for $249/mo.
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-[#4a7164]">
-            Your AI compliance officer guides all 17 FAR 52.204-21 practices, and a Custodia compliance officer is in the loop for support and pushback scenarios. 7-day free trial, no credit card required.
+            The Platform guides all 17 FAR 52.204-21 practices, and a Custodia compliance officer is in the loop for support and pushback scenarios. 7-day free trial, no credit card required.
           </p>
         </div>
 
