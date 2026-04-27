@@ -465,79 +465,117 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6 — How we secure your business for FCI */}
+      {/* 6 — Stakes + Custodia Shield */}
       <section className="bg-[#f7f7f3] px-6 py-24">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-16 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">FCI security</div>
-            <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-6xl">
-              How we secure your business for federal work
+          {/* Stakes header */}
+          <div className="mb-14 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#a06b1a]">
+              the stakes
+            </div>
+            <h2 className="font-serif text-4xl font-bold leading-[1.05] tracking-tight text-[#10231d] md:text-6xl">
+              Your business is on the front line.
             </h2>
-            <p className="mx-auto mt-5 max-w-3xl text-lg text-[#44695c]">
-              Federal Contract Information (FCI) is the sensitive contract data DoD trusts you with. CMMC Level 1 is the standard that protects it &mdash; six domains, seventeen practices. We walk you through every one.
+            <p className="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-[#44695c]">
+              The minute you handle data for the U.S. government, you become a target. Foreign adversaries &mdash; China, Russia, Iran, North Korea &mdash; hunt small American defense contractors because we&apos;re the easiest way into the country&apos;s biggest programs. Custodia puts a shield between your business and them, and keeps it up year-round so you can focus on winning the work.
             </p>
           </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                code: "AC",
-                name: "Access Control",
-                count: 4,
-                desc: "Who can do what inside your systems. The first wall against unauthorized data access.",
-              },
-              {
-                code: "IA",
-                name: "Identification & Authentication",
-                count: 2,
-                desc: "Verify users and devices before they touch FCI. Strong authentication is mandatory.",
-              },
-              {
-                code: "MP",
-                name: "Media Protection",
-                count: 1,
-                desc: "Sanitize media containing FCI before disposal or reuse. No data leaks via old hardware.",
-              },
-              {
-                code: "PE",
-                name: "Physical Protection",
-                count: 4,
-                desc: "Limit physical access to FCI. Escort visitors. Maintain access logs and key control.",
-              },
-              {
-                code: "SC",
-                name: "System & Comms Protection",
-                count: 2,
-                desc: "Monitor and control communications at system boundaries. Public-system separation.",
-              },
-              {
-                code: "SI",
-                name: "System & Information Integrity",
-                count: 4,
-                desc: "Identify and correct flaws. Anti-malware. Real-time scans of incoming files.",
-              },
-            ].map((domain) => (
-              <div
-                key={domain.code}
-                className="rounded-3xl border border-[#cfe3d9] bg-white p-6 shadow-[0_4px_16px_rgba(14,48,37,0.04)]"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="rounded-md bg-[#104d3a] px-2 py-1 font-mono text-[11px] font-bold tracking-wider text-[#bef4be]">
-                    {domain.code}
-                  </span>
-                  <span className="font-mono text-[11px] text-[#7a9c90]">
-                    {domain.count} {domain.count === 1 ? "practice" : "practices"}
-                  </span>
+          {/* What happens if you skip this */}
+          <div className="mb-12">
+            <h3 className="mb-6 text-center font-serif text-2xl font-bold text-[#10231d] md:text-3xl">
+              What happens to small businesses that get this wrong
+            </h3>
+            <div className="grid gap-5 md:grid-cols-3">
+              {[
+                {
+                  stat: "Contracts pulled",
+                  title: "Primes drop you",
+                  body: "When a prime audits your security and finds gaps &mdash; or you can&apos;t answer their questionnaire &mdash; the work goes to someone else. You don&apos;t get a second chance, and other primes hear about it.",
+                },
+                {
+                  stat: "Federal lawsuits",
+                  title: "False Claims Act exposure",
+                  body: "Filing a SPRS affirmation that isn&apos;t true is a federal violation under 18 USC 1001 and the False Claims Act. The DOJ&apos;s Civil Cyber-Fraud Initiative is actively pursuing contractors. Recent settlements have run from $1M to over $9M.",
+                },
+                {
+                  stat: "Adversaries get in",
+                  title: "Foreign actors steal your work",
+                  body: "State-sponsored hackers target defense small businesses because we&apos;re the soft underbelly of the supply chain. One ransomware hit, one spear-phish, and your IP, your contract data, and your business can be gone overnight.",
+                },
+              ].map((c) => (
+                <div
+                  key={c.title}
+                  className="rounded-3xl border border-[#e8d4a1] bg-[#fff8e8] p-6"
+                >
+                  <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#a06b1a]">
+                    {c.stat}
+                  </div>
+                  <h4 className="mt-3 font-serif text-xl font-bold text-[#10231d]">{c.title}</h4>
+                  <p
+                    className="mt-3 text-sm leading-relaxed text-[#5d4f30]"
+                    dangerouslySetInnerHTML={{ __html: c.body }}
+                  />
                 </div>
-                <h3 className="mt-4 font-serif text-xl font-bold text-[#10231d]">{domain.name}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-[#4a6f62]">{domain.desc}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          <div className="mt-10 rounded-2xl border border-[#ffcf8a] bg-[#fff4de] px-6 py-5 text-center">
-            <p className="text-sm leading-relaxed text-[#83570d]">
-              <strong>L1 affirmation is binary.</strong> All seventeen practices, or none. The Platform gets you to all seventeen &mdash; and an officer signs off before you do.
+          {/* The Custodia Shield */}
+          <div className="rounded-3xl border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_45px_rgba(14,48,37,0.2)] md:p-12">
+            <div className="mb-10 text-center">
+              <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
+                the custodia shield
+              </div>
+              <h3 className="font-serif text-3xl font-bold leading-tight md:text-5xl">
+                We secure you. Then we keep you secure.
+              </h3>
+              <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[#a8cfc0]">
+                You don&apos;t need to become a security expert. You need a shield that works while you focus on contract work. That&apos;s what we build &mdash; and what we maintain, every day, year-round.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  n: "01",
+                  title: "Build a real defense",
+                  body: "Not just paperwork. An actual security posture: who can see what, how data leaves your systems, who walks through your door. Plain English, your tech stack.",
+                },
+                {
+                  n: "02",
+                  title: "Officer-reviewed, not self-assessed",
+                  body: "Every artifact you upload is reviewed by a Custodia compliance officer. We catch the gaps an adversary or auditor would find &mdash; before they find them.",
+                },
+                {
+                  n: "03",
+                  title: "Year-round monitoring",
+                  body: "Threats don&apos;t take holidays. Neither do we. We watch for changed controls, expiring evidence, and new requirements &mdash; and tell you exactly what to fix.",
+                },
+                {
+                  n: "04",
+                  title: "Annual re-certification",
+                  body: "Every Oct 1, your SPRS re-affirmation is ready to go. No fire drill. No scrambling. Your shield stays up while you grow the business.",
+                },
+              ].map((s) => (
+                <div
+                  key={s.n}
+                  className="rounded-2xl border border-[#2a5a49] bg-[#193d31] p-6"
+                >
+                  <div className="text-[10px] font-bold tracking-[0.22em] text-[#8dd2b1]">
+                    {s.n}
+                  </div>
+                  <h4 className="mt-3 font-serif text-xl font-bold text-white">{s.title}</h4>
+                  <p
+                    className="mt-3 text-sm leading-relaxed text-[#c5e3d6]"
+                    dangerouslySetInnerHTML={{ __html: s.body }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <p className="mx-auto mt-12 max-w-2xl text-center font-serif text-2xl leading-snug text-[#bdf2cf] md:text-3xl">
+              You stay safe. You keep bidding. You keep winning. Custodia stands watch.
             </p>
           </div>
         </div>
