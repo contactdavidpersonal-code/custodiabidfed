@@ -210,7 +210,7 @@ export function OnboardingChat({
         {!hydrated ? (
           <LoadingBubble />
         ) : messages.length === 0 ? (
-          <StarterBubble onPick={(prompt) => setDraft(prompt)} />
+          <StarterBubble />
         ) : (
           messages.map((m) => (
             <MessageBubble
@@ -382,12 +382,7 @@ function ToolChip({ tool }: { tool: ToolEvent }) {
   );
 }
 
-function StarterBubble({ onPick }: { onPick: (prompt: string) => void }) {
-  const suggestions = [
-    "We're a 4-person SaaS building a logistics tool we want to sell to DoD.",
-    "I cut grass for Army posts in North Carolina. Been at it 6 years.",
-    "My company is a cybersecurity consultancy — we sub under larger primes.",
-  ];
+function StarterBubble() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex gap-2.5">
@@ -404,23 +399,6 @@ function StarterBubble({ onPick }: { onPick: (prompt: string) => void }) {
             company do, and who are your customers (or who do you want them to
             be)?</strong>
           </p>
-        </div>
-      </div>
-      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3">
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-          Quick starts
-        </p>
-        <div className="flex flex-col gap-1.5">
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => onPick(s)}
-              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-xs leading-relaxed text-slate-700 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-slate-900"
-            >
-              {s}
-            </button>
-          ))}
         </div>
       </div>
     </div>
