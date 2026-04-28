@@ -134,5 +134,18 @@ export async function GET() {
     created_at: r.created_at,
   }));
 
-  return Response.json({ conversationId: conv.id, messages });
+  // Surface the long-term memory recap so the rail can render a personalized
+  // "here's where we left off" bubble before the user has typed anything in
+  // this workspace conversation.
+  let recap: string | null = null;
+  try {
+    const memory = await ensureMemoryForOrg(org.id);
+    if (memory && memory.summary) {
+      recap = memory.summary;
+    }
+  } catch (err) {
+    console.warn("ensureMemoryForOrg (GET) failed", err);
+  }
+
+  return Response.json({ conversationId: conv.id, messages, recap });
 }

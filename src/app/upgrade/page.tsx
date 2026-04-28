@@ -18,9 +18,6 @@ export default async function UpgradePage() {
               alt="Custodia shield"
               className="h-9 w-auto"
             />
-            <span className="flex h-9 w-9 items-center justify-center rounded-sm bg-[#0e2a23] text-sm font-black text-[#bdf2cf]">
-              C
-            </span>
             <div className="leading-tight">
               <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
                 Custodia

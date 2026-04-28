@@ -55,6 +55,7 @@ export function ComplianceOfficerRail() {
   const [streaming, setStreaming] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [recap, setRecap] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
@@ -82,6 +83,7 @@ export function ComplianceOfficerRail() {
         if (!res.ok) throw new Error(`GET /api/chat -> ${res.status}`);
         const data = (await res.json()) as {
           messages: Array<{ id: string; role: string; content: unknown }>;
+          recap?: string | null;
         };
         if (cancelled) return;
         const hydrated: Message[] = data.messages
@@ -94,6 +96,7 @@ export function ComplianceOfficerRail() {
           }))
           .filter((m) => m.text.length > 0 || m.tools.length > 0);
         setMessages(hydrated);
+        setRecap(data.recap ?? null);
       } catch (err) {
         if (cancelled) return;
         console.warn("Failed to load chat history", err);
@@ -126,7 +129,7 @@ export function ComplianceOfficerRail() {
       const onMove = (ev: MouseEvent) => {
         const next = Math.min(
           MAX_WIDTH,
-          Math.max(MIN_WIDTH, startWidth + (ev.clientX - startX)),
+          Math.max(MIN_WIDTH, startWidth - (ev.clientX - startX)),
         );
         setWidth(next);
       };
@@ -226,7 +229,7 @@ export function ComplianceOfficerRail() {
         type="button"
         onClick={toggle}
         aria-label="Open compliance officer"
-        className="fixed left-0 top-1/2 z-30 flex -translate-y-1/2 -rotate-90 origin-bottom-left items-center gap-2 rounded-t-sm border border-b-0 border-[#cfe3d9] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#0e2a23] shadow-md transition-colors hover:bg-[#eaf3ee] print:hidden"
+        className="fixed right-0 top-1/2 z-30 flex -translate-y-1/2 rotate-90 origin-bottom-right items-center gap-2 rounded-t-sm border border-b-0 border-[#cfe3d9] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#0e2a23] shadow-md transition-colors hover:bg-[#eaf3ee] print:hidden"
       >
         <span className="h-1.5 w-1.5 rounded-sm bg-[#2f8f6d]" />
         Compliance officer
@@ -236,7 +239,7 @@ export function ComplianceOfficerRail() {
 
   return (
     <aside
-      className="sticky top-[57px] z-10 flex h-[calc(100vh-57px)] shrink-0 flex-col border-r border-[#cfe3d9] bg-white print:hidden"
+      className="sticky top-[57px] z-10 flex h-[calc(100vh-57px)] shrink-0 flex-col border-l border-[#cfe3d9] bg-white print:hidden"
       style={{ width }}
     >
       <header className="flex items-center justify-between gap-3 border-b border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
@@ -260,7 +263,7 @@ export function ComplianceOfficerRail() {
           className="rounded-sm p-1 text-[#7a9c90] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
         >
           <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
-            <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
+            <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
           </svg>
         </button>
       </header>
@@ -272,7 +275,7 @@ export function ComplianceOfficerRail() {
         {!hydrated ? (
           <LoadingBubble />
         ) : messages.length === 0 ? (
-          <WelcomeBubble />
+          <WelcomeBubble recap={recap} />
         ) : (
           <div className="space-y-4">
             {messages.map((m) => (
@@ -340,7 +343,7 @@ export function ComplianceOfficerRail() {
 
       <div
         onMouseDown={handleResizeMouseDown}
-        className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-[#2f8f6d]/30"
+        className="absolute left-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-[#2f8f6d]/30"
         aria-hidden
       />
     </aside>
@@ -439,7 +442,8 @@ function LoadingBubble() {
   );
 }
 
-function WelcomeBubble() {
+function WelcomeBubble({ recap }: { recap: string | null }) {
+  const recapText = recap?.trim();
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
@@ -447,17 +451,30 @@ function WelcomeBubble() {
           Officer
         </div>
         <div className="max-w-[92%] rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2 text-sm leading-relaxed text-[#10231d]">
-          <p>
-            Hi — I&apos;m your Custodia compliance officer. I&apos;ve got the
-            context from your onboarding chat, so we can pick right up. I&apos;ll
-            walk you through every step of your CMMC Level 1 annual affirmation
-            and review every piece of evidence you upload so nothing weak
-            sneaks into your SPRS package.
-          </p>
-          <p className="mt-2">
-            Ask me anything, or jump into your first practice from the cycle
-            on the right.
-          </p>
+          {recapText ? (
+            <>
+              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#2f8f6d]">
+                Where we left off
+              </p>
+              <p className="whitespace-pre-wrap">{recapText}</p>
+              <p className="mt-2 text-[#2f8f6d]">
+                Ready to keep going? Pick a practice on the right or ask me anything.
+              </p>
+            </>
+          ) : (
+            <>
+              <p>
+                Hi — I&apos;m your Custodia compliance officer. I&apos;ll walk
+                you through every step of your CMMC Level 1 annual
+                affirmation and review every piece of evidence you upload
+                so nothing weak sneaks into your SPRS package.
+              </p>
+              <p className="mt-2">
+                Ask me anything, or jump into your first practice from the
+                cycle on the right.
+              </p>
+            </>
+          )}
         </div>
       </div>
       <div className="rounded-sm border border-dashed border-[#cfe3d9] bg-[#f7fcf9] p-3 text-xs text-[#5a7d70]">
