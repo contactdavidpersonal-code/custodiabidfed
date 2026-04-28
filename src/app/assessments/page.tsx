@@ -28,10 +28,10 @@ const statusCopy: Record<
 };
 
 const toneStyles = {
-  active: "bg-sky-50 text-sky-700 ring-sky-200",
-  review: "bg-amber-50 text-amber-700 ring-amber-200",
-  attested: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  archived: "bg-slate-100 text-slate-600 ring-slate-200",
+  active: "bg-[#eaf3ee] text-[#0e2a23] ring-[#cfe3d9]",
+  review: "bg-[#fff4e0] text-[#a06b1a] ring-[#f1d9a5]",
+  attested: "bg-[#e6f4ec] text-[#1f6648] ring-[#bde0cc]",
+  archived: "bg-[#f1f6f3] text-[#5a7d70] ring-[#cfe3d9]",
 } as const;
 
 export default async function AssessmentsIndexPage() {
@@ -57,15 +57,15 @@ export default async function AssessmentsIndexPage() {
   return (
     <main className="mx-auto max-w-6xl px-6 py-12">
       <section className="mb-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
           Welcome to your workspace
         </p>
-        <h1 className="mt-3 text-4xl font-bold tracking-tight text-slate-900 md:text-5xl">
+        <h1 className="mt-3 font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-5xl">
           {hasAnyAssessment
             ? "Your CMMC Level 1 assessments"
             : "Let's get you bid-ready."}
         </h1>
-        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate-600">
+        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-[#4a7164]">
           {hasAnyAssessment
             ? `Each assessment is one annual affirmation cycle covering all ${practiceCount} CMMC Level 1 practices. Open a cycle to keep working, or start a new one.`
             : `One cycle, ${practiceCount} practices, and a signed SPRS affirmation. We'll walk you through each step in plain English — the same way you'd do your taxes, except the prize is federal contracts.`}
@@ -79,11 +79,11 @@ export default async function AssessmentsIndexPage() {
       <section className="grid gap-8 lg:grid-cols-[1.6fr_1fr]">
         <div>
           <div className="mb-4 flex items-end justify-between">
-            <h2 className="text-xl font-bold tracking-tight text-slate-900">
+            <h2 className="font-serif text-xl font-bold tracking-tight text-[#10231d]">
               Cycles
             </h2>
             {hasAnyAssessment && (
-              <span className="text-sm text-slate-500">
+              <span className="text-sm text-[#5a7d70]">
                 {assessments.length} total
               </span>
             )}
@@ -97,17 +97,17 @@ export default async function AssessmentsIndexPage() {
                 <li key={a.id}>
                   <Link
                     href={`/assessments/${a.id}`}
-                    className="group block rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
+                    className="group block rounded-md border border-[#cfe3d9] bg-white p-5 shadow-[0_2px_0_rgba(14,48,37,0.04)] transition-all hover:border-[#2f8f6d] hover:shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.10)]"
                   >
                     <div className="flex flex-wrap items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className="truncate text-lg font-bold text-slate-900">
+                          <h3 className="truncate font-serif text-lg font-bold text-[#10231d]">
                             {a.cycle_label}
                           </h3>
                           <StatusBadge status={a.status} />
                         </div>
-                        <p className="mt-1 text-sm text-slate-500">
+                        <p className="mt-1 text-sm text-[#5a7d70]">
                           Started{" "}
                           {new Date(a.created_at).toLocaleDateString(undefined, {
                             month: "short",
@@ -117,22 +117,22 @@ export default async function AssessmentsIndexPage() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <div className="text-3xl font-bold tabular-nums text-slate-900">
+                        <div className="font-serif text-3xl font-bold tabular-nums text-[#0e2a23]">
                           {a.percentAnswered}
-                          <span className="text-lg font-semibold text-slate-400">%</span>
+                          <span className="text-lg font-semibold text-[#7a9c90]">%</span>
                         </div>
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-[#5a7d70]">
                           {a.answered} of {a.total} answered
                         </div>
                       </div>
                     </div>
-                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+                    <div className="mt-4 h-1.5 overflow-hidden rounded-sm bg-[#f1f6f3]">
                       <div
-                        className="h-full rounded-full bg-amber-400 transition-all"
+                        className="h-full rounded-sm bg-[#2f8f6d] transition-all"
                         style={{ width: `${a.percentAnswered}%` }}
                       />
                     </div>
-                    <div className="mt-3 flex items-center justify-end text-sm font-semibold text-amber-700 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div className="mt-3 flex items-center justify-end text-sm font-semibold text-[#0e2a23] opacity-0 transition-opacity group-hover:opacity-100">
                       Continue &rarr;
                     </div>
                   </Link>
@@ -143,17 +143,17 @@ export default async function AssessmentsIndexPage() {
         </div>
 
         <aside className="space-y-6">
-          <div className="rounded-2xl border border-slate-900 bg-slate-900 p-6 text-white shadow-lg">
-            <h2 className="text-lg font-bold tracking-tight">
+          <div className="rounded-md border border-[#0e2a23] bg-[#0e2a23] p-6 text-white shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.18)]">
+            <h2 className="font-serif text-lg font-bold tracking-tight text-white">
               {hasAnyAssessment ? "Start a new cycle" : "Start your first cycle"}
             </h2>
-            <p className="mt-2 text-sm text-slate-300">
+            <p className="mt-2 text-sm leading-relaxed text-[#cfe3d9]">
               Annual affirmation to SPRS is a year-long cycle. Name this one and
               we&apos;ll set up all {practiceCount} practices.
             </p>
             <form action={createAssessmentAction} className="mt-5 space-y-4">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">
+                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.18em] text-[#bdf2cf]">
                   Cycle label
                 </span>
                 <input
@@ -161,20 +161,20 @@ export default async function AssessmentsIndexPage() {
                   name="cycleLabel"
                   defaultValue={defaultCycle}
                   required
-                  className="w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-slate-500 focus:border-amber-400"
+                  className="w-full rounded-sm border border-[#2f8f6d]/40 bg-[#10231d] px-3 py-2.5 text-sm text-white outline-none transition-colors placeholder:text-[#7a9c90] focus:border-[#bdf2cf]"
                 />
               </label>
               <button
                 type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-400 px-4 py-3 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300"
+                className="flex w-full items-center justify-center gap-2 rounded-sm bg-[#bdf2cf] px-4 py-3 text-sm font-bold tracking-tight text-[#0c2219] transition-colors hover:bg-white"
               >
                 Start assessment &rarr;
               </button>
             </form>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
-            <h3 className="text-sm font-bold tracking-tight text-slate-900">
+          <div className="rounded-md border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+            <h3 className="font-serif text-sm font-bold tracking-tight text-[#10231d]">
               How it works
             </h3>
             <ol className="mt-4 space-y-3">
@@ -201,14 +201,14 @@ export default async function AssessmentsIndexPage() {
                 },
               ].map((step) => (
                 <li key={step.n} className="flex gap-3">
-                  <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-amber-100 text-xs font-bold text-amber-700">
+                  <span className="flex h-6 w-6 flex-none items-center justify-center rounded-sm bg-[#0e2a23] text-xs font-bold text-[#bdf2cf]">
                     {step.n}
                   </span>
                   <div>
-                    <div className="text-sm font-semibold text-slate-900">
+                    <div className="text-sm font-semibold text-[#10231d]">
                       {step.title}
                     </div>
-                    <div className="mt-0.5 text-xs text-slate-600">{step.body}</div>
+                    <div className="mt-0.5 text-xs text-[#5a7d70]">{step.body}</div>
                   </div>
                 </li>
               ))}
@@ -224,7 +224,7 @@ function StatusBadge({ status }: { status: AssessmentWithProgress["status"] }) {
   const { label, tone } = statusCopy[status];
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${toneStyles[tone]}`}
+      className={`inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] ring-1 ring-inset ${toneStyles[tone]}`}
     >
       {label}
     </span>
@@ -233,14 +233,14 @@ function StatusBadge({ status }: { status: AssessmentWithProgress["status"] }) {
 
 function EmptyCyclesCard() {
   return (
-    <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-10 text-center">
-      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-2xl">
+    <div className="rounded-md border border-dashed border-[#cfe3d9] bg-white p-10 text-center">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-sm bg-[#eaf3ee] text-2xl text-[#0e2a23]">
         <span aria-hidden>&rarr;</span>
       </div>
-      <h3 className="mt-4 text-lg font-bold tracking-tight text-slate-900">
+      <h3 className="mt-4 font-serif text-lg font-bold tracking-tight text-[#10231d]">
         No cycles yet
       </h3>
-      <p className="mx-auto mt-1 max-w-sm text-sm text-slate-600">
+      <p className="mx-auto mt-1 max-w-sm text-sm text-[#5a7d70]">
         Start your first CMMC L1 cycle on the right. You can always come back
         and finish later — progress is saved as you go.
       </p>

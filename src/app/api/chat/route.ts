@@ -6,6 +6,10 @@ import {
   getOrCreateWorkspaceConversation,
   listMessages,
 } from "@/lib/ai/conversations";
+import {
+  ensureMemoryForOrg,
+  memoryToContextBlock,
+} from "@/lib/ai/memory";
 import { runOfficerAgentStream, SSE_HEADERS } from "@/lib/ai/stream";
 import { ensureOrgForUser, getBusinessProfile } from "@/lib/assessment";
 
@@ -42,10 +46,21 @@ export async function POST(req: NextRequest) {
   });
 
   const profile = await getBusinessProfile(org.id);
+  // Cheap-RAG: build/refresh long-term memory of all prior officer chats
+  // (onboarding + workspace) before answering. Don't let a memory glitch
+  // block the user — fall back to no memory if the build fails.
+  let memoryBlock = "";
+  try {
+    const memory = await ensureMemoryForOrg(org.id);
+    memoryBlock = memoryToContextBlock(memory);
+  } catch (err) {
+    console.warn("ensureMemoryForOrg failed, continuing without memory", err);
+  }
   const contextBlock = buildWorkspaceContextBlock({
     orgName: org.name,
     profile: profile?.data,
     pageContext: body.pageContext,
+    memoryBlock,
   });
 
   const stream = runOfficerAgentStream({
@@ -68,6 +83,7 @@ function buildWorkspaceContextBlock(input: {
   orgName: string;
   profile: Record<string, unknown> | undefined;
   pageContext: ChatRequestBody["pageContext"];
+  memoryBlock: string;
 }): string {
   const parts: string[] = [];
   parts.push(`## Current user context\n- Organization: ${input.orgName}`);
@@ -78,6 +94,11 @@ function buildWorkspaceContextBlock(input: {
     parts.push(
       `- Business profile: not yet captured — if the user asks for compliance advice without context, politely ask one or two questions about what they do before answering generically.`,
     );
+  }
+
+  if (input.memoryBlock) {
+    parts.push("");
+    parts.push(input.memoryBlock);
   }
 
   if (input.pageContext?.route) {

@@ -226,9 +226,9 @@ export function ComplianceOfficerRail() {
         type="button"
         onClick={toggle}
         aria-label="Open compliance officer"
-        className="fixed left-0 top-1/2 z-30 flex -translate-y-1/2 -rotate-90 origin-bottom-left items-center gap-2 rounded-t-lg border border-b-0 border-slate-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-amber-700 shadow-md transition-colors hover:bg-amber-50 print:hidden"
+        className="fixed left-0 top-1/2 z-30 flex -translate-y-1/2 -rotate-90 origin-bottom-left items-center gap-2 rounded-t-sm border border-b-0 border-[#cfe3d9] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#0e2a23] shadow-md transition-colors hover:bg-[#eaf3ee] print:hidden"
       >
-        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+        <span className="h-1.5 w-1.5 rounded-sm bg-[#2f8f6d]" />
         Compliance officer
       </button>
     );
@@ -236,19 +236,19 @@ export function ComplianceOfficerRail() {
 
   return (
     <aside
-      className="sticky top-[65px] z-10 flex h-[calc(100vh-65px)] shrink-0 flex-col border-r border-slate-200 bg-white print:hidden"
+      className="sticky top-[57px] z-10 flex h-[calc(100vh-57px)] shrink-0 flex-col border-r border-[#cfe3d9] bg-white print:hidden"
       style={{ width }}
     >
-      <header className="flex items-center justify-between gap-3 border-b border-slate-200 bg-gradient-to-b from-amber-50/60 to-white px-4 py-3">
+      <header className="flex items-center justify-between gap-3 border-b border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="inline-flex items-center justify-center rounded-md bg-slate-900 px-1.5 py-1 text-[8px] font-black uppercase tracking-wide text-amber-400">
-            Platform
+          <span className="inline-flex items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]">
+            Officer
           </span>
           <div className="leading-tight">
-            <div className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+            <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
               Compliance officer
             </div>
-            <div className="text-[11px] text-slate-500">
+            <div className="text-[11px] text-[#5a7d70]">
               CMMC L1 · trained on FAR 52.204-21
             </div>
           </div>
@@ -257,7 +257,7 @@ export function ComplianceOfficerRail() {
           type="button"
           onClick={toggle}
           aria-label="Hide compliance officer"
-          className="rounded-md p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          className="rounded-sm p-1 text-[#7a9c90] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
         >
           <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
             <path d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
@@ -304,9 +304,9 @@ export function ComplianceOfficerRail() {
           e.preventDefault();
           void send();
         }}
-        className="border-t border-slate-200 bg-slate-50/60 p-3"
+        className="border-t border-[#cfe3d9] bg-[#f7fcf9] p-3"
       >
-        <div className="flex items-end gap-2 rounded-xl border border-slate-300 bg-white p-2 focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-100">
+        <div className="flex items-end gap-2 rounded-sm border border-[#cfe3d9] bg-white p-2 focus-within:border-[#2f8f6d] focus-within:ring-2 focus-within:ring-[#2f8f6d]/20">
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -319,12 +319,12 @@ export function ComplianceOfficerRail() {
             rows={1}
             placeholder="Ask the officer anything about CMMC L1…"
             disabled={streaming}
-            className="min-h-[36px] max-h-40 flex-1 resize-none bg-transparent px-1 py-1 text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:opacity-60"
+            className="min-h-[36px] max-h-40 flex-1 resize-none bg-transparent px-1 py-1 text-sm text-[#10231d] outline-none placeholder:text-[#9ab8ac] disabled:opacity-60"
           />
           <button
             type="submit"
             disabled={streaming || !draft.trim()}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-amber-400 transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:bg-[#cfe3d9] disabled:text-white"
             aria-label="Send"
           >
             <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
@@ -332,7 +332,7 @@ export function ComplianceOfficerRail() {
             </svg>
           </button>
         </div>
-        <p className="mt-1.5 px-1 text-[10px] leading-tight text-slate-400">
+        <p className="mt-1.5 px-1 text-[10px] leading-tight text-[#7a9c90]">
           The officer cites FAR / NIST when it makes a claim. Evidence uploads
           are reviewed automatically before they count toward attestation.
         </p>
@@ -340,7 +340,7 @@ export function ComplianceOfficerRail() {
 
       <div
         onMouseDown={handleResizeMouseDown}
-        className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-amber-300/30"
+        className="absolute right-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-[#2f8f6d]/30"
         aria-hidden
       />
     </aside>
@@ -359,7 +359,7 @@ function MessageBubble({
   if (role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[90%] rounded-2xl rounded-br-md bg-slate-900 px-3 py-2 text-sm leading-relaxed text-white shadow-sm">
+        <div className="max-w-[90%] rounded-sm border border-[#0e2a23] bg-[#0e2a23] px-3 py-2 text-sm leading-relaxed text-white">
           <p className="whitespace-pre-wrap">{text}</p>
         </div>
       </div>
@@ -367,8 +367,8 @@ function MessageBubble({
   }
   return (
     <div className="flex gap-2">
-      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-800">
-        Platform
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+        Officer
       </div>
       <div className="flex max-w-[92%] flex-col gap-1.5">
         {tools.length > 0 && (
@@ -379,7 +379,7 @@ function MessageBubble({
           </div>
         )}
         {text && (
-          <div className="rounded-2xl rounded-tl-md bg-slate-100 px-3 py-2 text-sm leading-relaxed text-slate-900">
+          <div className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2 text-sm leading-relaxed text-[#10231d]">
             <p className="whitespace-pre-wrap">{text}</p>
           </div>
         )}
@@ -394,19 +394,19 @@ function ToolChip({ tool }: { tool: ToolEvent }) {
     tool.status === "error"
       ? "border-rose-200 bg-rose-50 text-rose-700"
       : tool.status === "done"
-        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-        : "border-amber-200 bg-amber-50 text-amber-800";
+        ? "border-[#bde0cc] bg-[#e6f4ec] text-[#1f6648]"
+        : "border-[#f1d9a5] bg-[#fff4e0] text-[#a06b1a]";
   const dot =
     tool.status === "error"
       ? "bg-rose-500"
       : tool.status === "done"
-        ? "bg-emerald-500"
-        : "bg-amber-500 animate-pulse";
+        ? "bg-[#2f8f6d]"
+        : "bg-[#a06b1a] animate-pulse";
   return (
     <div
-      className={`inline-flex items-center gap-2 self-start rounded-full border px-2.5 py-1 text-[11px] font-semibold ${tone}`}
+      className={`inline-flex items-center gap-2 self-start rounded-sm border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${tone}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+      <span className={`h-1.5 w-1.5 rounded-sm ${dot}`} />
       {label}
       {tool.status === "running" && "…"}
     </div>
@@ -416,14 +416,14 @@ function ToolChip({ tool }: { tool: ToolEvent }) {
 function TypingIndicator() {
   return (
     <div className="flex gap-2">
-      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-800">
-        Platform
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+        Officer
       </div>
-      <div className="rounded-2xl rounded-tl-md bg-slate-100 px-3 py-2.5">
+      <div className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2.5">
         <div className="flex gap-1">
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-sm bg-[#7a9c90] [animation-delay:-0.3s]" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-sm bg-[#7a9c90] [animation-delay:-0.15s]" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-sm bg-[#7a9c90]" />
         </div>
       </div>
     </div>
@@ -432,8 +432,8 @@ function TypingIndicator() {
 
 function LoadingBubble() {
   return (
-    <div className="flex items-center gap-2 text-xs text-slate-400">
-      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+    <div className="flex items-center gap-2 text-xs text-[#7a9c90]">
+      <span className="h-1.5 w-1.5 animate-pulse rounded-sm bg-[#2f8f6d]" />
       Loading conversation…
     </div>
   );
@@ -443,24 +443,25 @@ function WelcomeBubble() {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-800">
-          Platform
+        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+          Officer
         </div>
-        <div className="max-w-[92%] rounded-2xl rounded-tl-md bg-slate-100 px-3 py-2 text-sm leading-relaxed text-slate-900">
+        <div className="max-w-[92%] rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2 text-sm leading-relaxed text-[#10231d]">
           <p>
-            Hi — I&apos;m your Custodia compliance officer. I&apos;m here to
-            walk you through every step of your CMMC Level 1 annual affirmation,
-            and I&apos;ll review every piece of evidence you upload so nothing
-            weak sneaks into your SPRS package.
+            Hi — I&apos;m your Custodia compliance officer. I&apos;ve got the
+            context from your onboarding chat, so we can pick right up. I&apos;ll
+            walk you through every step of your CMMC Level 1 annual affirmation
+            and review every piece of evidence you upload so nothing weak
+            sneaks into your SPRS package.
           </p>
           <p className="mt-2">
-            Tell me about your business and I&apos;ll tailor the rest of this
-            workspace to you.
+            Ask me anything, or jump into your first practice from the cycle
+            on the right.
           </p>
         </div>
       </div>
-      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
-        <p className="font-semibold text-slate-700">Try asking:</p>
+      <div className="rounded-sm border border-dashed border-[#cfe3d9] bg-[#f7fcf9] p-3 text-xs text-[#5a7d70]">
+        <p className="font-bold uppercase tracking-[0.16em] text-[#0e2a23]">Try asking</p>
         <ul className="mt-1.5 space-y-1">
           <li>&ldquo;Is a screenshot of my M365 admin center enough for AC.L1-3.1.1?&rdquo;</li>
           <li>&ldquo;I don&apos;t have SAM.gov yet — what do I do?&rdquo;</li>

@@ -466,6 +466,22 @@ export async function initDb() {
       ON ai_messages (conversation_id, created_at)
   `;
 
+  // Per-org compressed long-term memory of officer conversations. Cheap
+  // alternative to a vector store: rolling text summary + extracted JSON
+  // facts, rebuilt by a small LLM call when stale. Lets the workspace
+  // officer remember everything from onboarding (and prior workspace
+  // sessions) without paying token cost on the full transcript.
+  await sql`
+    CREATE TABLE IF NOT EXISTS ai_memory (
+      organization_id UUID PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
+      summary TEXT NOT NULL DEFAULT '',
+      key_facts JSONB NOT NULL DEFAULT '{}'::jsonb,
+      messages_summarized INT NOT NULL DEFAULT 0,
+      last_built_at TIMESTAMPTZ,
+      last_built_model TEXT
+    )
+  `;
+
   // Phase 0: fiscal-calendar milestones keeping orgs compliant year-over-year.
   await sql`
     CREATE TABLE IF NOT EXISTS compliance_milestones (
