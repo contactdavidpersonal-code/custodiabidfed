@@ -88,24 +88,6 @@ export function CourseSidebar({ sections }: Props) {
       className="sticky top-[57px] z-10 h-[calc(100vh-57px)] shrink-0 border-r border-[#cfe3d9] bg-[#fbfcf9] transition-[width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] print:hidden"
       style={{ width: open ? 288 : 56 }}
     >
-      {/* SVG goo filter referenced by the active indicator. Two blurred blobs
-          merged through a high-contrast color matrix produce the wet, fluid
-          edge that defines the active item. */}
-      <svg width="0" height="0" className="absolute" aria-hidden>
-        <defs>
-          <filter id="liquidGoo">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-            <feColorMatrix
-              in="blur"
-              type="matrix"
-              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -10"
-              result="goo"
-            />
-            <feBlend in="SourceGraphic" in2="goo" />
-          </filter>
-        </defs>
-      </svg>
-
       <div className="flex h-full flex-col">
         <div className="flex items-center justify-between border-b border-[#cfe3d9] px-3 py-3">
           {open && (
@@ -135,27 +117,24 @@ export function CourseSidebar({ sections }: Props) {
         </div>
 
         <nav className="relative flex-1 overflow-y-auto px-2 py-3">
-          {/* Sliding liquid indicator. translate3d + height transitions so the
-              browser composites it on the GPU; the goo filter softens the
-              edge while it morphs between items. */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-2 z-0"
-            style={{ filter: "url(#liquidGoo)" }}
-          >
-            <div
-              className="absolute left-0 right-0 transition-all duration-[600ms] ease-[cubic-bezier(0.34,1.56,0.64,1)]"
-              style={{
-                top: indicator.top,
-                height: indicator.height,
-                opacity: indicator.visible && hydrated ? 1 : 0,
-              }}
-            >
-              <div className="absolute inset-1 rounded-[14px] bg-gradient-to-br from-[#bdf2cf] via-[#a7e8c0] to-[#7fd5a4]" />
-              <div className="absolute -left-2 top-2 h-3 w-3 rounded-full bg-[#bdf2cf]" />
-              <div className="absolute -right-1 bottom-3 h-2.5 w-2.5 rounded-full bg-[#a7e8c0]" />
-            </div>
-          </div>
+          {/* Sliding active indicator. A sharp mint slab with a deep-green
+          left rule — finance-firm aesthetic, no blur, no blobs. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-2 z-0"
+      >
+        <div
+          className="absolute left-0 right-0 transition-[top,height,opacity] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{
+            top: indicator.top,
+            height: indicator.height,
+            opacity: indicator.visible && hydrated ? 1 : 0,
+          }}
+        >
+          <div className="absolute inset-y-1 left-0 right-1 rounded-sm bg-[#bdf2cf]" />
+          <div className="absolute inset-y-1 left-0 w-[3px] bg-[#0e2a23]" />
+        </div>
+      </div>
 
           <ul className="relative z-10 space-y-1">
             {sections.map((s) => {
