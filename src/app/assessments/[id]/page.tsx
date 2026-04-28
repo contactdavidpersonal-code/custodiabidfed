@@ -129,11 +129,6 @@ export default async function AssessmentOverviewPage(
         />
       </section>
 
-      <ProfileSection
-        organization={ctx.organization}
-        profileDone={profileDone}
-      />
-
       <section>
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>

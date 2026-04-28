@@ -50,6 +50,45 @@ export async function createAssessmentAction(formData: FormData) {
   redirect(`/assessments/${assessment.id}`);
 }
 
+/**
+ * Update the org-level federal registration fields. SAM UEI is 12 alphanumeric;
+ * CAGE is 5 alphanumeric; NAICS codes are 6-digit numeric. We sanity-check the
+ * length only — full validation against SAM.gov happens out of band.
+ */
+export async function saveFederalRegistrationAction(formData: FormData) {
+  const userId = await requireUserId();
+  const samUei = String(formData.get("samUei") ?? "").trim().toUpperCase();
+  const cageCode = String(formData.get("cageCode") ?? "").trim().toUpperCase();
+  const naicsRaw = String(formData.get("naicsCodes") ?? "").trim();
+  const entityType = String(formData.get("entityType") ?? "").trim();
+
+  const naicsCodes = naicsRaw
+    .split(/[,\s]+/)
+    .map((c) => c.trim())
+    .filter((c) => /^\d{6}$/.test(c));
+
+  if (samUei && !/^[A-Z0-9]{12}$/.test(samUei)) {
+    throw new Error("SAM UEI must be 12 letters/numbers.");
+  }
+  if (cageCode && !/^[A-Z0-9]{5}$/.test(cageCode)) {
+    throw new Error("CAGE code must be 5 letters/numbers.");
+  }
+
+  const org = await ensureOrgForUser(userId);
+  const sql = getSql();
+  await sql`
+    UPDATE organizations
+    SET sam_uei = ${samUei || null},
+        cage_code = ${cageCode || null},
+        naics_codes = ${naicsCodes}::text[],
+        entity_type = ${entityType || null},
+        updated_at = NOW()
+    WHERE id = ${org.id}
+  `;
+
+  revalidatePath("/assessments");
+}
+
 export async function saveControlResponseAction(formData: FormData) {
   const userId = await requireUserId();
   const assessmentId = String(formData.get("assessmentId") ?? "");
