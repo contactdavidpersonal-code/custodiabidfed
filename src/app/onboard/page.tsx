@@ -25,18 +25,18 @@ export default async function OnboardPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-slate-50 text-slate-900">
-      <header className="flex-none border-b border-slate-200 bg-white">
+    <div className="flex h-screen flex-col bg-[#f7f7f3] text-[#10231d]">
+      <header className="flex-none border-b border-[#cfe3d9] bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-3">
           <Link href="/" className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-sm font-black text-amber-400">
+            <span className="flex h-9 w-9 items-center justify-center rounded-sm bg-[#0e2a23] text-sm font-black text-[#bdf2cf]">
               C
             </span>
             <div className="leading-tight">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-amber-600">
+              <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
                 Custodia · Step 1 of 3
               </div>
-              <div className="text-sm font-bold text-slate-900">
+              <div className="font-serif text-sm font-bold text-[#10231d]">
                 Talk to your compliance officer
               </div>
             </div>

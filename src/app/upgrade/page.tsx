@@ -10,17 +10,17 @@ export default async function UpgradePage() {
 
   return (
     <div className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
-      <header className="border-b border-[#d5e5dd] bg-[#f7f7f3]">
+      <header className="border-b border-[#cfe3d9] bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#12382c] text-sm font-black text-[#9be0bf]">
+            <span className="flex h-9 w-9 items-center justify-center rounded-sm bg-[#0e2a23] text-sm font-black text-[#bdf2cf]">
               C
             </span>
             <div className="leading-tight">
-              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2f8f6d]">
+              <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
                 Custodia
               </div>
-              <div className="text-sm font-bold text-[#10231d]">
+              <div className="font-serif text-sm font-bold text-[#10231d]">
                 CMMC Level 1 workspace
               </div>
             </div>
@@ -47,7 +47,7 @@ export default async function UpgradePage() {
           </p>
         </div>
 
-        <div className="rounded-3xl border border-[#cfe3d9] bg-white p-8 shadow-[0_10px_28px_rgba(14,48,37,0.07)]">
+        <div className="rounded-md border border-[#cfe3d9] bg-white p-8 shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
           <PricingTable />
         </div>
 

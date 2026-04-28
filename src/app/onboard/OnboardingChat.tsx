@@ -54,6 +54,7 @@ export function OnboardingChat({
   const [onboarded, setOnboarded] = useState(false);
   const [completeness, setCompleteness] = useState(initialCompleteness);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -95,6 +96,12 @@ export function OnboardingChat({
     if (!listRef.current) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages, streaming]);
+
+  // Keep the input focused so the user can keep typing without re-clicking.
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!streaming) inputRef.current?.focus();
+  }, [hydrated, streaming, messages.length]);
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -179,21 +186,23 @@ export function OnboardingChat({
       );
     } finally {
       setStreaming(false);
+      // Re-focus immediately on the same tick so caret stays in the box.
+      requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [draft, streaming, refreshStatus]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-none items-center justify-between border-b border-slate-200 bg-gradient-to-b from-amber-50/60 to-white px-5 py-3">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
+      <div className="flex flex-none items-center justify-between border-b border-[#cfe3d9] bg-white px-5 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="inline-flex items-center justify-center rounded-md bg-slate-900 px-1.5 py-1 text-[8px] font-black uppercase tracking-wide text-amber-400">
-            Platform
+          <span className="inline-flex items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]">
+            Officer
           </span>
           <div className="leading-tight">
-            <div className="text-sm font-bold text-slate-900">
+            <div className="font-serif text-sm font-bold text-[#10231d]">
               Custodia Compliance Officer
             </div>
-            <div className="text-[11px] text-slate-500">
+            <div className="text-[11px] text-[#5a7d70]">
               Capturing your business profile
             </div>
           </div>
@@ -230,15 +239,15 @@ export function OnboardingChat({
       </div>
 
       {onboarded && (
-        <div className="border-t border-emerald-200 bg-emerald-50 px-5 py-3">
+        <div className="border-t border-[#cfe3d9] bg-[#eaf3ee] px-5 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-emerald-900">
+            <p className="text-sm font-semibold text-[#0e2a23]">
               Enough captured — you can head to the workspace.
             </p>
             <button
               type="button"
               onClick={() => router.push("/assessments")}
-              className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800"
+              className="rounded-sm bg-[#0e2a23] px-4 py-2 text-sm font-bold tracking-tight text-white transition-colors hover:bg-[#10231d]"
             >
               Go to workspace &rarr;
             </button>
@@ -257,10 +266,11 @@ export function OnboardingChat({
           e.preventDefault();
           void send();
         }}
-        className="border-t border-slate-200 bg-slate-50/60 p-4"
+        className="border-t border-[#cfe3d9] bg-[#f7fcf9] p-4"
       >
-        <div className="flex items-end gap-2 rounded-xl border border-slate-300 bg-white p-2 focus-within:border-amber-400 focus-within:ring-2 focus-within:ring-amber-100">
+        <div className="flex items-end gap-2 rounded-sm border border-[#cfe3d9] bg-white p-2 focus-within:border-[#2f8f6d] focus-within:ring-2 focus-within:ring-[#2f8f6d]/20">
           <textarea
+            ref={inputRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -271,20 +281,24 @@ export function OnboardingChat({
             }}
             rows={2}
             placeholder="Tell the officer about your business…"
-            disabled={streaming}
-            className="min-h-[48px] max-h-48 flex-1 resize-none bg-transparent px-2 py-1 text-sm text-slate-900 outline-none placeholder:text-slate-400 disabled:opacity-60"
+            autoFocus
+            readOnly={streaming}
+            className="min-h-[48px] max-h-48 flex-1 resize-none bg-transparent px-2 py-1 text-sm text-[#10231d] outline-none placeholder:text-[#9ab8ac] read-only:opacity-70"
           />
           <button
             type="submit"
             disabled={streaming || !draft.trim()}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-amber-400 transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-white"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:bg-[#cfe3d9] disabled:text-white"
             aria-label="Send"
           >
             <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
               <path d="M3.105 3.105a1 1 0 011.09-.217l13 5a1 1 0 010 1.864l-13 5a1 1 0 01-1.317-1.297L5.432 10 2.878 4.545a1 1 0 01.227-1.44z" />
-            </svg>
+          </svg>
           </button>
         </div>
+        <p className="mt-2 px-1 text-[10px] uppercase tracking-[0.18em] text-[#7a9c90]">
+          Press Enter to send · Shift + Enter for a new line
+        </p>
       </form>
     </div>
   );
@@ -294,22 +308,22 @@ function CompletenessMeter({ value }: { value: number }) {
   const pct = Math.max(0, Math.min(100, value));
   const tone =
     pct >= 60
-      ? "bg-emerald-500"
+      ? "bg-[#2f8f6d]"
       : pct >= 40
-        ? "bg-amber-500"
-        : "bg-slate-400";
+        ? "bg-[#a06b1a]"
+        : "bg-[#7a9c90]";
   return (
     <div className="flex items-center gap-2">
-      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#5a7d70]">
         Profile
       </span>
-      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-200">
+      <div className="h-1.5 w-24 overflow-hidden rounded-sm bg-[#e3eee8]">
         <div
-          className={`h-full rounded-full transition-all ${tone}`}
+          className={`h-full transition-all ${tone}`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="tabular-nums text-[11px] font-bold text-slate-700">
+      <span className="tabular-nums text-[11px] font-bold text-[#0e2a23]">
         {pct}%
       </span>
     </div>
@@ -328,7 +342,7 @@ function MessageBubble({
   if (role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-2xl rounded-br-md bg-slate-900 px-4 py-2.5 text-sm leading-relaxed text-white shadow-sm">
+        <div className="max-w-[80%] rounded-sm border border-[#0e2a23] bg-[#0e2a23] px-4 py-2.5 text-sm leading-relaxed text-white">
           <p className="whitespace-pre-wrap">{text}</p>
         </div>
       </div>
@@ -336,8 +350,8 @@ function MessageBubble({
   }
   return (
     <div className="flex gap-2.5">
-      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-800">
-        Platform
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+        Officer
       </div>
       <div className="flex max-w-[88%] flex-col gap-2">
         {tools.length > 0 && (
@@ -348,7 +362,7 @@ function MessageBubble({
           </div>
         )}
         {text && (
-          <div className="rounded-2xl rounded-tl-md bg-slate-100 px-4 py-2.5 text-sm leading-relaxed text-slate-900">
+          <div className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-2.5 text-sm leading-relaxed text-[#10231d]">
             <p className="whitespace-pre-wrap">{text}</p>
           </div>
         )}
@@ -363,17 +377,17 @@ function ToolChip({ tool }: { tool: ToolEvent }) {
     tool.status === "error"
       ? "border-rose-200 bg-rose-50 text-rose-700"
       : tool.status === "done"
-        ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-        : "border-amber-200 bg-amber-50 text-amber-800";
+        ? "border-[#cfe3d9] bg-[#eaf3ee] text-[#0e2a23]"
+        : "border-[#e8d4a1] bg-[#fff8e8] text-[#a06b1a]";
   const dot =
     tool.status === "error"
       ? "bg-rose-500"
       : tool.status === "done"
-        ? "bg-emerald-500"
-        : "bg-amber-500 animate-pulse";
+        ? "bg-[#2f8f6d]"
+        : "bg-[#a06b1a] animate-pulse";
   return (
     <div
-      className={`inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${tone}`}
+      className={`inline-flex items-center gap-2 rounded-sm border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${tone}`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
       {label}
@@ -386,10 +400,10 @@ function StarterBubble() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex gap-2.5">
-        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-800">
-          Platform
+        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+          Officer
         </div>
-        <div className="max-w-[88%] rounded-2xl rounded-tl-md bg-slate-100 px-4 py-3 text-sm leading-relaxed text-slate-900">
+        <div className="max-w-[88%] rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3 text-sm leading-relaxed text-[#10231d]">
           <p>
             Welcome. I&apos;m going to ask you a few questions so the rest of
             this platform fits your business. No forms — just a conversation.
@@ -408,14 +422,14 @@ function StarterBubble() {
 function TypingIndicator() {
   return (
     <div className="flex gap-2.5">
-      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-md bg-amber-100 px-1.5 py-1 text-[8px] font-bold uppercase tracking-wide text-amber-800">
-        Platform
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+        Officer
       </div>
-      <div className="rounded-2xl rounded-tl-md bg-slate-100 px-4 py-3">
+      <div className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
         <div className="flex gap-1">
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5a7d70] [animation-delay:-0.3s]" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5a7d70] [animation-delay:-0.15s]" />
+          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5a7d70]" />
         </div>
       </div>
     </div>
@@ -424,8 +438,8 @@ function TypingIndicator() {
 
 function LoadingBubble() {
   return (
-    <div className="flex items-center gap-2 text-xs text-slate-400">
-      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
+    <div className="flex items-center gap-2 text-xs text-[#7a9c90]">
+      <span className="h-1.5 w-1.5 animate-pulse rounded-sm bg-[#2f8f6d]" />
       Loading…
     </div>
   );
