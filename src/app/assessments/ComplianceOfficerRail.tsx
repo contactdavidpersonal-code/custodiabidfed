@@ -477,14 +477,6 @@ function WelcomeBubble({ recap }: { recap: string | null }) {
           )}
         </div>
       </div>
-      <div className="rounded-sm border border-dashed border-[#cfe3d9] bg-[#f7fcf9] p-3 text-xs text-[#5a7d70]">
-        <p className="font-bold uppercase tracking-[0.16em] text-[#0e2a23]">Try asking</p>
-        <ul className="mt-1.5 space-y-1">
-          <li>&ldquo;Is a screenshot of my M365 admin center enough for AC.L1-3.1.1?&rdquo;</li>
-          <li>&ldquo;I don&apos;t have SAM.gov yet — what do I do?&rdquo;</li>
-          <li>&ldquo;A prime asked for my SSP — what do I send them?&rdquo;</li>
-        </ul>
-      </div>
     </div>
   );
 }

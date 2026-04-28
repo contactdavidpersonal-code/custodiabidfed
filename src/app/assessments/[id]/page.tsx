@@ -13,26 +13,26 @@ import { controlDomains, playbook } from "@/lib/playbook";
 
 const statusLabels: Record<ControlResponseRow["status"], string> = {
   unanswered: "Not started",
-  yes: "Met",
+  yes: "MET",
   partial: "Partial",
-  no: "Not met",
+  no: "NOT MET",
   not_applicable: "N/A",
 };
 
 const statusDotStyles: Record<ControlResponseRow["status"], string> = {
-  unanswered: "bg-slate-300",
-  yes: "bg-emerald-500",
-  partial: "bg-amber-500",
-  no: "bg-rose-500",
-  not_applicable: "bg-sky-500",
+  unanswered: "bg-[#cfe3d9]",
+  yes: "bg-[#2f8f6d]",
+  partial: "bg-[#a06b1a]",
+  no: "bg-[#b03a2e]",
+  not_applicable: "bg-[#5a7d70]",
 };
 
 const statusPillStyles: Record<ControlResponseRow["status"], string> = {
-  unanswered: "bg-slate-100 text-slate-600 ring-slate-200",
-  yes: "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  partial: "bg-amber-50 text-amber-700 ring-amber-200",
-  no: "bg-rose-50 text-rose-700 ring-rose-200",
-  not_applicable: "bg-sky-50 text-sky-700 ring-sky-200",
+  unanswered: "bg-[#f1f6f3] text-[#5a7d70] ring-[#cfe3d9]",
+  yes: "bg-[#eaf3ee] text-[#0e2a23] ring-[#bde0cc]",
+  partial: "bg-[#fff4e0] text-[#a06b1a] ring-[#f1d9a5]",
+  no: "bg-[#fbe9e6] text-[#b03a2e] ring-[#f1c4bd]",
+  not_applicable: "bg-[#f1f6f3] text-[#5a7d70] ring-[#cfe3d9]",
 };
 
 const domainLabels: Record<(typeof controlDomains)[number], string> = {
@@ -78,20 +78,17 @@ export default async function AssessmentOverviewPage(
       {justSigned && <CelebrationBanner assessmentId={ctx.assessment.id} />}
 
       <section className="mb-6">
-        <Link
-          href="/assessments"
-          className="text-sm font-medium text-slate-500 hover:text-slate-900"
-        >
-          &larr; All assessments
-        </Link>
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
+          CMMC Level 1 • FY{ctx.assessment.fiscal_year}
+        </p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-              {ctx.assessment.cycle_label}
+            <h1 className="font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-4xl">
+              Your annual affirmation
             </h1>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-[#5a7d70]">
               {ctx.organization.name !== "My Organization"
-                ? ctx.organization.name
+                ? `${ctx.organization.name} — work the 17 practices below to MET, then sign and file with SPRS.`
                 : "Business profile not set yet"}
             </p>
           </div>
@@ -140,12 +137,12 @@ export default async function AssessmentOverviewPage(
       <section>
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight text-slate-900">
+            <h2 className="font-serif text-2xl font-bold tracking-tight text-[#10231d]">
               The 17 practices
             </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              Click any practice to see its plain-English guide, answer, and
-              upload evidence.
+            <p className="mt-1 text-sm text-[#5a7d70]">
+              Every practice must be MET or N/A before you can sign. Click any
+              card to drop evidence into your vault and mark it MET.
             </p>
           </div>
         </div>
@@ -161,15 +158,15 @@ export default async function AssessmentOverviewPage(
               <div key={domain}>
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-baseline gap-3">
-                    <span className="rounded-md bg-slate-900 px-2 py-0.5 text-xs font-bold tracking-wider text-amber-400">
+                    <span className="rounded-sm bg-[#0e2a23] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#bdf2cf]">
                       {domain}
                     </span>
-                    <h3 className="text-base font-semibold text-slate-900">
+                    <h3 className="font-serif text-base font-bold text-[#10231d]">
                       {domainLabels[domain]}
                     </h3>
                   </div>
-                  <span className="text-xs font-medium text-slate-500">
-                    {answered} of {domainPractices.length} answered
+                  <span className="text-xs font-medium text-[#5a7d70]">
+                    {answered} of {domainPractices.length} done
                   </span>
                 </div>
                 <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -180,27 +177,27 @@ export default async function AssessmentOverviewPage(
                       <Link
                         key={practice.id}
                         href={`/assessments/${ctx.assessment.id}/controls/${practice.id}`}
-                        className="group block rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
+                        className="group block rounded-md border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)] transition-all hover:border-[#2f8f6d] hover:shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.10)]"
                       >
                         <div className="flex items-start gap-3">
                           <span
-                            className={`mt-1.5 h-2 w-2 flex-none rounded-full ${statusDotStyles[status]}`}
+                            className={`mt-1.5 h-2 w-2 flex-none rounded-sm ${statusDotStyles[status]}`}
                           />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="text-xs font-mono text-slate-500">
+                              <span className="font-mono text-xs text-[#5a7d70]">
                                 {practice.id}
                               </span>
                               <span
-                                className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ring-1 ring-inset ${statusPillStyles[status]}`}
+                                className={`inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] ring-1 ring-inset ${statusPillStyles[status]}`}
                               >
                                 {statusLabels[status]}
                               </span>
                             </div>
-                            <h4 className="mt-2 truncate font-bold text-slate-900">
+                            <h4 className="mt-2 truncate font-serif font-bold text-[#10231d]">
                               {practice.shortName}
                             </h4>
-                            <p className="mt-1.5 line-clamp-2 text-sm text-slate-600">
+                            <p className="mt-1.5 line-clamp-2 text-sm text-[#5a7d70]">
                               {practice.plainEnglish}
                             </p>
                           </div>
