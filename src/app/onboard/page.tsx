@@ -29,6 +29,11 @@ export default async function OnboardPage() {
       <header className="flex-none border-b border-[#cfe3d9] bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-3">
           <Link href="/" className="flex items-center gap-3">
+            <img
+              src="/custodia-logo.png"
+              alt="Custodia shield"
+              className="h-9 w-auto"
+            />
             <span className="flex h-9 w-9 items-center justify-center rounded-sm bg-[#0e2a23] text-sm font-black text-[#bdf2cf]">
               C
             </span>

@@ -145,9 +145,16 @@ export default function Home() {
         {/* Nav */}
         <nav className="relative">
           <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-6">
-            <span className="font-serif text-2xl font-bold tracking-tight text-white">
-              Custodia<span className="text-[#8dd2b1]">.</span>
-            </span>
+            <Link href="/" className="flex items-center gap-3">
+              <img
+                src="/custodia-logo.png"
+                alt="Custodia shield"
+                className="h-10 w-auto drop-shadow-[0_4px_18px_rgba(189,242,207,0.25)]"
+              />
+              <span className="font-serif text-2xl font-bold tracking-tight text-white">
+                Custodia<span className="text-[#8dd2b1]">.</span>
+              </span>
+            </Link>
             <div className="flex items-center gap-7 text-sm font-medium text-[#cce5da]">
               <a href="#product" className="hidden transition-colors hover:text-white sm:inline">Product</a>
               <a href="#pricing" className="hidden transition-colors hover:text-white sm:inline">Pricing</a>

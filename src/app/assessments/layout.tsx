@@ -18,6 +18,11 @@ export default async function AssessmentsLayout({
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/80 backdrop-blur">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4">
           <Link href="/assessments" className="flex items-center gap-3">
+            <img
+              src="/custodia-logo.png"
+              alt="Custodia shield"
+              className="h-9 w-auto"
+            />
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-sm font-black text-amber-400">
               C
             </span>
