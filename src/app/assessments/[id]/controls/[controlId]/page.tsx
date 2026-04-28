@@ -25,6 +25,9 @@ import {
   useSuggestedNarrativeAction,
 } from "../../../actions";
 import { EvidenceDropzone } from "./EvidenceDropzone";
+import { PracticeReadiness } from "./PracticeReadiness";
+import { PracticeQuiz } from "./PracticeQuiz";
+import { practiceQuizzes } from "@/lib/practice-quiz";
 
 const statusOptions: Array<{
   value: ControlResponseRow["status"];
@@ -255,6 +258,23 @@ export default async function ControlDetailPage(
           Official text: {practice.title}
         </p>
       </header>
+
+      {practiceQuizzes[controlId] && (
+        <PracticeQuiz
+          controlId={controlId}
+          questions={practiceQuizzes[controlId]}
+          initialStatus={response.status}
+        />
+      )}
+
+      <PracticeReadiness
+        initialStatus={response.status}
+        initialNarrative={response.narrative ?? ""}
+        evidenceCount={evidence.length}
+        evidenceSufficientCount={
+          evidence.filter((e) => e.ai_review_verdict === "sufficient").length
+        }
+      />
 
       {practice.whyItMatters && (
         <section className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-5">
