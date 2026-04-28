@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -50,7 +50,7 @@ const STEPS: Array<{ key: StepKey; label: string; subtitle: string }> = [
 type Props = {
   assessmentId: string;
   controlId: string;
-  practice: ControlPlaybook;
+  practice: Omit<ControlPlaybook, "suggestedNarrative">;
   response: ControlResponseRow;
   evidence: EvidenceArtifactRow[];
   remediationPlan: RemediationPlanRow | null;
@@ -72,7 +72,7 @@ type QuizAnswer = "yes" | "no" | null;
 /**
  * The whole control practice page is now a 4-step guided quiz that walks
  * non-technical users from "what is this asking" to "saved and verified"
- * without making them parse 17 sections. Steps: Check → Capture → Write →
+ * without making them parse 17 sections. Steps: Check â†’ Capture â†’ Write â†’
  * Done. Each step persists its progress through server actions; the active
  * step survives revalidation via the `?step=` URL param.
  */
@@ -150,7 +150,7 @@ export function PracticeWizard(props: Props) {
           <span className="font-mono text-xs font-semibold text-[#5a7d70]">
             {props.practice.id}
           </span>
-          <span className="text-[#cfe3d9]">·</span>
+          <span className="text-[#cfe3d9]">Â·</span>
           <span className="text-xs font-medium text-[#5a7d70]">
             {props.practice.farReference}
           </span>
@@ -195,7 +195,7 @@ export function PracticeWizard(props: Props) {
                           : "bg-[#cfe3d9] text-[#10231d]"
                     }`}
                   >
-                    {isDone && !isActive ? "✓" : idx + 1}
+                    {isDone && !isActive ? "âœ“" : idx + 1}
                   </span>
                   <span className="truncate text-sm font-semibold">
                     {s.label}
@@ -286,7 +286,7 @@ function CheckStep({
   onAdvance,
 }: {
   quiz: PracticeQuizQuestion[];
-  practice: ControlPlaybook;
+  practice: Omit<ControlPlaybook, "suggestedNarrative">;
   response: ControlResponseRow;
   saveResponseAction: (formData: FormData) => Promise<void> | void;
   assessmentId: string;
@@ -402,7 +402,7 @@ function CheckStep({
                   </div>
                   {a === "yes" && (
                     <p className="mt-2 text-xs text-[#2f8f6d]">
-                      Good — {q.yesMeans.toLowerCase()}
+                      Good â€” {q.yesMeans.toLowerCase()}
                     </p>
                   )}
                   {a === "no" && (
@@ -446,7 +446,7 @@ function CheckStep({
                 value={naReason}
                 onChange={(e) => setNaReason(e.target.value)}
                 rows={2}
-                placeholder="E.g. We have no physical office — all staff work from personal residences and contract info is fully cloud-hosted."
+                placeholder="E.g. We have no physical office â€” all staff work from personal residences and contract info is fully cloud-hosted."
                 className="mt-2 w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] outline-none transition-colors focus:border-[#0e2a23]"
               />
             )}
@@ -463,7 +463,7 @@ function CheckStep({
             onClick={() => submit("not_applicable")}
             className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:opacity-40"
           >
-            {submitting ? "Saving…" : "Mark N/A and continue →"}
+            {submitting ? "Savingâ€¦" : "Mark N/A and continue â†’"}
           </button>
         ) : recommendation ? (
           <div className="flex w-full flex-wrap items-center justify-between gap-3 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
@@ -475,7 +475,7 @@ function CheckStep({
                 {recommendation === "yes" &&
                   "Looks like a clean Met. Let's grab the evidence."}
                 {recommendation === "partial" &&
-                  "Partway there — we'll mark this Partial and capture what you have."}
+                  "Partway there â€” we'll mark this Partial and capture what you have."}
                 {recommendation === "no" &&
                   "Not in place yet. We'll mark Not met and build a fix plan."}
               </p>
@@ -499,8 +499,8 @@ function CheckStep({
               className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:opacity-40"
             >
               {submitting
-                ? "Saving…"
-                : `Mark as ${STATUS_LABELS[recommendation]} →`}
+                ? "Savingâ€¦"
+                : `Mark as ${STATUS_LABELS[recommendation]} â†’`}
             </button>
           </div>
         ) : (
@@ -527,7 +527,7 @@ function CaptureStep({
   onBack,
   onAdvance,
 }: {
-  practice: ControlPlaybook;
+  practice: Omit<ControlPlaybook, "suggestedNarrative">;
   evidence: EvidenceArtifactRow[];
   response: ControlResponseRow;
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
@@ -561,7 +561,7 @@ function CaptureStep({
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-[#5a7d70]">
         {isNA
-          ? "Skip this step — N/A practices don't need evidence. Click Continue to write a brief explanation."
+          ? "Skip this step â€” N/A practices don't need evidence. Click Continue to write a brief explanation."
           : "Upload screenshots or PDFs that prove you do this. The platform reviews each upload and tells you if it's enough."}
       </p>
 
@@ -648,7 +648,7 @@ function CaptureStep({
           onClick={onBack}
           className="rounded-sm border border-[#cfe3d9] bg-white px-4 py-2.5 text-sm font-semibold text-[#10231d] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
         >
-          ← Back
+          â† Back
         </button>
         <button
           type="button"
@@ -656,7 +656,7 @@ function CaptureStep({
           onClick={onAdvance}
           className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:opacity-40"
         >
-          {isNA ? "Continue →" : "I'm done capturing →"}
+          {isNA ? "Continue â†’" : "I'm done capturing â†’"}
         </button>
       </div>
     </div>
@@ -694,7 +694,7 @@ function EvidenceRow({
                 pill: "bg-[#5a7d70] text-white",
                 label: "Not relevant",
               }
-            : { pill: "bg-[#cfe3d9] text-[#10231d]", label: "Reviewing…" };
+            : { pill: "bg-[#cfe3d9] text-[#10231d]", label: "Reviewingâ€¦" };
 
   return (
     <li className="px-4 py-3">
@@ -953,7 +953,7 @@ function WriteStep({
                     : "bg-white text-[#a06b1a] ring-1 ring-inset ring-[#e5d6c2]"
                 }`}
               >
-                {c.ok ? "✓" : "•"}
+                {c.ok ? "âœ“" : "â€¢"}
               </span>
               <span className={c.ok ? "font-medium" : ""}>{c.label}</span>
             </li>
@@ -967,7 +967,7 @@ function WriteStep({
               onClick={onBack}
               className="rounded-sm border border-[#cfe3d9] bg-white px-4 py-2.5 text-sm font-semibold text-[#10231d] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
             >
-              ← Back
+              â† Back
             </button>
             <button
               type="submit"
@@ -982,7 +982,7 @@ function WriteStep({
             disabled={submitting || !allOk}
             className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:opacity-40"
           >
-            {submitting ? "Saving…" : "Save and review →"}
+            {submitting ? "Savingâ€¦" : "Save and review â†’"}
           </button>
         </div>
       </form>
@@ -998,7 +998,7 @@ function WriteStep({
 
       {evidence.length === 0 && !isNA && (
         <p className="mt-4 text-xs text-[#5a7d70]">
-          Tip: jump back to step 2 to attach evidence first — it makes a much
+          Tip: jump back to step 2 to attach evidence first â€” it makes a much
           stronger narrative.
         </p>
       )}
@@ -1020,7 +1020,7 @@ function DoneStep({
   upsertRemediationPlanAction,
   onEdit,
 }: {
-  practice: ControlPlaybook;
+  practice: Omit<ControlPlaybook, "suggestedNarrative">;
   response: ControlResponseRow;
   evidence: EvidenceArtifactRow[];
   assessmentId: string;
@@ -1054,7 +1054,7 @@ function DoneStep({
       <p className="mt-2 text-sm leading-relaxed text-[#5a7d70]">
         {isComplete
           ? "Nice work. This practice is ready for your annual affirmation."
-          : "A few things still need finishing — jump back to fix them."}
+          : "A few things still need finishing â€” jump back to fix them."}
       </p>
 
       <dl className="mt-5 divide-y divide-[#e4eee8] rounded-sm border border-[#cfe3d9]">
@@ -1072,7 +1072,7 @@ function DoneStep({
           </dt>
           <dd className="text-sm text-[#10231d]">
             {isNA
-              ? "—"
+              ? "â€”"
               : `${evidence.length} file${evidence.length === 1 ? "" : "s"} (${sufficientCount} sufficient)`}
           </dd>
         </div>
@@ -1081,7 +1081,7 @@ function DoneStep({
             Narrative
           </dt>
           <dd className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-[#10231d]">
-            {response.narrative || "—"}
+            {response.narrative || "â€”"}
           </dd>
         </div>
       </dl>
@@ -1133,7 +1133,7 @@ function DoneStep({
               href={`/assessments/${assessmentId}/controls/${prevId}`}
               className="rounded-sm border border-[#cfe3d9] bg-white px-4 py-2.5 text-sm font-semibold text-[#10231d] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
             >
-              ← Previous practice
+              â† Previous practice
             </Link>
           )}
           {nextId ? (
@@ -1141,14 +1141,14 @@ function DoneStep({
               href={`/assessments/${assessmentId}/controls/${nextId}`}
               className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
             >
-              Next practice →
+              Next practice â†’
             </Link>
           ) : (
             <Link
               href={`/assessments/${assessmentId}`}
               className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
             >
-              Back to overview →
+              Back to overview â†’
             </Link>
           )}
         </div>

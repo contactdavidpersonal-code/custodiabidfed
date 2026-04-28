@@ -51,12 +51,19 @@ export default async function ControlDetailPage(
 
   const quiz = practiceQuizzes[controlId] ?? [];
 
+  // Strip non-serializable function field before crossing the server/client
+  // boundary. `suggestedNarrative` is invoked server-side by
+  // `useSuggestedNarrativeAction`, so the client never needs it.
+  const { suggestedNarrative: _suggestedNarrative, ...practiceForClient } =
+    practice;
+  void _suggestedNarrative;
+
   return (
     <main>
       <PracticeWizard
         assessmentId={id}
         controlId={controlId}
-        practice={practice}
+        practice={practiceForClient}
         response={response}
         evidence={evidence}
         remediationPlan={remediationPlan}
