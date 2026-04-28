@@ -155,7 +155,7 @@ export default function Home() {
               <Show when="signed-out">
                 <SignInButton mode="modal">
                   <button className="text-sm font-medium text-[#cce5da] transition-colors hover:text-white">
-                    Sign in
+                    Login
                   </button>
                 </SignInButton>
               </Show>
@@ -190,7 +190,7 @@ export default function Home() {
             <Show when="signed-out">
               <SignUpButton mode="modal">
                 <button className="group inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.18)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_15px_55px_rgba(189,242,207,0.3)]">
-                  Create free account
+                  Start For Free
                   <span aria-hidden className="text-lg leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
                 </button>
               </SignUpButton>
@@ -349,7 +349,7 @@ export default function Home() {
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <button className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-6 py-3 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
-                    Discover your opportunity &mdash; free
+                    Start For Free
                     <span aria-hidden className="text-lg leading-none">&rarr;</span>
                   </button>
                 </SignUpButton>
@@ -774,7 +774,7 @@ export default function Home() {
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <button className="inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
-                    Start step 1 &mdash; free
+                    Start For Free
                     <span aria-hidden className="text-lg leading-none">&rarr;</span>
                   </button>
                 </SignUpButton>
@@ -832,7 +832,7 @@ export default function Home() {
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <button className="mt-8 w-full rounded-xl border-2 border-[#104d3a] px-6 py-3 font-bold text-[#104d3a] transition-colors hover:bg-[#f0f9f5]">
-                    Create free account
+                    Start For Free
                   </button>
                 </SignUpButton>
               </Show>
@@ -877,7 +877,7 @@ export default function Home() {
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <button className="mt-8 w-full rounded-xl bg-[#104d3a] px-6 py-3 font-bold text-white transition-colors hover:bg-[#0d3e2f]">
-                    Start free, upgrade when ready
+                    Start For Free
                   </button>
                 </SignUpButton>
               </Show>
