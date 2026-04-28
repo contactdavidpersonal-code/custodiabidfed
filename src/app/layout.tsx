@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist_Mono, Lora, Manrope } from "next/font/google";
+import { clerkAppearance } from "@/lib/clerk-appearance";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -42,6 +43,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ClerkProvider
+          appearance={clerkAppearance}
           signInFallbackRedirectUrl="/assessments"
           signUpFallbackRedirectUrl="/assessments"
         >
