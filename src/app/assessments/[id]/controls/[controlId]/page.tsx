@@ -24,6 +24,7 @@ import {
   upsertRemediationPlanAction,
   useSuggestedNarrativeAction,
 } from "../../../actions";
+import { EvidenceDropzone } from "./EvidenceDropzone";
 
 const statusOptions: Array<{
   value: ControlResponseRow["status"];
@@ -745,38 +746,11 @@ function EvidenceSection({
         </div>
       </div>
 
-      <form
+      <EvidenceDropzone
         action={uploadEvidenceAction}
-        encType="multipart/form-data"
-        className="rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-5"
-      >
-        <input type="hidden" name="assessmentId" value={assessmentId} />
-        <input type="hidden" name="controlId" value={controlId} />
-        <div className="flex flex-wrap items-center gap-4">
-          <label className="flex flex-1 min-w-[220px] flex-col gap-1.5">
-            <span className="text-sm font-semibold text-slate-900">
-              Choose a file
-            </span>
-            <input
-              type="file"
-              name="file"
-              required
-              accept="image/*,application/pdf,text/csv,text/plain,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              className="block w-full text-sm text-slate-700 file:mr-3 file:rounded-lg file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-slate-800"
-            />
-            <span className="text-xs text-slate-500">
-              PNG/JPG/PDF auto-review. CSV/Excel/Word need officer clearance.
-              25 MB max.
-            </span>
-          </label>
-          <button
-            type="submit"
-            className="rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300"
-          >
-            Upload
-          </button>
-        </div>
-      </form>
+        assessmentId={assessmentId}
+        controlId={controlId}
+      />
 
       {artifacts.length > 0 && (
         <ul className="mt-5 divide-y divide-slate-100 rounded-xl border border-slate-200">
