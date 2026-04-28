@@ -242,14 +242,14 @@ export function OnboardingChat({
         <div className="border-t border-[#cfe3d9] bg-[#eaf3ee] px-5 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm font-semibold text-[#0e2a23]">
-              Enough captured — you can head to the workspace.
+              Got what we need — your dashboard is ready.
             </p>
             <button
               type="button"
               onClick={() => router.push("/assessments")}
               className="rounded-sm bg-[#0e2a23] px-4 py-2 text-sm font-bold tracking-tight text-white transition-colors hover:bg-[#10231d]"
             >
-              Go to workspace &rarr;
+              Open my dashboard &rarr;
             </button>
           </div>
         </div>
