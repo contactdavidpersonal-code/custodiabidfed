@@ -119,21 +119,34 @@ export default async function CourseLayout(
       match: "prefix",
     },
     {
-      id: "deliverables",
+      id: "bid-ready",
       step: 5,
+      href: `/assessments/${id}/bid-packet`,
+      title: "Bid-Ready Packet",
+      subtitle: "Capability statement, past performance",
+      status: registrationComplete ? "available" : "locked",
+      match: "prefix",
+    },
+    {
+      id: "deliverables",
+      step: 6,
       href: `/assessments/${id}/deliverables`,
       title: "Deliverables",
-      subtitle: attested ? "SSP, affirmation, bid package" : "Unlocks after signing",
+      subtitle: attested
+        ? "Download SSP, affirmation, package"
+        : "Unlocks after signing",
       status: deliverablesStatus,
       match: "prefix",
     },
     {
-      id: "bid-ready",
-      step: 6,
-      href: `/assessments/${id}/bid-packet`,
-      title: "Bid-Ready Packet",
-      subtitle: "Capability statement, past performance, packet download",
-      status: registrationComplete ? "available" : "locked",
+      id: "opportunities",
+      step: 7,
+      href: `/opportunities`,
+      title: "Find & submit bids",
+      subtitle: attested
+        ? "AI-sourced federal opportunities"
+        : "Unlocks after signing",
+      status: attested ? "available" : "locked",
       match: "prefix",
     },
   ];
