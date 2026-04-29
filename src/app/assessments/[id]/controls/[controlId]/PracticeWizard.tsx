@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type {
   ControlResponseRow,
   EvidenceArtifactRow,
@@ -31,22 +31,6 @@ const STATUS_LABELS: Record<string, string> = {
   not_applicable: "N/A",
 };
 
-type StepKey = "check" | "capture" | "write" | "done";
-const STEPS: Array<{ key: StepKey; label: string; subtitle: string }> = [
-  {
-    key: "check",
-    label: "Quick check",
-    subtitle: "A few plain-English questions",
-  },
-  {
-    key: "capture",
-    label: "Capture evidence",
-    subtitle: "Upload what proves it",
-  },
-  { key: "write", label: "Your answer", subtitle: "Status + narrative" },
-  { key: "done", label: "Review", subtitle: "Lock it in" },
-];
-
 type Props = {
   assessmentId: string;
   controlId: string;
@@ -67,66 +51,169 @@ type Props = {
   upsertRemediationPlanAction: (formData: FormData) => Promise<void> | void;
 };
 
-type QuizAnswer = "yes" | "no" | null;
+type QA = "yes" | "no" | "na" | null;
+
+function parseQ(filename: string): { qid: string | null; display: string } {
+  const m = /^\[q:([^\]]+)\]__(.*)$/.exec(filename);
+  if (m) return { qid: m[1], display: m[2] };
+  return { qid: null, display: filename };
+}
+
+const STORAGE_PREFIX = "cmmc:answers:";
 
 /**
- * The whole control practice page is now a 4-step guided quiz that walks
- * non-technical users from "what is this asking" to "saved and verified"
- * without making them parse 17 sections. Steps: Check → Capture → Write →
- * Done. Each step persists its progress through server actions; the active
- * step survives revalidation via the `?step=` URL param.
+ * Single integrated checklist. Each quiz question is a card; answering "Yes"
+ * reveals an inline upload slot tied to that question (filename prefix
+ * `[q:<id>]__`). Uploading evidence auto-marks the question "Yes". Answering
+ * "Not yet" feeds the remediation plan. When everything is resolved, one
+ * lock-in click derives status, drafts the narrative, and saves.
  */
 export function PracticeWizard(props: Props) {
   const router = useRouter();
-  const params = useSearchParams();
-  const stepFromUrl = (params.get("step") as StepKey) || null;
+  const storageKey = `${STORAGE_PREFIX}${props.assessmentId}:${props.controlId}`;
 
-  // Auto-pick the right step the first time the user lands on a control.
-  const initialStep: StepKey = useMemo(() => {
-    if (stepFromUrl && STEPS.some((s) => s.key === stepFromUrl)) {
-      return stepFromUrl;
+  // Group evidence by question id parsed from the stored filename.
+  const grouped = useMemo(() => {
+    const map = new Map<string, EvidenceArtifactRow[]>();
+    const loose: EvidenceArtifactRow[] = [];
+    for (const e of props.evidence) {
+      const { qid } = parseQ(e.filename);
+      if (qid) {
+        const arr = map.get(qid) ?? [];
+        arr.push(e);
+        map.set(qid, arr);
+      } else {
+        loose.push(e);
+      }
     }
-    if (props.response.status !== "unanswered" && props.response.narrative) {
-      return "done";
-    }
-    if (props.evidence.length > 0) return "write";
-    if (props.response.status !== "unanswered") return "capture";
-    return "check";
-  }, [stepFromUrl, props.response.status, props.response.narrative, props.evidence.length]);
+    return { map, loose };
+  }, [props.evidence]);
 
-  const [step, setStep] = useState<StepKey>(initialStep);
+  const [answers, setAnswers] = useState<Record<string, QA>>(() =>
+    Object.fromEntries(props.quiz.map((q) => [q.id, null])),
+  );
+  const [naReason, setNaReason] = useState("");
+  const [wholeNa, setWholeNa] = useState(
+    props.response.status === "not_applicable",
+  );
+  const [submitting, setSubmitting] = useState(false);
 
+  // Restore previously-given answers from localStorage on mount.
   useEffect(() => {
-    if (step !== initialStep && stepFromUrl !== step) {
-      const url = new URL(window.location.href);
-      url.searchParams.set("step", step);
-      router.replace(url.pathname + url.search, { scroll: false });
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(storageKey);
+      if (raw) {
+        const saved = JSON.parse(raw) as {
+          answers?: Record<string, QA>;
+          naReason?: string;
+        };
+        if (saved.answers) {
+          setAnswers((prev) => ({ ...prev, ...saved.answers }));
+        }
+        if (saved.naReason) setNaReason(saved.naReason);
+      }
+    } catch {
+      // ignore corrupt storage
     }
-  }, [step, initialStep, stepFromUrl, router]);
+  }, [storageKey]);
 
-  // Track which steps the user has completed (for the stepper checkmarks).
-  const completion: Record<StepKey, boolean> = {
-    check: props.response.status !== "unanswered",
-    capture:
-      props.response.status === "not_applicable" ||
-      props.evidence.some((e) => e.ai_review_verdict === "sufficient") ||
-      props.evidence.length > 0,
-    write:
-      props.response.status !== "unanswered" &&
-      (props.response.narrative ?? "").trim().length >= 20,
-    done:
-      props.response.status !== "unanswered" &&
-      (props.response.narrative ?? "").trim().length >= 20 &&
-      (props.response.status === "not_applicable" ||
-        props.evidence.length > 0),
+  // Auto-promote a question to "yes" when evidence shows up for it.
+  useEffect(() => {
+    setAnswers((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const q of props.quiz) {
+        const has = (grouped.map.get(q.id)?.length ?? 0) > 0;
+        if (has && next[q.id] !== "yes" && next[q.id] !== "no") {
+          next[q.id] = "yes";
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [grouped.map, props.quiz]);
+
+  // Persist answers locally so they survive uploads / reloads.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(
+        storageKey,
+        JSON.stringify({ answers, naReason }),
+      );
+    } catch {
+      // ignore quota errors
+    }
+  }, [answers, naReason, storageKey]);
+
+  const setA = (qid: string, v: QA) => {
+    setAnswers((p) => ({ ...p, [qid]: v }));
   };
 
-  const goTo = (s: StepKey) => {
-    setStep(s);
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+  const total = props.quiz.length;
+  const yesCount = props.quiz.filter((q) => answers[q.id] === "yes").length;
+  const noCount = props.quiz.filter((q) => answers[q.id] === "no").length;
+  const naCount = props.quiz.filter((q) => answers[q.id] === "na").length;
+  const answered = yesCount + noCount + naCount;
+  const yesWithEvidence = props.quiz.filter(
+    (q) =>
+      answers[q.id] === "yes" && (grouped.map.get(q.id)?.length ?? 0) > 0,
+  ).length;
+
+  const ready = wholeNa
+    ? naReason.trim().length >= 10
+    : answered === total && total > 0 && yesWithEvidence === yesCount;
+
+  const derivedStatus: "yes" | "partial" | "no" | "not_applicable" = wholeNa
+    ? "not_applicable"
+    : naCount === total
+      ? "not_applicable"
+      : noCount === total - naCount && noCount > 0
+        ? "no"
+        : yesCount === total - naCount && yesCount > 0
+          ? "yes"
+          : "partial";
+
+  const hiddenSaveRef = useRef<HTMLFormElement>(null);
+  const hiddenSuggestRef = useRef<HTMLFormElement>(null);
+
+  const lockIn = async () => {
+    if (!ready || submitting) return;
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.set("assessmentId", props.assessmentId);
+      fd.set("controlId", props.controlId);
+      fd.set("status", derivedStatus);
+      fd.set(
+        "narrative",
+        wholeNa ? naReason.trim() : props.response.narrative ?? "",
+      );
+      await Promise.resolve(props.saveResponseAction(fd));
+
+      if (!wholeNa && !(props.response.narrative ?? "").trim()) {
+        const fd2 = new FormData();
+        fd2.set("assessmentId", props.assessmentId);
+        fd2.set("controlId", props.controlId);
+        await Promise.resolve(props.useSuggestedNarrativeAction(fd2));
+      }
+
+      if (props.nextId) {
+        router.push(
+          `/assessments/${props.assessmentId}/controls/${props.nextId}`,
+        );
+      } else {
+        router.push(`/assessments/${props.assessmentId}`);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const isLocked =
+    props.response.status !== "unanswered" &&
+    (props.response.narrative ?? "").trim().length >= 20;
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
@@ -150,7 +237,7 @@ export function PracticeWizard(props: Props) {
           <span className="font-mono text-xs font-semibold text-[#5a7d70]">
             {props.practice.id}
           </span>
-          <span className="text-[#cfe3d9]">·</span>
+          <span className="text-[#cfe3d9]">&middot;</span>
           <span className="text-xs font-medium text-[#5a7d70]">
             {props.practice.farReference}
           </span>
@@ -163,290 +250,61 @@ export function PracticeWizard(props: Props) {
         </p>
       </header>
 
-      {/* Stepper */}
-      <ol className="mb-6 grid gap-2 rounded-md border border-[#cfe3d9] bg-white p-2 shadow-[0_2px_0_rgba(14,48,37,0.04)] sm:grid-cols-4">
-        {STEPS.map((s, idx) => {
-          const isActive = s.key === step;
-          const isDone = completion[s.key];
-          const canJump = idx === 0 || completion[STEPS[idx - 1].key] || isDone;
-          return (
-            <li key={s.key}>
-              <button
-                type="button"
-                disabled={!canJump}
-                onClick={() => canJump && goTo(s.key)}
-                className={`relative w-full rounded-sm px-3 py-2.5 text-left transition-colors ${
-                  isActive
-                    ? "bg-[#0e2a23] text-[#bdf2cf]"
-                    : isDone
-                      ? "bg-[#f7fcf9] text-[#10231d] hover:bg-[#eaf3ee]"
-                      : canJump
-                        ? "text-[#10231d] hover:bg-[#f7fcf9]"
-                        : "cursor-not-allowed text-[#7a9c90]"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`inline-flex h-5 w-5 flex-none items-center justify-center rounded-sm font-mono text-[11px] font-bold ${
-                      isActive
-                        ? "bg-[#bdf2cf] text-[#0e2a23]"
-                        : isDone
-                          ? "bg-[#0e2a23] text-[#bdf2cf]"
-                          : "bg-[#cfe3d9] text-[#10231d]"
-                    }`}
-                  >
-                    {isDone && !isActive ? "✓" : idx + 1}
-                  </span>
-                  <span className="truncate text-sm font-semibold">
-                    {s.label}
-                  </span>
-                </div>
-                <span
-                  className={`mt-1 block truncate pl-7 text-[11px] ${
-                    isActive
-                      ? "text-[#bdf2cf]/80"
-                      : "text-[#5a7d70]"
-                  }`}
-                >
-                  {s.subtitle}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ol>
-
-      {/* Active step body */}
-      <div className="rounded-md border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.10)]">
-        {step === "check" && (
-          <CheckStep
-            quiz={props.quiz}
-            practice={props.practice}
-            response={props.response}
-            saveResponseAction={props.saveResponseAction}
-            assessmentId={props.assessmentId}
-            controlId={props.controlId}
-            onAdvance={() => goTo("capture")}
-          />
-        )}
-        {step === "capture" && (
-          <CaptureStep
-            practice={props.practice}
-            evidence={props.evidence}
-            response={props.response}
-            uploadEvidenceAction={props.uploadEvidenceAction}
-            deleteEvidenceAction={props.deleteEvidenceAction}
-            reReviewEvidenceAction={props.reReviewEvidenceAction}
-            assessmentId={props.assessmentId}
-            controlId={props.controlId}
-            onBack={() => goTo("check")}
-            onAdvance={() => goTo("write")}
-          />
-        )}
-        {step === "write" && (
-          <WriteStep
-            response={props.response}
-            evidence={props.evidence}
-            saveResponseAction={props.saveResponseAction}
-            useSuggestedNarrativeAction={props.useSuggestedNarrativeAction}
-            assessmentId={props.assessmentId}
-            controlId={props.controlId}
-            onBack={() => goTo("capture")}
-            onAdvance={() => goTo("done")}
-          />
-        )}
-        {step === "done" && (
-          <DoneStep
-            practice={props.practice}
-            response={props.response}
-            evidence={props.evidence}
-            assessmentId={props.assessmentId}
-            controlId={props.controlId}
-            nextId={props.nextId}
-            prevId={props.prevId}
-            remediationPlan={props.remediationPlan}
-            upsertRemediationPlanAction={props.upsertRemediationPlanAction}
-            onEdit={() => goTo("check")}
-          />
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ============================ STEP 1: CHECK =============================== */
-
-function CheckStep({
-  quiz,
-  practice,
-  response,
-  saveResponseAction,
-  assessmentId,
-  controlId,
-  onAdvance,
-}: {
-  quiz: PracticeQuizQuestion[];
-  practice: Omit<ControlPlaybook, "suggestedNarrative">;
-  response: ControlResponseRow;
-  saveResponseAction: (formData: FormData) => Promise<void> | void;
-  assessmentId: string;
-  controlId: string;
-  onAdvance: () => void;
-}) {
-  const [answers, setAnswers] = useState<Record<string, QuizAnswer>>(() =>
-    Object.fromEntries(quiz.map((q) => [q.id, null])),
-  );
-  const [naReason, setNaReason] = useState("");
-  const [isNA, setIsNA] = useState(response.status === "not_applicable");
-  const [submitting, setSubmitting] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
-
-  const total = quiz.length;
-  const answered = Object.values(answers).filter((a) => a !== null).length;
-  const yesCount = Object.values(answers).filter((a) => a === "yes").length;
-  const noCount = Object.values(answers).filter((a) => a === "no").length;
-  const allAnswered = answered === total && total > 0;
-
-  const recommendation: "yes" | "partial" | "no" | null = useMemo(() => {
-    if (!allAnswered) return null;
-    if (yesCount === total) return "yes";
-    if (noCount === total) return "no";
-    return "partial";
-  }, [allAnswered, yesCount, noCount, total]);
-
-  const gaps = quiz
-    .filter((q) => answers[q.id] === "no")
-    .map((q) => ({ id: q.id, gap: q.gap }));
-
-  const submit = (statusValue: string) => {
-    if (!formRef.current) return;
-    const fd = new FormData(formRef.current);
-    fd.set("status", statusValue);
-    fd.set("narrative", response.narrative ?? "");
-    setSubmitting(true);
-    Promise.resolve(saveResponseAction(fd)).finally(() => {
-      setSubmitting(false);
-      onAdvance();
-    });
-  };
-
-  return (
-    <div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
-        Step 1 of 4
-      </p>
-      <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#10231d]">
-        Quick check
-      </h2>
-      <p className="mt-2 text-sm leading-relaxed text-[#5a7d70]">
-        Answer in plain English. We&rsquo;ll route you to the right answer
-        automatically. Not sure? Ask the officer on the right anytime.
-      </p>
-
-      {practice.whyItMatters && (
-        <div className="mt-4 rounded-sm border border-[#e5d6c2] bg-[#fdf8ef] px-4 py-3 text-sm leading-relaxed text-[#10231d]">
+      {props.practice.whyItMatters && (
+        <div className="mb-6 rounded-sm border border-[#e5d6c2] bg-[#fdf8ef] px-4 py-3 text-sm leading-relaxed text-[#10231d]">
           <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#a06b1a]">
             Why this matters
           </p>
-          <p className="mt-1">{practice.whyItMatters}</p>
+          <p className="mt-1">{props.practice.whyItMatters}</p>
         </div>
       )}
 
-      <form ref={formRef} className="hidden">
-        <input type="hidden" name="assessmentId" value={assessmentId} />
-        <input type="hidden" name="controlId" value={controlId} />
-      </form>
+      {isLocked && !wholeNa && (
+        <div className="mb-6 rounded-md border border-[#2f8f6d] bg-[#f7fcf9] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2f8f6d]">
+                Locked in &middot; {STATUS_LABELS[props.response.status]}
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-[#10231d]">
+                {(props.response.narrative ?? "").slice(0, 220)}
+                {(props.response.narrative ?? "").length > 220 ? "\u2026" : ""}
+              </p>
+            </div>
+            {props.nextId && (
+              <Link
+                href={`/assessments/${props.assessmentId}/controls/${props.nextId}`}
+                className="rounded-sm bg-[#0e2a23] px-4 py-2 text-xs font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+              >
+                Next practice &rarr;
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
 
-      <ol className="mt-6 divide-y divide-[#e4eee8] rounded-sm border border-[#cfe3d9]">
-        {quiz.map((q, idx) => {
-          const a = answers[q.id];
-          return (
-            <li key={q.id} className="px-4 py-4">
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 inline-flex h-6 w-6 flex-none items-center justify-center rounded-sm bg-[#0e2a23] font-mono text-xs font-bold text-[#bdf2cf]">
-                  {idx + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm leading-relaxed text-[#10231d]">
-                    {q.prompt}
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsNA(false);
-                        setAnswers((p) => ({ ...p, [q.id]: "yes" }));
-                      }}
-                      className={`rounded-sm px-4 py-1.5 text-xs font-semibold transition-colors ${
-                        a === "yes"
-                          ? "bg-[#0e2a23] text-[#bdf2cf]"
-                          : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
-                      }`}
-                    >
-                      Yes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsNA(false);
-                        setAnswers((p) => ({ ...p, [q.id]: "no" }));
-                      }}
-                      className={`rounded-sm px-4 py-1.5 text-xs font-semibold transition-colors ${
-                        a === "no"
-                          ? "bg-[#b03a2e] text-white"
-                          : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#b03a2e] hover:bg-[#fdf2f0]"
-                      }`}
-                    >
-                      Not yet
-                    </button>
-                  </div>
-                  {a === "yes" && (
-                    <p className="mt-2 text-xs text-[#2f8f6d]">
-                      Good — {q.yesMeans.toLowerCase()}
-                    </p>
-                  )}
-                  {a === "no" && (
-                    <p className="mt-2 text-xs text-[#a06b1a]">
-                      Gap: {q.gap}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-
-      {/* N/A escape hatch */}
-      <div className="mt-4 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
+      {/* Whole-control N/A escape hatch */}
+      <div className="mb-5 rounded-sm border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
         <label className="flex cursor-pointer items-start gap-3">
           <input
             type="checkbox"
-            checked={isNA}
-            onChange={(e) => {
-              setIsNA(e.target.checked);
-              if (e.target.checked) {
-                setAnswers(
-                  Object.fromEntries(quiz.map((q) => [q.id, null])),
-                );
-              }
-            }}
+            checked={wholeNa}
+            onChange={(e) => setWholeNa(e.target.checked)}
             className="mt-0.5 h-4 w-4 flex-none accent-[#0e2a23]"
           />
           <div className="min-w-0 flex-1">
             <span className="text-sm font-semibold text-[#10231d]">
-              This practice doesn&rsquo;t apply to my business
+              This whole practice doesn&rsquo;t apply to my business
             </span>
             <p className="mt-0.5 text-xs text-[#5a7d70]">
-              Use sparingly. You&rsquo;ll need to briefly explain why on the
-              next step.
+              Use sparingly. Briefly explain why &mdash; auditors will read it.
             </p>
-            {isNA && (
+            {wholeNa && (
               <textarea
                 value={naReason}
                 onChange={(e) => setNaReason(e.target.value)}
                 rows={2}
-                placeholder="E.g. We have no physical office — all staff work from personal residences and contract info is fully cloud-hosted."
+                placeholder="E.g. We have no physical office; all staff work remotely on cloud-only systems."
                 className="mt-2 w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] outline-none transition-colors focus:border-[#0e2a23]"
               />
             )}
@@ -454,276 +312,313 @@ function CheckStep({
         </label>
       </div>
 
-      {/* Recommendation + advance */}
-      <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
-        {isNA ? (
-          <button
-            type="button"
-            disabled={submitting || naReason.trim().length < 10}
-            onClick={() => submit("not_applicable")}
-            className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:opacity-40"
-          >
-            {submitting ? "Saving…" : "Mark N/A and continue →"}
-          </button>
-        ) : recommendation ? (
-          <div className="flex w-full flex-wrap items-center justify-between gap-3 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
+      {/* Quiz cards */}
+      {!wholeNa && (
+        <ol className="space-y-4">
+          {props.quiz.map((q, idx) => (
+            <QuestionCard
+              key={q.id}
+              idx={idx}
+              q={q}
+              answer={answers[q.id]}
+              onAnswer={(v) => setA(q.id, v)}
+              practice={props.practice}
+              evidence={grouped.map.get(q.id) ?? []}
+              assessmentId={props.assessmentId}
+              controlId={props.controlId}
+              uploadEvidenceAction={props.uploadEvidenceAction}
+              deleteEvidenceAction={props.deleteEvidenceAction}
+              reReviewEvidenceAction={props.reReviewEvidenceAction}
+            />
+          ))}
+        </ol>
+      )}
+
+      {/* Progress + lock-in */}
+      {!wholeNa && total > 0 && (
+        <div className="mt-6 rounded-md border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
-                Recommendation
+                Progress
               </p>
-              <p className="mt-0.5 text-sm font-semibold text-[#10231d]">
-                {recommendation === "yes" &&
-                  "Looks like a clean Met. Let's grab the evidence."}
-                {recommendation === "partial" &&
-                  "Partway there — we'll mark this Partial and capture what you have."}
-                {recommendation === "no" &&
-                  "Not in place yet. We'll mark Not met and build a fix plan."}
+              <p className="mt-1 text-sm font-semibold text-[#10231d]">
+                {answered} of {total} answered &middot; {yesWithEvidence} of{" "}
+                {yesCount} Yes-answers have evidence
               </p>
-              {gaps.length > 0 && (
-                <ul className="mt-2 space-y-1 text-xs leading-relaxed text-[#10231d]">
-                  {gaps.map((g) => (
-                    <li key={g.id}>
-                      <span className="font-semibold text-[#a06b1a]">
-                        Fix:&nbsp;
-                      </span>
-                      {g.gap}
-                    </li>
-                  ))}
-                </ul>
+              {ready ? (
+                <p className="mt-1 text-xs text-[#2f8f6d]">
+                  Will be marked{" "}
+                  <strong>{STATUS_LABELS[derivedStatus]}</strong> when you lock
+                  it in. Narrative is drafted automatically.
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-[#5a7d70]">
+                  Answer every question and attach evidence for each Yes to
+                  continue.
+                </p>
               )}
             </div>
             <button
               type="button"
-              disabled={submitting}
-              onClick={() => submit(recommendation)}
-              className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:opacity-40"
+              disabled={!ready || submitting}
+              onClick={lockIn}
+              className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {submitting
-                ? "Saving…"
-                : `Mark as ${STATUS_LABELS[recommendation]} →`}
+                ? "Saving\u2026"
+                : props.nextId
+                  ? "Lock it in \u2192 next practice"
+                  : "Lock it in \u2192 finish"}
             </button>
           </div>
-        ) : (
-          <p className="text-xs text-[#5a7d70]">
-            Answer all {total} question{total === 1 ? "" : "s"} to continue.
+        </div>
+      )}
+
+      {wholeNa && (
+        <div className="mt-6 flex justify-end">
+          <button
+            type="button"
+            disabled={!ready || submitting}
+            onClick={lockIn}
+            className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {submitting ? "Saving\u2026" : "Mark N/A and continue \u2192"}
+          </button>
+        </div>
+      )}
+
+      {/* Loose evidence uploaded outside any question (e.g. legacy uploads) */}
+      {grouped.loose.length > 0 && (
+        <section className="mt-8">
+          <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-[#5a7d70]">
+            Other uploaded evidence
+          </h2>
+          <ul className="mt-2 divide-y divide-[#e4eee8] rounded-sm border border-[#cfe3d9] bg-white">
+            {grouped.loose.map((a) => (
+              <EvidenceRow
+                key={a.id}
+                artifact={a}
+                assessmentId={props.assessmentId}
+                controlId={props.controlId}
+                deleteEvidenceAction={props.deleteEvidenceAction}
+                reReviewEvidenceAction={props.reReviewEvidenceAction}
+              />
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* What passing evidence looks like (control-wide reference) */}
+      {!wholeNa && props.practice.passingEvidence.length > 0 && (
+        <section className="mt-8 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2f8f6d]">
+            What &ldquo;passing&rdquo; evidence looks like
           </p>
-        )}
-      </div>
+          <p className="mt-1 text-xs leading-relaxed text-[#5a7d70]">
+            Make sure your uploads show every item below. The AI reviewer
+            checks for these.
+          </p>
+          <ul className="mt-3 space-y-1.5">
+            {props.practice.passingEvidence.map((item, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2 text-sm leading-relaxed text-[#10231d]"
+              >
+                <span className="mt-1 inline-flex h-3.5 w-3.5 flex-none items-center justify-center rounded-sm bg-[#0e2a23] text-[10px] font-bold text-[#bdf2cf]">
+                  &#x2713;
+                </span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Provider-specific quick guidance, kept as a reference panel */}
+      {!wholeNa && props.practice.providerGuidance.length > 0 && (
+        <ProviderReference practice={props.practice} />
+      )}
+
+      {/* Remediation plan when status is no/partial */}
+      {(props.response.status === "no" ||
+        props.response.status === "partial") && (
+        <RemediationInline
+          assessmentId={props.assessmentId}
+          controlId={props.controlId}
+          plan={props.remediationPlan}
+          status={props.response.status}
+          upsertRemediationPlanAction={props.upsertRemediationPlanAction}
+        />
+      )}
+
+      {/* Hidden anchors kept for forward compat */}
+      <form ref={hiddenSaveRef} className="hidden" />
+      <form ref={hiddenSuggestRef} className="hidden" />
     </div>
   );
 }
 
-/* ============================ STEP 2: CAPTURE ============================= */
+/* ============================ QUESTION CARD =============================== */
 
-function CaptureStep({
+function QuestionCard({
+  idx,
+  q,
+  answer,
+  onAnswer,
   practice,
   evidence,
-  response,
+  assessmentId,
+  controlId,
   uploadEvidenceAction,
   deleteEvidenceAction,
   reReviewEvidenceAction,
-  assessmentId,
-  controlId,
-  onBack,
-  onAdvance,
 }: {
+  idx: number;
+  q: PracticeQuizQuestion;
+  answer: QA;
+  onAnswer: (v: QA) => void;
   practice: Omit<ControlPlaybook, "suggestedNarrative">;
   evidence: EvidenceArtifactRow[];
-  response: ControlResponseRow;
+  assessmentId: string;
+  controlId: string;
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
   deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
-  assessmentId: string;
-  controlId: string;
-  onBack: () => void;
-  onAdvance: () => void;
 }) {
-  const providers = practice.providerGuidance;
-  const [activeProvider, setActiveProvider] = useState<EvidenceProvider>(
-    providers[0]?.provider ?? "manual",
-  );
-  const guidance =
-    providers.find((p) => p.provider === activeProvider) ?? providers[0];
-
-  const isNA = response.status === "not_applicable";
-  const sufficientCount = evidence.filter(
-    (e) => e.ai_review_verdict === "sufficient",
-  ).length;
-  const canAdvance = isNA || sufficientCount > 0 || evidence.length > 0;
+  const provingHints = practice.passingEvidence.slice(0, 3);
 
   return (
-    <div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
-        Step 2 of 4
-      </p>
-      <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#10231d]">
-        Capture evidence
-      </h2>
-      <p className="mt-2 text-sm leading-relaxed text-[#5a7d70]">
-        {isNA
-          ? "Skip this step — N/A practices don't need evidence. Click Continue to write a brief explanation."
-          : "Upload screenshots or PDFs that prove you do this. The platform reviews each upload and tells you if it's enough."}
-      </p>
+    <li className="rounded-md border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+      <div className="px-5 py-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 inline-flex h-7 w-7 flex-none items-center justify-center rounded-sm bg-[#0e2a23] font-mono text-xs font-bold text-[#bdf2cf]">
+            {idx + 1}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold leading-relaxed text-[#10231d]">
+              {q.prompt}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => onAnswer("yes")}
+                className={`rounded-sm px-4 py-1.5 text-xs font-semibold transition-colors ${
+                  answer === "yes"
+                    ? "bg-[#0e2a23] text-[#bdf2cf]"
+                    : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
+                }`}
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => onAnswer("no")}
+                className={`rounded-sm px-4 py-1.5 text-xs font-semibold transition-colors ${
+                  answer === "no"
+                    ? "bg-[#b03a2e] text-white"
+                    : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#b03a2e] hover:bg-[#fdf2f0]"
+                }`}
+              >
+                Not yet
+              </button>
+              <button
+                type="button"
+                onClick={() => onAnswer("na")}
+                className={`rounded-sm px-4 py-1.5 text-xs font-semibold transition-colors ${
+                  answer === "na"
+                    ? "bg-[#5a7d70] text-white"
+                    : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#5a7d70] hover:bg-[#f7fcf9]"
+                }`}
+              >
+                N/A
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {!isNA && providers.length > 0 && guidance && (
-        <>
-          <div className="mt-5 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2f8f6d]">
-              What &ldquo;passing&rdquo; evidence looks like
-            </p>
-            <p className="mt-1 text-xs leading-relaxed text-[#5a7d70]">
-              Make sure your upload shows every item below. The AI reviewer
-              checks for these.
-            </p>
-            <ul className="mt-3 space-y-1.5">
-              {practice.passingEvidence.map((item, i) => (
+      {answer === "yes" && (
+        <div className="border-t border-[#cfe3d9] bg-[#f7fcf9] px-5 py-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2f8f6d]">
+            {q.yesMeans}
+          </p>
+          {evidence.length === 0 && provingHints.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {provingHints.map((h, i) => (
                 <li
                   key={i}
-                  className="flex items-start gap-2 text-sm leading-relaxed text-[#10231d]"
+                  className="flex items-start gap-2 text-xs leading-relaxed text-[#10231d]"
                 >
-                  <span className="mt-1 inline-flex h-3.5 w-3.5 flex-none items-center justify-center rounded-sm bg-[#0e2a23] text-[10px] font-bold text-[#bdf2cf]">
-                    ✓
+                  <span className="mt-0.5 inline-flex h-3 w-3 flex-none items-center justify-center rounded-sm bg-[#0e2a23] text-[9px] font-bold text-[#bdf2cf]">
+                    &#x2713;
                   </span>
-                  <span>{item}</span>
+                  <span>{h}</span>
                 </li>
               ))}
             </ul>
-          </div>
-          <div className="mt-5">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
-              Pick your setup
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {providers.map((p) => (
-                <button
-                  key={p.provider}
-                  type="button"
-                  onClick={() => setActiveProvider(p.provider)}
-                  className={`rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors ${
-                    activeProvider === p.provider
-                      ? "bg-[#0e2a23] text-[#bdf2cf]"
-                      : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
-                  }`}
-                >
-                  {providerLabel[p.provider]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="mt-4 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] p-4">
-            <p className="text-sm font-semibold text-[#10231d]">
-              {guidance.label}
-              <span className="ml-2 text-xs font-medium text-[#5a7d70]">
-                {providerLabel[guidance.provider]}
-              </span>
-            </p>
-            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-[#10231d]">
-              {guidance.steps.map((s, i) => (
-                <li key={i}>{s}</li>
-              ))}
-            </ol>
-            <div className="mt-3 rounded-sm bg-white px-3 py-2 text-sm leading-relaxed text-[#10231d] ring-1 ring-inset ring-[#cfe3d9]">
-              <span className="font-semibold">What we need:&nbsp;</span>
-              {guidance.capture}
-            </div>
-            {guidance.adminUrl && (
-              <div className="mt-3 rounded-sm border border-[#cfe3d9] bg-white p-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
-                  Jump straight to the right page
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-[#5a7d70]">
-                  Opens the {providerLabel[guidance.provider]} admin page for
-                  this control in a new tab. Sign in if prompted, then take
-                  the screenshots described above.
-                </p>
-                <a
-                  href={guidance.adminUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-sm border border-[#0e2a23] bg-white px-3 py-1.5 text-xs font-bold text-[#0e2a23] transition-colors hover:bg-[#0e2a23] hover:text-[#bdf2cf]"
-                >
-                  Open in {providerLabel[guidance.provider]} ↗
-                </a>
-              </div>
-            )}
-            {guidance.template && (
-              <div className="mt-3 rounded-sm border border-[#cfe3d9] bg-white p-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
-                  Use our template
-                </p>
-                <p className="mt-1 text-sm font-semibold text-[#10231d]">
-                  {guidance.template.label}
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-[#5a7d70]">
-                  {guidance.template.description}
-                </p>
-                <a
-                  href={`/templates/${guidance.template.filename}`}
-                  download
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-sm bg-[#0e2a23] px-3 py-1.5 text-xs font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
-                >
-                  Download template
-                </a>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-5">
-            <EvidenceDropzone
-              action={uploadEvidenceAction}
-              assessmentId={assessmentId}
-              controlId={controlId}
-            />
-          </div>
-
-          {evidence.length > 0 && (
-            <ul className="mt-5 divide-y divide-[#e4eee8] rounded-sm border border-[#cfe3d9]">
-              {evidence.map((a) => (
-                <EvidenceRow
-                  key={a.id}
-                  artifact={a}
-                  assessmentId={assessmentId}
-                  controlId={controlId}
-                  deleteEvidenceAction={deleteEvidenceAction}
-                  reReviewEvidenceAction={reReviewEvidenceAction}
-                />
-              ))}
-            </ul>
           )}
 
-          {evidence.length > 0 && sufficientCount === 0 && (
-            <div className="mt-4 rounded-sm border border-[#e5d6c2] bg-[#fdf8ef] px-4 py-3 text-xs leading-relaxed text-[#10231d]">
-              <span className="font-semibold text-[#a06b1a]">Heads up:</span>{" "}
-              No upload has come back &lsquo;Sufficient&rsquo; from the
-              automated reviewer yet. You can continue, but the evidence may
-              not count toward attestation. Try Re-review or upload a clearer
-              capture.
+          {evidence.length === 0 ? (
+            <div className="mt-3">
+              <EvidenceDropzone
+                action={uploadEvidenceAction}
+                assessmentId={assessmentId}
+                controlId={controlId}
+                questionId={q.id}
+                compact
+              />
+            </div>
+          ) : (
+            <div className="mt-3">
+              <ul className="divide-y divide-[#e4eee8] rounded-sm border border-[#cfe3d9] bg-white">
+                {evidence.map((a) => (
+                  <EvidenceRow
+                    key={a.id}
+                    artifact={a}
+                    assessmentId={assessmentId}
+                    controlId={controlId}
+                    deleteEvidenceAction={deleteEvidenceAction}
+                    reReviewEvidenceAction={reReviewEvidenceAction}
+                  />
+                ))}
+              </ul>
+              <details className="mt-2">
+                <summary className="cursor-pointer text-xs font-semibold text-[#5a7d70] hover:text-[#10231d]">
+                  Add another file
+                </summary>
+                <div className="mt-2">
+                  <EvidenceDropzone
+                    action={uploadEvidenceAction}
+                    assessmentId={assessmentId}
+                    controlId={controlId}
+                    questionId={q.id}
+                    compact
+                  />
+                </div>
+              </details>
             </div>
           )}
-        </>
+        </div>
       )}
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onBack}
-          className="rounded-sm border border-[#cfe3d9] bg-white px-4 py-2.5 text-sm font-semibold text-[#10231d] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
-        >
-          ← Back
-        </button>
-        <button
-          type="button"
-          disabled={!canAdvance}
-          onClick={onAdvance}
-          className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:opacity-40"
-        >
-          {isNA ? "Continue →" : "I'm done capturing →"}
-        </button>
-      </div>
-    </div>
+      {answer === "no" && (
+        <div className="border-t border-[#e5d6c2] bg-[#fdf8ef] px-5 py-3 text-xs leading-relaxed text-[#10231d]">
+          <span className="font-semibold text-[#a06b1a]">Fix plan: </span>
+          {q.gap}
+        </div>
+      )}
+
+      {answer === "na" && (
+        <div className="border-t border-[#cfe3d9] bg-[#f7fcf9] px-5 py-3 text-xs leading-relaxed text-[#5a7d70]">
+          Skipping &mdash; this question doesn&rsquo;t apply.
+        </div>
+      )}
+    </li>
   );
 }
+
+/* ============================ EVIDENCE ROW ================================ */
 
 function EvidenceRow({
   artifact: a,
@@ -742,21 +637,14 @@ function EvidenceRow({
     a.ai_review_verdict === "sufficient"
       ? { pill: "bg-[#0e2a23] text-[#bdf2cf]", label: "Sufficient" }
       : a.ai_review_verdict === "insufficient"
-        ? {
-            pill: "bg-[#b03a2e] text-white",
-            label: "Insufficient",
-          }
+        ? { pill: "bg-[#b03a2e] text-white", label: "Insufficient" }
         : a.ai_review_verdict === "unclear"
-          ? {
-              pill: "bg-[#a06b1a] text-white",
-              label: "Unclear",
-            }
+          ? { pill: "bg-[#a06b1a] text-white", label: "Unclear" }
           : a.ai_review_verdict === "not_relevant"
-            ? {
-                pill: "bg-[#5a7d70] text-white",
-                label: "Not relevant",
-              }
-            : { pill: "bg-[#cfe3d9] text-[#10231d]", label: "Reviewing…" };
+            ? { pill: "bg-[#5a7d70] text-white", label: "Not relevant" }
+            : { pill: "bg-[#cfe3d9] text-[#10231d]", label: "Reviewing\u2026" };
+
+  const display = parseQ(a.filename).display;
 
   return (
     <li className="px-4 py-3">
@@ -777,7 +665,7 @@ function EvidenceRow({
                 rel="noopener noreferrer"
                 className="truncate text-sm font-semibold text-[#10231d] hover:text-[#2f8f6d]"
               >
-                {a.filename}
+                {display}
               </a>
               <span
                 className={`inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${verdictTone.pill}`}
@@ -829,424 +717,84 @@ function EvidenceRow({
   );
 }
 
-/* ============================ STEP 3: WRITE =============================== */
+/* ============================ PROVIDER REFERENCE ========================== */
 
-function WriteStep({
-  response,
-  evidence,
-  saveResponseAction,
-  useSuggestedNarrativeAction,
-  assessmentId,
-  controlId,
-  onBack,
-  onAdvance,
-}: {
-  response: ControlResponseRow;
-  evidence: EvidenceArtifactRow[];
-  saveResponseAction: (formData: FormData) => Promise<void> | void;
-  useSuggestedNarrativeAction: (formData: FormData) => Promise<void> | void;
-  assessmentId: string;
-  controlId: string;
-  onBack: () => void;
-  onAdvance: () => void;
-}) {
-  const [narrative, setNarrative] = useState(response.narrative ?? "");
-  const [status, setStatus] = useState(
-    response.status === "unanswered" ? "yes" : response.status,
-  );
-  const [submitting, setSubmitting] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
-
-  const wordCount = narrative.trim().split(/\s+/).filter(Boolean).length;
-  const isNA = status === "not_applicable";
-  const mentionsSystem =
-    /\b(microsoft|defender|google|workspace|okta|active directory|windows|macos|aws|azure|router|firewall|laptop|server|gmail|outlook|365|m365|antivirus|vpn|password manager|bitwarden|1password|proton|chromebook|onedrive|sharepoint|teams|slack|github|gitlab)\b/i.test(
-      narrative,
-    );
-  const hasCadence =
-    /\b(daily|weekly|monthly|quarterly|annually|yearly|each|every|nightly|hourly|real[- ]?time)\b/i.test(
-      narrative,
-    );
-  const referencesEvidence =
-    /\b(screenshot|policy|export|csv|pdf|attached|uploaded|matrix|roster|signed|attestation|log|report|dashboard)\b/i.test(
-      narrative,
-    );
-
-  const checks = isNA
-    ? [
-        {
-          ok: wordCount >= 15,
-          label: "At least 15 words explaining why N/A",
-        },
-      ]
-    : [
-        { ok: wordCount >= 30, label: "At least 30 words" },
-        { ok: mentionsSystem, label: "Names a system or tool" },
-        { ok: hasCadence, label: "Says how often (cadence)" },
-        { ok: referencesEvidence, label: "Cites the evidence you uploaded" },
-      ];
-  const allOk = checks.every((c) => c.ok);
-
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!formRef.current) return;
-    const fd = new FormData(formRef.current);
-    setSubmitting(true);
-    try {
-      await Promise.resolve(saveResponseAction(fd));
-      onAdvance();
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
-        Step 3 of 4
-      </p>
-      <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#10231d]">
-        Your answer
-      </h2>
-      <p className="mt-2 text-sm leading-relaxed text-[#5a7d70]">
-        Confirm the status and write a short narrative. This is the paragraph
-        an auditor will read in your SSP.
-      </p>
-
-      <form ref={formRef} onSubmit={onSubmit} className="mt-5 space-y-5">
-        <input type="hidden" name="assessmentId" value={assessmentId} />
-        <input type="hidden" name="controlId" value={controlId} />
-
-        <fieldset>
-          <legend className="mb-2 text-sm font-semibold text-[#10231d]">
-            Status
-          </legend>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {(
-              [
-                {
-                  v: "yes",
-                  label: "Met",
-                  desc: "We do this and we have evidence.",
-                },
-                {
-                  v: "partial",
-                  label: "Partial",
-                  desc: "Some places, not everywhere.",
-                },
-                {
-                  v: "no",
-                  label: "Not met",
-                  desc: "We don't do this yet.",
-                },
-                {
-                  v: "not_applicable",
-                  label: "N/A",
-                  desc: "Genuinely doesn't apply.",
-                },
-              ] as Array<{ v: string; label: string; desc: string }>
-            ).map((opt) => (
-              <label
-                key={opt.v}
-                className={`flex cursor-pointer items-start gap-2 rounded-sm border px-3 py-2.5 transition-colors ${
-                  status === opt.v
-                    ? "border-[#0e2a23] bg-[#f7fcf9]"
-                    : "border-[#cfe3d9] bg-white hover:border-[#2f8f6d]"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="status"
-                  value={opt.v}
-                  checked={status === opt.v}
-                  onChange={() => setStatus(opt.v as typeof status)}
-                  className="mt-0.5 h-4 w-4 flex-none accent-[#0e2a23]"
-                />
-                <span className="block">
-                  <span className="text-sm font-bold text-[#10231d]">
-                    {opt.label}
-                  </span>
-                  <span className="mt-0.5 block text-xs text-[#5a7d70]">
-                    {opt.desc}
-                  </span>
-                </span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
-
-        <div>
-          <div className="mb-1.5 flex items-baseline justify-between">
-            <span className="text-sm font-semibold text-[#10231d]">
-              Narrative
-            </span>
-            <span className="text-xs text-[#5a7d70]">
-              {wordCount} word{wordCount === 1 ? "" : "s"}
-            </span>
-          </div>
-          {narrative.trim().length === 0 && !isNA && (
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-[#2f8f6d] bg-[#f7fcf9] px-4 py-3">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[#10231d]">
-                  Don&rsquo;t know where to start?
-                </p>
-                <p className="mt-0.5 text-xs leading-relaxed text-[#5a7d70]">
-                  We&rsquo;ll draft the paragraph from your quiz answers and
-                  uploaded evidence. You edit anything that&rsquo;s not quite
-                  right.
-                </p>
-              </div>
-              <button
-                type="submit"
-                form="suggest-narrative-form"
-                className="rounded-sm bg-[#2f8f6d] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#0e2a23]"
-              >
-                Draft this for me
-              </button>
-            </div>
-          )}
-          <textarea
-            name="narrative"
-            rows={7}
-            value={narrative}
-            onChange={(e) => setNarrative(e.target.value)}
-            placeholder={
-              isNA
-                ? "Briefly explain why this practice doesn't apply to your business."
-                : "Describe what you do, where, and how often. Reference the evidence you captured."
-            }
-            className="w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2.5 text-sm leading-relaxed text-[#10231d] outline-none transition-colors placeholder:text-[#7a9c90] focus:border-[#0e2a23]"
-          />
-        </div>
-
-        <ul className="grid gap-2 sm:grid-cols-2">
-          {checks.map((c, i) => (
-            <li
-              key={i}
-              className={`flex items-start gap-2 rounded-sm border px-3 py-2 text-xs leading-relaxed ${
-                c.ok
-                  ? "border-[#cfe3d9] bg-[#f7fcf9] text-[#10231d]"
-                  : "border-[#e5d6c2] bg-[#fdf8ef] text-[#5a7d70]"
-              }`}
-            >
-              <span
-                className={`mt-0.5 inline-flex h-4 w-4 flex-none items-center justify-center rounded-sm text-[10px] font-bold ${
-                  c.ok
-                    ? "bg-[#0e2a23] text-[#bdf2cf]"
-                    : "bg-white text-[#a06b1a] ring-1 ring-inset ring-[#e5d6c2]"
-                }`}
-              >
-                {c.ok ? "✓" : "•"}
-              </span>
-              <span className={c.ok ? "font-medium" : ""}>{c.label}</span>
-            </li>
-          ))}
-        </ul>
-
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={onBack}
-              className="rounded-sm border border-[#cfe3d9] bg-white px-4 py-2.5 text-sm font-semibold text-[#10231d] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
-            >
-              ← Back
-            </button>
-            <button
-              type="submit"
-              form="suggest-narrative-form"
-              className="rounded-sm border border-[#cfe3d9] bg-white px-4 py-2.5 text-sm font-semibold text-[#10231d] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
-            >
-              Fill with suggestion
-            </button>
-          </div>
-          <button
-            type="submit"
-            disabled={submitting || !allOk}
-            className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:opacity-40"
-          >
-            {submitting ? "Saving…" : "Save and review →"}
-          </button>
-        </div>
-      </form>
-
-      <form
-        id="suggest-narrative-form"
-        action={useSuggestedNarrativeAction}
-        className="hidden"
-      >
-        <input type="hidden" name="assessmentId" value={assessmentId} />
-        <input type="hidden" name="controlId" value={controlId} />
-      </form>
-
-      {evidence.length === 0 && !isNA && (
-        <p className="mt-4 text-xs text-[#5a7d70]">
-          Tip: jump back to step 2 to attach evidence first — it makes a much
-          stronger narrative.
-        </p>
-      )}
-    </div>
-  );
-}
-
-/* ============================ STEP 4: DONE ================================ */
-
-function DoneStep({
+function ProviderReference({
   practice,
-  response,
-  evidence,
-  assessmentId,
-  controlId,
-  nextId,
-  prevId,
-  remediationPlan,
-  upsertRemediationPlanAction,
-  onEdit,
 }: {
   practice: Omit<ControlPlaybook, "suggestedNarrative">;
-  response: ControlResponseRow;
-  evidence: EvidenceArtifactRow[];
-  assessmentId: string;
-  controlId: string;
-  nextId: string | null;
-  prevId: string | null;
-  remediationPlan: RemediationPlanRow | null;
-  upsertRemediationPlanAction: (formData: FormData) => Promise<void> | void;
-  onEdit: () => void;
 }) {
-  const sufficientCount = evidence.filter(
-    (e) => e.ai_review_verdict === "sufficient",
-  ).length;
-  const isNA = response.status === "not_applicable";
-  const isComplete =
-    response.status !== "unanswered" &&
-    (response.narrative ?? "").trim().length >= 20 &&
-    (isNA || evidence.length > 0);
-
-  const needsRemediation =
-    response.status === "no" || response.status === "partial";
-
+  const [open, setOpen] = useState<EvidenceProvider | null>(null);
+  const providers = practice.providerGuidance;
+  const active = open ? providers.find((p) => p.provider === open) : null;
   return (
-    <div>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
-        Step 4 of 4
-      </p>
-      <h2 className="mt-1 text-2xl font-bold tracking-tight text-[#10231d]">
-        {isComplete ? "Locked in" : "Almost there"}
-      </h2>
-      <p className="mt-2 text-sm leading-relaxed text-[#5a7d70]">
-        {isComplete
-          ? "Nice work. This practice is ready for your annual affirmation."
-          : "A few things still need finishing — jump back to fix them."}
-      </p>
-
-      <dl className="mt-5 divide-y divide-[#e4eee8] rounded-sm border border-[#cfe3d9]">
-        <div className="flex items-baseline justify-between gap-3 px-4 py-3">
-          <dt className="text-xs font-semibold uppercase tracking-wider text-[#5a7d70]">
-            Status
-          </dt>
-          <dd className="text-sm font-bold text-[#10231d]">
-            {STATUS_LABELS[response.status] ?? "Not answered"}
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-3 px-4 py-3">
-          <dt className="text-xs font-semibold uppercase tracking-wider text-[#5a7d70]">
-            Evidence
-          </dt>
-          <dd className="text-sm text-[#10231d]">
-            {isNA
-              ? "—"
-              : `${evidence.length} file${evidence.length === 1 ? "" : "s"} (${sufficientCount} sufficient)`}
-          </dd>
-        </div>
-        <div className="px-4 py-3">
-          <dt className="text-xs font-semibold uppercase tracking-wider text-[#5a7d70]">
-            Narrative
-          </dt>
-          <dd className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-[#10231d]">
-            {response.narrative || "—"}
-          </dd>
-        </div>
-      </dl>
-
-      {needsRemediation && !remediationPlan && (
-        <RemediationInline
-          assessmentId={assessmentId}
-          controlId={controlId}
-          plan={remediationPlan}
-          status={response.status}
-          upsertRemediationPlanAction={upsertRemediationPlanAction}
-        />
-      )}
-
-      {remediationPlan && (
-        <RemediationInline
-          assessmentId={assessmentId}
-          controlId={controlId}
-          plan={remediationPlan}
-          status={response.status}
-          upsertRemediationPlanAction={upsertRemediationPlanAction}
-        />
-      )}
-
-      {practice.commonGotchas.length > 0 && (
-        <details className="mt-5 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9]">
-          <summary className="cursor-pointer px-4 py-2.5 text-sm font-semibold text-[#10231d]">
-            Common gotchas auditors look for
-          </summary>
-          <ul className="list-disc space-y-1.5 px-8 pb-3 pt-1 text-sm text-[#10231d]">
-            {practice.commonGotchas.map((g, i) => (
-              <li key={i}>{g}</li>
-            ))}
-          </ul>
-        </details>
-      )}
-
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={onEdit}
-          className="rounded-sm border border-[#cfe3d9] bg-white px-4 py-2.5 text-sm font-semibold text-[#10231d] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
-        >
-          Edit answers
-        </button>
-        <div className="flex flex-wrap gap-2">
-          {prevId && (
-            <Link
-              href={`/assessments/${assessmentId}/controls/${prevId}`}
-              className="rounded-sm border border-[#cfe3d9] bg-white px-4 py-2.5 text-sm font-semibold text-[#10231d] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
+    <details className="mt-6 rounded-md border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+      <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-[#10231d]">
+        How to capture this in your tools (M365, Workspace, AWS&hellip;)
+      </summary>
+      <div className="border-t border-[#cfe3d9] p-4">
+        <div className="flex flex-wrap gap-1.5">
+          {providers.map((p) => (
+            <button
+              key={p.provider}
+              type="button"
+              onClick={() => setOpen(open === p.provider ? null : p.provider)}
+              className={`rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors ${
+                open === p.provider
+                  ? "bg-[#0e2a23] text-[#bdf2cf]"
+                  : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
+              }`}
             >
-              ← Previous practice
-            </Link>
-          )}
-          {nextId ? (
-            <Link
-              href={`/assessments/${assessmentId}/controls/${nextId}`}
-              className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
-            >
-              Next practice →
-            </Link>
-          ) : (
-            <Link
-              href={`/assessments/${assessmentId}`}
-              className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
-            >
-              Back to overview →
-            </Link>
-          )}
+              {providerLabel[p.provider]}
+            </button>
+          ))}
         </div>
+        {active && (
+          <div className="mt-4 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] p-4">
+            <ol className="list-decimal space-y-1 pl-5 text-sm leading-relaxed text-[#10231d]">
+              {active.steps.map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
+            </ol>
+            <p className="mt-3 text-xs leading-relaxed text-[#5a7d70]">
+              <span className="font-semibold text-[#10231d]">Capture: </span>
+              {active.capture}
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {active.adminUrl && (
+                <a
+                  href={active.adminUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-sm bg-[#0e2a23] px-3 py-1.5 text-xs font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+                >
+                  Open in {providerLabel[active.provider]} &#x2197;
+                </a>
+              )}
+              {active.template && (
+                <a
+                  href={`/templates/${active.template.filename}`}
+                  download
+                  className="rounded-sm border border-[#cfe3d9] bg-white px-3 py-1.5 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
+                >
+                  Download template &middot; {active.template.label}
+                </a>
+              )}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
+    </details>
   );
 }
 
-/* ====================== INLINE REMEDIATION (Done step) ==================== */
+/* ============================ REMEDIATION ================================= */
 
 const REMEDIATION_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
-  { value: "open", label: "Open - not started" },
+  { value: "open", label: "Open" },
   { value: "in_progress", label: "In progress" },
+  { value: "blocked", label: "Blocked" },
   { value: "closed", label: "Closed" },
-  { value: "abandoned", label: "Abandoned" },
 ];
 
 function RemediationInline({
@@ -1270,7 +818,7 @@ function RemediationInline({
     status === "no"
       ? "This practice is Not met. Document a remediation plan with a target close date."
       : status === "partial"
-        ? "This practice is Partial. CMMC L1 has no half-credit - close the gap to Met before signing."
+        ? "This practice is Partial. CMMC L1 has no half-credit \u2014 close the gap to Met before signing."
         : "Plan retained for the record.";
 
   return (
@@ -1282,7 +830,8 @@ function RemediationInline({
         Remediation plan
         {plan && (
           <span className="ml-2 text-xs font-medium text-[#a06b1a]">
-            &middot; {plan.status.replace("_", " ")} &middot; target {plan.target_close_date}
+            &middot; {plan.status.replace("_", " ")} &middot; target{" "}
+            {plan.target_close_date}
           </span>
         )}
       </summary>

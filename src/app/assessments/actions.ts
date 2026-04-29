@@ -159,6 +159,7 @@ export async function uploadEvidenceAction(formData: FormData) {
   const assessmentId = String(formData.get("assessmentId") ?? "");
   const controlId = String(formData.get("controlId") ?? "");
   const file = formData.get("file");
+  const questionId = String(formData.get("questionId") ?? "").trim();
 
   if (!playbookById[controlId]) throw new Error("Unknown control");
   if (!(file instanceof File) || file.size === 0) {
@@ -171,7 +172,13 @@ export async function uploadEvidenceAction(formData: FormData) {
   const ctx = await getAssessmentForUser(assessmentId, userId);
   if (!ctx) throw new Error("Not found");
 
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]+/g, "_");
+  // Tag the stored filename with the originating quiz question id so the
+  // UI can pair each upload with the question it answers. Format:
+  // `[q:<id>]__<original>`. The display name is reconstructed client-side.
+  const taggedName = questionId
+    ? `[q:${questionId}]__${file.name}`
+    : file.name;
+  const safeName = taggedName.replace(/[^a-zA-Z0-9._\[\]:-]+/g, "_");
   const pathname = `evidence/${assessmentId}/${controlId}/${Date.now()}-${safeName}`;
 
   const blob = await put(pathname, file, {
@@ -185,7 +192,7 @@ export async function uploadEvidenceAction(formData: FormData) {
     INSERT INTO evidence_artifacts
       (assessment_id, control_id, filename, blob_url, mime_type, size_bytes, uploaded_by_user_id)
     VALUES
-      (${assessmentId}, ${controlId}, ${file.name}, ${blob.url},
+      (${assessmentId}, ${controlId}, ${taggedName}, ${blob.url},
        ${file.type || null}, ${file.size}, ${userId})
     RETURNING id
   `) as Array<{ id: string }>;

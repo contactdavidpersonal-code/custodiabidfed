@@ -6,6 +6,8 @@ type Props = {
   action: (formData: FormData) => Promise<void> | void;
   assessmentId: string;
   controlId: string;
+  questionId?: string;
+  compact?: boolean;
 };
 
 const ACCEPT =
@@ -13,7 +15,13 @@ const ACCEPT =
 
 const MAX_BYTES = 25 * 1024 * 1024;
 
-export function EvidenceDropzone({ action, assessmentId, controlId }: Props) {
+export function EvidenceDropzone({
+  action,
+  assessmentId,
+  controlId,
+  questionId,
+  compact,
+}: Props) {
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
@@ -69,6 +77,9 @@ export function EvidenceDropzone({ action, assessmentId, controlId }: Props) {
     >
       <input type="hidden" name="assessmentId" value={assessmentId} />
       <input type="hidden" name="controlId" value={controlId} />
+      {questionId && (
+        <input type="hidden" name="questionId" value={questionId} />
+      )}
 
       <div
         onDrop={onDrop}
@@ -84,7 +95,9 @@ export function EvidenceDropzone({ action, assessmentId, controlId }: Props) {
             inputRef.current?.click();
           }
         }}
-        className={`relative cursor-pointer rounded-md border border-dashed px-6 py-8 transition-colors ${
+        className={`relative cursor-pointer rounded-md border border-dashed transition-colors ${
+          compact ? "px-4 py-5" : "px-6 py-8"
+        } ${
           dragActive
             ? "border-[#2f8f6d] bg-[#eaf3ee]"
             : file
