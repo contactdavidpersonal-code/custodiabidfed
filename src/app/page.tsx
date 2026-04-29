@@ -198,13 +198,13 @@ export default function Home() {
               6&ndash;7 Figures
             </span>{" "}
             in Federal Revenue
-            <br className="hidden md:block" />
-            <span className="text-[#cce5da]">
-              {" "}&mdash; Without a Compliance Team, an RFP Chase, or a Single Disruption to Their Operations.
-            </span>
           </h1>
 
-          <p className="mx-auto mt-8 max-w-3xl text-lg leading-relaxed text-[#a8cfc0] md:text-xl">
+          <p className="mx-auto mt-6 max-w-3xl font-serif text-xl italic leading-snug text-[#cce5da] md:text-2xl">
+            &mdash; Without a Compliance Team, an RFP Chase, or a Single Disruption to Their Operations.
+          </p>
+
+          <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-[#a8cfc0] md:text-lg">
             Custodia walks you through CMMC Level&nbsp;1 in plain English, hands you a bid-ready package no prime can pick apart, and then emails you matched contract opportunities every Monday morning &mdash; until you win one. <span className="font-semibold text-white">One award covers years of subscription.</span> Build the entire package free; pay only when you&apos;re ready to bid.
           </p>
 
