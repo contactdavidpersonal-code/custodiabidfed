@@ -23,6 +23,7 @@ import {
   setResponseCarryStatus,
   upsertRemediationPlan,
 } from "@/lib/assessment";
+import { stampFreshnessOnInsert } from "@/lib/freshness";
 import {
   carryForwardStatuses,
   remediationStatuses,
@@ -197,6 +198,20 @@ export async function uploadEvidenceAction(formData: FormData) {
     RETURNING id
   `) as Array<{ id: string }>;
   const artifactId = inserted[0].id;
+
+  // Tag freshness class + default valid_until based on the filename / mime
+  // type so the watchtower cron can email the user before this artifact
+  // expires. Best-effort: a failure here is logged but does not block the
+  // upload.
+  try {
+    await stampFreshnessOnInsert({
+      artifactId,
+      filename: file.name,
+      mimeType: file.type || null,
+    });
+  } catch (err) {
+    console.error("stampFreshnessOnInsert threw:", err);
+  }
 
   // Every upload is reviewed immediately — see feedback_evidence_gating.md.
   // We block the action until the review returns so the user sees the verdict

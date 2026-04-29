@@ -8,6 +8,14 @@
     {
       "path": "/api/cron/milestone-reminders",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/evidence-freshness",
+      "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/sam-radar",
+      "schedule": "0 13 * * 1"
     }
   ]
 }

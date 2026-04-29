@@ -8,6 +8,8 @@ type Props = {
   masterCapability: string;
   masterDifferentiators: string;
   tailorAction: (formData: FormData) => Promise<TailorResult>;
+  initialOpportunity?: string;
+  initialOpportunityLabel?: string;
 };
 
 /**
@@ -25,9 +27,13 @@ export function TailorForm({
   masterCapability,
   masterDifferentiators,
   tailorAction,
+  initialOpportunity = "",
+  initialOpportunityLabel = "",
 }: Props) {
-  const [opportunity, setOpportunity] = useState("");
-  const [opportunityLabel, setOpportunityLabel] = useState("");
+  const [opportunity, setOpportunity] = useState(initialOpportunity);
+  const [opportunityLabel, setOpportunityLabel] = useState(
+    initialOpportunityLabel,
+  );
   const [capability, setCapability] = useState("");
   const [differentiators, setDifferentiators] = useState("");
   const [drafted, setDrafted] = useState(false);

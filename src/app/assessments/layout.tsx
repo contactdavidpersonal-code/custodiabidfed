@@ -34,6 +34,18 @@ export default async function AssessmentsLayout({
           </Link>
           <nav className="flex items-center gap-3 text-sm">
             <Link
+              href="/opportunities"
+              className="rounded-sm px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
+            >
+              Opportunities
+            </Link>
+            <Link
+              href="/profile/bid-ready"
+              className="rounded-sm px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
+            >
+              Bid profile
+            </Link>
+            <Link
               href="/"
               className="rounded-sm px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
             >

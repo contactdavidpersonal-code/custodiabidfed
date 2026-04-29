@@ -1,0 +1,371 @@
+import { getSql } from "@/lib/db";
+import { loadBidProfile } from "@/lib/bid-profile";
+
+/**
+ * SAM.gov opportunity radar.
+ *
+ * The Mondays loop: a weekly Resend digest of new SAM.gov opportunities
+ * matched to each org's NAICS codes + set-asides, with one-click deeplinks
+ * into the per-opportunity tailor flow. Even when an org isn't in the middle
+ * of a bid, the digest pulls them back into the app — the highest-leverage
+ * retention surface we have.
+ *
+ * Implementation:
+ *   - SAM.gov v2 Opportunities API (https://api.sam.gov/opportunities/v2/search)
+ *   - Requires SAM_GOV_API_KEY (free, register at api.data.gov).
+ *   - We fetch posted-since-7d, filter by NAICS, store new notice_ids
+ *     idempotently, then return the freshly-inserted rows so the cron can
+ *     digest them.
+ */
+
+const SAM_API_BASE = "https://api.sam.gov/opportunities/v2/search";
+
+export type SamOpportunity = {
+  noticeId: string;
+  title: string;
+  department: string | null;
+  subTier: string | null;
+  office: string | null;
+  type: string | null;
+  naicsCode: string | null;
+  setAside: string | null;
+  responseDeadline: string | null;
+  postedDate: string | null;
+  samUrl: string | null;
+  description: string | null;
+  raw: Record<string, unknown>;
+};
+
+type FetchInput = {
+  naicsCodes: string[];
+  setAsideCodes?: string[];
+  postedFromDays?: number; // default 7
+  limit?: number; // default 50 per call
+};
+
+/**
+ * Fetch raw opportunities from SAM.gov for a single NAICS list. SAM's filter
+ * accepts ONE naics at a time per call; we chain in the caller.
+ */
+async function fetchPageForNaics(
+  apiKey: string,
+  naics: string,
+  postedFromDays: number,
+  limit: number,
+): Promise<SamOpportunity[]> {
+  const postedFrom = mmddyyyy(daysAgo(postedFromDays));
+  const postedTo = mmddyyyy(new Date());
+  const url = new URL(SAM_API_BASE);
+  url.searchParams.set("api_key", apiKey);
+  url.searchParams.set("postedFrom", postedFrom);
+  url.searchParams.set("postedTo", postedTo);
+  url.searchParams.set("ncode", naics);
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("offset", "0");
+  // Active opportunities only.
+  url.searchParams.set("active", "true");
+
+  const res = await fetch(url.toString(), {
+    headers: { Accept: "application/json" },
+    // SAM responses are large but stale-by-week is fine.
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`SAM.gov ${res.status}: ${body.slice(0, 200)}`);
+  }
+  const json = (await res.json()) as {
+    opportunitiesData?: Array<Record<string, unknown>>;
+  };
+  const data = json.opportunitiesData ?? [];
+  return data.map(mapOpportunity);
+}
+
+function mapOpportunity(o: Record<string, unknown>): SamOpportunity {
+  const str = (k: string): string | null => {
+    const v = o[k];
+    return typeof v === "string" && v.trim() ? v : null;
+  };
+  const placeOfPerf = o.placeOfPerformance as
+    | Record<string, unknown>
+    | undefined;
+  void placeOfPerf;
+  return {
+    noticeId: String(o.noticeId ?? o.solicitationNumber ?? cryptoFallback()),
+    title: typeof o.title === "string" ? o.title : "(untitled)",
+    department: str("department") ?? str("fullParentPathName"),
+    subTier: str("subTier"),
+    office: str("office"),
+    type: str("type"),
+    naicsCode: str("naicsCode"),
+    setAside: str("typeOfSetAsideDescription") ?? str("typeOfSetAside"),
+    responseDeadline: str("responseDeadLine"),
+    postedDate: str("postedDate"),
+    samUrl: str("uiLink"),
+    description: str("description"),
+    raw: o,
+  };
+}
+
+function daysAgo(d: number): Date {
+  const x = new Date();
+  x.setDate(x.getDate() - d);
+  return x;
+}
+
+function mmddyyyy(d: Date): string {
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${m}/${day}/${d.getFullYear()}`;
+}
+
+function cryptoFallback(): string {
+  return `unknown-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/**
+ * Fetch opportunities matching an org's NAICS codes (one API call per NAICS).
+ * Skips orgs with no NAICS configured.
+ */
+export async function fetchOpportunitiesForOrg(args: {
+  apiKey: string;
+  naicsCodes: string[];
+  postedFromDays?: number;
+}): Promise<SamOpportunity[]> {
+  if (args.naicsCodes.length === 0) return [];
+  const seen = new Set<string>();
+  const merged: SamOpportunity[] = [];
+  for (const code of args.naicsCodes.slice(0, 5)) {
+    try {
+      const page = await fetchPageForNaics(
+        args.apiKey,
+        code.trim(),
+        args.postedFromDays ?? 7,
+        50,
+      );
+      for (const o of page) {
+        if (seen.has(o.noticeId)) continue;
+        seen.add(o.noticeId);
+        merged.push(o);
+      }
+    } catch (err) {
+      console.error(
+        `[sam-radar] fetch for naics=${code} failed:`,
+        err,
+      );
+    }
+  }
+  return merged;
+}
+
+/**
+ * Insert opportunities for an org. Returns the rows that were freshly inserted
+ * (not previously seen). Idempotent on (organization_id, notice_id).
+ */
+export async function persistOpportunities(args: {
+  organizationId: string;
+  opportunities: SamOpportunity[];
+  setAsideCodes: string[];
+}): Promise<
+  Array<{
+    id: string;
+    notice_id: string;
+    title: string;
+    department: string | null;
+    naics_code: string | null;
+    set_aside: string | null;
+    response_deadline: string | null;
+    sam_url: string | null;
+    description: string | null;
+  }>
+> {
+  if (args.opportunities.length === 0) return [];
+  const sql = getSql();
+  const inserted: Array<{
+    id: string;
+    notice_id: string;
+    title: string;
+    department: string | null;
+    naics_code: string | null;
+    set_aside: string | null;
+    response_deadline: string | null;
+    sam_url: string | null;
+    description: string | null;
+  }> = [];
+  for (const o of args.opportunities) {
+    const matchedOn = {
+      naics: o.naicsCode,
+      set_asides: args.setAsideCodes,
+    };
+    const rows = (await sql`
+      INSERT INTO sam_opportunities
+        (organization_id, notice_id, title, department, sub_tier, office,
+         type, naics_code, set_aside, response_deadline, posted_date,
+         sam_url, description, raw, matched_on)
+      VALUES
+        (${args.organizationId}, ${o.noticeId}, ${o.title}, ${o.department},
+         ${o.subTier}, ${o.office}, ${o.type}, ${o.naicsCode}, ${o.setAside},
+         ${o.responseDeadline ? new Date(o.responseDeadline) : null},
+         ${o.postedDate ? new Date(o.postedDate) : null},
+         ${o.samUrl}, ${o.description},
+         ${JSON.stringify(o.raw)}::jsonb,
+         ${JSON.stringify(matchedOn)}::jsonb)
+      ON CONFLICT (organization_id, notice_id) DO NOTHING
+      RETURNING id, notice_id, title, department, naics_code, set_aside,
+                to_char(response_deadline, 'YYYY-MM-DD') AS response_deadline,
+                sam_url, description
+    `) as Array<{
+      id: string;
+      notice_id: string;
+      title: string;
+      department: string | null;
+      naics_code: string | null;
+      set_aside: string | null;
+      response_deadline: string | null;
+      sam_url: string | null;
+      description: string | null;
+    }>;
+    if (rows.length > 0) inserted.push(rows[0]);
+  }
+  return inserted;
+}
+
+export type RadarTargetOrg = {
+  organization_id: string;
+  org_name: string;
+  owner_user_id: string;
+  naics_codes: string[];
+  set_aside_codes: string[];
+};
+
+/**
+ * Pull the list of orgs to scan + their match keys. We pull NAICS from
+ * `organizations.naics_codes` and set-asides from the bid_ready profile
+ * (set_asides field). Orgs without NAICS are skipped at fetch time.
+ */
+export async function listRadarTargets(): Promise<RadarTargetOrg[]> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT id, name, owner_user_id, naics_codes
+    FROM organizations
+  `) as Array<{
+    id: string;
+    name: string;
+    owner_user_id: string;
+    naics_codes: string[] | null;
+  }>;
+  const out: RadarTargetOrg[] = [];
+  for (const r of rows) {
+    const profile = await loadBidProfile(r.id).catch(() => null);
+    out.push({
+      organization_id: r.id,
+      org_name: r.name,
+      owner_user_id: r.owner_user_id,
+      naics_codes: r.naics_codes ?? [],
+      set_aside_codes: profile?.set_asides ?? [],
+    });
+  }
+  return out;
+}
+
+export type OpportunityRow = {
+  id: string;
+  notice_id: string;
+  title: string;
+  department: string | null;
+  sub_tier: string | null;
+  office: string | null;
+  type: string | null;
+  naics_code: string | null;
+  set_aside: string | null;
+  response_deadline: string | null;
+  posted_date: string | null;
+  sam_url: string | null;
+  description: string | null;
+  seen_at: string;
+  viewed_at: string | null;
+  dismissed_at: string | null;
+};
+
+export async function listOpportunitiesForOrg(args: {
+  organizationId: string;
+  includeDismissed?: boolean;
+  limit?: number;
+}): Promise<OpportunityRow[]> {
+  const sql = getSql();
+  const limit = args.limit ?? 50;
+  if (args.includeDismissed) {
+    return (await sql`
+      SELECT id, notice_id, title, department, sub_tier, office, type,
+             naics_code, set_aside,
+             to_char(response_deadline, 'YYYY-MM-DD') AS response_deadline,
+             to_char(posted_date, 'YYYY-MM-DD')      AS posted_date,
+             sam_url, description,
+             to_char(seen_at, 'YYYY-MM-DD')          AS seen_at,
+             to_char(viewed_at, 'YYYY-MM-DD')        AS viewed_at,
+             to_char(dismissed_at, 'YYYY-MM-DD')     AS dismissed_at
+      FROM sam_opportunities
+      WHERE organization_id = ${args.organizationId}
+      ORDER BY seen_at DESC
+      LIMIT ${limit}
+    `) as OpportunityRow[];
+  }
+  return (await sql`
+    SELECT id, notice_id, title, department, sub_tier, office, type,
+           naics_code, set_aside,
+           to_char(response_deadline, 'YYYY-MM-DD') AS response_deadline,
+           to_char(posted_date, 'YYYY-MM-DD')      AS posted_date,
+           sam_url, description,
+           to_char(seen_at, 'YYYY-MM-DD')          AS seen_at,
+           to_char(viewed_at, 'YYYY-MM-DD')        AS viewed_at,
+           to_char(dismissed_at, 'YYYY-MM-DD')     AS dismissed_at
+    FROM sam_opportunities
+    WHERE organization_id = ${args.organizationId}
+      AND dismissed_at IS NULL
+    ORDER BY seen_at DESC
+    LIMIT ${limit}
+  `) as OpportunityRow[];
+}
+
+export async function dismissOpportunity(args: {
+  organizationId: string;
+  opportunityId: string;
+}): Promise<void> {
+  const sql = getSql();
+  await sql`
+    UPDATE sam_opportunities
+    SET dismissed_at = NOW()
+    WHERE id = ${args.opportunityId}
+      AND organization_id = ${args.organizationId}
+  `;
+}
+
+export async function markOpportunityViewed(args: {
+  organizationId: string;
+  opportunityId: string;
+}): Promise<void> {
+  const sql = getSql();
+  await sql`
+    UPDATE sam_opportunities
+    SET viewed_at = COALESCE(viewed_at, NOW())
+    WHERE id = ${args.opportunityId}
+      AND organization_id = ${args.organizationId}
+  `;
+}
+
+export async function markOpportunitiesDigested(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const sql = getSql();
+  await sql`
+    UPDATE sam_opportunities
+    SET digested_at = NOW()
+    WHERE id = ANY(${ids}::uuid[])
+  `;
+}
+
+export function truncateDescription(s: string | null, max = 220): string {
+  if (!s) return "";
+  const stripped = s.replace(/\s+/g, " ").trim();
+  if (stripped.length <= max) return stripped;
+  return stripped.slice(0, max - 1).trimEnd() + "…";
+}

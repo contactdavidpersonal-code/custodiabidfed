@@ -548,4 +548,78 @@ export async function initDb() {
       remediation_notes TEXT
     )
   `;
+
+  // Evidence freshness — every artifact has a valid-until date and a class
+  // (cert / scan / screenshot / training / policy / misc) that determines the
+  // default lifetime. Cron `/api/cron/evidence-freshness` emails the org owner
+  // when artifacts approach or pass their valid_until. Default lifetimes are
+  // applied at INSERT time by INSERT...SELECT in lib/freshness.ts; existing
+  // rows are backfilled here once.
+  await sql`
+    ALTER TABLE evidence_artifacts
+      ADD COLUMN IF NOT EXISTS valid_until DATE
+  `;
+  await sql`
+    ALTER TABLE evidence_artifacts
+      ADD COLUMN IF NOT EXISTS freshness_class TEXT
+  `;
+  await sql`
+    ALTER TABLE evidence_artifacts
+      ADD COLUMN IF NOT EXISTS staleness_notified_at TIMESTAMPTZ
+  `;
+  // Backfill: any pre-existing artifact gets captured_at + 365d as a safe
+  // default. The freshness lib will refine class on next user interaction.
+  await sql`
+    UPDATE evidence_artifacts
+    SET valid_until = (captured_at + INTERVAL '365 days')::date
+    WHERE valid_until IS NULL
+  `;
+  await sql`
+    UPDATE evidence_artifacts
+    SET freshness_class = 'misc'
+    WHERE freshness_class IS NULL
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_evidence_valid_until
+      ON evidence_artifacts (valid_until)
+  `;
+
+  // SAM.gov radar — per-org cache of opportunities matched to NAICS / set-aside
+  // filters. Cron `/api/cron/sam-radar` populates this weekly and emails a
+  // digest. The `dismissed_at` and `viewed_at` columns let the inbox UI hide
+  // ones the user has already triaged.
+  await sql`
+    CREATE TABLE IF NOT EXISTS sam_opportunities (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      notice_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      department TEXT,
+      sub_tier TEXT,
+      office TEXT,
+      type TEXT,
+      naics_code TEXT,
+      set_aside TEXT,
+      response_deadline TIMESTAMPTZ,
+      posted_date TIMESTAMPTZ,
+      sam_url TEXT,
+      description TEXT,
+      raw JSONB NOT NULL DEFAULT '{}'::jsonb,
+      matched_on JSONB NOT NULL DEFAULT '{}'::jsonb,
+      seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      viewed_at TIMESTAMPTZ,
+      dismissed_at TIMESTAMPTZ,
+      digested_at TIMESTAMPTZ,
+      UNIQUE (organization_id, notice_id)
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_sam_opps_org_seen
+      ON sam_opportunities (organization_id, seen_at DESC)
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_sam_opps_org_open
+      ON sam_opportunities (organization_id)
+      WHERE dismissed_at IS NULL
+  `;
 }
