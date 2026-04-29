@@ -238,7 +238,7 @@ export default function Home() {
           </div>
 
           <p className="mt-5 text-xs font-medium tracking-wide text-[#7aab98]">
-            Free forever &middot; No credit card &middot; Cancel anytime &middot; First matched opportunity emails as soon as next Monday
+            No credit card required &middot; 5-day free trial &middot; Cancel anytime
           </p>
 
           {/* Below-headline outcome line — sets expectation for what's next */}
