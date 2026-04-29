@@ -22,6 +22,13 @@ import {
   frameworkCitations,
   lookupCitation,
 } from "@/lib/regulations";
+import {
+  dismissOpportunity,
+  listOpportunitiesForOrg,
+  SamApiKeyError,
+  searchSamOpportunities,
+  type SamOpportunity,
+} from "@/lib/sam-radar";
 
 /**
  * Tools the left-rail compliance officer can call. Kept deliberately small
@@ -187,6 +194,98 @@ export const officerTools = [
     },
   },
   {
+    name: "search_sam_opportunities",
+    description:
+      "Live search of SAM.gov for federal contract opportunities. Use this whenever the user asks 'what contracts are out there', 'find me opportunities', 'search for X work', 'what's coming up in [agency/keyword]', or wants to research outside the weekly digest. The Platform's SAM.gov API key is shared — the user does not need to supply one. If `naics_codes` is omitted, the org's stored NAICS are used by default. Returns up to 25 active solicitations with title, agency, NAICS, set-aside, deadline, and the SAM.gov deeplink. Always call this BEFORE recommending opportunities — never invent notice IDs or solicitation numbers.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        naics_codes: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Optional NAICS codes to search. If omitted, defaults to the org's stored NAICS list. Pass an empty array [] to search across ALL NAICS (used with a keyword).",
+        },
+        keyword: {
+          type: "string",
+          description:
+            "Optional title keyword filter (case-insensitive). E.g. 'cyber', 'lawn maintenance', 'AI'. Use when the user asks about a specific kind of work.",
+        },
+        set_aside: {
+          type: "string",
+          description:
+            "Optional SAM set-aside code: SBA (Small Business), SDVOSBC (SDVOSB), WOSB, EDWOSB, HZC (HUBZone), 8A, IEE (Indian Economic Enterprise), ISBEE (Indian Small Business). Use when the user wants only socioeconomic set-asides they qualify for.",
+        },
+        posted_within_days: {
+          type: "number",
+          description:
+            "How recent the postings must be (default 14, max 90). Increase for slow-moving NAICS, decrease for very fresh.",
+        },
+        limit: {
+          type: "number",
+          description: "Max results to return (default 25, max 50).",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "list_inbox_opportunities",
+    description:
+      "Read the user's already-radared opportunities saved in the platform inbox (from prior weekly digests). Use when the user says 'what did you send me', 'what's in my inbox', 'show me last week's matches', or wants to revisit something they saw before. Faster than search_sam_opportunities and reflects exactly what the user has on the /opportunities page.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        include_dismissed: {
+          type: "boolean",
+          description:
+            "If true, include opportunities the user already cleared. Default false.",
+        },
+        limit: {
+          type: "number",
+          description: "Max rows to return (default 25, max 100).",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "analyze_opportunity_fit",
+    description:
+      "Pull the full structured detail for a single opportunity (description, deadline, set-aside, place of performance, NAICS) so you can give the user a fit analysis: does the org's profile match? what evidence/capabilities do they need? is the deadline realistic? what's the past-performance gap? Call this BEFORE giving any 'should we bid' opinion. Accepts either a SAM notice ID (when the opp was returned by search_sam_opportunities) or an inbox row UUID.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        notice_id: {
+          type: "string",
+          description:
+            "SAM.gov notice_id (returned by search_sam_opportunities or visible on the opportunity card).",
+        },
+        inbox_id: {
+          type: "string",
+          description:
+            "UUID of a row from list_inbox_opportunities. Use this for items already saved to the user's platform inbox.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "dismiss_opportunity",
+    description:
+      "Clear an opportunity from the user's inbox once they've decided it isn't a fit. Only call this when the user explicitly says 'not interested', 'skip that one', 'remove from my list'. The dismissal is reversible from the in-app inbox.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        inbox_id: {
+          type: "string",
+          description: "UUID of the inbox row (from list_inbox_opportunities).",
+        },
+      },
+      required: ["inbox_id"],
+    },
+  },
+  {
     name: "escalate_to_officer",
     description:
       "Flag a request for a human Custodia officer (Bootcamp / Command tier). Use when the user's situation needs judgment beyond L1 self-serve — e.g. a prime is demanding an SSP rewrite, a guarantee claim dispute, CUI handling outside L1 scope, or they explicitly ask for human help.",
@@ -256,6 +355,14 @@ export async function executeOfficerTool(
         return await handleCiteRegulation(input);
       case "escalate_to_officer":
         return await handleEscalateToOfficer(input, ctx);
+      case "search_sam_opportunities":
+        return await handleSearchSamOpportunities(input, ctx);
+      case "list_inbox_opportunities":
+        return await handleListInboxOpportunities(input, ctx);
+      case "analyze_opportunity_fit":
+        return await handleAnalyzeOpportunityFit(input, ctx);
+      case "dismiss_opportunity":
+        return await handleDismissOpportunity(input, ctx);
       default:
         return { ok: false, error: `Unknown tool: ${name}` };
     }
@@ -633,3 +740,248 @@ async function handleCiteRegulation(
   }
   return { ok: true, data: citation };
 }
+
+/**
+ * Pull the org's stored NAICS codes — used as the default search basis when
+ * the user asks the AI to find opportunities without specifying NAICS.
+ */
+async function getOrgNaics(organizationId: string): Promise<string[]> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT naics_codes FROM organizations WHERE id = ${organizationId}
+  `) as Array<{ naics_codes: string[] | null }>;
+  return rows[0]?.naics_codes ?? [];
+}
+
+function summarizeOpportunity(o: SamOpportunity) {
+  return {
+    notice_id: o.noticeId,
+    title: o.title,
+    department: o.department,
+    sub_tier: o.subTier,
+    office: o.office,
+    type: o.type,
+    naics_code: o.naicsCode,
+    set_aside: o.setAside,
+    response_deadline: o.responseDeadline,
+    posted_date: o.postedDate,
+    sam_url: o.samUrl,
+    description_excerpt:
+      o.description && o.description.length > 600
+        ? o.description.slice(0, 600) + "…"
+        : o.description,
+  };
+}
+
+async function handleSearchSamOpportunities(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const apiKey = process.env.SAM_GOV_API_KEY;
+  if (!apiKey) {
+    return {
+      ok: false,
+      error:
+        "SAM.gov live search isn't configured on this server (missing SAM_GOV_API_KEY). The user should still see their weekly digest in /opportunities — direct them there.",
+    };
+  }
+
+  const naicsArg = Array.isArray(input.naics_codes)
+    ? (input.naics_codes as unknown[]).filter(
+        (x): x is string => typeof x === "string",
+      )
+    : null;
+  // null = caller didn't pass the field → use org default; [] = explicit "no NAICS filter"
+  const naicsCodes =
+    naicsArg === null ? await getOrgNaics(ctx.organizationId) : naicsArg;
+
+  const keyword = typeof input.keyword === "string" ? input.keyword : undefined;
+  const setAside = typeof input.set_aside === "string" ? input.set_aside : undefined;
+  const postedFromDays =
+    typeof input.posted_within_days === "number" ? input.posted_within_days : undefined;
+  const limit = typeof input.limit === "number" ? input.limit : undefined;
+
+  try {
+    const results = await searchSamOpportunities({
+      apiKey,
+      naicsCodes,
+      keyword,
+      setAside,
+      postedFromDays,
+      limit,
+    });
+
+    return {
+      ok: true,
+      data: {
+        query: {
+          naics_codes: naicsCodes,
+          keyword: keyword ?? null,
+          set_aside: setAside ?? null,
+          posted_within_days: postedFromDays ?? 14,
+          limit: limit ?? 25,
+        },
+        used_org_naics: naicsArg === null,
+        result_count: results.length,
+        results: results.map(summarizeOpportunity),
+      },
+    };
+  } catch (err) {
+    if (err instanceof SamApiKeyError) {
+      return {
+        ok: false,
+        error:
+          "SAM.gov rejected the platform API key. The Custodia team has been alerted; live search is temporarily unavailable. Please tell the user we'll have it back online shortly.",
+      };
+    }
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: `SAM.gov search failed: ${msg}` };
+  }
+}
+
+async function handleListInboxOpportunities(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const includeDismissed = input.include_dismissed === true;
+  const rawLimit = typeof input.limit === "number" ? input.limit : 25;
+  const limit = Math.min(Math.max(rawLimit, 1), 100);
+
+  const rows = await listOpportunitiesForOrg({
+    organizationId: ctx.organizationId,
+    includeDismissed,
+    limit,
+  });
+
+  return {
+    ok: true,
+    data: {
+      count: rows.length,
+      include_dismissed: includeDismissed,
+      opportunities: rows.map((r) => ({
+        inbox_id: r.id,
+        notice_id: r.notice_id,
+        title: r.title,
+        department: r.department,
+        naics_code: r.naics_code,
+        set_aside: r.set_aside,
+        response_deadline: r.response_deadline,
+        posted_date: r.posted_date,
+        seen_at: r.seen_at,
+        viewed_at: r.viewed_at,
+        dismissed_at: r.dismissed_at,
+        sam_url: r.sam_url,
+        description_excerpt:
+          r.description && r.description.length > 600
+            ? r.description.slice(0, 600) + "…"
+            : r.description,
+      })),
+    },
+  };
+}
+
+async function handleAnalyzeOpportunityFit(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const noticeId =
+    typeof input.notice_id === "string" ? input.notice_id.trim() : "";
+  const inboxId =
+    typeof input.inbox_id === "string" ? input.inbox_id.trim() : "";
+
+  if (!noticeId && !inboxId) {
+    return {
+      ok: false,
+      error: "Provide notice_id (from search results) or inbox_id (from saved digest).",
+    };
+  }
+
+  const sql = getSql();
+  // Try the inbox first — owned by this org by definition.
+  if (inboxId) {
+    const rows = (await sql`
+      SELECT id, notice_id, title, department, sub_tier, office, type,
+             naics_code, set_aside,
+             to_char(response_deadline, 'YYYY-MM-DD') AS response_deadline,
+             to_char(posted_date, 'YYYY-MM-DD')      AS posted_date,
+             sam_url, description, raw, matched_on
+      FROM sam_opportunities
+      WHERE id = ${inboxId} AND organization_id = ${ctx.organizationId}
+      LIMIT 1
+    `) as Array<Record<string, unknown>>;
+    if (rows[0]) {
+      return await augmentWithOrgFit(rows[0], ctx);
+    }
+  }
+
+  // Fall back to a SAM lookup by notice_id, scoped to org's history.
+  if (noticeId) {
+    const rows = (await sql`
+      SELECT id, notice_id, title, department, sub_tier, office, type,
+             naics_code, set_aside,
+             to_char(response_deadline, 'YYYY-MM-DD') AS response_deadline,
+             to_char(posted_date, 'YYYY-MM-DD')      AS posted_date,
+             sam_url, description, raw, matched_on
+      FROM sam_opportunities
+      WHERE notice_id = ${noticeId} AND organization_id = ${ctx.organizationId}
+      LIMIT 1
+    `) as Array<Record<string, unknown>>;
+    if (rows[0]) {
+      return await augmentWithOrgFit(rows[0], ctx);
+    }
+    // Last resort: fetch live from SAM (rare — happens when AI is analyzing
+    // a fresh search-result it hasn't saved yet).
+    return {
+      ok: false,
+      error: `Opportunity ${noticeId} isn't in this org's inbox yet. Tell the user to open it from the Monday digest or run search_sam_opportunities again — that returns the same fields.`,
+    };
+  }
+
+  return { ok: false, error: "No matching opportunity found." };
+}
+
+async function augmentWithOrgFit(
+  row: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const naics = await getOrgNaics(ctx.organizationId);
+  const profile = await getBusinessProfile(ctx.organizationId);
+
+  return {
+    ok: true,
+    data: {
+      opportunity: row,
+      org_context: {
+        naics_codes: naics,
+        business_profile_completeness: profile?.completeness_score ?? 0,
+        business_profile_keys: Object.keys(profile?.data ?? {}),
+      },
+      analysis_hint:
+        "Compare opportunity.naics_code against org_context.naics_codes (exact match strongest). Flag deadline urgency (<7 days = tight, <3 days = walk-away unless we already have evidence). Cross-reference set_aside against any socioeconomic certifications you've captured in business_profile. Then state plainly: GO / MAYBE / SKIP, with the top 2 reasons for each.",
+    },
+  };
+}
+
+async function handleDismissOpportunity(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const inboxId =
+    typeof input.inbox_id === "string" ? input.inbox_id.trim() : "";
+  if (!inboxId) return { ok: false, error: "inbox_id is required." };
+
+  await dismissOpportunity({
+    organizationId: ctx.organizationId,
+    opportunityId: inboxId,
+  });
+
+  return {
+    ok: true,
+    data: {
+      inbox_id: inboxId,
+      dismissed: true,
+      reversible_in: "/opportunities (toggle 'Show dismissed').",
+    },
+  };
+}
+

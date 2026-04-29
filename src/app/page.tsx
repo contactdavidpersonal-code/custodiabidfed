@@ -34,6 +34,7 @@ const FREE_INCLUDES = [
   "Read-only previews of your SSP and affirmation memo",
   "AI-drafted federal capability statement",
   "Weekly SAM.gov opportunity radar &mdash; matched to your NAICS",
+  "Ask the in-platform AI to search SAM.gov live &mdash; &lsquo;find me cyber contracts in 541512 closing in 30 days&rsquo;",
   "Fiscal compass: federal calendar &amp; milestone reminders",
 ];
 
@@ -757,6 +758,7 @@ export default function Home() {
                     "Sorted by closing date so you act on what&apos;s urgent first",
                     "Every email links straight into your in-app inbox &mdash; full history kept",
                     "One click: AI tailors your bid-ready packet to that specific solicitation",
+                    "Or skip the email and <b>ask the in-platform AI</b>: &lsquo;find me cyber contracts in 541512 closing in 30 days&rsquo; &mdash; live SAM.gov search is built into the chat",
                     "Don&apos;t want the email? Toggle it off in your bid profile in 2 seconds",
                   ].map((b) => (
                     <li key={b} className="flex items-start gap-2">

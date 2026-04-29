@@ -190,6 +190,77 @@ export async function fetchOpportunitiesForOrg(args: {
 }
 
 /**
+ * Generalized live SAM.gov search used by the in-platform AI chat. Unlike the
+ * weekly cron which scans by org NAICS, this lets the AI build flexible
+ * queries on-demand (keyword, set-aside, posted window, custom NAICS list).
+ *
+ * Returns up to `limit` distinct opportunities, deduped by noticeId.
+ * Throws SamApiKeyError if the key is rejected — callers should catch and
+ * surface a clean error to the user (instead of leaking internals).
+ */
+export async function searchSamOpportunities(args: {
+  apiKey: string;
+  naicsCodes?: string[];
+  keyword?: string;
+  setAside?: string;
+  postedFromDays?: number;
+  limit?: number;
+}): Promise<SamOpportunity[]> {
+  const postedFromDays = Math.min(Math.max(args.postedFromDays ?? 14, 1), 90);
+  const limit = Math.min(Math.max(args.limit ?? 25, 1), 50);
+  const naicsList = (args.naicsCodes ?? []).map((c) => c.trim()).filter(Boolean);
+
+  // SAM accepts ONE ncode at a time, so we either iterate, or run a single
+  // un-NAICS call when the caller didn't specify codes.
+  const queries: Array<string | null> =
+    naicsList.length > 0 ? naicsList.slice(0, 5) : [null];
+
+  const seen = new Set<string>();
+  const merged: SamOpportunity[] = [];
+
+  for (const ncode of queries) {
+    const url = new URL(SAM_API_BASE);
+    url.searchParams.set("api_key", args.apiKey);
+    url.searchParams.set("postedFrom", mmddyyyy(daysAgo(postedFromDays)));
+    url.searchParams.set("postedTo", mmddyyyy(new Date()));
+    url.searchParams.set("limit", String(limit));
+    url.searchParams.set("offset", "0");
+    url.searchParams.set("active", "true");
+    if (ncode) url.searchParams.set("ncode", ncode);
+    if (args.keyword && args.keyword.trim()) {
+      url.searchParams.set("title", args.keyword.trim());
+    }
+    if (args.setAside && args.setAside.trim()) {
+      url.searchParams.set("typeOfSetAside", args.setAside.trim());
+    }
+
+    const res = await fetch(url.toString(), {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      if (looksLikeKeyRejection(res.status, body)) {
+        throw new SamApiKeyError(res.status, body);
+      }
+      throw new Error(`SAM.gov ${res.status}: ${body.slice(0, 200)}`);
+    }
+    const json = (await res.json()) as {
+      opportunitiesData?: Array<Record<string, unknown>>;
+    };
+    for (const o of (json.opportunitiesData ?? []).map(mapOpportunity)) {
+      if (seen.has(o.noticeId)) continue;
+      seen.add(o.noticeId);
+      merged.push(o);
+      if (merged.length >= limit) break;
+    }
+    if (merged.length >= limit) break;
+  }
+
+  return merged.slice(0, limit);
+}
+
+/**
  * Insert opportunities for an org. Returns the rows that were freshly inserted
  * (not previously seen). Idempotent on (organization_id, notice_id).
  */
