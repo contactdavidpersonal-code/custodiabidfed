@@ -3,10 +3,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ensureOrgForUser } from "@/lib/assessment";
 import { loadBidProfile } from "@/lib/bid-profile";
+import { getRadarEmailsEnabled } from "@/lib/sam-radar";
 import {
   draftCapabilityAction,
   draftDifferentiatorsAction,
   saveBidProfileAction,
+  toggleRadarEmailsAction,
 } from "./actions";
 import { BidProfileForm } from "./BidProfileForm";
 
@@ -18,6 +20,7 @@ export default async function BidReadyProfilePage() {
 
   const org = await ensureOrgForUser(userId);
   const profile = await loadBidProfile(org.id);
+  const radarEmailsEnabled = await getRadarEmailsEnabled(org.id);
 
   return (
     <main className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
@@ -89,6 +92,60 @@ export default async function BidReadyProfilePage() {
           draftCapabilityAction={draftCapabilityAction}
           draftDifferentiatorsAction={draftDifferentiatorsAction}
         />
+
+        <div className="mt-6 rounded-md border border-[#cfe3d9] bg-white p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="font-serif text-lg font-bold">
+                SAM.gov opportunity emails
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-[#456c5f]">
+                Every Monday morning we email you new SAM.gov contract
+                opportunities matched to your NAICS codes
+                {org.naics_codes.length > 0
+                  ? ` (${org.naics_codes.join(", ")})`
+                  : " (set NAICS in your workspace to start matching)"}
+                . The matched opportunities also live in your{" "}
+                <Link
+                  href="/opportunities"
+                  className="font-semibold text-[#2f8f6d] underline"
+                >
+                  in-app inbox
+                </Link>{" "}
+                whether or not you receive the email.
+              </p>
+              <p className="mt-2 text-xs text-[#456c5f]">
+                <b>Status:</b>{" "}
+                {radarEmailsEnabled ? (
+                  <span className="font-semibold text-[#2f8f6d]">
+                    Subscribed — you&apos;ll receive the next Monday digest.
+                  </span>
+                ) : (
+                  <span className="font-semibold text-[#a06b1a]">
+                    Unsubscribed — opportunities still live in your in-app inbox.
+                  </span>
+                )}
+              </p>
+            </div>
+            <form action={toggleRadarEmailsAction}>
+              <input
+                type="hidden"
+                name="enabled"
+                value={radarEmailsEnabled ? "false" : "true"}
+              />
+              <button
+                type="submit"
+                className={
+                  radarEmailsEnabled
+                    ? "rounded-sm border border-[#a06b1a] bg-white px-3 py-2 text-sm font-semibold text-[#a06b1a] hover:bg-[#fff5e8]"
+                    : "rounded-sm border border-[#2f8f6d] bg-[#2f8f6d] px-3 py-2 text-sm font-semibold text-white hover:bg-[#287a5d]"
+                }
+              >
+                {radarEmailsEnabled ? "Unsubscribe" : "Subscribe"}
+              </button>
+            </form>
+          </div>
+        </div>
       </section>
     </main>
   );

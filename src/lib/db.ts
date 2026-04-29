@@ -212,6 +212,14 @@ export async function initDb() {
       ADD COLUMN IF NOT EXISTS welcome_email_sent_at TIMESTAMPTZ
   `;
 
+  // SAM.gov radar weekly email opt-out. Default TRUE so every org is opted in
+  // by default (we promise this on the landing page); the bid-ready profile
+  // page exposes a toggle to flip to FALSE.
+  await sql`
+    ALTER TABLE organizations
+      ADD COLUMN IF NOT EXISTS sam_radar_emails_enabled BOOLEAN NOT NULL DEFAULT TRUE
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS officer_assignments (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

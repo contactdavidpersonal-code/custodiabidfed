@@ -594,6 +594,128 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 6.5 — The yearly rhythm: one-time vs ongoing */}
+      <section className="bg-white px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-14 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">the yearly rhythm</div>
+            <h2 className="font-serif text-4xl font-bold leading-[1.05] tracking-tight text-[#10231d] md:text-6xl">
+              CMMC isn&apos;t a one-and-done. It&apos;s a yearly cadence.
+            </h2>
+            <p className="mx-auto mt-5 max-w-3xl text-lg text-[#44695c]">
+              Compliance protects your business and unlocks contracts only as long as your posture is current. Custodia handles the one-time setup, then runs the yearly cycle on autopilot so you stay secure, stay bid-ready, and never scramble at re-affirmation time.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* One-time */}
+            <div className="rounded-3xl border border-[#cfe3d9] bg-[#f7fcf9] p-8">
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+                Once, at the start
+              </div>
+              <h3 className="mt-2 font-serif text-2xl font-bold text-[#10231d]">
+                The setup (week 1&ndash;2)
+              </h3>
+              <p className="mt-2 text-sm text-[#496f61]">
+                A few hours of structured work to build the foundation. Do it once, you&apos;re bid-eligible.
+              </p>
+              <ul className="mt-5 space-y-3 text-sm text-[#31594d]">
+                {[
+                  "Onboarding chat &mdash; capture business identity, FCI scope, and tech stack",
+                  "Walk all 17 FAR 52.204-21 practices in plain English",
+                  "Upload evidence per control (screenshots, exports, signed rosters, policies)",
+                  "Auto-drafted SSP narratives &mdash; accept or edit in one click",
+                  "Generate your first bid-ready package: signed affirmation, SSP, evidence ZIP",
+                  "File your initial SPRS affirmation",
+                ].map((b) => (
+                  <li key={b} className="flex items-start gap-2">
+                    <span aria-hidden className="mt-0.5 flex-none font-bold text-[#2f8f6d]">&#10003;</span>
+                    <span dangerouslySetInnerHTML={{ __html: b }} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Ongoing */}
+            <div className="rounded-3xl border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]">
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">
+                Every week, every month, every year
+              </div>
+              <h3 className="mt-2 font-serif text-2xl font-bold">
+                The yearly engine (months 1&ndash;12, every year)
+              </h3>
+              <p className="mt-2 text-sm text-[#a8cfc0]">
+                Custodia runs the cadence so your shield stays up and your pipeline stays full.
+              </p>
+              <ul className="mt-5 space-y-3 text-sm text-[#cce5da]">
+                {[
+                  "<b>Every Monday</b> &mdash; SAM.gov radar email with new contract opportunities matched to your NAICS (in-app inbox keeps a rolling history; toggle email on/off in your bid profile)",
+                  "<b>Continuously</b> &mdash; AI evidence freshness watchtower flags expiring scans, screenshots, training, and policies before they go stale",
+                  "<b>On demand</b> &mdash; one-click AI tailor a packet to any specific opportunity",
+                  "<b>Quarterly</b> &mdash; posture-drift detection flags changed controls and new requirements",
+                  "<b>October 1</b> &mdash; annual SPRS re-affirmation prepped automatically &mdash; included, no extra fee",
+                  "<b>Anytime</b> &mdash; open a ticket, a Custodia compliance officer answers your CMMC question",
+                ].map((b) => (
+                  <li key={b} className="flex items-start gap-2">
+                    <span aria-hidden className="mt-0.5 flex-none font-bold text-[#8dd2b1]">&#10003;</span>
+                    <span dangerouslySetInnerHTML={{ __html: b }} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Calendar strip */}
+          <div className="mt-12 overflow-hidden rounded-3xl border border-[#cfe3d9] bg-[#f7fcf9]">
+            <div className="grid grid-cols-12 divide-x divide-[#cfe3d9]">
+              {[
+                { m: "JAN", n: "Q1 push" },
+                { m: "FEB", n: "FY mid-year" },
+                { m: "MAR", n: "Q2 ramp" },
+                { m: "APR", n: "Pipeline build" },
+                { m: "MAY", n: "RFP season" },
+                { m: "JUN", n: "Q3 spend" },
+                { m: "JUL", n: "Pre-EOFY" },
+                { m: "AUG", n: "EOFY surge" },
+                { m: "SEP", n: "Use-it-or-lose-it" },
+                { m: "OCT", n: "Re-affirm" },
+                { m: "NOV", n: "New FY" },
+                { m: "DEC", n: "Q1 prep" },
+              ].map((c) => (
+                <div
+                  key={c.m}
+                  className={`px-2 py-4 text-center ${
+                    c.m === "OCT" ? "bg-[#0e2a23] text-white" : "text-[#10231d]"
+                  }`}
+                >
+                  <div className="font-mono text-[10px] font-bold tracking-wider">
+                    {c.m}
+                  </div>
+                  <div
+                    className={`mt-1 text-[9px] ${
+                      c.m === "OCT" ? "text-[#bdf2cf]" : "text-[#5a7d70]"
+                    }`}
+                  >
+                    {c.n}
+                  </div>
+                  {(c.m === "OCT" || c.m === "AUG" || c.m === "SEP") && (
+                    <div
+                      className={`mx-auto mt-2 h-1 w-6 rounded-full ${
+                        c.m === "OCT" ? "bg-[#bdf2cf]" : "bg-[#a06b1a]"
+                      }`}
+                      aria-hidden
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="border-t border-[#cfe3d9] bg-white px-6 py-4 text-center text-xs text-[#5a7d70]">
+              <b className="text-[#10231d]">Federal Q4 (Aug&ndash;Sep)</b> is the spend surge. <b className="text-[#10231d]">Oct 1</b> is your re-affirmation deadline. Custodia keeps you ready for both, every year.
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 7 — Why Custodia is different */}
       <section className="bg-[#0e2a23] px-6 py-24 text-white">
         <div className="mx-auto max-w-6xl">
@@ -955,6 +1077,122 @@ export default function Home() {
               Sign up free, build your posture, watch the SAM radar fill up, and upgrade the moment you&apos;re ready to download a bid-ready package.
             </p>
           </div>
+        </div>
+      </section>
+
+      {/* 9.9 — Your potential profit / ROI */}
+      <section className="bg-[#0e2a23] px-6 py-24 text-white">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-14 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">your potential profit</div>
+            <h2 className="font-serif text-4xl font-bold tracking-tight md:text-6xl">
+              One contract pays for years of Custodia.
+            </h2>
+            <p className="mx-auto mt-5 max-w-3xl text-lg text-[#a8cfc0]">
+              Federal small-business contractors run on 8&ndash;15% net margins. The math on whether Custodia is worth it isn&apos;t close &mdash; here&apos;s what a single won bid does to your numbers.
+            </p>
+          </div>
+
+          {/* The hero comparison */}
+          <div className="grid gap-6 md:grid-cols-3">
+            {[
+              {
+                tier: "First sub-contract",
+                size: "$150,000",
+                net: "10%",
+                profit: "$15,000",
+                payback: "5 years of Custodia",
+                ratio: "5.0x",
+              },
+              {
+                tier: "SBIR Phase II",
+                size: "$400,000",
+                net: "8%",
+                profit: "$32,000",
+                payback: "10.7 years of Custodia",
+                ratio: "10.7x",
+                highlight: true,
+              },
+              {
+                tier: "Prime sub-contract",
+                size: "$1,200,000",
+                net: "10%",
+                profit: "$120,000",
+                payback: "40+ years of Custodia",
+                ratio: "40x",
+              },
+            ].map((s) => (
+              <div
+                key={s.tier}
+                className={`flex flex-col rounded-3xl border p-7 ${
+                  s.highlight
+                    ? "border-[#bdf2cf] bg-[#193d31] shadow-[0_15px_40px_rgba(189,242,207,0.15)]"
+                    : "border-[#2a5a49] bg-[#163027]"
+                }`}
+              >
+                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">
+                  {s.tier}
+                </div>
+                <div className="mt-3 text-sm text-[#a8cfc0]">Contract value</div>
+                <div className="font-serif text-3xl font-bold text-white md:text-4xl">{s.size}</div>
+                <div className="mt-3 text-sm text-[#a8cfc0]">Net at {s.net}</div>
+                <div className="font-serif text-2xl font-bold text-[#bdf2cf]">{s.profit}</div>
+                <div className="mt-5 border-t border-[#2a5a49] pt-4">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-[#8dd2b1]">
+                    Pays for
+                  </div>
+                  <div className="mt-1 font-serif text-xl font-bold text-white">
+                    {s.payback}
+                  </div>
+                  <div className="mt-1 text-[11px] font-bold tracking-wide text-[#bdf2cf]">
+                    {s.ratio} return on subscription
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Math callout */}
+          <div className="mt-10 rounded-3xl border border-[#2a5a49] bg-[#163027] p-8 md:p-10">
+            <div className="grid gap-8 md:grid-cols-[1fr_auto_1fr] md:items-center">
+              <div className="text-center md:text-right">
+                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#8dd2b1]">
+                  You pay
+                </div>
+                <div className="mt-2 font-serif text-3xl font-bold text-white md:text-5xl">
+                  $249/mo
+                </div>
+                <div className="mt-1 text-sm text-[#a8cfc0]">
+                  $2,988/year &middot; cancel anytime
+                </div>
+              </div>
+
+              <div aria-hidden className="hidden text-3xl font-bold text-[#8dd2b1] md:block">
+                vs.
+              </div>
+
+              <div className="text-center md:text-left">
+                <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#8dd2b1]">
+                  You earn (per single $400k SBIR win)
+                </div>
+                <div className="mt-2 font-serif text-3xl font-bold text-[#bdf2cf] md:text-5xl">
+                  +$32,000
+                </div>
+                <div className="mt-1 text-sm text-[#a8cfc0]">
+                  Net profit on one contract &middot; gates years of Phase III
+                </div>
+              </div>
+            </div>
+
+            <p className="mx-auto mt-8 max-w-3xl text-center font-serif text-lg italic leading-relaxed text-[#bdf2cf] md:text-2xl">
+              &ldquo;Win one contract from anything The Platform sends you, and Custodia is paid for through 2030.&rdquo;
+            </p>
+          </div>
+
+          {/* Caveats / honesty */}
+          <p className="mx-auto mt-8 max-w-3xl text-center text-xs leading-relaxed text-[#7aab98]">
+            Source ranges based on FY2023 SBA Small Business Goaling Report and DoD CAS / FAR 15.404 weighted-guidelines analysis. Net margins for federal small-business contractors typically run 6&ndash;20% depending on contract type (cost-plus, FFP, T&amp;M, sub-contract). Your numbers will vary &mdash; the directional math doesn&apos;t.
+          </p>
         </div>
       </section>
 

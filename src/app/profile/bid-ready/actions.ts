@@ -13,6 +13,7 @@ import {
   saveBidProfile,
   type BidProfile,
 } from "@/lib/bid-profile";
+import { setRadarEmailsEnabled } from "@/lib/sam-radar";
 
 async function requireUserId(): Promise<string> {
   const { userId } = await auth();
@@ -106,5 +107,18 @@ export async function draftDifferentiatorsAction(
     businessProfileData:
       (businessProfile?.data as Record<string, unknown>) ?? {},
   });
+}
+
+/**
+ * Toggle the org's SAM.gov radar email subscription. The cron filters orgs
+ * by this flag so flipping it OFF stops the next Monday digest entirely;
+ * flipping it back ON resumes on the next cron run.
+ */
+export async function toggleRadarEmailsAction(formData: FormData): Promise<void> {
+  const userId = await requireUserId();
+  const enabled = String(formData.get("enabled") ?? "false") === "true";
+  const org = await ensureOrgForUser(userId);
+  await setRadarEmailsEnabled(org.id, enabled);
+  revalidatePath("/profile/bid-ready");
 }
 

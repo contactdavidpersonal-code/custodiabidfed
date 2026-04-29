@@ -272,13 +272,16 @@ export type RadarTargetOrg = {
 /**
  * Pull the list of orgs to scan + their match keys. We pull NAICS from
  * `organizations.naics_codes` and set-asides from the bid_ready profile
- * (set_asides field). Orgs without NAICS are skipped at fetch time.
+ * (set_asides field). Orgs without NAICS are skipped at fetch time. Orgs
+ * that have explicitly opted out of radar emails are filtered here so we
+ * don't even hit SAM.gov on their behalf.
  */
 export async function listRadarTargets(): Promise<RadarTargetOrg[]> {
   const sql = getSql();
   const rows = (await sql`
     SELECT id, name, owner_user_id, naics_codes
     FROM organizations
+    WHERE sam_radar_emails_enabled = TRUE
   `) as Array<{
     id: string;
     name: string;
@@ -297,6 +300,35 @@ export async function listRadarTargets(): Promise<RadarTargetOrg[]> {
     });
   }
   return out;
+}
+
+/**
+ * Read whether an org currently has radar emails enabled. Used by the bid
+ * profile page to render the toggle in its current state.
+ */
+export async function getRadarEmailsEnabled(
+  organizationId: string,
+): Promise<boolean> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT sam_radar_emails_enabled FROM organizations WHERE id = ${organizationId}
+  `) as Array<{ sam_radar_emails_enabled: boolean }>;
+  return rows[0]?.sam_radar_emails_enabled ?? true;
+}
+
+/**
+ * Set the radar email opt-in flag for an org.
+ */
+export async function setRadarEmailsEnabled(
+  organizationId: string,
+  enabled: boolean,
+): Promise<void> {
+  const sql = getSql();
+  await sql`
+    UPDATE organizations
+    SET sam_radar_emails_enabled = ${enabled}, updated_at = NOW()
+    WHERE id = ${organizationId}
+  `;
 }
 
 export type OpportunityRow = {
