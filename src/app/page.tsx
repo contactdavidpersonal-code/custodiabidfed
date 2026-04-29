@@ -186,7 +186,7 @@ export default function Home() {
         <div className="relative mx-auto max-w-5xl px-6 pb-28 pt-24 text-center md:pb-36 md:pt-28">
           <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-[#2f8f6d]/40 bg-[#0e2a23]/40 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf] backdrop-blur">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#bdf2cf]" aria-hidden />
-            For established U.S. business owners
+            Secure Your Business and Win Contracts
           </div>
 
           <h1
