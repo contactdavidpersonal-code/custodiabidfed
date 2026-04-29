@@ -11,6 +11,7 @@ import type {
 import type {
   ControlPlaybook,
   EvidenceProvider,
+  ProviderTemplate,
 } from "@/lib/playbook";
 import type { PracticeQuizQuestion } from "@/lib/practice-quiz";
 import { EvidenceDropzone } from "./EvidenceDropzone";
@@ -311,6 +312,10 @@ export function PracticeWizard(props: Props) {
           </div>
         </label>
       </div>
+
+      {/* Templates available for this practice — surfaced up top so users
+          can grab them, fill them out, and drop them back into Evidence. */}
+      {!wholeNa && <TemplatesStrip practice={props.practice} />}
 
       {/* Quiz cards */}
       {!wholeNa && (
@@ -785,6 +790,113 @@ function ProviderReference({
         )}
       </div>
     </details>
+  );
+}
+
+/* ============================ TEMPLATES STRIP ============================= */
+
+function TemplatesStrip({
+  practice,
+}: {
+  practice: Omit<ControlPlaybook, "suggestedNarrative">;
+}) {
+  // Dedupe templates across providerGuidance by filename — same template often
+  // appears on multiple provider tabs.
+  const templates: ProviderTemplate[] = useMemo(() => {
+    const seen = new Set<string>();
+    const out: ProviderTemplate[] = [];
+    for (const g of practice.providerGuidance) {
+      if (g.template && !seen.has(g.template.filename)) {
+        seen.add(g.template.filename);
+        out.push(g.template);
+      }
+    }
+    return out;
+  }, [practice.providerGuidance]);
+
+  if (templates.length === 0) return null;
+
+  return (
+    <section className="mb-5 rounded-md border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+          Templates &mdash; download, fill out, then upload as evidence
+        </p>
+        <p className="text-[11px] text-[#5a7d70]">
+          {templates.length === 1
+            ? "1 template"
+            : `${templates.length} templates`}
+        </p>
+      </div>
+      <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+        {templates.map((t) => (
+          <li key={t.filename}>
+            <a
+              href={`/templates/${t.filename}`}
+              download
+              className="group relative flex items-start gap-3 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] p-3 transition-colors hover:border-[#2f8f6d] hover:bg-white"
+              title={`Download ${t.label}`}
+            >
+              {/* File icon with download badge overlay */}
+              <span className="relative flex-none">
+                <svg
+                  aria-hidden="true"
+                  width="36"
+                  height="44"
+                  viewBox="0 0 36 44"
+                  fill="none"
+                  className="text-[#0e2a23]"
+                >
+                  <path
+                    d="M4 2h18l10 10v28a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"
+                    fill="#fff"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                  />
+                  <path
+                    d="M22 2v10h10"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    fill="none"
+                  />
+                </svg>
+                <span
+                  aria-hidden="true"
+                  className="absolute -bottom-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-[#0e2a23] text-[#bdf2cf] shadow-[0_2px_6px_rgba(14,48,37,0.35)] transition-transform group-hover:scale-110"
+                >
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M8 2v9" />
+                    <path d="M3.5 7l4.5 4.5L12.5 7" />
+                    <path d="M2.5 13.5h11" />
+                  </svg>
+                </span>
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold leading-snug text-[#10231d]">
+                  {t.label}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-[#5a7d70]">
+                  {t.description}
+                </p>
+                <p className="mt-1.5 text-[11px] font-mono text-[#5a7d70]">
+                  {t.filename}
+                </p>
+              </div>
+              <span className="sr-only">Download {t.label}</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
