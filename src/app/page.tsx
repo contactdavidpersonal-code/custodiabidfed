@@ -24,38 +24,53 @@ const PRACTICES = [
   { id: "SI.L1-3.14.5", domain: "SI", short: "Periodic & Real-Time Scans" },
 ];
 
-const FREE_INCLUDES = [
-  "Full Platform access &mdash; no time limit, no credit card",
-  "AI-guided onboarding in 5 minutes &mdash; no 40-field forms",
-  "Plain-English walkthrough of all 17 FAR 52.204-21 practices",
-  "Auto-drafted SSP narratives for every control &mdash; accept or edit",
-  "Per-control evidence vault with smart classification",
-  "Live readiness score, broken down by domain",
-  "Read-only previews of your SSP and affirmation memo",
-  "AI-drafted federal capability statement",
-  "Weekly SAM.gov opportunity radar &mdash; matched to your NAICS",
-  "Ask the in-platform AI to search SAM.gov live &mdash; &lsquo;find me cyber contracts in 541512 closing in 30 days&rsquo;",
-  "Fiscal compass: federal calendar &amp; milestone reminders",
+// What you get the moment you start the 5-day risk-free trial.
+// Stacked Hormozi-style: each line shows the standalone value, then anchored to the bundle.
+const VALUE_STACK = [
+  { name: "AI-guided CMMC Level 1 Build", desc: "All 17 FAR 52.204-21 practices walked in plain English &mdash; no jargon, no blank pages.", value: "$2,400" },
+  { name: "Auto-Drafted SSP &amp; Affirmation Memo", desc: "Your System Security Plan and signed affirmation, pre-written from your inputs.", value: "$1,800" },
+  { name: "Bid-Ready Package Generator", desc: "One-click ZIP: SSP, affirmation, full evidence inventory &mdash; ready to attach to any RFP.", value: "$3,500" },
+  { name: "AI Evidence Auto-Review", desc: "Every artifact you upload runs through gap detection instantly. No waiting on humans.", value: "$1,200/mo" },
+  { name: "Weekly SAM.gov Opportunity Radar", desc: "Every Monday at 7am: live federal contracts matched to your NAICS, in your inbox.", value: "$497/mo" },
+  { name: "Live SAM.gov Search In-Chat", desc: "&lsquo;Find me cyber contracts in 541512 closing in 30 days&rsquo; &mdash; the AI searches live, right inside the platform.", value: "$297/mo" },
+  { name: "AI Per-Opportunity Packet Tailor", desc: "One click on any SAM.gov notice and your bid package adapts to that solicitation.", value: "$897/bid" },
+  { name: "Compliance Officer On Demand", desc: "Open a ticket any time and a real Custodia compliance officer answers in writing.", value: "$300/hr" },
+  { name: "Year-Round Posture Watchtower", desc: "We flag expiring scans, screenshots, training, and changed controls before they bite.", value: "$1,200/yr" },
+  { name: "Annual Re-Affirmation, Done For You", desc: "Every Oct 1 your next SPRS submission is prepped. No fire drill, no extra fee.", value: "$1,500/yr" },
+  { name: "The Custodia Guarantee", desc: "If a prime or contracting officer challenges your package, an officer resolves it &mdash; including direct comms with the prime.", value: "Priceless" },
 ];
 
-const MEMBERSHIP_INCLUDES = [
-  "Everything in Free, plus:",
-  "Generate the bid-ready package &mdash; signed affirmation memo, SSP, full evidence inventory ZIP",
-  "AI evidence auto-review on every artifact &mdash; instant gap detection",
-  "AI per-opportunity packet tailoring &mdash; one click from any SAM.gov notice",
-  "SPRS submission instructions, step by step",
-  "Evidence freshness watchtower &mdash; auto-flags expiring scans, screenshots, training",
-  "Compliance officer tickets &mdash; ask a Custodia officer any CMMC question, anytime",
-  "Year-round monitoring &mdash; flags changed controls automatically",
-  "Annual re-affirmation included &mdash; ready every Oct 1, no extra charge",
-  "Prime questionnaire support via ticket",
-  "Custodia Guarantee &mdash; officer-backed challenge resolution with primes",
+// What "you also get" stacks for the offer slide.
+const BONUSES = [
+  { name: "BONUS #1 &mdash; AI-Drafted Federal Capability Statement", desc: "The federal-format one-pager every prime asks for, generated from your inputs.", value: "$497" },
+  { name: "BONUS #2 &mdash; Fiscal Compass", desc: "Federal calendar in-app: end-of-year obligation surges, Q4 spend windows, micro-purchase thresholds.", value: "$297" },
+  { name: "BONUS #3 &mdash; Milestone Reminder System", desc: "Email nudges before SPRS deadlines, prime audits, and re-affirmation due dates.", value: "$197" },
+];
+
+// Hormozi-style triple guarantee.
+const GUARANTEES = [
+  {
+    title: "Guarantee #1 &mdash; Bid-Ready or Free",
+    body: "If at the end of your 5-day trial you don&apos;t have a defensible CMMC Level 1 package built inside the platform &mdash; SSP narratives drafted, evidence vaulted, affirmation memo ready &mdash; you don&apos;t pay a cent. Cancel inside the platform in 2 clicks.",
+  },
+  {
+    title: "Guarantee #2 &mdash; Officer-Backed Challenge Resolution",
+    body: "If a prime or contracting officer ever challenges your package while you&apos;re a member, a Custodia compliance officer takes over the conversation &mdash; including direct comms with the prime &mdash; until your package is accepted. We don&apos;t hand you off. We resolve it.",
+  },
+  {
+    title: "Guarantee #3 &mdash; Win Your First Year, Period",
+    body: "Stay a member for 12 months and let us run your weekly opportunity radar, AI bid tailoring, and officer support. If you don&apos;t land at least one matched federal opportunity in your inbox worth bidding on in that year, your next year is free. We&apos;re betting on the math.",
+  },
 ];
 
 const FAQ_ITEMS = [
   {
-    q: "How does free work? When do I need to pay?",
-    a: "Create a free account and use The Platform without limits &mdash; walk all 17 practices, draft SSP narratives, upload evidence, and watch your readiness score build. You only pay when you&apos;re ready to generate the bid-ready package: signed affirmation memo, full evidence inventory, and SPRS submission instructions. Build first. Pay when it&apos;s time to bid.",
+    q: "How does the 5-day trial work? Do I need a credit card?",
+    a: "No credit card to start. Create your account, get the full platform for 5 days &mdash; AI-guided CMMC build, weekly SAM.gov radar, officer chat, bid-ready package generator. Cancel inside the platform in 2 clicks any time during the trial. If you stay, $449/mo (locked-in Summer Federal Cash Incentive pricing for the next 100 clients; list price is $749) keeps the whole engine running.",
+  },
+  {
+    q: "Why $449 instead of $749? What&apos;s the catch?",
+    a: "No catch. We&apos;re running a Summer Federal Cash Incentive: the next 100 customers lock in $449/mo for life. After 100, the price goes to $749/mo. That&apos;s the list price &mdash; $449 is the launch window. The math still works at $749, but at $449 it&apos;s a no-brainer: a single $150K sub-contract at 10% net margin pays for ~28 years of subscription.",
   },
   {
     q: "How do you keep my data secure?",
@@ -67,7 +82,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "How long does the build take?",
-    a: "Most clients complete their initial compliance package in 3&ndash;5 business days with The Platform. You can move at your own pace &mdash; the free tier never expires, so there&apos;s no pressure to finish on someone else&apos;s timeline.",
+    a: "Most clients complete their initial CMMC Level 1 package in 3&ndash;5 business days with The Platform. The trial is sized exactly for that &mdash; you can have a defensible package built before your first card is ever charged.",
   },
   {
     q: "What if a prime pushes back on my package?",
@@ -82,8 +97,8 @@ const FAQ_ITEMS = [
     a: "Annual re-affirmation is included with every active membership. We flag changed controls, update your SSP, and prepare your SPRS re-submission every October at no additional charge. Your next cycle is ready before your fiscal year deadline.",
   },
   {
-    q: "Why does the package cost money if the build is free?",
-    a: "SPRS affirmations carry legal weight under 18 USC 1001 and the False Claims Act. The free tier walks you through the build; membership is what generates the signed bid-ready package, keeps your posture fresh year-round, and gives you direct access to a Custodia compliance officer via ticket whenever a CMMC question comes up. The Custodia Guarantee covers you if a prime or contracting officer pushes back.",
+    q: "Why pay for this when I could DIY the 17 practices?",
+    a: "You can. People do. They also burn 80&ndash;120 hours of founder time, hire a $200/hr consultant, and still file an SPRS affirmation that won&apos;t hold up under prime scrutiny &mdash; which is False Claims Act exposure under 18 USC 1001. Custodia compresses that into a 5-day platform-led build with officer backing and a guarantee. The price is the cheapest part of the equation.",
   },
   {
     q: "What is the EMEC Protocol?",
@@ -201,14 +216,14 @@ export default function Home() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-[#a8cfc0] md:text-lg">
-            Custodia walks you through CMMC Level&nbsp;1 in plain English, hands you a bid-ready package no prime can pick apart, and then emails you matched contract opportunities every Monday morning &mdash; until you win one. <span className="font-semibold text-white">One award covers years of subscription.</span> Try it risk-free for 7 days &mdash; no credit card required, cancel anytime, and chat with a Custodia Compliance Officer inside the platform whenever you need a hand.
+            Custodia walks you through CMMC Level&nbsp;1 in plain English, hands you a bid-ready package no prime can pick apart, and then emails you matched contract opportunities every Monday morning &mdash; until you win one. <span className="font-semibold text-white">One $150K sub-contract pays for ~28 years of Custodia at today&apos;s price.</span> Try the entire platform risk-free for 5 days &mdash; no credit card required.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Show when="signed-out">
               <SignUpButton mode="modal">
                 <button className="group inline-flex items-center gap-2 bg-[#bdf2cf] px-8 py-4 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.22)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_15px_55px_rgba(189,242,207,0.32)] md:text-lg">
-                  Show Me My Contracts &mdash; Free
+                  Claim My 5-Day Trial &mdash; $0 Today
                   <span aria-hidden className="text-lg leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
                 </button>
               </SignUpButton>
@@ -238,7 +253,7 @@ export default function Home() {
           </div>
 
           <p className="mt-5 text-xs font-medium tracking-wide text-[#7aab98]">
-            7-day risk-free trial &middot; No credit card required &middot; Cancel anytime
+            5-day risk-free trial &middot; No credit card required &middot; Cancel anytime
           </p>
 
           {/* Below-headline outcome line — sets expectation for what's next */}
@@ -354,7 +369,7 @@ export default function Home() {
                 The Custodia answer
               </div>
               <h3 className="mt-3 font-serif text-2xl font-bold">
-                Bid-ready in days. Free until you are.
+                Bid-ready in 5 days. Or you don&apos;t pay.
               </h3>
               <ul className="mt-5 space-y-3 text-sm text-[#cce5da]">
                 {[
@@ -374,7 +389,7 @@ export default function Home() {
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <button className="mt-7 inline-flex items-center gap-2 bg-[#bdf2cf] px-6 py-3 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
-                    Start For Free
+                    Claim My 5-Day Trial &mdash; $0 Today
                     <span aria-hidden className="text-lg leading-none">&rarr;</span>
                   </button>
                 </SignUpButton>
@@ -389,7 +404,7 @@ export default function Home() {
                   <span aria-hidden className="text-lg leading-none">&rarr;</span>
                 </Link>
               </Show>
-              <p className="mt-3 text-xs text-[#7aab98]">No credit card required &middot; Pay only for the bid-ready package</p>
+              <p className="mt-3 text-xs text-[#7aab98]">5-day risk-free trial &middot; No credit card required</p>
             </div>
           </div>
         </div>
@@ -999,22 +1014,22 @@ export default function Home() {
             From signup to signed contracts
           </h2>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[#44695c]">
-            Here&apos;s the path you&apos;ll walk inside The Platform. Free for the first five steps. Membership unlocks at step six, when your package is ready to ship.
+            Here&apos;s the path you&apos;ll walk inside The Platform during your 5-day trial &mdash; from signup to filed-in-SPRS to first opportunity in your inbox. Membership keeps the engine running after that.
           </p>
 
           <ol className="relative mt-16 space-y-12 border-l-2 border-[#cfe3d9] pl-10 md:pl-14">
             {[
               {
                 n: "01",
-                tag: "FREE",
+                tag: "TRIAL DAY 1",
                 paid: false,
-                title: "Create your free account",
+                title: "Create your account",
                 time: "30 seconds",
-                desc: "Email and password through Clerk. No credit card. Land in The Platform and pick up where you left off across devices.",
+                desc: "Email and password through Clerk. No credit card to start your 5-day trial. Land in The Platform and pick up where you left off across devices.",
               },
               {
                 n: "02",
-                tag: "FREE",
+                tag: "TRIAL DAY 1",
                 paid: false,
                 title: "Onboard in conversation",
                 time: "5 minutes",
@@ -1022,7 +1037,7 @@ export default function Home() {
               },
               {
                 n: "03",
-                tag: "FREE",
+                tag: "TRIAL DAY 2\u20133",
                 paid: false,
                 title: "Walk the 17 CMMC practices",
                 time: "30&ndash;60 minutes per session",
@@ -1030,7 +1045,7 @@ export default function Home() {
               },
               {
                 n: "04",
-                tag: "FREE",
+                tag: "TRIAL DAY 2\u20134",
                 paid: false,
                 title: "Upload your evidence",
                 time: "As you go",
@@ -1038,7 +1053,7 @@ export default function Home() {
               },
               {
                 n: "05",
-                tag: "FREE",
+                tag: "TRIAL DAY 4",
                 paid: false,
                 title: "Draft your SSP narratives",
                 time: "Auto-drafted",
@@ -1046,15 +1061,15 @@ export default function Home() {
               },
               {
                 n: "06",
-                tag: "MEMBERSHIP",
+                tag: "TRIAL DAY 5",
                 paid: true,
                 title: "Generate your bid-ready package",
                 time: "On demand",
-                desc: "AI auto-reviews every artifact for instant gap detection. When you&apos;re ready, generate the bid-ready ZIP: SSP, signed affirmation memo, evidence inventory. Officers are on-call via tickets if you hit a question along the way.",
+                desc: "AI auto-reviews every artifact for instant gap detection. Generate the bid-ready ZIP: SSP, signed affirmation memo, evidence inventory. This is the moment your trial converts and the $449/mo membership starts &mdash; cancel before this step and you owe nothing.",
               },
               {
                 n: "07",
-                tag: "MEMBERSHIP",
+                tag: "MEMBER",
                 paid: true,
                 title: "File in SPRS and start bidding",
                 time: "Same day",
@@ -1062,7 +1077,7 @@ export default function Home() {
               },
               {
                 n: "08",
-                tag: "MEMBERSHIP",
+                tag: "MEMBER",
                 paid: true,
                 title: "Stay compliant, year-round",
                 time: "Re-affirmation included",
@@ -1111,13 +1126,13 @@ export default function Home() {
               You, bidding on contracts. With a defensible package behind you.
             </h3>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#cce5da]">
-              The first five steps are free, forever. You only pay when you&apos;re ready to generate your bid-ready package &mdash; at step six.
+              You can cover steps 1&ndash;5 inside your free 5-day trial. Step 6 generates the bid-ready package and starts your $449/mo membership (locked-in summer pricing for the next 100 clients).
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <button className="inline-flex items-center gap-2 bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
-                    Start For Free
+                    Claim My 5-Day Trial &mdash; $0 Today
                     <span aria-hidden className="text-lg leading-none">&rarr;</span>
                   </button>
                 </SignUpButton>
@@ -1137,7 +1152,7 @@ export default function Home() {
               </Show>
             </div>
             <p className="mt-4 text-xs text-[#7aab98]">
-              No credit card required to start &middot; Membership unlocks at step six
+              5-day risk-free trial &middot; No credit card required &middot; $449/mo locked in (next 100 clients)
             </p>
           </div>
         </div>
@@ -1164,7 +1179,7 @@ export default function Home() {
                   <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">phase 01</div>
                   <h3 className="mt-1 font-serif text-2xl font-bold text-[#10231d]">Build your posture</h3>
                 </div>
-                <span className="rounded-full bg-[#e8f7ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#1f5c47]">free</span>
+                <span className="rounded-full bg-[#e8f7ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#1f5c47]">included in trial</span>
               </div>
               <p className="mt-3 text-sm text-[#496f61]">Walk the 17 practices, capture evidence, draft your SSP &mdash; without writing it from scratch.</p>
               <ul className="mt-6 space-y-3">
@@ -1194,7 +1209,7 @@ export default function Home() {
                   <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">phase 02</div>
                   <h3 className="mt-1 font-serif text-2xl font-bold">Bid with confidence</h3>
                 </div>
-                <span className="rounded-full bg-[#bdf2cf] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#0c2219]">membership</span>
+                <span className="rounded-full bg-[#bdf2cf] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#0c2219]">included in trial</span>
               </div>
               <p className="mt-3 text-sm text-[#a8cfc0]">AI-automated, officer-supported. Generate your bid-ready package on demand and tailor it to every opportunity in one click.</p>
               <ul className="mt-6 space-y-3">
@@ -1224,7 +1239,7 @@ export default function Home() {
                   <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">phase 03</div>
                   <h3 className="mt-1 font-serif text-2xl font-bold text-[#10231d]">Find the contracts</h3>
                 </div>
-                <span className="rounded-full bg-[#e8f7ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#1f5c47]">free</span>
+                <span className="rounded-full bg-[#e8f7ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#1f5c47]">included in trial</span>
               </div>
               <p className="mt-3 text-sm text-[#496f61]">Opportunities matched to your business, delivered to your inbox before the news hits LinkedIn.</p>
               <ul className="mt-6 space-y-3">
@@ -1253,7 +1268,7 @@ export default function Home() {
                   <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">phase 04</div>
                   <h3 className="mt-1 font-serif text-2xl font-bold">Stay compliant, year-round</h3>
                 </div>
-                <span className="rounded-full bg-[#bdf2cf] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#0c2219]">membership</span>
+                <span className="rounded-full bg-[#bdf2cf] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#0c2219]">included in trial</span>
               </div>
               <p className="mt-3 text-sm text-[#a8cfc0]">Compliance isn&apos;t one-and-done. The Platform watches your posture so you don&apos;t have to.</p>
               <ul className="mt-6 space-y-3">
@@ -1279,10 +1294,10 @@ export default function Home() {
 
           <div className="mt-12 border border-[#cfe3d9] bg-[#f7fcf9] p-6 text-center md:p-8">
             <p className="font-serif text-xl text-[#10231d] md:text-2xl">
-              Free covers the build and the radar. Membership covers the bid, the win, and the maintenance.
+              Every capability above is included in your 5-day trial &mdash; the build, the radar, the bid generator, and the officer.
             </p>
             <p className="mt-3 text-sm text-[#5a7d70]">
-              Sign up free, build your posture, watch the SAM radar fill up, and upgrade the moment you&apos;re ready to download a bid-ready package.
+              Start with no credit card. Build your CMMC package, watch the SAM radar fill up, and decide on day 5 whether to keep the engine running at $449/mo (locked-in summer pricing).
             </p>
           </div>
         </div>
@@ -1309,16 +1324,16 @@ export default function Home() {
                 size: "$150,000",
                 net: "10%",
                 profit: "$15,000",
-                payback: "5 years of Custodia",
-                ratio: "5.0x",
+                payback: "~2.8 years of Custodia",
+                ratio: "2.8x",
               },
               {
                 tier: "SBIR Phase II",
                 size: "$400,000",
                 net: "8%",
                 profit: "$32,000",
-                payback: "10.7 years of Custodia",
-                ratio: "10.7x",
+                payback: "~5.9 years of Custodia",
+                ratio: "5.9x",
                 highlight: true,
               },
               {
@@ -1326,8 +1341,8 @@ export default function Home() {
                 size: "$1,200,000",
                 net: "10%",
                 profit: "$120,000",
-                payback: "40+ years of Custodia",
-                ratio: "40x",
+                payback: "22+ years of Custodia",
+                ratio: "22x",
               },
             ].map((s) => (
               <div
@@ -1368,10 +1383,10 @@ export default function Home() {
                   You pay
                 </div>
                 <div className="mt-2 font-serif text-3xl font-bold text-white md:text-5xl">
-                  $249/mo
+                  $449/mo
                 </div>
                 <div className="mt-1 text-sm text-[#a8cfc0]">
-                  $2,988/year &middot; cancel anytime
+                  $5,388/year &middot; locked-in summer pricing &middot; cancel anytime
                 </div>
               </div>
 
@@ -1393,7 +1408,7 @@ export default function Home() {
             </div>
 
             <p className="mx-auto mt-8 max-w-3xl text-center font-serif text-lg italic leading-relaxed text-[#bdf2cf] md:text-2xl">
-              &ldquo;Win one contract from anything The Platform sends you, and Custodia is paid for through 2030.&rdquo;
+              &ldquo;Win one $150K sub-contract from anything The Platform sends you, and Custodia is paid for through 2028.&rdquo;
             </p>
           </div>
 
@@ -1404,94 +1419,209 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 10 — Pricing */}
+      {/* 10 — Pricing: ONE OFFER, Hormozi-stacked */}
       <section id="pricing" className="scroll-mt-16 border-y border-[#d5e5dd] bg-white px-6 py-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-14 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">start today</div>
+        <div className="mx-auto max-w-5xl">
+          {/* Scarcity banner */}
+          <div className="mb-8 flex flex-col items-center gap-2 border border-[#a06b1a] bg-[#fff8e8] px-6 py-4 text-center md:flex-row md:justify-center md:gap-4">
+            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#a06b1a]">
+              ⚡ Summer Federal Cash Incentive
+            </span>
+            <span className="text-sm font-semibold text-[#5d4f30]">
+              Lock in <span className="font-black text-[#10231d]">$449/mo</span> for life &mdash; only the next 100 clients. After that: $749/mo.
+            </span>
+          </div>
+
+          <div className="mb-12 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">the offer</div>
             <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-6xl">
-              Start free now. Bid when you&apos;re ready.
+              Everything you need to win federal contracts.
+              <br />
+              <span className="text-[#2f8f6d]">$0 today. $449/mo if you stay.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-[#44695c]">
-              Every week you wait is a contract someone else is bidding on. Sign up free, build your package today, and pay only when it&apos;s time to download the bid-ready ZIP and start winning the work.
+              Try the entire platform &mdash; build, bid, find, maintain &mdash; risk-free for 5 days. No credit card required to start. Cancel in 2 clicks inside the platform any time during the trial.
             </p>
           </div>
-          <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-2">
 
-            {/* Free Forever */}
-            <div className="flex flex-col border border-[#cfe3d9] bg-[#f7fcf9] p-7">
-              <div className="mb-2 text-xs font-bold uppercase tracking-[0.15em] text-[#2f8f6d]">Free forever</div>
-              <div className="font-serif text-3xl font-bold text-[#10231d]">$0</div>
-              <p className="mt-2 text-sm text-[#496f61]">
-                Build your CMMC Level 1 package in The Platform. No time limit. No credit card.
+          {/* The single offer card */}
+          <div className="mx-auto max-w-3xl border-2 border-[#2f8f6d] bg-white shadow-[0_25px_60px_rgba(14,48,37,0.14)]">
+
+            {/* Header band */}
+            <div className="border-b-2 border-[#2f8f6d] bg-[#0e2a23] px-8 py-6 text-center text-white md:px-12">
+              <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[#bdf2cf]">
+                The Custodia Bid-Ready Engine
+              </div>
+              <h3 className="mt-2 font-serif text-2xl font-bold leading-tight md:text-3xl">
+                CMMC Level 1 + Weekly Opportunity Radar + Officer Backing
+              </h3>
+              <p className="mt-2 text-sm text-[#a8cfc0]">
+                One platform. One subscription. Everything you need to go from zero to bidding to winning.
               </p>
-              <ul className="mt-6 flex-1 space-y-2.5">
-                {FREE_INCLUDES.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm text-[#31594d]">
-                    <span className="mt-0.5 flex-none text-[#2f8f6d]">✓</span>
-                    <span dangerouslySetInnerHTML={{ __html: f }} />
+            </div>
+
+            {/* Value stack — what you get */}
+            <div className="px-8 py-10 md:px-12">
+              <div className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#2f8f6d]">
+                What you get the moment you start
+              </div>
+              <h4 className="mb-6 font-serif text-xl font-bold text-[#10231d]">
+                Here&apos;s every piece &mdash; with what it&apos;s worth on its own.
+              </h4>
+
+              <ul className="divide-y divide-[#cfe3d9] border-y border-[#cfe3d9]">
+                {VALUE_STACK.map((item) => (
+                  <li key={item.name} className="flex items-start justify-between gap-4 py-3">
+                    <div className="flex-1">
+                      <div
+                        className="text-sm font-bold text-[#10231d]"
+                        dangerouslySetInnerHTML={{ __html: `&#10003; ${item.name}` }}
+                      />
+                      <div
+                        className="mt-1 text-xs leading-relaxed text-[#5a7d70]"
+                        dangerouslySetInnerHTML={{ __html: item.desc }}
+                      />
+                    </div>
+                    <div className="flex-none text-right">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a9c90]">value</div>
+                      <div className="font-mono text-sm font-bold text-[#10231d]">{item.value}</div>
+                    </div>
                   </li>
                 ))}
               </ul>
-              <Show when="signed-out">
-                <SignUpButton mode="modal">
-                  <button className="mt-8 w-full border-2 border-[#104d3a] px-6 py-3 font-bold text-[#104d3a] transition-colors hover:bg-[#f0f9f5]">
-                    Start For Free
-                  </button>
-                </SignUpButton>
-              </Show>
-              <Show when="signed-in">
-                <Link href="/assessments" prefetch={false} className="mt-8 block w-full border-2 border-[#104d3a] px-6 py-3 text-center font-bold text-[#104d3a] transition-colors hover:bg-[#f0f9f5]">
-                  Open workspace
-                </Link>
-              </Show>
-              <p className="mt-3 text-center text-xs text-[#5d8376]">No credit card required</p>
-            </div>
 
-            {/* Membership */}
-            <div className="flex flex-col border-2 border-[#2f8f6d] bg-white p-7 shadow-[0_12px_36px_rgba(14,48,37,0.12)]">
-              <div className="mb-2 flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#2f8f6d]">CMMC 1 membership</span>
-                <span className="rounded-full bg-[#2f8f6d] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                  for the package
-                </span>
+              {/* Bonuses */}
+              <div className="mt-10">
+                <div className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#a06b1a]">
+                  Plus three free bonuses (this week only)
+                </div>
+                <ul className="divide-y divide-[#e8d4a1] border-y border-[#e8d4a1] bg-[#fff8e8]">
+                  {BONUSES.map((item) => (
+                    <li key={item.name} className="flex items-start justify-between gap-4 px-4 py-3">
+                      <div className="flex-1">
+                        <div
+                          className="text-sm font-bold text-[#10231d]"
+                          dangerouslySetInnerHTML={{ __html: item.name }}
+                        />
+                        <div
+                          className="mt-1 text-xs leading-relaxed text-[#5d4f30]"
+                          dangerouslySetInnerHTML={{ __html: item.desc }}
+                        />
+                      </div>
+                      <div className="flex-none text-right">
+                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#a06b1a]">value</div>
+                        <div className="font-mono text-sm font-bold text-[#10231d]">{item.value}</div>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="font-serif text-3xl font-bold text-[#10231d]">
-                $249<span className="text-lg font-normal text-[#6a9080]">/mo</span>
+
+              {/* Total value anchor */}
+              <div className="mt-10 border-t-2 border-[#10231d] pt-6">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <div className="text-base font-bold text-[#10231d]">
+                    Total real-world value
+                  </div>
+                  <div className="font-serif text-3xl font-bold text-[#10231d]">
+                    $13,000+ <span className="text-base font-normal text-[#5a7d70]">/year</span>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-baseline justify-between gap-2">
+                  <div className="text-base font-bold text-[#10231d]">
+                    What it costs after the trial (list)
+                  </div>
+                  <div className="font-serif text-2xl font-bold text-[#7a9c90] line-through decoration-[#a06b1a] decoration-2">
+                    $749/mo
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
+                  <div className="text-base font-bold text-[#10231d]">
+                    Your locked-in summer price (next 100 clients)
+                  </div>
+                  <div className="font-serif text-4xl font-bold text-[#2f8f6d] md:text-5xl">
+                    $449<span className="text-lg font-normal text-[#5a7d70]">/mo</span>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
+                  <div className="text-base font-bold text-[#10231d]">
+                    What you pay today to start
+                  </div>
+                  <div className="font-serif text-5xl font-bold text-[#2f8f6d] md:text-6xl">
+                    $0
+                  </div>
+                </div>
+
+                <p className="mt-4 text-xs italic leading-relaxed text-[#5a7d70]">
+                  Math check: at $449/mo, your subscription costs $5,388/year. A single $150,000 sub-contract at 10% net margin pays for ~2.8 years of Custodia. We don&apos;t need you to win 10 bids &mdash; we need you to win one.
+                </p>
               </div>
-              <p className="mt-2 text-sm text-[#496f61]">
-                Generate the bid-ready package on demand and keep it current year-round. AI auto-review on every artifact. Officer help via ticket when you need it. Re-affirmation included.
-              </p>
-              <p className="mt-1 text-xs text-[#5d8376]">
-                Billed monthly &middot; Cancel any time &middot; 7-day free trial, no credit card required
-              </p>
-              <ul className="mt-6 flex-1 space-y-2.5">
-                {MEMBERSHIP_INCLUDES.map((f, i) => (
-                  <li
-                    key={f}
-                    className={`flex items-start gap-2 text-sm ${
-                      i === 0 ? "font-semibold text-[#10231d]" : "text-[#31594d]"
-                    }`}
+
+              {/* CTA */}
+              <div className="mt-10 flex flex-col items-center gap-3">
+                <Show when="signed-out">
+                  <SignUpButton mode="modal">
+                    <button className="group inline-flex w-full items-center justify-center gap-2 bg-[#bdf2cf] px-8 py-5 text-base font-black text-[#0c2219] shadow-[0_15px_40px_rgba(189,242,207,0.4)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_20px_55px_rgba(189,242,207,0.55)] md:text-lg">
+                      Claim My 5-Day Trial &mdash; $0 Today
+                      <span aria-hidden className="text-xl leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
+                    </button>
+                  </SignUpButton>
+                </Show>
+                <Show when="signed-in">
+                  <Link
+                    href="/upgrade"
+                    prefetch={false}
+                    className="group inline-flex w-full items-center justify-center gap-2 bg-[#bdf2cf] px-8 py-5 text-base font-black text-[#0c2219] shadow-[0_15px_40px_rgba(189,242,207,0.4)] transition-all hover:bg-[#a8e6c0] md:text-lg"
                   >
-                    {i !== 0 && <span className="mt-0.5 flex-none text-[#2f8f6d]">✓</span>}
-                    <span dangerouslySetInnerHTML={{ __html: f }} />
-                  </li>
-                ))}
-              </ul>
-              <Show when="signed-out">
-                <SignUpButton mode="modal">
-                  <button className="mt-8 w-full bg-[#104d3a] px-6 py-3 font-bold text-white transition-colors hover:bg-[#0d3e2f]">
-                    Start For Free
-                  </button>
-                </SignUpButton>
-              </Show>
-              <Show when="signed-in">
-                <Link href="/upgrade" prefetch={false} className="mt-8 block w-full bg-[#104d3a] px-6 py-3 text-center font-bold text-white transition-colors hover:bg-[#0d3e2f]">
-                  Upgrade to Membership
-                </Link>
-              </Show>
-              <p className="mt-3 text-center text-xs text-[#5d8376]">7-day free trial &middot; No credit card</p>
+                    Activate My Membership
+                    <span aria-hidden className="text-xl leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
+                  </Link>
+                </Show>
+                <p className="text-center text-xs font-medium tracking-wide text-[#5a7d70]">
+                  5-day risk-free trial &middot; No credit card required &middot; Cancel anytime in 2 clicks
+                </p>
+                <p className="text-center text-[11px] italic text-[#a06b1a]">
+                  After 100 clients lock in, summer pricing is gone. New sign-ups will pay $749/mo.
+                </p>
+              </div>
             </div>
+          </div>
+
+          {/* Triple Guarantee */}
+          <div className="mx-auto mt-16 max-w-4xl">
+            <div className="mb-8 text-center">
+              <div className="mb-3 text-xs font-black uppercase tracking-[0.22em] text-[#a06b1a]">
+                The Custodia Triple Guarantee
+              </div>
+              <h3 className="font-serif text-3xl font-bold text-[#10231d] md:text-4xl">
+                We take all the risk. You bring the business.
+              </h3>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-3">
+              {GUARANTEES.map((g, i) => (
+                <div key={i} className="border-2 border-[#a06b1a] bg-[#fff8e8] p-6">
+                  <div className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#a06b1a]">
+                    {`#${i + 1}`}
+                  </div>
+                  <h4
+                    className="font-serif text-lg font-bold leading-snug text-[#10231d]"
+                    dangerouslySetInnerHTML={{ __html: g.title.replace(/^Guarantee #\d+ &mdash; /, "") }}
+                  />
+                  <p
+                    className="mt-3 text-sm leading-relaxed text-[#5d4f30]"
+                    dangerouslySetInnerHTML={{ __html: g.body }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <p className="mx-auto mt-8 max-w-2xl text-center font-serif text-lg italic leading-relaxed text-[#10231d] md:text-xl">
+              &ldquo;If we can&apos;t get you bid-ready in 5 days, you don&apos;t pay. If a prime fights you, we fight for you. If you don&apos;t see a worth-bidding opportunity in your first year, your second year is free. We&apos;re betting on the math because we&apos;ve done it.&rdquo;
+            </p>
           </div>
         </div>
       </section>
