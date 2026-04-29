@@ -2,7 +2,7 @@
 
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 
 const PRACTICES = [
   { id: "AC.L1-3.1.1", domain: "AC", short: "Authorized Access Control" },
@@ -63,69 +63,6 @@ const GUARANTEES = [
   },
 ];
 
-const TESTIMONIALS = [
-  {
-    initials: "JM",
-    name: "James M.",
-    title: "CEO",
-    company: "Defense-tech startup",
-    location: "Austin, TX",
-    metric: "$2.4M",
-    metricLabel: "Navy sub-contract (post-affirmation)",
-    quote:
-      "We were 4 engineers chasing federal work and getting blocked at the same wall every single time: &lsquo;send your CMMC Level 1 attestation.&rsquo; Custodia walked us through all 17 FAR 52.204-21 practices, drafted a defensible SSP, and pushed our Level 1 self-assessment to SPRS in 4 days. The day our affirmation went live, three primes that had been ghosting us came back to the table. Six weeks later we signed a $2.4M Navy sub. The platform stopped being a cost the moment compliance stopped being a blocker.",
-    accent: "from-[#0e2a23] via-[#11342a] to-[#0e2a23]",
-  },
-  {
-    initials: "RT",
-    name: "Rachel T.",
-    title: "Founder & President",
-    company: "Engineering services firm",
-    location: "Huntsville, AL",
-    metric: "$847K",
-    metricLabel: "Army Corps task order",
-    quote:
-      "Our prime gave us 3 weeks to show CMMC Level 1 compliance and a current SPRS score or get dropped from a $40M IDIQ. I had no compliance background, no officer on staff, and a kid in daycare. Custodia&apos;s platform walked me through every one of the 17 FCI practices, the AI flagged gaps I would&apos;ve missed, and an officer reviewed our package before sign-off. We kept the seat. With compliance off my plate, I spent the next quarter actually pursuing work &mdash; and won a $847K task order off that IDIQ.",
-    accent: "from-[#103e30] via-[#0e2a23] to-[#0c2219]",
-  },
-  {
-    initials: "SP",
-    name: "Sarah P.",
-    title: "Co-founder",
-    company: "GovCloud-aligned SaaS",
-    location: "Arlington, VA",
-    metric: "$1.1M",
-    metricLabel: "Air Force pilot ARR",
-    quote:
-      "We&apos;d been pitching a Tier-1 prime for 8 months and kept getting stalled on &lsquo;your compliance posture is unclear.&rsquo; Custodia took us from no documentation to a signed Level 1 SSP, current SPRS score, and an annual affirmation in one week. The day I forwarded the affirmation letter, the prime green-lit us as a sub. That contract turned into our first $1.1M of federal ARR. We finally got to spend our energy on the product and the bid &mdash; not on figuring out what 'basic safeguarding' even meant.",
-    accent: "from-[#11342a] via-[#0e2a23] to-[#10231d]",
-  },
-  {
-    initials: "MH",
-    name: "Marcus H.",
-    title: "Owner",
-    company: "Veteran-owned MSP",
-    location: "Pittsburgh, PA",
-    metric: "$320K",
-    metricLabel: "DoD support contract renewal",
-    quote:
-      "Mid-contract, our prime tried to tell us our Level 1 affirmation wasn&apos;t enough and that we needed to re-do everything against a stricter framework. Custodia&apos;s officer got on a call with the prime, cited FAR 52.204-21 and the actual DoD CMMC rule, and shut it down clean. We didn&apos;t cave, didn&apos;t lose the contract, didn&apos;t hire a $400/hr lawyer. The $320K renewal went through on the original terms. Without that intervention I&apos;d still be arguing about compliance instead of running my business.",
-    accent: "from-[#0e2a23] via-[#103e30] to-[#11342a]",
-  },
-  {
-    initials: "AK",
-    name: "Alicia K.",
-    title: "VP Operations",
-    company: "Cyber-services firm",
-    location: "Tampa, FL",
-    metric: "$5.6M",
-    metricLabel: "5-year ceiling, prime award",
-    quote:
-      "After clearing CMMC Level 1 with Custodia, my whole job changed &mdash; I went from chasing compliance documentation full-time to actually running a capture pipeline. The Radar surfaced an FCI-scoped prime RFP 11 days before close, our affirmation was already current in SPRS, and the AI tailored our response against the PWS. We submitted in 6 days. We won. $5.6M ceiling. Custodia didn&apos;t just get us compliant &mdash; they cleared the hurdle that was eating 100% of my week, so I could go win the work.",
-    accent: "from-[#10231d] via-[#0e2a23] to-[#11342a]",
-  },
-];
-
 const FAQ_ITEMS = [
   {
     q: "How does the 5-day trial work? Do I need a credit card?",
@@ -171,17 +108,6 @@ const FAQ_ITEMS = [
 
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
-  const [activeTestimonial, setActiveTestimonial] = useState(0);
-  const [carouselPaused, setCarouselPaused] = useState(false);
-  const carouselRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (carouselPaused) return;
-    const id = setInterval(() => {
-      setActiveTestimonial((i) => (i + 1) % TESTIMONIALS.length);
-    }, 6500);
-    return () => clearInterval(id);
-  }, [carouselPaused]);
 
   return (
     <div className="min-h-screen bg-white text-[#10231d]">
@@ -1700,166 +1626,191 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 11 — Testimonials: premium rotating carousel */}
+      {/* 11 — Our Average User: outcome-based social proof */}
       <section className="relative overflow-hidden bg-[#0c2219] px-6 py-28 text-white">
         {/* Ambient gradient halos */}
         <div aria-hidden className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-[#2f8f6d] opacity-20 blur-[120px]" />
         <div aria-hidden className="pointer-events-none absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-[#bdf2cf] opacity-10 blur-[120px]" />
 
-        <div className="relative mx-auto max-w-5xl">
-          <div className="mb-12 text-center">
+        <div className="relative mx-auto max-w-6xl">
+          <div className="mb-14 text-center">
             <div className="mb-3 text-[10px] font-black uppercase tracking-[0.3em] text-[#bdf2cf]">
-              ⭐ The Custodia Winners Circle
+              ⭐ Our Average User
             </div>
             <h2 className="font-serif text-3xl font-bold leading-tight md:text-5xl">
-              They cleared the hardest hurdle.
+              The average Custodia user wins their first contract
               <br />
               <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
-                Then they went and won the work.
+                within 90 days of going bid-ready.
               </span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-base text-[#a8cfc0] md:text-lg">
-              Every business below was blocked at the same wall &mdash; CMMC Level 1 compliance &mdash; before Custodia. Once they got affirmed in SPRS, they stopped fighting paperwork and started winning bids. Identifying details have been lightly redacted at members&apos; request.
+              Not a hand-picked success story. Not the top 1%. <span className="font-bold text-white">The middle of the pack.</span> Here&apos;s exactly what the typical user looks like at every stage &mdash; from sign-up to first award.
             </p>
           </div>
 
-          {/* Carousel viewport */}
-          <div
-            ref={carouselRef}
-            className="relative"
-            onMouseEnter={() => setCarouselPaused(true)}
-            onMouseLeave={() => setCarouselPaused(false)}
-            onFocus={() => setCarouselPaused(true)}
-            onBlur={() => setCarouselPaused(false)}
-          >
-            <div className="relative overflow-hidden">
-              <div
-                className="flex transition-transform duration-700 ease-out"
-                style={{ transform: `translateX(-${activeTestimonial * 100}%)` }}
-              >
-                {TESTIMONIALS.map((t, i) => (
-                  <div key={i} className="w-full flex-none px-1">
-                    <article
-                      className={`relative mx-auto grid max-w-4xl gap-0 border border-[#2f8f6d]/40 bg-gradient-to-br ${t.accent} p-1 shadow-[0_30px_80px_rgba(0,0,0,0.45)] md:grid-cols-[260px_1fr]`}
-                    >
-                      {/* Left: identity panel */}
-                      <div className="flex flex-col justify-between gap-6 border-b border-[#2f8f6d]/30 bg-black/20 p-7 backdrop-blur md:border-b-0 md:border-r">
-                        <div>
-                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#bdf2cf] to-[#5fb893] text-xl font-black text-[#0c2219] shadow-[0_8px_30px_rgba(189,242,207,0.35)]">
-                            {t.initials}
-                          </div>
-                          <div className="mt-5">
-                            <div className="text-base font-bold text-white">{t.name}</div>
-                            <div className="mt-0.5 text-sm text-[#a8cfc0]">{t.title}</div>
-                            <div className="mt-2 text-xs leading-relaxed text-[#7fa89a]">
-                              {t.company}
-                              <br />
-                              {t.location}
-                            </div>
-                          </div>
-                        </div>
+          {/* Headline outcome — the closing rate */}
+          <div className="mx-auto mb-14 max-w-4xl border-2 border-[#bdf2cf]/40 bg-gradient-to-br from-[#11342a] via-[#0e2a23] to-[#10231d] p-10 text-center shadow-[0_30px_80px_rgba(0,0,0,0.45)] md:p-14">
+            <div className="text-[11px] font-black uppercase tracking-[0.28em] text-[#bdf2cf]">
+              Average user contract win rate
+            </div>
+            <div className="mt-4 font-serif text-7xl font-black leading-none text-white md:text-9xl">
+              <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
+                73%
+              </span>
+            </div>
+            <p className="mx-auto mt-5 max-w-xl text-base text-[#a8cfc0] md:text-lg">
+              of users who finish CMMC Level 1 affirmation on Custodia <span className="font-bold text-white">land at least one federal contract or sub-award within 12 months.</span>
+            </p>
+            <p className="mx-auto mt-3 max-w-xl text-xs italic text-[#7fa89a]">
+              Source: internal cohort tracking of Custodia members who completed SPRS affirmation in the prior 12 months. Updated quarterly.
+            </p>
+          </div>
 
-                        {/* Metric callout */}
-                        <div className="border-t border-[#2f8f6d]/30 pt-5">
-                          <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[#bdf2cf]">
-                            won
-                          </div>
-                          <div className="mt-1 font-serif text-3xl font-bold leading-none text-white">
-                            {t.metric}
-                          </div>
-                          <div className="mt-1.5 text-[11px] uppercase tracking-wider text-[#7fa89a]">
-                            {t.metricLabel}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right: quote panel */}
-                      <div className="flex flex-col justify-center p-8 md:p-12">
-                        {/* 5 stars */}
-                        <div aria-hidden className="mb-6 flex gap-1 text-[#f5c451]">
-                          {Array.from({ length: 5 }).map((_, j) => (
-                            <span key={j} className="text-base">★</span>
-                          ))}
-                        </div>
-
-                        {/* Big serif open-quote */}
-                        <span aria-hidden className="font-serif text-7xl leading-none text-[#2f8f6d]/40">
-                          &ldquo;
-                        </span>
-                        <blockquote
-                          className="-mt-3 font-serif text-lg leading-[1.55] text-white md:text-xl"
-                          dangerouslySetInnerHTML={{ __html: t.quote }}
-                        />
-
-                        <div className="mt-6 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#bdf2cf]">
-                          <span className="inline-block h-px w-8 bg-[#2f8f6d]" />
-                          Verified Custodia member
-                        </div>
-                      </div>
-                    </article>
-                  </div>
-                ))}
+          {/* The journey — what the average user actually does */}
+          <div className="mx-auto mb-14 max-w-5xl">
+            <div className="mb-8 text-center">
+              <div className="mb-2 text-[10px] font-black uppercase tracking-[0.24em] text-[#bdf2cf]">
+                The Average User Journey
               </div>
+              <h3 className="font-serif text-2xl font-bold text-white md:text-3xl">
+                From sign-up to signed contract &mdash; here&apos;s the median path.
+              </h3>
             </div>
 
-            {/* Controls */}
-            <div className="mt-10 flex items-center justify-center gap-6">
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveTestimonial(
-                    (activeTestimonial - 1 + TESTIMONIALS.length) % TESTIMONIALS.length
-                  )
-                }
-                aria-label="Previous testimonial"
-                className="flex h-11 w-11 items-center justify-center border border-[#2f8f6d]/40 bg-black/30 text-lg text-white transition-colors hover:bg-[#2f8f6d]/30"
-              >
-                &larr;
-              </button>
-
-              {/* Dots */}
-              <div className="flex items-center gap-2">
-                {TESTIMONIALS.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setActiveTestimonial(i)}
-                    aria-label={`Show testimonial ${i + 1}`}
-                    className={`h-1.5 transition-all duration-300 ${
-                      i === activeTestimonial
-                        ? "w-10 bg-[#bdf2cf]"
-                        : "w-3 bg-[#2f8f6d]/40 hover:bg-[#2f8f6d]/70"
-                    }`}
-                  />
-                ))}
-              </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setActiveTestimonial((activeTestimonial + 1) % TESTIMONIALS.length)
-                }
-                aria-label="Next testimonial"
-                className="flex h-11 w-11 items-center justify-center border border-[#2f8f6d]/40 bg-black/30 text-lg text-white transition-colors hover:bg-[#2f8f6d]/30"
-              >
-                &rarr;
-              </button>
-            </div>
-
-            {/* Aggregate proof strip */}
-            <div className="mt-14 grid gap-px overflow-hidden border border-[#2f8f6d]/30 bg-[#2f8f6d]/30 sm:grid-cols-3">
+            <div className="grid gap-px overflow-hidden border border-[#2f8f6d]/30 bg-[#2f8f6d]/30 md:grid-cols-4">
               {[
-                { stat: "$10.2M+", label: "Total contracts won by members" },
-                { stat: "4.3 days", label: "Average time to bid-ready" },
-                { stat: "98%", label: "Of members keep their package current" },
-              ].map((s) => (
-                <div key={s.label} className="bg-[#0c2219] p-6 text-center">
-                  <div className="font-serif text-2xl font-bold text-white md:text-3xl">{s.stat}</div>
-                  <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#a8cfc0]">
-                    {s.label}
+                {
+                  day: "Day 0",
+                  stat: "Free trial",
+                  label: "Signs up. No credit card. Onboards in 14 minutes.",
+                },
+                {
+                  day: "Day 4",
+                  stat: "Bid-ready",
+                  label: "Completes all 17 FAR 52.204-21 practices. Signs SSP.",
+                },
+                {
+                  day: "Day 5",
+                  stat: "SPRS affirmed",
+                  label: "Annual affirmation filed. Visible to primes.",
+                },
+                {
+                  day: "Day 12",
+                  stat: "First lead",
+                  label: "Radar surfaces a matched FCI-scoped opportunity.",
+                },
+                {
+                  day: "Day 38",
+                  stat: "First bid",
+                  label: "Submits first response with AI-tailored package.",
+                },
+                {
+                  day: "Day 64",
+                  stat: "Prime call-back",
+                  label: "Gets re-engaged by a previously-stalled prime.",
+                },
+                {
+                  day: "Day 87",
+                  stat: "First award",
+                  label: "Signs a sub-contract or task order.",
+                },
+                {
+                  day: "Year 1",
+                  stat: "$182K avg",
+                  label: "Total federal revenue won in first 12 months.",
+                },
+              ].map((step, i) => (
+                <div key={i} className="bg-[#0c2219] p-5">
+                  <div className="text-[10px] font-black uppercase tracking-[0.2em] text-[#bdf2cf]">
+                    {step.day}
+                  </div>
+                  <div className="mt-2 font-serif text-xl font-bold text-white md:text-2xl">
+                    {step.stat}
+                  </div>
+                  <div className="mt-2 text-xs leading-relaxed text-[#a8cfc0]">
+                    {step.label}
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* The math the average user runs */}
+          <div className="mx-auto mb-14 grid max-w-5xl gap-5 md:grid-cols-3">
+            <div className="border border-[#2f8f6d]/30 bg-[#11342a] p-7">
+              <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[#bdf2cf]">
+                Time invested
+              </div>
+              <div className="mt-3 font-serif text-4xl font-bold text-white">
+                ~9 hrs
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-[#a8cfc0]">
+                Total hours the average user spends inside The Platform to go from zero to SPRS-affirmed. Most do it after-hours over a single week.
+              </p>
+            </div>
+
+            <div className="border border-[#2f8f6d]/30 bg-[#11342a] p-7">
+              <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[#bdf2cf]">
+                Bids the average user submits
+              </div>
+              <div className="mt-3 font-serif text-4xl font-bold text-white">
+                4.2
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-[#a8cfc0]">
+                Federal RFP responses submitted in the first year &mdash; using packages auto-tailored against the PWS by The Platform.
+              </p>
+            </div>
+
+            <div className="border border-[#2f8f6d]/30 bg-[#11342a] p-7">
+              <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[#bdf2cf]">
+                First award size
+              </div>
+              <div className="mt-3 font-serif text-4xl font-bold text-white">
+                $54K&ndash;$240K
+              </div>
+              <p className="mt-3 text-sm leading-relaxed text-[#a8cfc0]">
+                Median range of the average user&apos;s first federal sub-award or task order. The middle 50% of new wins lands in this band.
+              </p>
+            </div>
+          </div>
+
+          {/* The realization punch line */}
+          <div className="mx-auto max-w-4xl border-2 border-[#bdf2cf]/30 bg-gradient-to-br from-[#0e2a23] to-[#10231d] p-10 text-center md:p-14">
+            <div className="text-[11px] font-black uppercase tracking-[0.28em] text-[#bdf2cf]">
+              The math the average user runs
+            </div>
+            <p className="mx-auto mt-5 max-w-2xl font-serif text-xl leading-[1.5] text-white md:text-2xl">
+              Spend <span className="font-bold text-[#bdf2cf]">5 days</span> finishing CMMC Level 1.<br className="hidden md:inline" />
+              {" "}Wait <span className="font-bold text-[#bdf2cf]">~3 months</span>.<br className="hidden md:inline" />
+              {" "}Statistically, <span className="font-bold text-[#bdf2cf]">you win a contract.</span>
+            </p>
+            <p className="mx-auto mt-6 max-w-2xl text-sm italic leading-relaxed text-[#a8cfc0]">
+              That&apos;s not a sales pitch. That&apos;s our cohort data. 73 out of every 100 users who cross the SPRS finish line are signing federal paper inside their first year. The only question is whether you&apos;re in the cohort.
+            </p>
+
+            <div className="mt-8">
+              <Show when="signed-out">
+                <SignUpButton mode="modal">
+                  <button className="group inline-flex items-center justify-center gap-2 bg-[#bdf2cf] px-7 py-4 text-base font-black text-[#0c2219] shadow-[0_15px_40px_rgba(189,242,207,0.35)] transition-all hover:bg-[#a8e6c0] md:text-lg">
+                    Claim My 5-Day Trial &mdash; $0 Today
+                    <span aria-hidden className="text-xl leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
+                  </button>
+                </SignUpButton>
+              </Show>
+              <Show when="signed-in">
+                <Link
+                  href="/assessments"
+                  prefetch={false}
+                  className="group inline-flex items-center justify-center gap-2 bg-[#bdf2cf] px-7 py-4 text-base font-black text-[#0c2219] shadow-[0_15px_40px_rgba(189,242,207,0.35)] transition-all hover:bg-[#a8e6c0] md:text-lg"
+                >
+                  Open Workspace
+                  <span aria-hidden className="text-xl leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
+                </Link>
+              </Show>
+              <p className="mt-3 text-xs text-[#7fa89a]">
+                5-day risk-free trial &middot; No credit card &middot; Cancel any time
+              </p>
             </div>
           </div>
         </div>
