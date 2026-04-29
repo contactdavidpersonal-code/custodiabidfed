@@ -170,9 +170,9 @@ export default function Home() {
               <img
                 src="/custodia-logo.png"
                 alt="Custodia shield"
-                className="h-10 w-auto drop-shadow-[0_4px_18px_rgba(189,242,207,0.25)]"
+                className="h-10 w-auto [filter:drop-shadow(0_0_14px_rgba(0,0,0,0.85))_drop-shadow(0_2px_6px_rgba(0,0,0,0.7))]"
               />
-              <span className="font-serif text-2xl font-bold tracking-tight text-white">
+              <span className="font-serif text-2xl font-bold tracking-tight text-white [text-shadow:0_0_18px_rgba(0,0,0,0.9),0_2px_6px_rgba(0,0,0,0.75)]">
                 Custodia<span className="text-[#8dd2b1]">.</span>
               </span>
             </Link>
