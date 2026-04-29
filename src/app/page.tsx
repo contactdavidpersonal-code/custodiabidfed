@@ -243,7 +243,7 @@ export default function Home() {
 
           {/* Below-headline outcome line — sets expectation for what's next */}
           <p className="mx-auto mt-10 max-w-2xl border-t border-white/[0.08] pt-8 font-serif text-base italic leading-snug text-[#bdf2cf] md:text-lg">
-            &ldquo;The DoD spends $80B/year with small businesses. The only thing standing between you and a slice of it is one piece of paperwork. We file it for you.&rdquo;
+            &ldquo;The DoD spends $80B/year with small businesses. The only thing standing between you and a slice of it is one piece of paperwork. Get Started Now.&rdquo;
           </p>
         </div>
 
