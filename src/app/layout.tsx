@@ -20,13 +20,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Custodia | CMMC Level 1 Compliance for SMBs",
+  title: "Custodia | Add 6–7 Figures in Federal Revenue, Without a Compliance Team",
   description:
-    "Guided CMMC Level 1 compliance for SMBs handling FCI. A self-serve platform built by a cybersecurity firm — with Custodia compliance officers on-call via in-app tickets when you have CMMC questions.",
+    "How established business owners are adding 6–7 figures in federal revenue — without a compliance team, an RFP chase, or a single disruption to their operations. CMMC Level 1 in plain English, weekly matched contracts, officer support.",
   openGraph: {
-    title: "Custodia | CMMC Level 1 Compliance for SMBs",
+    title: "Custodia | Add 6–7 Figures in Federal Revenue",
     description:
-      "Guided CMMC Level 1 compliance for SMBs handling FCI, with Platform automation and officer support.",
+      "Established owners are adding 6–7 figures in federal revenue with no compliance team and no RFP chase. CMMC L1 made simple. Free to build. One award covers years of subscription.",
     type: "website",
   },
 };

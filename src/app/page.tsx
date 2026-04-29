@@ -183,27 +183,36 @@ export default function Home() {
         </nav>
 
         {/* Hero text */}
-        <div className="relative mx-auto max-w-5xl px-6 pb-28 pt-24 text-center md:pb-36 md:pt-32">
+        <div className="relative mx-auto max-w-5xl px-6 pb-28 pt-24 text-center md:pb-36 md:pt-28">
+          <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-[#2f8f6d]/40 bg-[#0e2a23]/40 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf] backdrop-blur">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#bdf2cf]" aria-hidden />
+            For established U.S. business owners
+          </div>
+
           <h1
-            className="font-serif text-4xl font-bold leading-[1.05] tracking-tight md:text-6xl lg:text-7xl"
+            className="font-serif text-[2.4rem] font-bold leading-[1.04] tracking-tight md:text-6xl lg:text-7xl"
             style={{ textShadow: "0 4px 40px rgba(0,0,0,0.45)" }}
           >
-            Access{" "}
+            How Established Business Owners Are Adding{" "}
             <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
-              $80B+
+              6&ndash;7 Figures
             </span>{" "}
-            in gov contracts,
-            <br className="hidden sm:block" />
-            step by step on this platform.
+            in Federal Revenue
+            <br className="hidden md:block" />
+            <span className="text-[#cce5da]">
+              {" "}&mdash; Without a Compliance Team, an RFP Chase, or a Single Disruption to Their Operations.
+            </span>
           </h1>
-          <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-[#a8cfc0] md:text-xl">
-            Custodia walks defense-tech contractors through CMMC Level 1 in plain English. Build your full package free in The Platform. Pay only when you&apos;re ready to bid.
+
+          <p className="mx-auto mt-8 max-w-3xl text-lg leading-relaxed text-[#a8cfc0] md:text-xl">
+            Custodia walks you through CMMC Level&nbsp;1 in plain English, hands you a bid-ready package no prime can pick apart, and then emails you matched contract opportunities every Monday morning &mdash; until you win one. <span className="font-semibold text-white">One award covers years of subscription.</span> Build the entire package free; pay only when you&apos;re ready to bid.
           </p>
+
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Show when="signed-out">
               <SignUpButton mode="modal">
-                <button className="group inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.18)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_15px_55px_rgba(189,242,207,0.3)]">
-                  Start For Free
+                <button className="group inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-8 py-4 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.22)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_15px_55px_rgba(189,242,207,0.32)] md:text-lg">
+                  Show Me My Contracts &mdash; Free
                   <span aria-hidden className="text-lg leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
                 </button>
               </SignUpButton>
@@ -211,14 +220,14 @@ export default function Home() {
                 href="#pricing"
                 className="rounded-xl border border-[#2f8f6d]/50 bg-white/[0.02] px-7 py-3.5 text-base font-semibold text-[#cce5da] backdrop-blur transition-colors hover:border-[#8dd2b1]/70 hover:bg-white/[0.05] hover:text-white"
               >
-                See pricing
+                See the math
               </a>
             </Show>
             <Show when="signed-in">
               <Link
                 href="/assessments"
                 prefetch={false}
-                className="group inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.18)] transition-all hover:bg-[#a8e6c0]"
+                className="group inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-8 py-4 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.22)] transition-all hover:bg-[#a8e6c0] md:text-lg"
               >
                 Continue in workspace
                 <span aria-hidden className="text-lg leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
@@ -227,12 +236,18 @@ export default function Home() {
                 href="#pricing"
                 className="rounded-xl border border-[#2f8f6d]/50 bg-white/[0.02] px-7 py-3.5 text-base font-semibold text-[#cce5da] backdrop-blur transition-colors hover:border-[#8dd2b1]/70 hover:bg-white/[0.05] hover:text-white"
               >
-                See pricing
+                See the math
               </a>
             </Show>
           </div>
-          <p className="mt-6 text-xs font-medium tracking-wide text-[#7aab98]">
-            Free forever &middot; No credit card required &middot; Cancel anytime
+
+          <p className="mt-5 text-xs font-medium tracking-wide text-[#7aab98]">
+            Free forever &middot; No credit card &middot; Cancel anytime &middot; First matched opportunity emails as soon as next Monday
+          </p>
+
+          {/* Below-headline outcome line — sets expectation for what's next */}
+          <p className="mx-auto mt-10 max-w-2xl border-t border-white/[0.08] pt-8 font-serif text-base italic leading-snug text-[#bdf2cf] md:text-lg">
+            &ldquo;The DoD spends $80B/year with small businesses. The only thing standing between you and a slice of it is one piece of paperwork. We file it for you.&rdquo;
           </p>
         </div>
 
@@ -240,10 +255,10 @@ export default function Home() {
         <div className="relative border-t border-white/[0.08] bg-black/30 backdrop-blur-sm">
           <div className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-white/[0.08] px-2 md:grid-cols-4 md:px-6">
             {[
-              { value: "$80B+", label: "DoD small-business contracts" },
-              { value: "220K+", label: "DIB companies subject to CMMC" },
-              { value: "23%", label: "Federal set-aside (statute)" },
-              { value: "17", label: "CMMC Level 1 practices" },
+              { value: "$80B+", label: "Yearly DoD small-biz spend" },
+              { value: "23%", label: "Statutory set-aside floor" },
+              { value: "17", label: "Practices to bid-eligible" },
+              { value: "Mondays", label: "We email new contracts" },
             ].map((s) => (
               <div key={s.label} className="px-3 py-7 text-center md:px-4">
                 <div className="font-serif text-3xl font-bold tracking-tight text-white md:text-4xl">
