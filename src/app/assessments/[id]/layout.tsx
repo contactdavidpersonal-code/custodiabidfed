@@ -130,9 +130,9 @@ export default async function CourseLayout(
     {
       id: "bid-ready",
       step: 6,
-      href: `/profile/bid-ready`,
-      title: "Bid-Ready Profile",
-      subtitle: "Capability statement, past performance, insurance",
+      href: `/assessments/${id}/bid-packet`,
+      title: "Bid-Ready Packet",
+      subtitle: "Capability statement, past performance, packet download",
       status: registrationComplete ? "available" : "locked",
       match: "prefix",
     },
