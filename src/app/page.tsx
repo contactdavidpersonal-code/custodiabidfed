@@ -26,20 +26,26 @@ const PRACTICES = [
 
 const FREE_INCLUDES = [
   "Full Platform access &mdash; no time limit, no credit card",
-  "Platform-guided onboarding in 5 minutes",
+  "AI-guided onboarding in 5 minutes &mdash; no 40-field forms",
   "Plain-English walkthrough of all 17 FAR 52.204-21 practices",
-  "Draft and edit SSP narratives for every control",
-  "Per-control evidence upload",
-  "View your readiness score, broken down by domain",
+  "Auto-drafted SSP narratives for every control &mdash; accept or edit",
+  "Per-control evidence vault with smart classification",
+  "Live readiness score, broken down by domain",
   "Read-only previews of your SSP and affirmation memo",
+  "AI-drafted federal capability statement",
+  "Weekly SAM.gov opportunity radar &mdash; matched to your NAICS",
+  "Fiscal compass: federal calendar &amp; milestone reminders",
 ];
 
 const MEMBERSHIP_INCLUDES = [
   "Everything in Free, plus:",
   "Generate the bid-ready package &mdash; signed affirmation memo, SSP, full evidence inventory ZIP",
   "Officer review on every artifact before package generation",
+  "AI per-opportunity packet tailoring &mdash; one click from any SAM.gov notice",
   "SPRS submission instructions, step by step",
-  "Year-round compliance monitoring &mdash; flags changed controls automatically",
+  "Evidence freshness watchtower &mdash; auto-flags expiring scans, screenshots, training",
+  "Compliance officer rail &mdash; escalate any question in-app",
+  "Year-round monitoring &mdash; flags changed controls automatically",
   "1:1 Custodia Ticket Support &mdash; officer answers any question",
   "Annual re-affirmation included &mdash; ready every Oct 1, no extra charge",
   "Prime questionnaire support via ticket",
@@ -802,6 +808,151 @@ export default function Home() {
             </div>
             <p className="mt-4 text-xs text-[#7aab98]">
               No credit card required to start &middot; Membership unlocks at step six
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* 9.5 — Inside The Platform: full feature showcase */}
+      <section className="bg-white px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-14 text-center">
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">inside the platform</div>
+            <h2 className="font-serif text-4xl font-bold leading-[1.05] tracking-tight text-[#10231d] md:text-6xl">
+              Everything you need to go from zero to bidding.
+            </h2>
+            <p className="mx-auto mt-5 max-w-3xl text-lg text-[#44695c]">
+              The Platform isn&apos;t a checklist app &mdash; it&apos;s a complete operating system for federal contracting. Here&apos;s every capability you get, mapped to the four phases of winning the work.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* BUILD */}
+            <div className="rounded-3xl border border-[#cfe3d9] bg-[#f7fcf9] p-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">phase 01</div>
+                  <h3 className="mt-1 font-serif text-2xl font-bold text-[#10231d]">Build your posture</h3>
+                </div>
+                <span className="rounded-full bg-[#e8f7ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#1f5c47]">free</span>
+              </div>
+              <p className="mt-3 text-sm text-[#496f61]">Walk the 17 practices, capture evidence, draft your SSP &mdash; without writing it from scratch.</p>
+              <ul className="mt-6 space-y-3">
+                {[
+                  { t: "AI-guided onboarding", d: "Conversational intake captures your business, FCI scope, tech stack &mdash; no 40-field forms." },
+                  { t: "All 17 practices, plain English", d: "Each FAR 52.204-21 control walked with capture steps tailored to M365, Google, Okta, AWS, on-prem, or no IT at all." },
+                  { t: "Evidence vault per control", d: "Tag screenshots, exports, signed rosters, and policy PDFs to the controls they prove." },
+                  { t: "Auto-drafted SSP narratives", d: "Every control&apos;s SSP section pre-written from your inputs. Accept or edit in one click." },
+                  { t: "Live readiness score", d: "Real-time domain-by-domain progress so you always know what&apos;s left." },
+                  { t: "AI-drafted capability statement", d: "Federal-format one-pager generated from your inputs &mdash; ready to attach to any bid." },
+                ].map((f) => (
+                  <li key={f.t} className="flex items-start gap-3">
+                    <span aria-hidden className="mt-0.5 flex-none font-bold text-[#2f8f6d]">&#10003;</span>
+                    <span className="text-sm">
+                      <b className="text-[#10231d]">{f.t}.</b>{" "}
+                      <span className="text-[#496f61]">{f.d}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* BID */}
+            <div className="rounded-3xl border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">phase 02</div>
+                  <h3 className="mt-1 font-serif text-2xl font-bold">Bid with confidence</h3>
+                </div>
+                <span className="rounded-full bg-[#bdf2cf] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#0c2219]">membership</span>
+              </div>
+              <p className="mt-3 text-sm text-[#a8cfc0]">Officer-reviewed package, AI-tailored to every opportunity. The work that decides whether you bid or stall.</p>
+              <ul className="mt-6 space-y-3">
+                {[
+                  { t: "Officer review on every artifact", d: "A Custodia compliance officer signs off on your evidence before any package generates." },
+                  { t: "Bid-ready package ZIP", d: "Signed affirmation memo, full SSP, evidence inventory, ready to attach to any RFP." },
+                  { t: "AI per-opportunity packet tailor", d: "Paste a SAM.gov notice or click &lsquo;Tailor&rsquo; from your radar &mdash; the package adapts to that solicitation." },
+                  { t: "Cover letter + executive summary", d: "Auto-drafted for the specific contracting officer or prime, in your voice." },
+                  { t: "SPRS submission instructions", d: "Step-by-step walkthrough so the affirmation files clean on the first try." },
+                  { t: "Prime questionnaire support", d: "Ticketed officer help when a prime sends you their security questionnaire." },
+                ].map((f) => (
+                  <li key={f.t} className="flex items-start gap-3">
+                    <span aria-hidden className="mt-0.5 flex-none font-bold text-[#8dd2b1]">&#10003;</span>
+                    <span className="text-sm">
+                      <b className="text-white">{f.t}.</b>{" "}
+                      <span className="text-[#a8cfc0]">{f.d}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* FIND OPPORTUNITIES */}
+            <div className="rounded-3xl border border-[#cfe3d9] bg-[#f7fcf9] p-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">phase 03</div>
+                  <h3 className="mt-1 font-serif text-2xl font-bold text-[#10231d]">Find the contracts</h3>
+                </div>
+                <span className="rounded-full bg-[#e8f7ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#1f5c47]">free</span>
+              </div>
+              <p className="mt-3 text-sm text-[#496f61]">Opportunities matched to your business, delivered to your inbox before the news hits LinkedIn.</p>
+              <ul className="mt-6 space-y-3">
+                {[
+                  { t: "SAM.gov opportunity radar", d: "Every Monday morning we pull new SAM.gov notices matched to your NAICS codes and set-aside eligibility." },
+                  { t: "Inbox view of matched notices", d: "All your matched opportunities in one place &mdash; dismiss, view on SAM, or tailor a packet in one click." },
+                  { t: "Fiscal compass", d: "Federal-fiscal-year calendar in-app: end-of-year obligation surges, Q4 spend windows, micro-purchase thresholds." },
+                  { t: "Milestone reminders", d: "Email nudges before SPRS deadlines, prime audits, and re-affirmation due dates." },
+                  { t: "Bid profile", d: "Set your NAICS, set-asides, place of performance, and capability tags &mdash; everything keys off this." },
+                ].map((f) => (
+                  <li key={f.t} className="flex items-start gap-3">
+                    <span aria-hidden className="mt-0.5 flex-none font-bold text-[#2f8f6d]">&#10003;</span>
+                    <span className="text-sm">
+                      <b className="text-[#10231d]">{f.t}.</b>{" "}
+                      <span className="text-[#496f61]">{f.d}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* MAINTAIN */}
+            <div className="rounded-3xl border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">phase 04</div>
+                  <h3 className="mt-1 font-serif text-2xl font-bold">Stay compliant, year-round</h3>
+                </div>
+                <span className="rounded-full bg-[#bdf2cf] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#0c2219]">membership</span>
+              </div>
+              <p className="mt-3 text-sm text-[#a8cfc0]">Compliance isn&apos;t one-and-done. The Platform watches your posture so you don&apos;t have to.</p>
+              <ul className="mt-6 space-y-3">
+                {[
+                  { t: "Evidence freshness watchtower", d: "Auto-flags expiring scans (30d), screenshots (90d), training, policies, and certs &mdash; before they go stale." },
+                  { t: "Compliance officer rail", d: "In-app escalation channel: ask any question and a Custodia officer responds with audit-grade guidance." },
+                  { t: "Annual re-affirmation included", d: "Every Oct 1 your next SPRS submission is prepped &mdash; no fire drill, no extra fee." },
+                  { t: "Posture-drift detection", d: "Changed controls, new requirements, framework updates &mdash; we flag exactly what to fix." },
+                  { t: "Custodia Guarantee", d: "If a prime or contracting officer challenges your package, we resolve it &mdash; including direct comms with the prime." },
+                  { t: "Audit-ready archive", d: "Every artifact, signature, and review preserved with full chain-of-custody for inspection." },
+                ].map((f) => (
+                  <li key={f.t} className="flex items-start gap-3">
+                    <span aria-hidden className="mt-0.5 flex-none font-bold text-[#8dd2b1]">&#10003;</span>
+                    <span className="text-sm">
+                      <b className="text-white">{f.t}.</b>{" "}
+                      <span className="text-[#a8cfc0]">{f.d}</span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-12 rounded-2xl border border-[#cfe3d9] bg-[#f7fcf9] p-6 text-center md:p-8">
+            <p className="font-serif text-xl text-[#10231d] md:text-2xl">
+              Free covers the build and the radar. Membership covers the bid, the win, and the maintenance.
+            </p>
+            <p className="mt-3 text-sm text-[#5a7d70]">
+              Sign up free, build your posture, watch the SAM radar fill up, and upgrade the moment you&apos;re ready to download a bid-ready package.
             </p>
           </div>
         </div>

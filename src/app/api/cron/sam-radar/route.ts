@@ -5,9 +5,11 @@ import {
   listRadarTargets,
   markOpportunitiesDigested,
   persistOpportunities,
+  SamApiKeyError,
 } from "@/lib/sam-radar";
 import { resolveOwnerEmail } from "@/lib/email/freshness";
 import { sendOpportunityDigest } from "@/lib/email/opportunities";
+import { sendSamKeyAlert } from "@/lib/email/sam-key-alert";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -82,6 +84,31 @@ export async function GET(req: Request) {
       await markOpportunitiesDigested(top.map((r) => r.id));
       sent += 1;
     } catch (err) {
+      // If SAM rejected our api_key, the rest of the run is doomed — bail
+      // out, send the admin a single alert email, and skip every remaining
+      // org so subscribers don't get stale-data digests.
+      if (err instanceof SamApiKeyError) {
+        console.error("[sam-radar] SAM api_key rejected — aborting run", err);
+        try {
+          await sendSamKeyAlert({
+            status: err.status,
+            body: err.body,
+            orgsAffected: targets.length,
+          });
+        } catch (alertErr) {
+          console.error("[sam-radar] failed to send admin alert", alertErr);
+        }
+        return NextResponse.json(
+          {
+            sent,
+            inserted,
+            orgs: targets.length,
+            aborted_reason: "sam_api_key_rejected",
+            sam_status: err.status,
+          },
+          { status: 200 },
+        );
+      }
       console.error(`[sam-radar] org ${t.organization_id} failed:`, err);
       skipped.push({
         org: t.organization_id,
