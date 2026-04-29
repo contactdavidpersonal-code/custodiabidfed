@@ -1,0 +1,17 @@
+External System / Device,Type (SaaS / BYOD / Vendor / Subcontractor),Purpose,Data It Can Access,Hosted By,Authorized By,Date Authorized,Public-Facing? (Y/N)
+Prime contractor SharePoint,SaaS,File exchange with prime,FCI documents,Prime IT,Owner,2026-01-15,N
+Owner personal laptop,BYOD,Email + project tracker,Email containing FCI,Self,Owner,2025-09-01,N
+Company website,SaaS,Marketing only — no FCI,None,Squarespace,Owner,2024-06-01,Y
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+"Signed by:,,,Date:,,,,"
+"Owner Name:,,,Title:,,,,"

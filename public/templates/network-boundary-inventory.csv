@@ -1,0 +1,12 @@
+Boundary Component (Router / Firewall / VPN / SaaS),Make / Model,Location,Admin Password Changed? (Y/N),Firewall Enabled? (Y/N),Notes
+ISP router,Netgear Nighthawk,Main office,Y,Y,Default admin pwd changed 2024-06-01
+Workstation firewall (Windows Defender),Built-in,All laptops,N/A,Y,Domain/Private/Public profiles all on
+Wi-Fi (employees),WPA3,Main office,Y,Y,Guest network isolated
+,,,,,
+,,,,,
+,,,,,
+"Signed by:,,Date:,,,"
+"Owner Name:,,Title:,,,"
+""
+"Network Diagram (sketch or attach):"
+"Internet → ISP Router (Firewall) → Switch → Internal Devices"

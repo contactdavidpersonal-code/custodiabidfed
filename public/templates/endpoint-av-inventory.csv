@@ -1,0 +1,12 @@
+Device,User,OS,AV / Anti-Malware Product,Real-Time Protection (Y/N),Definition Date,Last Full Scan Date,Scan Frequency,Notes
+Owner laptop,Owner,Windows 11,Microsoft Defender,Y,2026-04-28,2026-04-25,Weekly,
+Jane laptop,Jane Doe,Windows 11,Microsoft Defender,Y,2026-04-28,2026-04-25,Weekly,
+John MacBook,John Smith,macOS 15,Built-in XProtect,Y,2026-04-27,2026-04-22,Weekly,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+,,,,,,,,
+"Policy: real-time protection on all in-scope devices; auto-updates enabled; full scan at least weekly."
+"Signed by:,,Date:,,,,,"
+"Owner Name:,,Title:,,,,,"

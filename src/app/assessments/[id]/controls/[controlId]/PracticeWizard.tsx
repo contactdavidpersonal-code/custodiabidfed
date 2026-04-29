@@ -605,6 +605,26 @@ function CaptureStep({
               <span className="font-semibold">What we need:&nbsp;</span>
               {guidance.capture}
             </div>
+            {guidance.template && (
+              <div className="mt-3 rounded-sm border border-[#cfe3d9] bg-white p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
+                  Use our template
+                </p>
+                <p className="mt-1 text-sm font-semibold text-[#10231d]">
+                  {guidance.template.label}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-[#5a7d70]">
+                  {guidance.template.description}
+                </p>
+                <a
+                  href={`/templates/${guidance.template.filename}`}
+                  download
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-sm bg-[#0e2a23] px-3 py-1.5 text-xs font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+                >
+                  Download template
+                </a>
+              </div>
+            )}
           </div>
 
           <div className="mt-5">

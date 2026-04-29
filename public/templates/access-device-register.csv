@@ -1,0 +1,15 @@
+Device ID (Key # / Fob Serial / Code Label),Device Type (Key / Fob / Keycard / Code),Holder Name,Issued Date,Returned Date,Notes
+K-001,Key,Owner,2024-06-01,,Master
+K-002,Key,Jane Doe,2026-01-15,,Office suite
+FOB-09,Fob,John Smith,2026-02-03,,Returned 2026-04-20
+CODE-Front,Code (rotated),All authorized staff,2026-04-20,,Rotated after FOB-09 return
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+"Signed by:,,Date:,,,"
+"Owner Name:,,Title:,,,"

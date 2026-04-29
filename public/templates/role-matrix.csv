@@ -1,0 +1,17 @@
+System,User,Permission Level,Business Justification,Approved By,Approved Date,Last Reviewed
+Microsoft 365,Jane Doe,Standard User,Day-to-day project work,Owner,2026-01-15,2026-04-01
+Microsoft 365,Owner Name,Global Admin,Tenant administration; sole admin,Owner,2024-06-01,2026-04-01
+QuickBooks,John Smith,Bookkeeper,Invoicing & AP only — no admin,Owner,2026-02-03,2026-04-01
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
+"Signed by:,,Date:,,,,"
+"Owner Name:,,Title:,,,,"

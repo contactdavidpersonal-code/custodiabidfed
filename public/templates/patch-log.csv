@@ -1,0 +1,14 @@
+Date,Device / System,Update / Patch Installed,Severity (Critical / High / Med / Low),Performed By,Verification (Screenshot / Log Reference)
+2026-04-15,Owner laptop (Win 11),"Cumulative update 2026-04",Critical,Owner,update-history-2026-04-15.png
+2026-04-15,Jane laptop (Win 11),"Cumulative update 2026-04",Critical,Jane Doe,update-history-jane-2026-04-15.png
+2026-04-15,Office Pro Plus,"Monthly Channel build update",Med,Auto,n/a
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+,,,,,
+"Patching Policy: critical updates within 30 days; all others at least monthly."
+"Signed by:,,Date:,,,"
+"Owner Name:,,Title:,,,"

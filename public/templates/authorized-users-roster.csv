@@ -1,0 +1,18 @@
+System,Full Name,Username / Email,Role,Date Authorized,Authorizing Manager,MFA Enabled (Y/N),Last Reviewed
+Microsoft 365,Jane Doe,jane.doe@example.com,Project Manager,2026-01-15,Owner,Y,2026-04-01
+File Server,John Smith,jsmith,Read/Write,2026-02-03,Owner,Y,2026-04-01
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+,,,,,,,
+"Signed by:,,,Date:,,,,"
+"Owner Name:,,,Title:,,,,"

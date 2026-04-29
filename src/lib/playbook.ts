@@ -13,11 +13,18 @@ export const evidenceProviders = [
 ] as const;
 export type EvidenceProvider = (typeof evidenceProviders)[number];
 
+export type ProviderTemplate = {
+  filename: string;
+  label: string;
+  description: string;
+};
+
 export type ProviderGuidance = {
   provider: EvidenceProvider;
   label: string;
   steps: string[];
   capture: string;
+  template?: ProviderTemplate;
 };
 
 export type NarrativeContext = {
@@ -91,6 +98,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Signed user roster per system. A clear photo or scanned PDF of the signed page is acceptable.",
+        template: {
+          filename: "authorized-users-roster.csv",
+          label: "Authorized Users Roster (CSV)",
+          description: "Fill in every system that handles contract info, every authorized user, and have the owner sign and date. Open in Excel, Google Sheets, or Numbers.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -148,6 +160,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Signed role matrix (PDF or photo of signed page).",
+        template: {
+          filename: "role-matrix.csv",
+          label: "Role Matrix (CSV)",
+          description: "One row per system × user × permission level. Document business justification, then sign and date.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -205,6 +222,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Signed external-systems list + external-use policy (PDF or photo).",
+        template: {
+          filename: "external-systems-inventory.csv",
+          label: "External Systems Inventory (CSV)",
+          description: "List every outside system, BYOD device, vendor tool, and subcontractor connection that touches contract info. Owner signs.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -239,6 +261,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Signed policy + acknowledgements + most-recent quarterly review memo.",
+        template: {
+          filename: "public-posting-acknowledgement.csv",
+          label: "Public Posting Policy + Acknowledgement (CSV)",
+          description: "Includes the policy text, an acknowledgement table for every employee, and a quarterly review log. Sign once everyone has acknowledged.",
+        },
       },
       {
         provider: "m365",
@@ -307,6 +334,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Signed memo + list of any documented exceptions.",
+        template: {
+          filename: "authorized-users-roster.csv",
+          label: "Authorized Users Roster (CSV)",
+          description: "Use the same roster from the access-control practice — confirm every login is tied to one named person and note any documented exceptions.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -365,6 +397,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Screenshots or photos showing MFA enabled per account, plus the signed authentication policy page.",
+        template: {
+          filename: "authorized-users-roster.csv",
+          label: "Authorized Users Roster (CSV) — fill MFA column",
+          description: "Mark Y/N in the MFA Enabled column for each user, attach screenshots showing MFA on, and have the owner sign.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -399,6 +436,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Signed procedure + the current disposal log (photo of page, or PDF export).",
+        template: {
+          filename: "media-disposal-log.csv",
+          label: "Media Disposal Log (CSV)",
+          description: "Log every laptop, phone, USB, drive, or paper file you destroy or sanitize. Include sanitization method and a witness signature.",
+        },
       },
       {
         provider: "m365",
@@ -444,6 +486,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Photo of the locked space (door closed, lock visible) + signed key/access list (PDF or photo).",
+        template: {
+          filename: "physical-access-roster.csv",
+          label: "Physical Access Roster (CSV)",
+          description: "List every locked space and every person authorized to enter. Pair the completed roster with a photo of the locked door or cabinet.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -478,6 +525,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Signed policy + a representative recent page of the visitor log.",
+        template: {
+          filename: "visitor-log.csv",
+          label: "Visitor Log (CSV)",
+          description: "Print and keep at the entry, or fill digitally — date, name, company, purpose, escort, time-in, time-out.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -512,6 +564,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Photo/scan of the current and a recent prior page of the visitor log.",
+        template: {
+          filename: "visitor-log.csv",
+          label: "Visitor Log (CSV)",
+          description: "Same template used for visitor escorts — retain at least one year of entries.",
+        },
       },
       {
         provider: "m365",
@@ -556,6 +613,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Signed register + signed offboarding checklist (photo or PDF).",
+        template: {
+          filename: "access-device-register.csv",
+          label: "Access Device Register (CSV)",
+          description: "Every key, fob, keycard, and door code — who holds it, when issued, when returned. Rotate codes when a holder departs.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -612,6 +674,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Network diagram + router admin screenshot + device photo.",
+        template: {
+          filename: "network-boundary-inventory.csv",
+          label: "Network Boundary Inventory (CSV)",
+          description: "List every router, firewall, VPN, and Wi-Fi network. Confirm default admin passwords are changed and firewalls are enabled. Includes a small ASCII network diagram you can adapt.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -647,6 +714,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Signed inventory + separation memo (PDF or photo).",
+        template: {
+          filename: "external-systems-inventory.csv",
+          label: "External Systems Inventory (CSV) — public column",
+          description: "Fill the Public-Facing column for each system. If all public systems are vendor-hosted SaaS (Squarespace, Wix, etc.), say so explicitly.",
+        },
       },
       {
         provider: "aws",
@@ -713,6 +785,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Signed patching policy + patch log + recent update-history screenshots.",
+        template: {
+          filename: "patch-log.csv",
+          label: "Patch Log (CSV)",
+          description: "Date, device, update installed, who installed it. Includes the policy line: critical within 30 days, others at least monthly.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -768,6 +845,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Signed device/AV inventory + per-device AV screenshots + email-scanning evidence.",
+        template: {
+          filename: "endpoint-av-inventory.csv",
+          label: "Endpoint AV Inventory (CSV)",
+          description: "Every device in scope, the AV product, and whether real-time protection is on. Pair with per-device screenshots.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -812,6 +894,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Per-device screenshots with current timestamps + signed policy memo.",
+        template: {
+          filename: "endpoint-av-inventory.csv",
+          label: "Endpoint AV Inventory (CSV) — definition date column",
+          description: "Same inventory used for AV protection — fill the Definition Date column to show definitions are current.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -856,6 +943,11 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Per-device settings screenshots + last-scan screenshots.",
+        template: {
+          filename: "endpoint-av-inventory.csv",
+          label: "Endpoint AV Inventory (CSV) — last-scan column",
+          description: "Same inventory — fill the Last Full Scan Date and Scan Frequency columns to show scheduled scanning is in place.",
+        },
       },
     ],
     suggestedNarrative: (ctx) =>
