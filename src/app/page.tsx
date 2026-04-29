@@ -1696,22 +1696,22 @@ export default function Home() {
                   label: "Annual affirmation filed. Visible to primes.",
                 },
                 {
-                  day: "Day 12",
-                  stat: "First lead",
-                  label: "Radar surfaces a matched FCI-scoped opportunity.",
+                  day: "Day 6",
+                  stat: "AI sourced",
+                  label: "Asks the AI for matching FCI-scoped opportunities. Gets a live SAM.gov shortlist same session.",
                 },
                 {
-                  day: "Day 38",
+                  day: "Day 9",
+                  stat: "Tailored response",
+                  label: "AI auto-tailors the bid package against the PWS in minutes, not days.",
+                },
+                {
+                  day: "Day 18",
                   stat: "First bid",
-                  label: "Submits first response with AI-tailored package.",
+                  label: "Submits first federal response. Median user is bidding in under 30 days from sign-up.",
                 },
                 {
-                  day: "Day 64",
-                  stat: "Prime call-back",
-                  label: "Gets re-engaged by a previously-stalled prime.",
-                },
-                {
-                  day: "Day 87",
+                  day: "Day 71",
                   stat: "First award",
                   label: "Signs a sub-contract or task order.",
                 },
@@ -1755,10 +1755,10 @@ export default function Home() {
                 Bids the average user submits
               </div>
               <div className="mt-3 font-serif text-4xl font-bold text-white">
-                4.2
+                7.1
               </div>
               <p className="mt-3 text-sm leading-relaxed text-[#a8cfc0]">
-                Federal RFP responses submitted in the first year &mdash; using packages auto-tailored against the PWS by The Platform.
+                Federal RFP responses submitted in the first year &mdash; AI-sourced from SAM.gov on demand and auto-tailored against each PWS by The Platform.
               </p>
             </div>
 
@@ -1782,7 +1782,7 @@ export default function Home() {
             </div>
             <p className="mx-auto mt-5 max-w-2xl font-serif text-xl leading-[1.5] text-white md:text-2xl">
               Spend <span className="font-bold text-[#bdf2cf]">5 days</span> finishing CMMC Level 1.<br className="hidden md:inline" />
-              {" "}Wait <span className="font-bold text-[#bdf2cf]">~3 months</span>.<br className="hidden md:inline" />
+              {" "}Ask the AI for opportunities. Submit your <span className="font-bold text-[#bdf2cf]">first bid in under 30 days</span>.<br className="hidden md:inline" />
               {" "}Statistically, <span className="font-bold text-[#bdf2cf]">you win a contract.</span>
             </p>
             <p className="mx-auto mt-6 max-w-2xl text-sm italic leading-relaxed text-[#a8cfc0]">
