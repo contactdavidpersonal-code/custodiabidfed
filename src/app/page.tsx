@@ -716,6 +716,201 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 6.7 — Opportunity engine + community: win your first award */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-[#f7fcf9] via-white to-[#f7fcf9] px-6 py-24">
+        <div className="pointer-events-none absolute inset-0 [background-image:radial-gradient(circle_at_top_left,#bdf2cf33,transparent_50%),radial-gradient(circle_at_bottom_right,#bdf2cf33,transparent_50%)]" aria-hidden />
+        <div className="relative mx-auto max-w-6xl">
+          <div className="mb-12 text-center">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#2f8f6d] bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+              <span className="inline-block h-2 w-2 rounded-full bg-[#2f8f6d]" aria-hidden />
+              the opportunity engine
+            </div>
+            <h2 className="font-serif text-4xl font-bold leading-[1.05] tracking-tight text-[#10231d] md:text-6xl">
+              The goal: win at least one award.
+              <br />
+              <span className="text-[#2f8f6d]">Then you&apos;re in the game.</span>
+            </h2>
+            <p className="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-[#44695c]">
+              Once you&apos;re CMMC Level 1 secure, you&apos;re eligible to handle Federal Contract Information &mdash; that&apos;s the gate. Custodia&apos;s job after that gate is to put live, matched opportunities in front of you every week until you win one. Because a single award changes everything: the past performance, the credit, the next bid.
+            </p>
+          </div>
+
+          {/* Hero feature card: weekly emails */}
+          <div className="grid gap-0 overflow-hidden rounded-3xl border-2 border-[#2f8f6d] bg-white shadow-[0_25px_60px_rgba(14,48,37,0.12)] md:grid-cols-[1.1fr_1fr]">
+            {/* Left: pitch */}
+            <div className="flex flex-col justify-between bg-[#0e2a23] p-10 text-white md:p-12">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-[#2f8f6d] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white">
+                  Included free &middot; on by default
+                </div>
+                <h3 className="mt-5 font-serif text-3xl font-bold leading-tight md:text-4xl">
+                  Every Monday at 7am, the contracts find <em>you</em>.
+                </h3>
+                <p className="mt-4 text-sm leading-relaxed text-[#a8cfc0] md:text-base">
+                  Custodia scans SAM.gov, DSIP, GSA eBuy, and the major federal opportunity feeds, then emails you a curated digest of the live solicitations matched to your NAICS codes &mdash; with deadlines, set-aside flags, and one-click AI tailoring already wired up.
+                </p>
+
+                <ul className="mt-6 space-y-3 text-sm text-[#cce5da]">
+                  {[
+                    "Matched to your NAICS, location, and size profile",
+                    "Set-aside flags: SDB, WOSB, HUBZone, 8(a), VOSB / SDVOSB",
+                    "Sorted by closing date so you act on what&apos;s urgent first",
+                    "Every email links straight into your in-app inbox &mdash; full history kept",
+                    "One click: AI tailors your bid-ready packet to that specific solicitation",
+                    "Don&apos;t want the email? Toggle it off in your bid profile in 2 seconds",
+                  ].map((b) => (
+                    <li key={b} className="flex items-start gap-2">
+                      <span aria-hidden className="mt-0.5 flex-none font-bold text-[#bdf2cf]">&#10003;</span>
+                      <span dangerouslySetInnerHTML={{ __html: b }} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <p className="mt-8 border-t border-[#2a5a49] pt-6 font-serif text-lg italic leading-snug text-[#bdf2cf]">
+                &ldquo;The hardest part of fed contracting isn&apos;t bidding &mdash; it&apos;s knowing which contract to bid on. Custodia tells you.&rdquo;
+              </p>
+            </div>
+
+            {/* Right: mock email */}
+            <div className="flex flex-col bg-[#f7fcf9] p-8 md:p-10">
+              <div className="rounded-2xl border border-[#cfe3d9] bg-white shadow-sm">
+                {/* Email header */}
+                <div className="flex items-center gap-3 border-b border-[#cfe3d9] px-5 py-3">
+                  <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-[#2f8f6d] text-xs font-bold text-white">
+                    C
+                  </div>
+                  <div className="min-w-0 flex-1 text-xs">
+                    <div className="truncate font-bold text-[#10231d]">Custodia &mdash; This Monday&apos;s federal opportunities</div>
+                    <div className="truncate text-[#5a7d70]">opportunities@bidfedcmmc.com &middot; to you &middot; 7:02 AM</div>
+                  </div>
+                  <div className="hidden flex-none rounded-sm bg-[#bdf2cf] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#10231d] sm:block">
+                    7 matches
+                  </div>
+                </div>
+
+                {/* Mock opportunities */}
+                <div className="divide-y divide-[#e6f0eb]">
+                  {[
+                    {
+                      title: "DoD &mdash; Cyber Systems Engineering Support",
+                      naics: "541512",
+                      value: "$4.2M ceiling",
+                      due: "12 days",
+                      tags: ["SDVOSB set-aside", "5-yr IDIQ"],
+                      hot: true,
+                    },
+                    {
+                      title: "GSA &mdash; IT Services Schedule 70 task order",
+                      naics: "541511",
+                      value: "$280k",
+                      due: "9 days",
+                      tags: ["Small biz set-aside"],
+                      hot: false,
+                    },
+                    {
+                      title: "Air Force SBIR Phase II direct-to-Phase II",
+                      naics: "541715",
+                      value: "$1.7M",
+                      due: "21 days",
+                      tags: ["SBIR", "Phase II"],
+                      hot: false,
+                    },
+                  ].map((o) => (
+                    <div key={o.title} className="flex items-start gap-3 px-5 py-3">
+                      <div
+                        className={`mt-1.5 h-2 w-2 flex-none rounded-full ${
+                          o.hot ? "bg-[#a06b1a]" : "bg-[#2f8f6d]"
+                        }`}
+                        aria-hidden
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div
+                          className="text-sm font-bold text-[#10231d]"
+                          dangerouslySetInnerHTML={{ __html: o.title }}
+                        />
+                        <div className="mt-1 text-[11px] text-[#5a7d70]">
+                          NAICS {o.naics} &middot; {o.value} &middot; closes in {o.due}
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {o.tags.map((t) => (
+                            <span
+                              key={t}
+                              className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-1.5 py-0.5 text-[10px] font-semibold text-[#2f8f6d]"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled
+                        className="flex-none rounded-sm border border-[#2f8f6d] bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#2f8f6d]"
+                      >
+                        Tailor
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="border-t border-[#cfe3d9] bg-[#f7fcf9] px-5 py-3 text-center text-[11px] text-[#5a7d70]">
+                  + 4 more matches in your inbox &middot; manage emails in your bid profile
+                </div>
+              </div>
+
+              <p className="mt-4 text-center text-[11px] italic text-[#5a7d70]">
+                Sample digest. Real opportunities pulled live from federal feeds.
+              </p>
+            </div>
+          </div>
+
+          {/* Community + first-award promise */}
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            <div className="rounded-2xl border border-[#cfe3d9] bg-white p-7">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#bdf2cf] font-serif text-xl font-bold text-[#0e2a23]">
+                1
+              </div>
+              <h4 className="mt-4 font-serif text-lg font-bold text-[#10231d]">
+                Get CMMC Level 1 secure
+              </h4>
+              <p className="mt-2 text-sm leading-relaxed text-[#496f61]">
+                You complete the 17 practices, capture evidence, and file your SPRS affirmation. You&apos;re now legally eligible to handle Federal Contract Information &mdash; the gate is open.
+              </p>
+            </div>
+            <div className="rounded-2xl border-2 border-[#2f8f6d] bg-[#f7fcf9] p-7 shadow-sm">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2f8f6d] font-serif text-xl font-bold text-white">
+                2
+              </div>
+              <h4 className="mt-4 font-serif text-lg font-bold text-[#10231d]">
+                Join the bid-ready community
+              </h4>
+              <p className="mt-2 text-sm leading-relaxed text-[#496f61]">
+                You&apos;re now part of a network of small businesses securing themselves for federal work. Custodia delivers matched opportunities every week and points the AI tailoring engine at any one with a single click.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-[#cfe3d9] bg-white p-7">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#bdf2cf] font-serif text-xl font-bold text-[#0e2a23]">
+                3
+              </div>
+              <h4 className="mt-4 font-serif text-lg font-bold text-[#10231d]">
+                Win at least one award
+              </h4>
+              <p className="mt-2 text-sm leading-relaxed text-[#496f61]">
+                That&apos;s the bar. One award. After your first win you have past performance, a CAGE that&apos;s seen action, and the credibility to keep bidding. Everything compounds from there.
+              </p>
+            </div>
+          </div>
+
+          {/* Bottom band */}
+          <div className="mt-10 rounded-2xl border border-[#2f8f6d] bg-[#0e2a23] px-8 py-6 text-center text-white">
+            <div className="font-serif text-xl font-bold leading-snug md:text-2xl">
+              You secure the business. We supply the opportunities. The first award is the milestone we&apos;re both chasing.
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* 7 — Why Custodia is different */}
       <section className="bg-[#0e2a23] px-6 py-24 text-white">
         <div className="mx-auto max-w-6xl">
