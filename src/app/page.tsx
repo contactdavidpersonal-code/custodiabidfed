@@ -173,7 +173,7 @@ export default function Home() {
                 </SignInButton>
               </Show>
               <Show when="signed-in">
-                <Link href="/assessments" prefetch={false} className="rounded-xl bg-[#bdf2cf] px-4 py-2 text-sm font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
+                <Link href="/assessments" prefetch={false} className="bg-[#bdf2cf] px-4 py-2 text-sm font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
                   Open workspace
                 </Link>
                 <UserButton />
@@ -207,14 +207,14 @@ export default function Home() {
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Show when="signed-out">
               <SignUpButton mode="modal">
-                <button className="group inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-8 py-4 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.22)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_15px_55px_rgba(189,242,207,0.32)] md:text-lg">
+                <button className="group inline-flex items-center gap-2 bg-[#bdf2cf] px-8 py-4 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.22)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_15px_55px_rgba(189,242,207,0.32)] md:text-lg">
                   Show Me My Contracts &mdash; Free
                   <span aria-hidden className="text-lg leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
                 </button>
               </SignUpButton>
               <a
                 href="#pricing"
-                className="rounded-xl border border-[#2f8f6d]/50 bg-white/[0.02] px-7 py-3.5 text-base font-semibold text-[#cce5da] backdrop-blur transition-colors hover:border-[#8dd2b1]/70 hover:bg-white/[0.05] hover:text-white"
+                className="border border-[#2f8f6d]/50 bg-white/[0.02] px-7 py-3.5 text-base font-semibold text-[#cce5da] backdrop-blur transition-colors hover:border-[#8dd2b1]/70 hover:bg-white/[0.05] hover:text-white"
               >
                 See the math
               </a>
@@ -223,14 +223,14 @@ export default function Home() {
               <Link
                 href="/assessments"
                 prefetch={false}
-                className="group inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-8 py-4 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.22)] transition-all hover:bg-[#a8e6c0] md:text-lg"
+                className="group inline-flex items-center gap-2 bg-[#bdf2cf] px-8 py-4 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.22)] transition-all hover:bg-[#a8e6c0] md:text-lg"
               >
                 Continue in workspace
                 <span aria-hidden className="text-lg leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
               </Link>
               <a
                 href="#pricing"
-                className="rounded-xl border border-[#2f8f6d]/50 bg-white/[0.02] px-7 py-3.5 text-base font-semibold text-[#cce5da] backdrop-blur transition-colors hover:border-[#8dd2b1]/70 hover:bg-white/[0.05] hover:text-white"
+                className="border border-[#2f8f6d]/50 bg-white/[0.02] px-7 py-3.5 text-base font-semibold text-[#cce5da] backdrop-blur transition-colors hover:border-[#8dd2b1]/70 hover:bg-white/[0.05] hover:text-white"
               >
                 See the math
               </a>
@@ -306,7 +306,7 @@ export default function Home() {
             ].map((s) => (
               <div
                 key={s.label}
-                className="rounded-3xl border border-[#cfe3d9] bg-white p-7 shadow-[0_8px_28px_rgba(14,48,37,0.05)]"
+                className="border border-[#cfe3d9] bg-white p-7 shadow-[0_8px_28px_rgba(14,48,37,0.05)]"
               >
                 <div className="font-serif text-5xl font-bold tracking-tight text-[#10231d] md:text-6xl">
                   {s.n}
@@ -326,7 +326,7 @@ export default function Home() {
 
           {/* Barrier vs Fix split */}
           <div className="mt-14 grid gap-6 md:grid-cols-2">
-            <div className="rounded-3xl border border-[#e8d4a1] bg-[#fff8e8] p-8">
+            <div className="border border-[#e8d4a1] bg-[#fff8e8] p-8">
               <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#a06b1a]">
                 The barrier
               </div>
@@ -349,7 +349,7 @@ export default function Home() {
               </ul>
             </div>
 
-            <div className="rounded-3xl border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]">
+            <div className="border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]">
               <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#8dd2b1]">
                 The Custodia answer
               </div>
@@ -373,7 +373,7 @@ export default function Home() {
               </ul>
               <Show when="signed-out">
                 <SignUpButton mode="modal">
-                  <button className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-6 py-3 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
+                  <button className="mt-7 inline-flex items-center gap-2 bg-[#bdf2cf] px-6 py-3 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
                     Start For Free
                     <span aria-hidden className="text-lg leading-none">&rarr;</span>
                   </button>
@@ -383,7 +383,7 @@ export default function Home() {
                 <Link
                   href="/assessments"
                   prefetch={false}
-                  className="mt-7 inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-6 py-3 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]"
+                  className="mt-7 inline-flex items-center gap-2 bg-[#bdf2cf] px-6 py-3 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]"
                 >
                   Continue in workspace
                   <span aria-hidden className="text-lg leading-none">&rarr;</span>
@@ -441,7 +441,7 @@ export default function Home() {
             ].map((step) => (
               <div
                 key={step.n}
-                className={`relative flex flex-col rounded-3xl border p-6 ${
+                className={`relative flex flex-col border p-6 ${
                   step.highlight
                     ? "border-[#2f8f6d] bg-[#0e2a23] text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]"
                     : "border-[#cfe3d9] bg-[#f7fcf9] text-[#10231d]"
@@ -469,7 +469,7 @@ export default function Home() {
                   {step.desc}
                 </p>
                 <div
-                  className={`mt-5 rounded-xl px-3 py-2.5 text-xs leading-relaxed ${
+                  className={`mt-5 px-3 py-2.5 text-xs leading-relaxed ${
                     step.highlight
                       ? "bg-[#1a4035] text-[#bdf2cf]"
                       : "bg-white text-[#1f5c47] ring-1 ring-[#cfe3d9]"
@@ -531,7 +531,7 @@ export default function Home() {
               ].map((c) => (
                 <div
                   key={c.title}
-                  className="rounded-3xl border border-[#e8d4a1] bg-[#fff8e8] p-6"
+                  className="border border-[#e8d4a1] bg-[#fff8e8] p-6"
                 >
                   <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#a06b1a]">
                     {c.stat}
@@ -547,7 +547,7 @@ export default function Home() {
           </div>
 
           {/* The Custodia Shield */}
-          <div className="rounded-3xl border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_45px_rgba(14,48,37,0.2)] md:p-12">
+          <div className="border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_45px_rgba(14,48,37,0.2)] md:p-12">
             <div className="mb-10 text-center">
               <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
                 the custodia shield
@@ -585,7 +585,7 @@ export default function Home() {
               ].map((s) => (
                 <div
                   key={s.n}
-                  className="rounded-2xl border border-[#2a5a49] bg-[#193d31] p-6"
+                  className="border border-[#2a5a49] bg-[#193d31] p-6"
                 >
                   <div className="text-[10px] font-bold tracking-[0.22em] text-[#8dd2b1]">
                     {s.n}
@@ -621,7 +621,7 @@ export default function Home() {
 
           <div className="grid gap-6 md:grid-cols-2">
             {/* One-time */}
-            <div className="rounded-3xl border border-[#cfe3d9] bg-[#f7fcf9] p-8">
+            <div className="border border-[#cfe3d9] bg-[#f7fcf9] p-8">
               <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
                 Once, at the start
               </div>
@@ -649,7 +649,7 @@ export default function Home() {
             </div>
 
             {/* Ongoing */}
-            <div className="rounded-3xl border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]">
+            <div className="border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]">
               <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">
                 Every week, every month, every year
               </div>
@@ -678,7 +678,7 @@ export default function Home() {
           </div>
 
           {/* Calendar strip */}
-          <div className="mt-12 overflow-hidden rounded-3xl border border-[#cfe3d9] bg-[#f7fcf9]">
+          <div className="mt-12 overflow-hidden border border-[#cfe3d9] bg-[#f7fcf9]">
             <div className="grid grid-cols-12 divide-x divide-[#cfe3d9]">
               {[
                 { m: "JAN", n: "Q1 push" },
@@ -748,7 +748,7 @@ export default function Home() {
           </div>
 
           {/* Hero feature card: weekly emails */}
-          <div className="grid gap-0 overflow-hidden rounded-3xl border-2 border-[#2f8f6d] bg-white shadow-[0_25px_60px_rgba(14,48,37,0.12)] md:grid-cols-[1.1fr_1fr]">
+          <div className="grid gap-0 overflow-hidden border-2 border-[#2f8f6d] bg-white shadow-[0_25px_60px_rgba(14,48,37,0.12)] md:grid-cols-[1.1fr_1fr]">
             {/* Left: pitch */}
             <div className="flex flex-col justify-between bg-[#0e2a23] p-10 text-white md:p-12">
               <div>
@@ -787,7 +787,7 @@ export default function Home() {
 
             {/* Right: mock email */}
             <div className="flex flex-col bg-[#f7fcf9] p-8 md:p-10">
-              <div className="rounded-2xl border border-[#cfe3d9] bg-white shadow-sm">
+              <div className="border border-[#cfe3d9] bg-white shadow-sm">
                 {/* Email header */}
                 <div className="flex items-center gap-3 border-b border-[#cfe3d9] px-5 py-3">
                   <div className="flex h-9 w-9 flex-none items-center justify-center rounded-full bg-[#2f8f6d] text-xs font-bold text-white">
@@ -797,7 +797,7 @@ export default function Home() {
                     <div className="truncate font-bold text-[#10231d]">Custodia &mdash; This Monday&apos;s federal opportunities</div>
                     <div className="truncate text-[#5a7d70]">opportunities@bidfedcmmc.com &middot; to you &middot; 7:02 AM</div>
                   </div>
-                  <div className="hidden flex-none rounded-sm bg-[#bdf2cf] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#10231d] sm:block">
+                  <div className="hidden flex-none bg-[#bdf2cf] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#10231d] sm:block">
                     7 matches
                   </div>
                 </div>
@@ -849,7 +849,7 @@ export default function Home() {
                           {o.tags.map((t) => (
                             <span
                               key={t}
-                              className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-1.5 py-0.5 text-[10px] font-semibold text-[#2f8f6d]"
+                              className="border border-[#cfe3d9] bg-[#f7fcf9] px-1.5 py-0.5 text-[10px] font-semibold text-[#2f8f6d]"
                             >
                               {t}
                             </span>
@@ -859,7 +859,7 @@ export default function Home() {
                       <button
                         type="button"
                         disabled
-                        className="flex-none rounded-sm border border-[#2f8f6d] bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#2f8f6d]"
+                        className="flex-none border border-[#2f8f6d] bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-[#2f8f6d]"
                       >
                         Tailor
                       </button>
@@ -880,7 +880,7 @@ export default function Home() {
 
           {/* Community + first-award promise */}
           <div className="mt-12 grid gap-6 md:grid-cols-3">
-            <div className="rounded-2xl border border-[#cfe3d9] bg-white p-7">
+            <div className="border border-[#cfe3d9] bg-white p-7">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#bdf2cf] font-serif text-xl font-bold text-[#0e2a23]">
                 1
               </div>
@@ -891,7 +891,7 @@ export default function Home() {
                 You complete the 17 practices, capture evidence, and file your SPRS affirmation. You&apos;re now legally eligible to handle Federal Contract Information &mdash; the gate is open.
               </p>
             </div>
-            <div className="rounded-2xl border-2 border-[#2f8f6d] bg-[#f7fcf9] p-7 shadow-sm">
+            <div className="border-2 border-[#2f8f6d] bg-[#f7fcf9] p-7 shadow-sm">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#2f8f6d] font-serif text-xl font-bold text-white">
                 2
               </div>
@@ -902,7 +902,7 @@ export default function Home() {
                 You&apos;re now part of a network of small businesses securing themselves for federal work. Custodia delivers matched opportunities every week and points the AI tailoring engine at any one with a single click.
               </p>
             </div>
-            <div className="rounded-2xl border border-[#cfe3d9] bg-white p-7">
+            <div className="border border-[#cfe3d9] bg-white p-7">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#bdf2cf] font-serif text-xl font-bold text-[#0e2a23]">
                 3
               </div>
@@ -916,7 +916,7 @@ export default function Home() {
           </div>
 
           {/* Bottom band */}
-          <div className="mt-10 rounded-2xl border border-[#2f8f6d] bg-[#0e2a23] px-8 py-6 text-center text-white">
+          <div className="mt-10 border border-[#2f8f6d] bg-[#0e2a23] px-8 py-6 text-center text-white">
             <div className="font-serif text-xl font-bold leading-snug md:text-2xl">
               You secure the business. We supply the opportunities. The first award is the milestone we&apos;re both chasing.
             </div>
@@ -964,7 +964,7 @@ export default function Home() {
                 body: "Compliance isn&apos;t one-and-done. We monitor changed controls year-round, flag expiring evidence, and prepare your next SPRS re-affirmation every October &mdash; included in your membership.",
               },
             ].map((d) => (
-              <div key={d.title} className="rounded-3xl border border-[#2a5a49] bg-[#193d31] p-7">
+              <div key={d.title} className="border border-[#2a5a49] bg-[#193d31] p-7">
                 <h3 className="font-serif text-xl font-bold text-white">{d.title}</h3>
                 <p
                   className="mt-3 text-sm leading-relaxed text-[#c5e3d6]"
@@ -1105,7 +1105,7 @@ export default function Home() {
             ))}
           </ol>
 
-          <div className="mt-16 rounded-3xl border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_45px_rgba(14,48,37,0.18)] md:p-12">
+          <div className="mt-16 border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_45px_rgba(14,48,37,0.18)] md:p-12">
             <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">where it ends</div>
             <h3 className="mt-3 font-serif text-3xl font-bold leading-tight md:text-4xl">
               You, bidding on contracts. With a defensible package behind you.
@@ -1116,12 +1116,12 @@ export default function Home() {
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Show when="signed-out">
                 <SignUpButton mode="modal">
-                  <button className="inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
+                  <button className="inline-flex items-center gap-2 bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
                     Start For Free
                     <span aria-hidden className="text-lg leading-none">&rarr;</span>
                   </button>
                 </SignUpButton>
-                <a href="#pricing" className="rounded-xl border border-[#2f8f6d]/40 px-7 py-3.5 text-base font-semibold text-[#cce5da] transition-colors hover:border-[#8dd2b1]/60 hover:text-white">
+                <a href="#pricing" className="border border-[#2f8f6d]/40 px-7 py-3.5 text-base font-semibold text-[#cce5da] transition-colors hover:border-[#8dd2b1]/60 hover:text-white">
                   See pricing
                 </a>
               </Show>
@@ -1129,7 +1129,7 @@ export default function Home() {
                 <Link
                   href="/assessments"
                   prefetch={false}
-                  className="inline-flex items-center gap-2 rounded-xl bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]"
+                  className="inline-flex items-center gap-2 bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]"
                 >
                   Continue your journey
                   <span aria-hidden className="text-lg leading-none">&rarr;</span>
@@ -1158,7 +1158,7 @@ export default function Home() {
 
           <div className="grid gap-6 md:grid-cols-2">
             {/* BUILD */}
-            <div className="rounded-3xl border border-[#cfe3d9] bg-[#f7fcf9] p-8">
+            <div className="border border-[#cfe3d9] bg-[#f7fcf9] p-8">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">phase 01</div>
@@ -1188,7 +1188,7 @@ export default function Home() {
             </div>
 
             {/* BID */}
-            <div className="rounded-3xl border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]">
+            <div className="border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">phase 02</div>
@@ -1218,7 +1218,7 @@ export default function Home() {
             </div>
 
             {/* FIND OPPORTUNITIES */}
-            <div className="rounded-3xl border border-[#cfe3d9] bg-[#f7fcf9] p-8">
+            <div className="border border-[#cfe3d9] bg-[#f7fcf9] p-8">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">phase 03</div>
@@ -1247,7 +1247,7 @@ export default function Home() {
             </div>
 
             {/* MAINTAIN */}
-            <div className="rounded-3xl border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]">
+            <div className="border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_40px_rgba(14,48,37,0.18)]">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">phase 04</div>
@@ -1277,7 +1277,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="mt-12 rounded-2xl border border-[#cfe3d9] bg-[#f7fcf9] p-6 text-center md:p-8">
+          <div className="mt-12 border border-[#cfe3d9] bg-[#f7fcf9] p-6 text-center md:p-8">
             <p className="font-serif text-xl text-[#10231d] md:text-2xl">
               Free covers the build and the radar. Membership covers the bid, the win, and the maintenance.
             </p>
@@ -1332,7 +1332,7 @@ export default function Home() {
             ].map((s) => (
               <div
                 key={s.tier}
-                className={`flex flex-col rounded-3xl border p-7 ${
+                className={`flex flex-col border p-7 ${
                   s.highlight
                     ? "border-[#bdf2cf] bg-[#193d31] shadow-[0_15px_40px_rgba(189,242,207,0.15)]"
                     : "border-[#2a5a49] bg-[#163027]"
@@ -1361,7 +1361,7 @@ export default function Home() {
           </div>
 
           {/* Math callout */}
-          <div className="mt-10 rounded-3xl border border-[#2a5a49] bg-[#163027] p-8 md:p-10">
+          <div className="mt-10 border border-[#2a5a49] bg-[#163027] p-8 md:p-10">
             <div className="grid gap-8 md:grid-cols-[1fr_auto_1fr] md:items-center">
               <div className="text-center md:text-right">
                 <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#8dd2b1]">
@@ -1419,7 +1419,7 @@ export default function Home() {
           <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-2">
 
             {/* Free Forever */}
-            <div className="flex flex-col rounded-3xl border border-[#cfe3d9] bg-[#f7fcf9] p-7">
+            <div className="flex flex-col border border-[#cfe3d9] bg-[#f7fcf9] p-7">
               <div className="mb-2 text-xs font-bold uppercase tracking-[0.15em] text-[#2f8f6d]">Free forever</div>
               <div className="font-serif text-3xl font-bold text-[#10231d]">$0</div>
               <p className="mt-2 text-sm text-[#496f61]">
@@ -1435,13 +1435,13 @@ export default function Home() {
               </ul>
               <Show when="signed-out">
                 <SignUpButton mode="modal">
-                  <button className="mt-8 w-full rounded-xl border-2 border-[#104d3a] px-6 py-3 font-bold text-[#104d3a] transition-colors hover:bg-[#f0f9f5]">
+                  <button className="mt-8 w-full border-2 border-[#104d3a] px-6 py-3 font-bold text-[#104d3a] transition-colors hover:bg-[#f0f9f5]">
                     Start For Free
                   </button>
                 </SignUpButton>
               </Show>
               <Show when="signed-in">
-                <Link href="/assessments" prefetch={false} className="mt-8 block w-full rounded-xl border-2 border-[#104d3a] px-6 py-3 text-center font-bold text-[#104d3a] transition-colors hover:bg-[#f0f9f5]">
+                <Link href="/assessments" prefetch={false} className="mt-8 block w-full border-2 border-[#104d3a] px-6 py-3 text-center font-bold text-[#104d3a] transition-colors hover:bg-[#f0f9f5]">
                   Open workspace
                 </Link>
               </Show>
@@ -1449,7 +1449,7 @@ export default function Home() {
             </div>
 
             {/* Membership */}
-            <div className="flex flex-col rounded-3xl border-2 border-[#2f8f6d] bg-white p-7 shadow-[0_12px_36px_rgba(14,48,37,0.12)]">
+            <div className="flex flex-col border-2 border-[#2f8f6d] bg-white p-7 shadow-[0_12px_36px_rgba(14,48,37,0.12)]">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-[0.15em] text-[#2f8f6d]">CMMC 1 membership</span>
                 <span className="rounded-full bg-[#2f8f6d] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
@@ -1480,13 +1480,13 @@ export default function Home() {
               </ul>
               <Show when="signed-out">
                 <SignUpButton mode="modal">
-                  <button className="mt-8 w-full rounded-xl bg-[#104d3a] px-6 py-3 font-bold text-white transition-colors hover:bg-[#0d3e2f]">
+                  <button className="mt-8 w-full bg-[#104d3a] px-6 py-3 font-bold text-white transition-colors hover:bg-[#0d3e2f]">
                     Start For Free
                   </button>
                 </SignUpButton>
               </Show>
               <Show when="signed-in">
-                <Link href="/upgrade" prefetch={false} className="mt-8 block w-full rounded-xl bg-[#104d3a] px-6 py-3 text-center font-bold text-white transition-colors hover:bg-[#0d3e2f]">
+                <Link href="/upgrade" prefetch={false} className="mt-8 block w-full bg-[#104d3a] px-6 py-3 text-center font-bold text-white transition-colors hover:bg-[#0d3e2f]">
                   Upgrade to Membership
                 </Link>
               </Show>
@@ -1528,7 +1528,7 @@ export default function Home() {
                 company: "Veteran-owned firm &middot; Pittsburgh, PA",
               },
             ].map((t) => (
-              <div key={t.name} className="rounded-3xl border border-[#cfe3d9] bg-white p-8">
+              <div key={t.name} className="border border-[#cfe3d9] bg-white p-8">
                 <p
                   className="text-base leading-relaxed text-[#3b5f53]"
                   dangerouslySetInnerHTML={{ __html: `&ldquo;${t.quote}&rdquo;` }}
@@ -1562,7 +1562,7 @@ export default function Home() {
           </div>
           <div className="space-y-3">
             {FAQ_ITEMS.map((item, idx) => (
-              <div key={idx} className="overflow-hidden rounded-2xl border border-[#d2e6dc] bg-[#f7fcf9]">
+              <div key={idx} className="overflow-hidden border border-[#d2e6dc] bg-[#f7fcf9]">
                 <button
                   className="flex w-full items-center justify-between px-6 py-5 text-left font-semibold text-[#10231d] transition-colors hover:bg-[#eef8f3]"
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
