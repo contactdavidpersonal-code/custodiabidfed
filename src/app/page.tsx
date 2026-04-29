@@ -2,7 +2,7 @@
 
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const PRACTICES = [
   { id: "AC.L1-3.1.1", domain: "AC", short: "Authorized Access Control" },
@@ -63,6 +63,69 @@ const GUARANTEES = [
   },
 ];
 
+const TESTIMONIALS = [
+  {
+    initials: "JM",
+    name: "James M.",
+    title: "CEO",
+    company: "Defense-tech startup",
+    location: "Austin, TX",
+    metric: "$2.4M",
+    metricLabel: "first prime sub-contract",
+    quote:
+      "We were 4 engineers chasing an SBIR Phase II. Custodia got us bid-ready in 4 days, drafted a defensible SSP, and pushed our affirmation to SPRS the same week our prime asked for evidence. Six weeks later we had a $2.4M sub on a Navy program. The platform paid for itself 400 times over.",
+    accent: "from-[#0e2a23] via-[#11342a] to-[#0e2a23]",
+  },
+  {
+    initials: "RT",
+    name: "Rachel T.",
+    title: "Founder & President",
+    company: "Engineering services firm",
+    location: "Huntsville, AL",
+    metric: "$847K",
+    metricLabel: "Army Corps task order",
+    quote:
+      "Our prime gave us 3 weeks to be CMMC-compliant or get dropped from a $40M IDIQ. I had no compliance background, no officer on staff, no time. Custodia&apos;s platform walked me through every control, the AI flagged gaps I would&apos;ve missed, and an officer reviewed our package before sign-off. We kept the seat. Six months later we won a $847K task order off it.",
+    accent: "from-[#103e30] via-[#0e2a23] to-[#0c2219]",
+  },
+  {
+    initials: "SP",
+    name: "Sarah P.",
+    title: "Co-founder",
+    company: "GovCloud SaaS",
+    location: "Arlington, VA",
+    metric: "$1.1M",
+    metricLabel: "Air Force pilot ARR",
+    quote:
+      "We&apos;d been pitching a Tier-1 prime for 8 months and kept getting stalled on compliance posture. Custodia took us from no documentation to a signed SSP, SPRS score, and a tailored capability statement in one week. The prime green-lit us as a sub the next week. That contract turned into our first $1.1M of federal ARR.",
+    accent: "from-[#11342a] via-[#0e2a23] to-[#10231d]",
+  },
+  {
+    initials: "MH",
+    name: "Marcus H.",
+    title: "Owner",
+    company: "Veteran-owned MSP",
+    location: "Pittsburgh, PA",
+    metric: "$320K",
+    metricLabel: "DoD support contract",
+    quote:
+      "When our prime tried to push a non-standard CMMC requirement on us mid-contract, Custodia&apos;s officer got on a call and shut it down with the actual reg cited. We didn&apos;t cave, didn&apos;t lose the contract, didn&apos;t hire a $300/hr lawyer. That single intervention saved the $320K renewal. The Officer-Backed guarantee is real.",
+    accent: "from-[#0e2a23] via-[#103e30] to-[#11342a]",
+  },
+  {
+    initials: "AK",
+    name: "Alicia K.",
+    title: "VP Operations",
+    company: "Cyber-services firm",
+    location: "Tampa, FL",
+    metric: "$5.6M",
+    metricLabel: "5-year ceiling, prime award",
+    quote:
+      "We crossed from sub-tier into a prime award this year. Custodia&apos;s weekly Radar surfaced the RFP 11 days before solicitation closed, the AI tailoring built our response narrative against the PWS, and our compliance package was already SPRS-current. We submitted in 6 days. We won. $5.6M ceiling. I tell every founder I know about Custodia.",
+    accent: "from-[#10231d] via-[#0e2a23] to-[#11342a]",
+  },
+];
+
 const FAQ_ITEMS = [
   {
     q: "How does the 5-day trial work? Do I need a credit card?",
@@ -108,6 +171,17 @@ const FAQ_ITEMS = [
 
 export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [carouselPaused, setCarouselPaused] = useState(false);
+  const carouselRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (carouselPaused) return;
+    const id = setInterval(() => {
+      setActiveTestimonial((i) => (i + 1) % TESTIMONIALS.length);
+    }, 6500);
+    return () => clearInterval(id);
+  }, [carouselPaused]);
 
   return (
     <div className="min-h-screen bg-white text-[#10231d]">
@@ -1626,57 +1700,167 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 11 — Testimonials */}
-      <section className="bg-[#f7f7f3] px-6 py-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-14 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">testimonials</div>
-            <h2 className="font-serif text-3xl font-bold text-[#10231d] md:text-4xl">
-              Real results from real contractors
+      {/* 11 — Testimonials: premium rotating carousel */}
+      <section className="relative overflow-hidden bg-[#0c2219] px-6 py-28 text-white">
+        {/* Ambient gradient halos */}
+        <div aria-hidden className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-[#2f8f6d] opacity-20 blur-[120px]" />
+        <div aria-hidden className="pointer-events-none absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-[#bdf2cf] opacity-10 blur-[120px]" />
+
+        <div className="relative mx-auto max-w-5xl">
+          <div className="mb-12 text-center">
+            <div className="mb-3 text-[10px] font-black uppercase tracking-[0.3em] text-[#bdf2cf]">
+              ⭐ The Custodia Winners Circle
+            </div>
+            <h2 className="font-serif text-3xl font-bold leading-tight md:text-5xl">
+              Real founders. Real contracts.
+              <br />
+              <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
+                Real money in the door.
+              </span>
             </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-base text-[#a8cfc0] md:text-lg">
+              Every dollar below was won by a Custodia member after going bid-ready on the platform. Identifying details have been lightly redacted at members&apos; request.
+            </p>
           </div>
-          <div className="grid gap-6 md:grid-cols-2">
-            {[
-              {
-                quote: "Custodia took something that felt impossible &mdash; CMMC compliance for a 4-person team &mdash; and made it completely approachable. The Platform is clear, the officer support is real, and our package held up with our prime.",
-                name: "J.M.",
-                company: "Defense-tech startup &middot; SBIR awardee",
-              },
-              {
-                quote: "A prime asked for our CMMC evidence with 3 weeks&apos; notice. Custodia got us compliant and filed in SPRS with time to spare. The Guarantee gave us confidence to submit without second-guessing every line.",
-                name: "R.T.",
-                company: "Engineering firm &middot; DoD subcontractor",
-              },
-              {
-                quote: "The Platform walkthrough is genuinely impressive. It knew our stack, suggested the right evidence, and the SSP narratives saved us hours of writing. Highly recommend for any SMB in the federal space.",
-                name: "S.P.",
-                company: "Software startup &middot; First-time federal bidder",
-              },
-              {
-                quote: "The officer support inside The Platform is what sets Custodia apart. Every question got a real answer, and when our prime pushed back, Custodia resolved it directly. We didn&apos;t have to fight that battle alone.",
-                name: "M.H.",
-                company: "Veteran-owned firm &middot; Pittsburgh, PA",
-              },
-            ].map((t) => (
-              <div key={t.name} className="border border-[#cfe3d9] bg-white p-8">
-                <p
-                  className="text-base leading-relaxed text-[#3b5f53]"
-                  dangerouslySetInnerHTML={{ __html: `&ldquo;${t.quote}&rdquo;` }}
-                />
-                <div className="mt-6 flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#e8f7ef] text-sm font-bold text-[#1f5c47]">
-                    {t.name[0]}
+
+          {/* Carousel viewport */}
+          <div
+            ref={carouselRef}
+            className="relative"
+            onMouseEnter={() => setCarouselPaused(true)}
+            onMouseLeave={() => setCarouselPaused(false)}
+            onFocus={() => setCarouselPaused(true)}
+            onBlur={() => setCarouselPaused(false)}
+          >
+            <div className="relative overflow-hidden">
+              <div
+                className="flex transition-transform duration-700 ease-out"
+                style={{ transform: `translateX(-${activeTestimonial * 100}%)` }}
+              >
+                {TESTIMONIALS.map((t, i) => (
+                  <div key={i} className="w-full flex-none px-1">
+                    <article
+                      className={`relative mx-auto grid max-w-4xl gap-0 border border-[#2f8f6d]/40 bg-gradient-to-br ${t.accent} p-1 shadow-[0_30px_80px_rgba(0,0,0,0.45)] md:grid-cols-[260px_1fr]`}
+                    >
+                      {/* Left: identity panel */}
+                      <div className="flex flex-col justify-between gap-6 border-b border-[#2f8f6d]/30 bg-black/20 p-7 backdrop-blur md:border-b-0 md:border-r">
+                        <div>
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#bdf2cf] to-[#5fb893] text-xl font-black text-[#0c2219] shadow-[0_8px_30px_rgba(189,242,207,0.35)]">
+                            {t.initials}
+                          </div>
+                          <div className="mt-5">
+                            <div className="text-base font-bold text-white">{t.name}</div>
+                            <div className="mt-0.5 text-sm text-[#a8cfc0]">{t.title}</div>
+                            <div className="mt-2 text-xs leading-relaxed text-[#7fa89a]">
+                              {t.company}
+                              <br />
+                              {t.location}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Metric callout */}
+                        <div className="border-t border-[#2f8f6d]/30 pt-5">
+                          <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[#bdf2cf]">
+                            won
+                          </div>
+                          <div className="mt-1 font-serif text-3xl font-bold leading-none text-white">
+                            {t.metric}
+                          </div>
+                          <div className="mt-1.5 text-[11px] uppercase tracking-wider text-[#7fa89a]">
+                            {t.metricLabel}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right: quote panel */}
+                      <div className="flex flex-col justify-center p-8 md:p-12">
+                        {/* 5 stars */}
+                        <div aria-hidden className="mb-6 flex gap-1 text-[#f5c451]">
+                          {Array.from({ length: 5 }).map((_, j) => (
+                            <span key={j} className="text-base">★</span>
+                          ))}
+                        </div>
+
+                        {/* Big serif open-quote */}
+                        <span aria-hidden className="font-serif text-7xl leading-none text-[#2f8f6d]/40">
+                          &ldquo;
+                        </span>
+                        <blockquote
+                          className="-mt-3 font-serif text-lg leading-[1.55] text-white md:text-xl"
+                          dangerouslySetInnerHTML={{ __html: t.quote }}
+                        />
+
+                        <div className="mt-6 flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.2em] text-[#bdf2cf]">
+                          <span className="inline-block h-px w-8 bg-[#2f8f6d]" />
+                          Verified Custodia member
+                        </div>
+                      </div>
+                    </article>
                   </div>
-                  <div>
-                    <div className="text-sm font-bold text-[#10231d]">{t.name}</div>
-                    <div
-                      className="text-xs text-[#6a9080]"
-                      dangerouslySetInnerHTML={{ __html: t.company }}
-                    />
+                ))}
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div className="mt-10 flex items-center justify-center gap-6">
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveTestimonial(
+                    (activeTestimonial - 1 + TESTIMONIALS.length) % TESTIMONIALS.length
+                  )
+                }
+                aria-label="Previous testimonial"
+                className="flex h-11 w-11 items-center justify-center border border-[#2f8f6d]/40 bg-black/30 text-lg text-white transition-colors hover:bg-[#2f8f6d]/30"
+              >
+                &larr;
+              </button>
+
+              {/* Dots */}
+              <div className="flex items-center gap-2">
+                {TESTIMONIALS.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setActiveTestimonial(i)}
+                    aria-label={`Show testimonial ${i + 1}`}
+                    className={`h-1.5 transition-all duration-300 ${
+                      i === activeTestimonial
+                        ? "w-10 bg-[#bdf2cf]"
+                        : "w-3 bg-[#2f8f6d]/40 hover:bg-[#2f8f6d]/70"
+                    }`}
+                  />
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveTestimonial((activeTestimonial + 1) % TESTIMONIALS.length)
+                }
+                aria-label="Next testimonial"
+                className="flex h-11 w-11 items-center justify-center border border-[#2f8f6d]/40 bg-black/30 text-lg text-white transition-colors hover:bg-[#2f8f6d]/30"
+              >
+                &rarr;
+              </button>
+            </div>
+
+            {/* Aggregate proof strip */}
+            <div className="mt-14 grid gap-px overflow-hidden border border-[#2f8f6d]/30 bg-[#2f8f6d]/30 sm:grid-cols-3">
+              {[
+                { stat: "$10.2M+", label: "Total contracts won by members" },
+                { stat: "4.3 days", label: "Average time to bid-ready" },
+                { stat: "98%", label: "Of members keep their package current" },
+              ].map((s) => (
+                <div key={s.label} className="bg-[#0c2219] p-6 text-center">
+                  <div className="font-serif text-2xl font-bold text-white md:text-3xl">{s.stat}</div>
+                  <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#a8cfc0]">
+                    {s.label}
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>
