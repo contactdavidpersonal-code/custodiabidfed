@@ -208,7 +208,7 @@ export default function Home() {
             className="font-serif text-[2.4rem] font-bold leading-[1.04] tracking-tight md:text-6xl lg:text-7xl"
             style={{ textShadow: "0 4px 40px rgba(0,0,0,0.45)" }}
           >
-            How Established Business Owners Are Adding{" "}
+            How Business Owners Are Adding{" "}
             <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
               6&ndash;7 Figures
             </span>{" "}
