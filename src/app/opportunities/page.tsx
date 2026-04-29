@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ensureOrgForUser } from "@/lib/assessment";
+import { ensureOrgForUser, listAssessmentsForOrg } from "@/lib/assessment";
 import {
   listOpportunitiesForOrg,
   truncateDescription,
@@ -16,9 +16,15 @@ export default async function OpportunitiesPage() {
 
   const org = await ensureOrgForUser(userId);
   const naics = org.naics_codes ?? [];
-  const rows = await listOpportunitiesForOrg({
-    organizationId: org.id,
-  });
+  const [rows, assessments] = await Promise.all([
+    listOpportunitiesForOrg({ organizationId: org.id }),
+    listAssessmentsForOrg(org.id),
+  ]);
+  const attestedAssessment = assessments.find((a) => a.status === "attested");
+  const inProgressAssessment = !attestedAssessment
+    ? assessments.find((a) => a.status !== "archived")
+    : null;
+  const isAttested = Boolean(attestedAssessment);
 
   return (
     <main className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
@@ -45,6 +51,34 @@ export default async function OpportunitiesPage() {
       </header>
 
       <section className="mx-auto max-w-5xl px-6 py-8">
+        {!isAttested && (
+          <div className="mb-6 overflow-hidden rounded-md border border-[#a06b1a] bg-[#fff7e8] p-5 shadow-[0_2px_0_rgba(160,107,26,0.08)]">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a06b1a]">
+                  Preview &middot; Submitting bids is locked
+                </p>
+                <h2 className="mt-1 font-serif text-lg font-bold text-[#5a3d0a]">
+                  Browse opportunities now &mdash; finish steps 1&ndash;6 to submit.
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#5a3d0a]">
+                  We need a signed CMMC Level 1 affirmation on file before primes will accept your bid. The opportunity feed is fully visible during your 30-day trial; the &ldquo;Tailor packet&rdquo; action unlocks the moment you finish step 4 (Sign &amp; affirm).
+                </p>
+              </div>
+              <Link
+                href={
+                  inProgressAssessment
+                    ? `/assessments/${inProgressAssessment.id}`
+                    : `/assessments`
+                }
+                className="rounded-sm bg-[#0e2a23] px-4 py-2.5 text-sm font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
+              >
+                Finish my CMMC L1 &rarr;
+              </Link>
+            </div>
+          </div>
+        )}
+
         <div className="rounded-md border border-[#cfe3d9] bg-white p-5">
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="font-bold uppercase tracking-[0.14em] text-[#456c5f]">
@@ -128,12 +162,21 @@ export default async function OpportunitiesPage() {
                   </p>
                 ) : null}
                 <div className="mt-4 flex flex-wrap items-center gap-3 text-xs">
-                  <Link
-                    href={`/opportunities/${r.id}/tailor`}
-                    className="rounded-sm bg-[#10231d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0e2a23]"
-                  >
-                    ✨ Tailor packet for this
-                  </Link>
+                  {isAttested ? (
+                    <Link
+                      href={`/opportunities/${r.id}/tailor`}
+                      className="rounded-sm bg-[#10231d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0e2a23]"
+                    >
+                      ✨ Tailor packet for this
+                    </Link>
+                  ) : (
+                    <span
+                      title="Sign your CMMC L1 affirmation (step 4) to unlock packet tailoring."
+                      className="cursor-not-allowed rounded-sm border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-2 text-sm font-semibold text-[#7a9c90]"
+                    >
+                      🔒 Tailor packet (locked &mdash; finish step 4)
+                    </span>
+                  )}
                   {r.sam_url ? (
                     <a
                       href={r.sam_url}

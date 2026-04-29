@@ -146,16 +146,14 @@ export function CourseSidebar({ sections }: Props) {
                     ref={(el) => {
                       itemRefs.current[s.id] = el;
                     }}
-                    href={locked ? "#" : s.href}
-                    onClick={(e) => {
-                      if (locked) e.preventDefault();
-                    }}
-                    aria-disabled={locked}
+                    href={s.href}
+                    aria-disabled={locked || undefined}
+                    title={locked ? `Available now \u2014 ${s.subtitle}` : undefined}
                     className={`relative flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors ${
-                      locked
-                        ? "cursor-not-allowed opacity-50"
-                        : isActive
-                          ? "text-[#0c2219]"
+                      isActive
+                        ? "text-[#0c2219]"
+                        : locked
+                          ? "text-[#7a9c90] hover:bg-[#eef5f0] hover:text-[#10231d]"
                           : "text-[#456c5f] hover:bg-[#eef5f0] hover:text-[#10231d]"
                     }`}
                   >
@@ -199,7 +197,7 @@ export function CourseSidebar({ sections }: Props) {
 
         {open && (
           <div className="border-t border-[#cfe3d9] px-4 py-3 text-[11px] text-[#5a7d70]">
-            Complete every section to unlock your bid-ready package.
+            Every step is open during your 30-day trial. Steps with a lock icon need a prior step finished before they fully unlock &mdash; click any step to see what&apos;s missing.
           </div>
         )}
       </div>

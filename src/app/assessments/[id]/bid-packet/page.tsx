@@ -31,6 +31,9 @@ export default async function BidPacketPage(
   if (score < 50) {
     blockers.push(`Bid profile only ${score}/100 — fill in the missing fields`);
   }
+  if (!attested) {
+    blockers.push("Sign your CMMC Level 1 affirmation (step 4) — the packet bundles your locked compliance snapshot");
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
@@ -63,6 +66,14 @@ export default async function BidPacketPage(
                 className="rounded-sm border border-[#a06b1a] bg-white px-3 py-1.5 text-xs font-semibold text-[#5a3d0a] hover:bg-[#fff2d8]"
               >
                 → Fix registration
+              </Link>
+            ) : null}
+            {!attested ? (
+              <Link
+                href={`/assessments/${id}/sign`}
+                className="rounded-sm border border-[#a06b1a] bg-white px-3 py-1.5 text-xs font-semibold text-[#5a3d0a] hover:bg-[#fff2d8]"
+              >
+                → Go sign &amp; affirm
               </Link>
             ) : null}
             <Link
