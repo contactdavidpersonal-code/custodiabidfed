@@ -127,6 +127,15 @@ export default async function CourseLayout(
       status: deliverablesStatus,
       match: "prefix",
     },
+    {
+      id: "bid-ready",
+      step: 6,
+      href: `/profile/bid-ready`,
+      title: "Bid-Ready Profile",
+      subtitle: "Capability statement, past performance, insurance",
+      status: registrationComplete ? "available" : "locked",
+      match: "prefix",
+    },
   ];
 
   return (
