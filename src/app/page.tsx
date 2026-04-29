@@ -201,7 +201,7 @@ export default function Home() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-[#a8cfc0] md:text-lg">
-            Custodia walks you through CMMC Level&nbsp;1 in plain English, hands you a bid-ready package no prime can pick apart, and then emails you matched contract opportunities every Monday morning &mdash; until you win one. <span className="font-semibold text-white">One award covers years of subscription.</span> Build the entire package free; pay only when you&apos;re ready to bid.
+            Custodia walks you through CMMC Level&nbsp;1 in plain English, hands you a bid-ready package no prime can pick apart, and then emails you matched contract opportunities every Monday morning &mdash; until you win one. <span className="font-semibold text-white">One award covers years of subscription.</span> Try it risk-free for 5 days, cancel anytime, and chat with a Custodia Compliance Officer inside the platform whenever you need a hand.
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
