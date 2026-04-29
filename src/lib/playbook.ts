@@ -25,6 +25,7 @@ export type ProviderGuidance = {
   steps: string[];
   capture: string;
   template?: ProviderTemplate;
+  adminUrl?: string;
 };
 
 export type NarrativeContext = {
@@ -75,6 +76,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Screenshot of the Active users list showing every account on your tenant. If you have more than 20 users, also export as CSV and upload both files.",
+        adminUrl: "https://admin.microsoft.com/Adminportal/Home#/users",
       },
       {
         provider: "google_workspace",
@@ -87,6 +89,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Screenshot of the Users list with Status column visible. Export to CSV if >20 users.",
+        adminUrl: "https://admin.google.com/ac/users",
       },
       {
         provider: "manual",
@@ -138,6 +141,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Two screenshots: (1) admin role assignments, (2) a standard user showing no elevated roles.",
+        adminUrl: "https://entra.microsoft.com/#view/Microsoft_AAD_IAM/RolesAndAdministratorsBlade",
       },
       {
         provider: "google_workspace",
@@ -149,6 +153,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Screenshot of each admin role with its assigned users, emphasizing Super Admin membership.",
+        adminUrl: "https://admin.google.com/ac/roles",
       },
       {
         provider: "manual",
@@ -199,6 +204,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Screenshot of external collaboration settings plus the guest-user list.",
+        adminUrl: "https://entra.microsoft.com/#view/Microsoft_AAD_IAM/AllowlistPolicyBlade",
       },
       {
         provider: "aws",
@@ -210,6 +216,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "IAM cross-account roles plus any external network connections.",
+        adminUrl: "https://us-east-1.console.aws.amazon.com/iam/home#/roles",
       },
       {
         provider: "manual",
@@ -277,6 +284,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Screenshot of external sharing settings showing FCI sites are not publicly accessible.",
+        adminUrl: "https://admin.microsoft.com/sharepoint?page=sharing",
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -312,6 +320,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Screenshot of the user list showing individual accounts only.",
+        adminUrl: "https://admin.microsoft.com/Adminportal/Home#/users",
       },
       {
         provider: "google_workspace",
@@ -323,6 +332,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Screenshot of individual user accounts with names visible.",
+        adminUrl: "https://admin.google.com/ac/users",
       },
       {
         provider: "manual",
@@ -374,6 +384,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Two screenshots: (1) the Conditional Access policy or Security Defaults page showing MFA is on, (2) the user list showing MFA enforced per account.",
+        adminUrl: "https://entra.microsoft.com/#view/Microsoft_AAD_ConditionalAccess/ConditionalAccessBlade/~/Policies",
       },
       {
         provider: "google_workspace",
@@ -386,6 +397,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Screenshot of the enforcement setting plus the per-user enrollment report.",
+        adminUrl: "https://admin.google.com/ac/security/2sv",
       },
       {
         provider: "manual",
@@ -451,6 +463,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Screenshot of Intune retire/wipe history for decommissioned devices.",
+        adminUrl: "https://intune.microsoft.com/#view/Microsoft_Intune_DeviceSettings/DevicesMenu/~/all",
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -579,6 +592,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Exported access-event report (CSV or PDF) plus a screenshot confirming origin.",
+        adminUrl: "https://entra.microsoft.com/#view/Microsoft_AAD_IAM/SignInsBlade",
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -652,6 +666,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Policy screenshot plus per-device firewall status.",
+        adminUrl: "https://security.microsoft.com/securityconfig",
       },
       {
         provider: "aws",
@@ -663,6 +678,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Screenshots of security group / NACL rule sets governing the FCI VPC.",
+        adminUrl: "https://us-east-1.console.aws.amazon.com/vpc/home#SecurityGroups:",
       },
       {
         provider: "manual",
@@ -729,6 +745,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "VPC diagram + routing/security-group evidence of separation.",
+        adminUrl: "https://us-east-1.console.aws.amazon.com/vpc/home#vpcs:",
       },
     ],
     suggestedNarrative: (ctx) =>
@@ -763,6 +780,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Dashboard screenshot plus update-policy screenshot.",
+        adminUrl: "https://intune.microsoft.com/#view/Microsoft_Intune/DevicesMonitorMenu/~/updateCompliance",
       },
       {
         provider: "google_workspace",
@@ -774,6 +792,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Device version report + auto-update policy.",
+        adminUrl: "https://admin.google.com/ac/chrome/devices",
       },
       {
         provider: "manual",
@@ -824,6 +843,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Device-inventory screenshot plus per-device protection status.",
+        adminUrl: "https://security.microsoft.com/machines",
       },
       {
         provider: "google_workspace",
@@ -834,6 +854,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Screenshot of Safe Browsing and download-protection enforcement.",
+        adminUrl: "https://admin.google.com/ac/chrome/settings/userandbrowser",
       },
       {
         provider: "manual",
@@ -884,6 +905,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Per-device definition-version report + policy screenshot showing auto-update.",
+        adminUrl: "https://security.microsoft.com/machines",
       },
       {
         provider: "manual",
@@ -932,6 +954,7 @@ export const playbook: ControlPlaybook[] = [
         ],
         capture:
           "Policy screenshot + recent scan-history screenshot.",
+        adminUrl: "https://security.microsoft.com/securityconfig",
       },
       {
         provider: "manual",

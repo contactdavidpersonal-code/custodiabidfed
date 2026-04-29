@@ -605,6 +605,26 @@ function CaptureStep({
               <span className="font-semibold">What we need:&nbsp;</span>
               {guidance.capture}
             </div>
+            {guidance.adminUrl && (
+              <div className="mt-3 rounded-sm border border-[#cfe3d9] bg-white p-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
+                  Jump straight to the right page
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-[#5a7d70]">
+                  Opens the {providerLabel[guidance.provider]} admin page for
+                  this control in a new tab. Sign in if prompted, then take
+                  the screenshots described above.
+                </p>
+                <a
+                  href={guidance.adminUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-sm border border-[#0e2a23] bg-white px-3 py-1.5 text-xs font-bold text-[#0e2a23] transition-colors hover:bg-[#0e2a23] hover:text-[#bdf2cf]"
+                >
+                  Open in {providerLabel[guidance.provider]} ↗
+                </a>
+              </div>
+            )}
             {guidance.template && (
               <div className="mt-3 rounded-sm border border-[#cfe3d9] bg-white p-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
