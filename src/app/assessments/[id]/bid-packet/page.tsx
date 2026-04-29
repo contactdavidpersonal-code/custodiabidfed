@@ -233,6 +233,28 @@ export default async function BidPacketPage(
           .
         </p>
       </section>
+
+      <section className="mt-6 rounded-md border border-[#cfe3d9] bg-[#f7fcf9] p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="font-serif text-lg font-bold">
+              Bidding on a specific opportunity?
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-[#10231d]">
+              Paste the SAM.gov notice or scope of work and we&apos;ll tailor
+              your capability statement to match the agency&apos;s language —
+              without touching your master profile. The best fit wins more
+              bids; we make alignment one click away.
+            </p>
+          </div>
+          <Link
+            href={`/assessments/${id}/bid-packet/tailor`}
+            className="flex-none rounded-sm bg-[#10231d] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0e2a23]"
+          >
+            Tailor for opportunity →
+          </Link>
+        </div>
+      </section>
     </main>
   );
 }

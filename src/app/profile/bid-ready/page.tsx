@@ -3,7 +3,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ensureOrgForUser } from "@/lib/assessment";
 import { loadBidProfile } from "@/lib/bid-profile";
-import { saveBidProfileAction } from "./actions";
+import {
+  draftCapabilityAction,
+  draftDifferentiatorsAction,
+  saveBidProfileAction,
+} from "./actions";
 import { BidProfileForm } from "./BidProfileForm";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +86,8 @@ export default async function BidReadyProfilePage() {
         <BidProfileForm
           initial={profile}
           saveAction={saveBidProfileAction}
+          draftCapabilityAction={draftCapabilityAction}
+          draftDifferentiatorsAction={draftDifferentiatorsAction}
         />
       </section>
     </main>

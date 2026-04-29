@@ -13,15 +13,45 @@ import {
 type Props = {
   initial: BidProfile;
   saveAction: (formData: FormData) => Promise<void>;
+  draftCapabilityAction: (formData: FormData) => Promise<string>;
+  draftDifferentiatorsAction: (formData: FormData) => Promise<string>;
 };
 
-export function BidProfileForm({ initial, saveAction }: Props) {
+export function BidProfileForm({
+  initial,
+  saveAction,
+  draftCapabilityAction,
+  draftDifferentiatorsAction,
+}: Props) {
   const [profile, setProfile] = useState<BidProfile>(initial);
   const [pending, startTransition] = useTransition();
   const [savedAt, setSavedAt] = useState<string | null>(
     initial.updated_at ?? null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [draftingCap, setDraftingCap] = useState(false);
+  const [draftingDiff, setDraftingDiff] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  async function runDraft(
+    action: (fd: FormData) => Promise<string>,
+    onResult: (text: string) => void,
+    setLoading: (v: boolean) => void,
+  ) {
+    setAiError(null);
+    setLoading(true);
+    try {
+      const fd = new FormData();
+      fd.set("payload", JSON.stringify(profile));
+      const text = await action(fd);
+      if (text.trim()) onResult(text);
+      else setAiError("AI returned an empty draft. Try again or fill more profile facts first.");
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "Draft failed");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const { score, missing } = useMemo(
     () => bidProfileCompleteness(profile),
@@ -109,7 +139,23 @@ export function BidProfileForm({ initial, saveAction }: Props) {
             className="w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none"
             placeholder="Acme Federal Solutions provides managed IT services to federal civilian agencies, with a focus on secure cloud migration, identity governance, and CMMC-compliant managed endpoint services for primes and subcontractors..."
           />
-          <CharCount value={profile.capability_statement} min={200} />
+          <div className="mt-2 flex items-center justify-between gap-3">
+            <CharCount value={profile.capability_statement} min={200} />
+            <button
+              type="button"
+              disabled={draftingCap}
+              onClick={() =>
+                runDraft(
+                  draftCapabilityAction,
+                  (text) => setField("capability_statement", text),
+                  setDraftingCap,
+                )
+              }
+              className="rounded-sm border border-[#2f8f6d] bg-white px-3 py-1.5 text-xs font-semibold text-[#2f8f6d] hover:bg-[#f1f9f4] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {draftingCap ? "Drafting…" : profile.capability_statement.trim() ? "↻ Re-draft with AI" : "✨ Draft with AI"}
+            </button>
+          </div>
         </Field>
 
         <Field
@@ -136,7 +182,26 @@ export function BidProfileForm({ initial, saveAction }: Props) {
             className="w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none"
             placeholder="Veteran-led with 20+ years of DoD experience. CMMC L1 attested. 24/7 CONUS support. Average ticket resolution under 4 hours."
           />
+          <div className="mt-2 flex justify-end">
+            <button
+              type="button"
+              disabled={draftingDiff}
+              onClick={() =>
+                runDraft(
+                  draftDifferentiatorsAction,
+                  (text) => setField("differentiators", text),
+                  setDraftingDiff,
+                )
+              }
+              className="rounded-sm border border-[#2f8f6d] bg-white px-3 py-1.5 text-xs font-semibold text-[#2f8f6d] hover:bg-[#f1f9f4] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {draftingDiff ? "Drafting…" : profile.differentiators.trim() ? "↻ Re-draft with AI" : "✨ Draft with AI"}
+            </button>
+          </div>
         </Field>
+        {aiError ? (
+          <p className="text-xs font-semibold text-[#b03a2e]">{aiError}</p>
+        ) : null}
       </Card>
 
       <Card title="Point of contact" subtitle="The person a contracting officer or prime should call about a bid.">

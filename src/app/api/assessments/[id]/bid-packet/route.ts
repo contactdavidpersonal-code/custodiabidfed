@@ -1,10 +1,42 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getAssessmentForUser } from "@/lib/assessment";
-import { loadBidProfile, setAsideLabels } from "@/lib/bid-profile";
+import { loadBidProfile, setAsideLabels, type BidProfile } from "@/lib/bid-profile";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+type PacketOverrides = {
+  capability_statement?: string;
+  differentiators?: string;
+  opportunity_label?: string;
+};
+
+function decodeOverrides(raw: string | null): PacketOverrides | null {
+  if (!raw) return null;
+  try {
+    const padded = raw.replace(/-/g, "+").replace(/_/g, "/");
+    const padding = padded.length % 4 === 0 ? "" : "=".repeat(4 - (padded.length % 4));
+    const decoded = Buffer.from(padded + padding, "base64").toString("utf-8");
+    const parsed = JSON.parse(decoded) as Record<string, unknown>;
+    return {
+      capability_statement:
+        typeof parsed.capability_statement === "string"
+          ? parsed.capability_statement
+          : undefined,
+      differentiators:
+        typeof parsed.differentiators === "string"
+          ? parsed.differentiators
+          : undefined,
+      opportunity_label:
+        typeof parsed.opportunity_label === "string"
+          ? parsed.opportunity_label
+          : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Bid-Ready Packet (single HTML doc, printable to PDF).
@@ -16,9 +48,13 @@ export const dynamic = "force-dynamic";
  * that route bundles the full SSP + every evidence file as a ZIP for prime
  * questionnaires. THIS route is the marketing-front-door packet a small
  * business sends to a contracting officer or attaches to a SAM.gov bid.
+ *
+ * Per-opportunity tailoring: pass `?o=<base64-json>` containing
+ * { capability_statement, differentiators, opportunity_label } to override
+ * the master fields for a one-off packet. The master profile is untouched.
  */
 export async function GET(
-  _req: Request,
+  req: Request,
   context: { params: Promise<{ id: string }> },
 ) {
   const { userId } = await auth();
@@ -32,11 +68,24 @@ export async function GET(
   }
 
   const profile = await loadBidProfile(ctx.organization.id);
+  const overrides = decodeOverrides(new URL(req.url).searchParams.get("o"));
+
+  const effectiveProfile: BidProfile = overrides
+    ? {
+        ...profile,
+        capability_statement:
+          overrides.capability_statement ?? profile.capability_statement,
+        differentiators:
+          overrides.differentiators ?? profile.differentiators,
+      }
+    : profile;
+
   const html = renderPacket({
     org: ctx.organization,
     assessment: ctx.assessment,
-    profile,
+    profile: effectiveProfile,
     generatedAt: new Date().toISOString(),
+    opportunityLabel: overrides?.opportunity_label,
   });
 
   const orgSlug = ctx.organization.name.replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase();
@@ -72,10 +121,11 @@ type RenderInput = {
   };
   profile: Awaited<ReturnType<typeof loadBidProfile>>;
   generatedAt: string;
+  opportunityLabel?: string;
 };
 
 function renderPacket(input: RenderInput): string {
-  const { org, assessment, profile, generatedAt } = input;
+  const { org, assessment, profile, generatedAt, opportunityLabel } = input;
 
   const attested = assessment.status === "attested";
   const affirmDate = assessment.affirmed_at
@@ -157,8 +207,9 @@ function renderPacket(input: RenderInput): string {
 
 <article>
   <header class="cover">
-    <div class="eyebrow">Capability Packet</div>
+    <div class="eyebrow">Capability Packet${opportunityLabel ? ` · Tailored` : ""}</div>
     <h1>${esc(org.name)}</h1>
+    ${opportunityLabel ? `<p class="opp-label">Prepared for: ${esc(opportunityLabel)}</p>` : ""}
     ${profile.website ? `<p class="website"><a href="${esc(profile.website)}">${esc(profile.website)}</a></p>` : ""}
     <div class="cover-meta">
       <div class="cover-meta-col">
@@ -298,6 +349,7 @@ const PACKET_CSS = `
   p { margin: 8px 0; }
   .eyebrow { text-transform: uppercase; letter-spacing: 0.22em; font-size: 11px; font-weight: 700; color: #2f8f6d; }
   .website a { color: #2f8f6d; text-decoration: none; font-size: 13px; }
+  .opp-label { display: inline-block; margin-top: 10px; padding: 4px 10px; background: #f1f9f4; border: 1px solid #2f8f6d; color: #0e2a23; font-size: 12px; font-weight: 600; }
   .cover { border-bottom: 2px solid #10231d; padding-bottom: 28px; margin-bottom: 28px; }
   .cover-meta { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 22px; }
   .cover-meta-col .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: #456c5f; margin-bottom: 4px; }
