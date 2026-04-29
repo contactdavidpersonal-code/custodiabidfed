@@ -47,6 +47,7 @@ export type ControlPlaybook = {
   whyItMatters: string;
   providerGuidance: ProviderGuidance[];
   suggestedNarrative: (ctx: NarrativeContext) => string;
+  passingEvidence: string[];
   commonGotchas: string[];
 };
 
@@ -110,6 +111,13 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} reviewed the authorized user roster for ${ctx.scopedSystems}. All accounts listed were verified to belong to current personnel with a documented business need for access. Evidence of this review is captured in artifact ${ctx.artifactFilename}. This review is performed at least annually and whenever personnel changes occur.`,
+    passingEvidence: [
+      "Screenshot or export shows the FULL list of authorized users (not a partial view)",
+      "Each user has a Display Name and Username/Email visible",
+      "A Status column (Active / Enabled / Authorized) is visible for every account",
+      "The capture date is visible (system clock in screenshot OR file metadata)",
+      "If using the manual roster: every row signed and dated by the owner",
+    ],
     commonGotchas: [
       "Service accounts and shared mailboxes are often missed — list them explicitly",
       "Former employees whose accounts are 'disabled but not deleted' still need to be documented",
@@ -174,6 +182,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} reviewed role and permission assignments across ${ctx.scopedSystems}. Privileges are granted on a least-privilege basis aligned to each user's documented job function; administrative roles are restricted to named personnel with a continuing operational need. The current role assignment evidence is captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "Every user with admin/elevated privileges is visible by name",
+      "The role assigned to each admin is visible (Global Admin, Super Admin, root, etc.)",
+      "At least one screenshot of a standard user showing they have NO admin role",
+      "For the role matrix: every system covered, business justification per row, owner signature",
+    ],
     commonGotchas: [
       "Granting Global Admin 'to make things work' and forgetting to revoke",
       "Shared 'admin' accounts hide who did what — assign roles to named users",
@@ -238,6 +252,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} inventoried all external systems and personal devices that connect to or interact with ${ctx.scopedSystems}. Each connection is documented with its purpose, the data it can access, and the authorization granted. The accompanying external-system use policy restricts new connections to those approved by the company owner. Evidence is captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "The full inventory lists every external connection: SaaS tools, prime portals, BYOD, vendor VPNs",
+      "For each connection: purpose, what data it touches, who authorized it",
+      "A written 'External System Use' policy or rule is included or referenced",
+      "Owner signature and date on the inventory",
+    ],
     commonGotchas: [
       "BYOD — personal phones checking work email count as external connections",
       "Dropbox/Google Drive accounts used to exchange files with a prime must be listed",
@@ -289,6 +309,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} confirmed that no federal contract information appears on publicly accessible systems. A written policy prohibits the posting of FCI to public channels without owner review and has been acknowledged by all personnel; a quarterly scan of company-owned public surfaces was performed and documented. Evidence is captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "A written policy stating FCI may not be posted to public surfaces without owner review",
+      "Acknowledgement signatures from every employee",
+      "A recent quarterly review entry (date + surfaces reviewed + findings)",
+      "For M365 path: SharePoint sharing settings showing FCI sites are not public",
+    ],
     commonGotchas: [
       "Marketing case studies that name a DoD prime and the contract are the most common leak",
       "'About our customers' logo walls can cross the line depending on the contract clause",
@@ -353,6 +379,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} confirmed that every user, process, and device with access to ${ctx.scopedSystems} is uniquely identified by an account tied to a named individual or a documented service function. Shared or generic accounts are prohibited; where legacy exceptions exist, they are documented with a compensating control. Evidence is captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "Every account is tied to a named individual — no 'office', 'reception', 'admin' shared accounts",
+      "If shared mailboxes exist they are configured as shared mailboxes (not user accounts) — visible in the screenshot",
+      "Service / integration accounts named with a documented owner",
+      "Date of capture visible (system clock or filename)",
+    ],
     commonGotchas: [
       "The front-desk computer where everyone logs in as 'reception' is a classic finding",
       "Service/integration accounts still need a documented human owner",
@@ -418,6 +450,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} verified that multifactor authentication is enforced across all user accounts with access to ${ctx.scopedSystems}. Enforcement is applied via tenant-level policy and reviewed during personnel onboarding and the annual compliance review. Evidence of enforcement is captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "Tenant-level MFA / 2-Step policy is visible and shows status = Enabled / Enforced",
+      "Per-user enrollment report shows MFA status for every account (no users left at 'Disabled')",
+      "Any MFA-exempt accounts (break-glass, service) are documented with a reason",
+      "Date of capture visible",
+    ],
     commonGotchas: [
       "Security Defaults covers users but not every admin scenario — verify legacy auth is blocked",
       "Break-glass / emergency admin accounts are sometimes exempted from MFA — document the exception and the compensating control",
@@ -468,6 +506,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} affirmed that all information system media containing federal contract information is sanitized or destroyed before disposal or release for reuse. Storage devices are wiped to a documented standard, paper containing FCI is shredded, and each action is recorded in the media disposal log. The current procedure and a representative set of log entries are captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "A written sanitization procedure covers each media type: laptops, phones, USBs, drives, paper",
+      "The disposal log has at least one recent entry with: date, item, serial, method, performer, witness",
+      "Owner signature on the procedure",
+      "For Intune path: device retire/wipe history visible",
+    ],
     commonGotchas: [
       "Dumpstering old laptops 'because they were broken anyway' is an automatic finding",
       "Printer and copier hard drives cache documents — include them in the procedure",
@@ -508,6 +552,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} confirmed that physical access to areas containing federal contract information is limited to authorized personnel. Access is controlled via locked entry points; the current list of individuals authorized to hold keys or access credentials is maintained and signed by the owner. Evidence is captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "Photo clearly shows the locked door, cabinet, or storage with the lock visible",
+      "A signed roster lists every authorized person, the space they can access, and the date authorized",
+      "Home offices and vehicles used for FCI work are included in the roster",
+      "Owner signature and date",
+    ],
     commonGotchas: [
       "Home offices count — a contractor working from a garage still needs to show the garage locks",
       "Shared office spaces (WeWork, coworking) require a locked cabinet inside the suite",
@@ -547,6 +597,11 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} confirmed a visitor escort policy is in force and acknowledged by all personnel: non-employees are signed in, escorted at all times in spaces where federal contract information is processed or stored, and signed out upon departure. The current policy and a representative sample of recent visitor-log entries are captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "A written escort policy is included (or referenced) and signed by the owner",
+      "At least one recent visitor-log page with date, name, company, escort, time-in, time-out per visitor",
+      "Cleaning crews / vendors / maintenance show up in the log when relevant",
+    ],
     commonGotchas: [
       "'Just this once' unescorted vendor visits are the usual failure",
       "Cleaning crews and maintenance staff are visitors — include them",
@@ -597,6 +652,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} confirmed that physical access to spaces containing federal contract information is logged. Visitor sign-in records and, where available, electronic access logs are retained for at least one year. A representative current page of the log is captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "Visitor log shows multiple recent entries spread across at least a few weeks (not blank, not all from one day)",
+      "Each entry has: date, name, company, time-in, time-out, escort",
+      "Retention rule referenced (one year minimum)",
+      "For badge-system path: exported access events covering the last 30 days",
+    ],
     commonGotchas: [
       "A sign-in sheet that never fills up usually means staff stopped using it — the control has to be real",
       "Retention too short (a week or two) doesn't meet the spirit of the control",
@@ -636,6 +697,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} reviewed the access-device register covering keys, keycards, fobs, and door codes for spaces containing federal contract information. Devices are issued against a named individual, logged at issuance and return, and recovered as part of personnel offboarding. The current register and offboarding checklist are captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "Register lists every key, fob, keycard, and door code with holder name",
+      "Issued date and (where applicable) returned date are filled in",
+      "Offboarding checklist references key/fob/code recovery and is signed",
+      "Code rotations are noted when a holder departs",
+    ],
     commonGotchas: [
       "Door codes that never rotate after a holder departs",
       "'Spare' keys under the mat or shared among staff break the control",
@@ -699,6 +766,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} confirmed that network boundary protection is in place between ${ctx.scopedSystems} and external networks. A firewall (or equivalent boundary control) is configured to monitor and restrict inbound and outbound traffic, with its current rule set documented. A network diagram together with a screenshot of the current boundary configuration is captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "Network diagram showing internet → firewall/router → internal",
+      "Router or firewall admin screenshot showing firewall is enabled and default password is changed",
+      "Inbound/outbound rule list (or default-deny posture) visible",
+      "For AWS path: security-group rules screenshot for the FCI VPC",
+    ],
     commonGotchas: [
       "Default ISP router with the factory admin password unchanged is the most common fail",
       "A VPN alone is not a boundary control — document both the boundary and the VPN",
@@ -750,6 +823,11 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} confirmed that any publicly accessible system components are logically or physically separated from internal networks and systems that handle federal contract information. Where public services are relied upon, they run on vendor-hosted infrastructure entirely separate from the internal systems in scope. The current inventory and separation statement is captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "Inventory of every public-facing system the company runs (or 'all hosted SaaS — none self-run' stated explicitly)",
+      "For each: where it is hosted, confirmation it is separate from internal FCI systems",
+      "Signed separation memo or AWS VPC diagram showing public/private subnets are separate",
+    ],
     commonGotchas: [
       "Running your company website on the same server as your file share is an immediate finding",
       "WordPress on shared hosting alongside a file store — separate them",
@@ -813,6 +891,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} confirmed that information and information-system flaws are identified, reported, and corrected on a defined cadence. Operating systems, browsers, and applications on scoped systems receive security updates at least monthly, with critical updates applied sooner, and the status of patched devices is recorded. The current patch-status evidence is captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "Patch policy clearly states critical updates within 30 days, others at least monthly",
+      "Recent patch log entries cover every device in scope (no missing devices)",
+      "Per-device update history screenshots show recent install dates (within policy window)",
+      "For Intune path: dashboard shows compliant device count vs total in scope",
+    ],
     commonGotchas: [
       "'Windows auto-updates' with no dashboard or log leaves you with nothing to show",
       "End-of-life software (Windows 7, old Office versions) on any in-scope device is an automatic finding",
@@ -875,6 +959,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} confirmed that malicious-code protection is installed and active at appropriate locations within ${ctx.scopedSystems}, including endpoints and email. Per-device evidence or a centralized protection dashboard confirms that antivirus/anti-malware is running on every device in scope. Evidence is captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "Every device in scope appears in the AV inventory or dashboard",
+      "Real-time protection is visible as ON for each",
+      "Email-protection setting is captured (Defender / Workspace Safe Browsing / equivalent)",
+      "Signed inventory if using the manual path",
+    ],
     commonGotchas: [
       "Defender silently disables when a third-party AV is installed then uninstalled without cleanup — verify",
       "Personal devices used for work email need AV coverage if they are in scope",
@@ -925,6 +1015,11 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} confirmed that malicious-code protection mechanisms update their definitions automatically as new releases become available. Each device in scope shows a current definition version and a recent update timestamp. Evidence is captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "Per-device screenshot shows definition version + last update timestamp within the last 7 days",
+      "Auto-update setting visible in policy or product UI",
+      "Inventory or dashboard covers every device in scope (no orphans)",
+    ],
     commonGotchas: [
       "AV showing 'definitions 14 days old' on an always-on machine means auto-update is broken",
       "Offline / field laptops are the common gap — document how they update when reconnected",
@@ -975,6 +1070,12 @@ export const playbook: ControlPlaybook[] = [
     ],
     suggestedNarrative: (ctx) =>
       `On ${ctx.capturedAt}, ${ctx.companyName} confirmed that scoped systems perform real-time scanning of files from external sources at the moment they are downloaded, opened, or executed, and that periodic full-system scans run on at least a weekly basis. Settings screenshots together with a recent scan-history record are captured in artifact ${ctx.artifactFilename}.`,
+    passingEvidence: [
+      "Real-time protection visible as ON in product or policy UI",
+      "Scheduled-scan setting shows a recurring frequency (weekly or more often)",
+      "At least one recent successful full scan is visible in scan history",
+      "Schedule lands when the device is awake (not 2am for a closed laptop)",
+    ],
     commonGotchas: [
       "Real-time protection turned off 'because it was slowing the machine down' is a classic failure",
       "Scheduled scans that never run because the device is asleep — pick a time devices are on",

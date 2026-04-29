@@ -567,6 +567,28 @@ function CaptureStep({
 
       {!isNA && providers.length > 0 && guidance && (
         <>
+          <div className="mt-5 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2f8f6d]">
+              What &ldquo;passing&rdquo; evidence looks like
+            </p>
+            <p className="mt-1 text-xs leading-relaxed text-[#5a7d70]">
+              Make sure your upload shows every item below. The AI reviewer
+              checks for these.
+            </p>
+            <ul className="mt-3 space-y-1.5">
+              {practice.passingEvidence.map((item, i) => (
+                <li
+                  key={i}
+                  className="flex items-start gap-2 text-sm leading-relaxed text-[#10231d]"
+                >
+                  <span className="mt-1 inline-flex h-3.5 w-3.5 flex-none items-center justify-center rounded-sm bg-[#0e2a23] text-[10px] font-bold text-[#bdf2cf]">
+                    ✓
+                  </span>
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
           <div className="mt-5">
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
               Pick your setup
@@ -962,6 +984,27 @@ function WriteStep({
               {wordCount} word{wordCount === 1 ? "" : "s"}
             </span>
           </div>
+          {narrative.trim().length === 0 && !isNA && (
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-sm border border-[#2f8f6d] bg-[#f7fcf9] px-4 py-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[#10231d]">
+                  Don&rsquo;t know where to start?
+                </p>
+                <p className="mt-0.5 text-xs leading-relaxed text-[#5a7d70]">
+                  We&rsquo;ll draft the paragraph from your quiz answers and
+                  uploaded evidence. You edit anything that&rsquo;s not quite
+                  right.
+                </p>
+              </div>
+              <button
+                type="submit"
+                form="suggest-narrative-form"
+                className="rounded-sm bg-[#2f8f6d] px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-[#0e2a23]"
+              >
+                Draft this for me
+              </button>
+            </div>
+          )}
           <textarea
             name="narrative"
             rows={7}
