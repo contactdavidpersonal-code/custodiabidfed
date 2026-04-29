@@ -40,13 +40,12 @@ const FREE_INCLUDES = [
 const MEMBERSHIP_INCLUDES = [
   "Everything in Free, plus:",
   "Generate the bid-ready package &mdash; signed affirmation memo, SSP, full evidence inventory ZIP",
-  "Officer review on every artifact before package generation",
+  "AI evidence auto-review on every artifact &mdash; instant gap detection",
   "AI per-opportunity packet tailoring &mdash; one click from any SAM.gov notice",
   "SPRS submission instructions, step by step",
   "Evidence freshness watchtower &mdash; auto-flags expiring scans, screenshots, training",
-  "Compliance officer rail &mdash; escalate any question in-app",
+  "Compliance officer tickets &mdash; ask a Custodia officer any CMMC question, anytime",
   "Year-round monitoring &mdash; flags changed controls automatically",
-  "1:1 Custodia Ticket Support &mdash; officer answers any question",
   "Annual re-affirmation included &mdash; ready every Oct 1, no extra charge",
   "Prime questionnaire support via ticket",
   "Custodia Guarantee &mdash; officer-backed challenge resolution with primes",
@@ -75,7 +74,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Do I need a cybersecurity background to use The Platform?",
-    a: "No. The Platform is designed for non-technical operators. Every practice is explained in plain English with specific steps tailored to your tech stack. A Custodia officer is available for any question once you upgrade to membership.",
+    a: "No. The Platform is designed for non-technical operators. Every practice is explained in plain English with specific steps tailored to your tech stack. When you have a question only a human can answer, open a ticket in The Platform &mdash; a Custodia compliance officer responds with audit-grade guidance (membership only).",
   },
   {
     q: "What is included in the annual re-affirmation?",
@@ -83,7 +82,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Why does the package cost money if the build is free?",
-    a: "SPRS affirmations carry legal weight under 18 USC 1001 and the False Claims Act. We charge for the package because that&apos;s when a Custodia officer reviews every artifact, signs off on the evidence, and stands behind the package with our Guarantee. The officer review is the guarantee.",
+    a: "SPRS affirmations carry legal weight under 18 USC 1001 and the False Claims Act. The free tier walks you through the build; membership is what generates the signed bid-ready package, keeps your posture fresh year-round, and gives you direct access to a Custodia compliance officer via ticket whenever a CMMC question comes up. The Custodia Guarantee covers you if a prime or contracting officer pushes back.",
   },
   {
     q: "What is the EMEC Protocol?",
@@ -326,7 +325,7 @@ export default function Home() {
                 {[
                   "17 CMMC practices written in cybersecurity jargon, not plain English",
                   "No template for SSP narratives, evidence inventories, or affirmation memos",
-                  "No officer in the loop &mdash; easy to file something defensible-looking that isn't",
+                  "No expert on call &mdash; nowhere to turn when a CMMC question comes up mid-bid",
                   "SPRS affirmation carries 18 USC 1001 and False Claims Act liability if you sign and you're wrong",
                   "Compliance work derails the engineering and BD work you actually got funded to do",
                 ].map((b) => (
@@ -349,7 +348,8 @@ export default function Home() {
                 {[
                   "All 17 practices walked in plain English, tailored to your tech stack",
                   "SSP narratives drafted for you &mdash; accept or edit in one click",
-                  "Officer review on every artifact before you sign anything",
+                  "AI evidence auto-review &mdash; instant feedback on every artifact you upload",
+                  "Custodia officer on-call via in-app tickets &mdash; ask any CMMC question",
                   "Custodia Guarantee &mdash; we resolve any prime or contracting officer challenge after you file",
                   "Annual re-affirmation included &mdash; your next cycle is ready every Oct 1",
                 ].map((b) => (
@@ -557,8 +557,8 @@ export default function Home() {
                 },
                 {
                   n: "02",
-                  title: "Officer-reviewed, not self-assessed",
-                  body: "Every artifact you upload is reviewed by a Custodia compliance officer. We catch the gaps an adversary or auditor would find &mdash; before they find them.",
+                  title: "AI-automated, officer-supported",
+                  body: "Every artifact you upload runs through Custodia's AI auto-review for instant gap detection. When you hit a question only a human can answer, open a ticket and a Custodia compliance officer responds &mdash; the cybersec expertise is on-call, not in the way.",
                 },
                 {
                   n: "03",
@@ -600,10 +600,10 @@ export default function Home() {
           <div className="mb-16 text-center">
             <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">why custodia</div>
             <h2 className="font-serif text-4xl font-bold tracking-tight md:text-6xl">
-              Built by CMMC professionals. Officer-backed.
+              Built by CMMC professionals. Self-serve, officer-supported.
             </h2>
             <p className="mx-auto mt-5 max-w-3xl text-lg text-[#a8cfc0]">
-              Most compliance products are templates and forms. Custodia is a cybersecurity firm with a Platform built to scale our officers &mdash; not replace them.
+              Most compliance products are templates and forms. Custodia is a cybersecurity firm with a Platform built to take you from zero to bid-ready hands-off &mdash; with our compliance officers on-call via tickets whenever you need a real human answer.
             </p>
           </div>
 
@@ -611,15 +611,15 @@ export default function Home() {
             {[
               {
                 title: "Cybersecurity firm, not a template",
-                body: "Custodia is a veteran-owned cybersecurity firm in Pittsburgh, PA. We staff compliance officers, not customer-success reps. Officers review your evidence and sign off on your package.",
+                body: "Custodia is a veteran-owned cybersecurity firm in Pittsburgh, PA. We staff compliance officers, not customer-success reps. The Platform takes you from zero to bid-ready on its own &mdash; the officers are on-call when you need a human.",
               },
               {
                 title: "CMMC Level 1 specialists",
                 body: "We do one thing &mdash; CMMC L1 for FCI handlers &mdash; and we do it all the way. No scope drift into L2 or L3. The seventeen practices are our entire focus.",
               },
               {
-                title: "Officer in the loop on every package",
-                body: "The Platform handles the structured 80% of the work. Officer judgment handles the remaining 20% &mdash; the part that decides whether your affirmation holds up under prime or contracting officer scrutiny.",
+                title: "Officers on-call via in-app tickets",
+                body: "Hit a question The Platform can&apos;t answer? Open a ticket. A Custodia compliance officer responds with audit-grade guidance, in writing, in The Platform &mdash; included with every active membership.",
               },
               {
                 title: "The Custodia Guarantee",
@@ -718,9 +718,9 @@ export default function Home() {
                 n: "06",
                 tag: "MEMBERSHIP",
                 paid: true,
-                title: "Officer review + bid-ready package",
-                time: "Days, not months",
-                desc: "A Custodia compliance officer reviews every artifact and your full package. Once cleared, you generate the bid-ready ZIP: SSP, signed affirmation memo, evidence inventory.",
+                title: "Generate your bid-ready package",
+                time: "On demand",
+                desc: "AI auto-reviews every artifact for instant gap detection. When you&apos;re ready, generate the bid-ready ZIP: SSP, signed affirmation memo, evidence inventory. Officers are on-call via tickets if you hit a question along the way.",
               },
               {
                 n: "07",
@@ -781,7 +781,7 @@ export default function Home() {
               You, bidding on contracts. With a defensible package behind you.
             </h3>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#cce5da]">
-              The first five steps are free, forever. You only pay when you&apos;re ready for officer review and your bid-ready package &mdash; at step six.
+              The first five steps are free, forever. You only pay when you&apos;re ready to generate your bid-ready package &mdash; at step six.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Show when="signed-out">
@@ -866,15 +866,15 @@ export default function Home() {
                 </div>
                 <span className="rounded-full bg-[#bdf2cf] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#0c2219]">membership</span>
               </div>
-              <p className="mt-3 text-sm text-[#a8cfc0]">Officer-reviewed package, AI-tailored to every opportunity. The work that decides whether you bid or stall.</p>
+              <p className="mt-3 text-sm text-[#a8cfc0]">AI-automated, officer-supported. Generate your bid-ready package on demand and tailor it to every opportunity in one click.</p>
               <ul className="mt-6 space-y-3">
                 {[
-                  { t: "Officer review on every artifact", d: "A Custodia compliance officer signs off on your evidence before any package generates." },
-                  { t: "Bid-ready package ZIP", d: "Signed affirmation memo, full SSP, evidence inventory, ready to attach to any RFP." },
+                  { t: "AI evidence auto-review", d: "Every artifact is auto-reviewed against the practice it proves &mdash; instant gap detection without waiting on a human." },
+                  { t: "Bid-ready package on demand", d: "Signed affirmation memo, full SSP, evidence inventory ZIP &mdash; generate any time you&apos;re ready." },
                   { t: "AI per-opportunity packet tailor", d: "Paste a SAM.gov notice or click &lsquo;Tailor&rsquo; from your radar &mdash; the package adapts to that solicitation." },
                   { t: "Cover letter + executive summary", d: "Auto-drafted for the specific contracting officer or prime, in your voice." },
                   { t: "SPRS submission instructions", d: "Step-by-step walkthrough so the affirmation files clean on the first try." },
-                  { t: "Prime questionnaire support", d: "Ticketed officer help when a prime sends you their security questionnaire." },
+                  { t: "Officer ticket support", d: "When you have a CMMC question only a human can answer, open a ticket &mdash; a Custodia compliance officer responds in writing." },
                 ].map((f) => (
                   <li key={f.t} className="flex items-start gap-3">
                     <span aria-hidden className="mt-0.5 flex-none font-bold text-[#8dd2b1]">&#10003;</span>
@@ -1014,7 +1014,7 @@ export default function Home() {
                 $249<span className="text-lg font-normal text-[#6a9080]">/mo</span>
               </div>
               <p className="mt-2 text-sm text-[#496f61]">
-                Generate the bid-ready package and keep it current year-round. Officer review on every artifact. Re-affirmation included.
+                Generate the bid-ready package on demand and keep it current year-round. AI auto-review on every artifact. Officer help via ticket when you need it. Re-affirmation included.
               </p>
               <p className="mt-1 text-xs text-[#5d8376]">
                 Billed monthly &middot; Cancel any time &middot; 7-day free trial, no credit card required
