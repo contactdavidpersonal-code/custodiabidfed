@@ -26,15 +26,13 @@ export default async function OpportunitiesPage() {
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-5">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
-              Opportunity radar
+              Step 7 of 7 · Find &amp; submit bids
             </p>
             <h1 className="mt-1 font-serif text-2xl font-bold">
-              Federal opportunities matched to {org.name}
+              You&apos;re bid-ready. Here&apos;s your matched federal pipeline.
             </h1>
             <p className="mt-1 max-w-2xl text-sm text-[#456c5f]">
-              Active SAM.gov notices matching your NAICS codes. Each Monday
-              we email a fresh digest. One click on any row tailors your
-              bid-ready packet to the agency&apos;s exact language.
+              Active SAM.gov notices matched to {org.name}&apos;s NAICS codes and capabilities. One click on any row tailors your packet to the agency&apos;s exact PWS language and submits a polished response in minutes, not days.
             </p>
           </div>
           <Link

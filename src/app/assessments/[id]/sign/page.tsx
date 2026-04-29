@@ -69,7 +69,7 @@ export default async function SignPage(
 
       <header className="mb-8">
         <div className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">
-          Step 3 of 3 · Review &amp; sign
+          Step 4 of 7 · Sign &amp; affirm
         </div>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
           Affirm your CMMC Level 1 compliance

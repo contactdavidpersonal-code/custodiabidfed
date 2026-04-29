@@ -19,7 +19,7 @@ export default async function DeliverablesPage(
     return (
       <main className="mx-auto max-w-3xl px-6 py-16 text-center">
         <div className="inline-flex items-center justify-center rounded-sm bg-[#0e2a23] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#bdf2cf]">
-          Step 5 of 5 &bull; Locked
+          Step 6 of 7 &bull; Locked
         </div>
         <h1 className="mt-6 font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-4xl">
           Deliverables unlock the moment you sign
@@ -52,15 +52,13 @@ export default async function DeliverablesPage(
     <main className="mx-auto max-w-4xl px-6 py-10">
       <header className="mb-8">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-          Step 5 of 5
+          Step 6 of 7
         </p>
         <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-4xl">
-          Bid-ready deliverables
+          You&apos;re officially CMMC Level 1 compliant.
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#5a7d70]">
-          You&apos;re signed and locked. File the affirmation in SPRS, keep the
-          bid-ready package on hand for primes, and you&apos;re CMMC Level 1
-          compliant for this cycle.
+          Affirmation locked. Here&apos;s everything you need to bid with confidence — file with SPRS, keep the package on hand for primes, and head to step 7 to find your first contract.
         </p>
       </header>
 
@@ -124,6 +122,29 @@ export default async function DeliverablesPage(
             </p>
           </li>
         </ol>
+      </section>
+
+      {/* Final hand-off to step 7 — the whole point of this platform. */}
+      <section className="mt-6 overflow-hidden rounded-md border border-[#0e2a23] bg-gradient-to-br from-[#0e2a23] via-[#10342a] to-[#0e2a23] p-6 text-white shadow-[0_18px_44px_rgba(14,48,37,0.18)]">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#bdf2cf]">
+              Step 7 of 7 · Final step
+            </p>
+            <h2 className="mt-1 font-serif text-xl font-bold leading-tight md:text-2xl">
+              You&apos;re bid-ready. Now go win the contract.
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#cfe3d9]">
+              The AI sources federal opportunities from SAM.gov matched to your NAICS, set-asides, and capabilities. One click tailors the packet you just downloaded to that exact opportunity.
+            </p>
+          </div>
+          <Link
+            href="/opportunities"
+            className="rounded-sm bg-[#bdf2cf] px-5 py-2.5 text-sm font-bold tracking-tight text-[#0c2219] transition-colors hover:bg-[#a8e6c0]"
+          >
+            Find &amp; submit bids &rarr;
+          </Link>
+        </div>
       </section>
     </main>
   );

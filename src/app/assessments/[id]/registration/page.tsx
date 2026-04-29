@@ -32,7 +32,7 @@ export default async function RegistrationPage(
     <main className="mx-auto max-w-4xl px-6 py-10">
       <header className="mb-8">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-          Step 2 of 5
+          Step 2 of 7
         </p>
         <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-4xl">
           Federal registration

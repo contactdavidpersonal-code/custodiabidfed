@@ -123,8 +123,16 @@ export default async function CourseLayout(
       step: 5,
       href: `/assessments/${id}/bid-packet`,
       title: "Bid-Ready Packet",
-      subtitle: "Capability statement, past performance",
-      status: registrationComplete ? "available" : "locked",
+      subtitle: attested
+        ? "Capability statement, past performance"
+        : registrationComplete
+          ? "Unlocks after signing"
+          : "Finish steps 1\u20134 first",
+      status: attested
+        ? "available"
+        : registrationComplete
+          ? "locked"
+          : "locked",
       match: "prefix",
     },
     {

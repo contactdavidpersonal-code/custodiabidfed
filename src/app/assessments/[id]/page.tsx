@@ -299,6 +299,12 @@ function CelebrationBanner({ assessmentId }: { assessmentId: string }) {
           >
             Affirmation only
           </Link>
+          <Link
+            href="/opportunities"
+            className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
+          >
+            Step 7 → Find &amp; submit bids
+          </Link>
         </div>
       </div>
     </div>
@@ -409,7 +415,7 @@ function NextStepBanner({
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-            Step 1 of 3
+            Action needed · Step 1 of 7
           </div>
           <h2 className="mt-1 text-lg font-bold text-slate-900">
             Finish telling the officer about your business
@@ -434,7 +440,7 @@ function NextStepBanner({
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-sky-200 bg-sky-50 p-5">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-sky-700">
-            Step 2 of 3
+            Step 3 of 7 · You are here
           </div>
           <h2 className="mt-1 text-lg font-bold text-slate-900">
             Answer the 17 practices
@@ -452,7 +458,7 @@ function NextStepBanner({
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-900 bg-slate-900 p-5 text-white">
       <div>
         <div className="text-xs font-semibold uppercase tracking-wider text-amber-400">
-          Step 3 of 3 · Ready to sign
+          Ready for step 4 · Sign &amp; affirm
         </div>
         <h2 className="mt-1 text-lg font-bold">
           {hasBlockers

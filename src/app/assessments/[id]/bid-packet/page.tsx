@@ -36,16 +36,13 @@ export default async function BidPacketPage(
     <main className="mx-auto max-w-5xl px-6 py-10">
       <header className="mb-8">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-          Bid-Ready Packet
+          Step 5 of 7 · Bid-Ready Packet
         </p>
         <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-4xl">
           Review &amp; download
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#5a7d70]">
-          One snapshot pulling your editable Bid-Ready Profile and your locked
-          compliance posture into a single document. Send it with proposals,
-          attach it to SAM.gov bids, or email it when a contracting officer
-          asks &ldquo;tell me about your firm.&rdquo;
+          Your CMMC posture is locked. Now finalize the firm-wide packet you&apos;ll send with proposals — your editable Bid-Ready Profile (capability statement, past performance, NAICS) merged with the locked compliance snapshot. One PDF every contracting officer wants.
         </p>
       </header>
 
