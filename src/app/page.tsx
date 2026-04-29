@@ -253,7 +253,7 @@ export default function Home() {
           </div>
 
           <p className="mt-5 text-xs font-medium tracking-wide text-[#7aab98]">
-            30-day free trial &middot; Card on file &middot; $0 charged for 30 days &middot; Cancel anytime
+            30-day free trial &middot; $449/mo <span className="line-through opacity-60">$749</span> Summer Sale &middot; Cancel anytime
           </p>
 
           {/* Below-headline outcome line — sets expectation for what's next */}
