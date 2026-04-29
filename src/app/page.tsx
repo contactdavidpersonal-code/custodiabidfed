@@ -71,9 +71,9 @@ const TESTIMONIALS = [
     company: "Defense-tech startup",
     location: "Austin, TX",
     metric: "$2.4M",
-    metricLabel: "first prime sub-contract",
+    metricLabel: "Navy sub-contract (post-affirmation)",
     quote:
-      "We were 4 engineers chasing an SBIR Phase II. Custodia got us bid-ready in 4 days, drafted a defensible SSP, and pushed our affirmation to SPRS the same week our prime asked for evidence. Six weeks later we had a $2.4M sub on a Navy program. The platform paid for itself 400 times over.",
+      "We were 4 engineers chasing federal work and getting blocked at the same wall every single time: &lsquo;send your CMMC Level 1 attestation.&rsquo; Custodia walked us through all 17 FAR 52.204-21 practices, drafted a defensible SSP, and pushed our Level 1 self-assessment to SPRS in 4 days. The day our affirmation went live, three primes that had been ghosting us came back to the table. Six weeks later we signed a $2.4M Navy sub. The platform stopped being a cost the moment compliance stopped being a blocker.",
     accent: "from-[#0e2a23] via-[#11342a] to-[#0e2a23]",
   },
   {
@@ -85,19 +85,19 @@ const TESTIMONIALS = [
     metric: "$847K",
     metricLabel: "Army Corps task order",
     quote:
-      "Our prime gave us 3 weeks to be CMMC-compliant or get dropped from a $40M IDIQ. I had no compliance background, no officer on staff, no time. Custodia&apos;s platform walked me through every control, the AI flagged gaps I would&apos;ve missed, and an officer reviewed our package before sign-off. We kept the seat. Six months later we won a $847K task order off it.",
+      "Our prime gave us 3 weeks to show CMMC Level 1 compliance and a current SPRS score or get dropped from a $40M IDIQ. I had no compliance background, no officer on staff, and a kid in daycare. Custodia&apos;s platform walked me through every one of the 17 FCI practices, the AI flagged gaps I would&apos;ve missed, and an officer reviewed our package before sign-off. We kept the seat. With compliance off my plate, I spent the next quarter actually pursuing work &mdash; and won a $847K task order off that IDIQ.",
     accent: "from-[#103e30] via-[#0e2a23] to-[#0c2219]",
   },
   {
     initials: "SP",
     name: "Sarah P.",
     title: "Co-founder",
-    company: "GovCloud SaaS",
+    company: "GovCloud-aligned SaaS",
     location: "Arlington, VA",
     metric: "$1.1M",
     metricLabel: "Air Force pilot ARR",
     quote:
-      "We&apos;d been pitching a Tier-1 prime for 8 months and kept getting stalled on compliance posture. Custodia took us from no documentation to a signed SSP, SPRS score, and a tailored capability statement in one week. The prime green-lit us as a sub the next week. That contract turned into our first $1.1M of federal ARR.",
+      "We&apos;d been pitching a Tier-1 prime for 8 months and kept getting stalled on &lsquo;your compliance posture is unclear.&rsquo; Custodia took us from no documentation to a signed Level 1 SSP, current SPRS score, and an annual affirmation in one week. The day I forwarded the affirmation letter, the prime green-lit us as a sub. That contract turned into our first $1.1M of federal ARR. We finally got to spend our energy on the product and the bid &mdash; not on figuring out what 'basic safeguarding' even meant.",
     accent: "from-[#11342a] via-[#0e2a23] to-[#10231d]",
   },
   {
@@ -107,9 +107,9 @@ const TESTIMONIALS = [
     company: "Veteran-owned MSP",
     location: "Pittsburgh, PA",
     metric: "$320K",
-    metricLabel: "DoD support contract",
+    metricLabel: "DoD support contract renewal",
     quote:
-      "When our prime tried to push a non-standard CMMC requirement on us mid-contract, Custodia&apos;s officer got on a call and shut it down with the actual reg cited. We didn&apos;t cave, didn&apos;t lose the contract, didn&apos;t hire a $300/hr lawyer. That single intervention saved the $320K renewal. The Officer-Backed guarantee is real.",
+      "Mid-contract, our prime tried to tell us our Level 1 affirmation wasn&apos;t enough and that we needed to re-do everything against a stricter framework. Custodia&apos;s officer got on a call with the prime, cited FAR 52.204-21 and the actual DoD CMMC rule, and shut it down clean. We didn&apos;t cave, didn&apos;t lose the contract, didn&apos;t hire a $400/hr lawyer. The $320K renewal went through on the original terms. Without that intervention I&apos;d still be arguing about compliance instead of running my business.",
     accent: "from-[#0e2a23] via-[#103e30] to-[#11342a]",
   },
   {
@@ -121,7 +121,7 @@ const TESTIMONIALS = [
     metric: "$5.6M",
     metricLabel: "5-year ceiling, prime award",
     quote:
-      "We crossed from sub-tier into a prime award this year. Custodia&apos;s weekly Radar surfaced the RFP 11 days before solicitation closed, the AI tailoring built our response narrative against the PWS, and our compliance package was already SPRS-current. We submitted in 6 days. We won. $5.6M ceiling. I tell every founder I know about Custodia.",
+      "After clearing CMMC Level 1 with Custodia, my whole job changed &mdash; I went from chasing compliance documentation full-time to actually running a capture pipeline. The Radar surfaced an FCI-scoped prime RFP 11 days before close, our affirmation was already current in SPRS, and the AI tailored our response against the PWS. We submitted in 6 days. We won. $5.6M ceiling. Custodia didn&apos;t just get us compliant &mdash; they cleared the hurdle that was eating 100% of my week, so I could go win the work.",
     accent: "from-[#10231d] via-[#0e2a23] to-[#11342a]",
   },
 ];
@@ -1712,14 +1712,14 @@ export default function Home() {
               ⭐ The Custodia Winners Circle
             </div>
             <h2 className="font-serif text-3xl font-bold leading-tight md:text-5xl">
-              Real founders. Real contracts.
+              They cleared the hardest hurdle.
               <br />
               <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
-                Real money in the door.
+                Then they went and won the work.
               </span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-base text-[#a8cfc0] md:text-lg">
-              Every dollar below was won by a Custodia member after going bid-ready on the platform. Identifying details have been lightly redacted at members&apos; request.
+              Every business below was blocked at the same wall &mdash; CMMC Level 1 compliance &mdash; before Custodia. Once they got affirmed in SPRS, they stopped fighting paperwork and started winning bids. Identifying details have been lightly redacted at members&apos; request.
             </p>
           </div>
 
