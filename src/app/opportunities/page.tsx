@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ensureOrgForUser, listAssessmentsForOrg } from "@/lib/assessment";
+import { getAnthropic } from "@/lib/anthropic";
 import {
   listOpportunitiesForOrg,
   searchSamOpportunities,
@@ -32,6 +33,10 @@ type DisplayOpportunity = {
   place_of_performance: string | null;
   award_amount: string | null;
   sam_url: string | null;
+  /** Short "what they want" blurb fetched from the noticedesc endpoint. */
+  summary: string | null;
+  /** Raw URL of the noticedesc resource so we only fetch on the server. */
+  description_url: string | null;
 };
 
 function rowToDisplay(r: OpportunityRow): DisplayOpportunity {
@@ -49,7 +54,136 @@ function rowToDisplay(r: OpportunityRow): DisplayOpportunity {
     place_of_performance: null,
     award_amount: null,
     sam_url: r.sam_url,
+    // Persisted inbox rows already have prose copy in `description` (the
+    // weekly cron stores the full text). Truncate at render time so the
+    // card stays compact.
+    summary: summarizeDescription(r.description),
+    description_url: null,
   };
+}
+
+/**
+ * Fetch the noticedesc resource for a single opportunity. SAM.gov returns
+ * `{ description: "<html>…</html>" }` for most notices. Best-effort: any
+ * failure (auth, 404, timeout) yields `null` and the card just hides the
+ * blurb instead of failing the whole render.
+ */
+async function fetchNoticeDescription(
+  url: string | null,
+  apiKey: string,
+): Promise<string | null> {
+  if (!url) return null;
+  try {
+    let target = url;
+    if (target.includes("{api_key}")) {
+      target = target.replace("{api_key}", encodeURIComponent(apiKey));
+    } else if (!/[?&]api_key=/.test(target)) {
+      target += (target.includes("?") ? "&" : "?") + `api_key=${encodeURIComponent(apiKey)}`;
+    }
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 4000);
+    const res = await fetch(target, {
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+      signal: ctl.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const json = (await res.json()) as { description?: string };
+    return json.description ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * One-sentence AI summary of what a SAM.gov notice is asking for. We feed the
+ * raw description to Claude Haiku with a tight prompt that forces a single
+ * plain-English sentence starting with a verb (e.g., "Provide…", "Supply…",
+ * "Operate and maintain…"). Returns null on any error so the caller can
+ * fall back to a plain-text excerpt.
+ */
+async function aiSummarize(
+  title: string,
+  rawDescription: string,
+): Promise<string | null> {
+  const cleaned = stripHtml(rawDescription).slice(0, 4000);
+  if (!cleaned || cleaned.length < 40) return null;
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 5000);
+    const client = getAnthropic();
+    const resp = await client.messages.create(
+      {
+        model: "claude-haiku-4-5",
+        max_tokens: 120,
+        system:
+          "You summarize U.S. federal contracting opportunity notices for a small business owner deciding whether to bid. Output ONE sentence (max 220 characters) describing what the agency is actually asking a contractor to do or supply. Start with an action verb (Provide, Supply, Maintain, Operate, Furnish, etc.). No preamble, no quotes, no markdown, no agency name, no contract numbers, no dates. Plain prose only.",
+        messages: [
+          {
+            role: "user",
+            content: `Title: ${title}\n\nNotice description:\n${cleaned}`,
+          },
+        ],
+      },
+      { signal: ctl.signal },
+    );
+    clearTimeout(timer);
+    const block = resp.content.find((b) => b.type === "text");
+    if (!block || block.type !== "text") return null;
+    const text = block.text.trim().replace(/^["']|["']$/g, "");
+    return text.length > 0 ? text : null;
+  } catch (err) {
+    const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    console.warn(`[opportunities] aiSummarize failed: ${msg}`);
+    return null;
+  }
+}
+
+/**
+ * Render any of the date strings SAM.gov returns (some are full ISO
+ * timestamps with timezone suffixes, others are bare YYYY-MM-DD) as just
+ * the date in `Mon DD, YYYY` form. Falls back to the raw string if it
+ * doesn't parse so we never lose information.
+ */
+function formatDate(input: string | null): string {
+  if (!input) return "";
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return input;
+  return d.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/** Strip HTML tags + decode common entities + collapse whitespace. */
+function stripHtml(raw: string): string {
+  return raw
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Plain-text fallback: strip HTML, truncate to a card-friendly length, end
+ * on a word boundary. Used both for persisted inbox descriptions and as a
+ * safety net when the AI summarizer is unavailable.
+ */
+function summarizeDescription(raw: string | null, max = 260): string | null {
+  if (!raw) return null;
+  const text = stripHtml(raw);
+  if (!text) return null;
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max);
+  const lastSpace = cut.lastIndexOf(" ");
+  return `${cut.slice(0, lastSpace > max - 40 ? lastSpace : max).trim()}\u2026`;
 }
 
 export default async function OpportunitiesPage() {
@@ -117,6 +251,8 @@ export default async function OpportunitiesPage() {
             place_of_performance: o.placeOfPerformance,
             award_amount: o.awardAmount,
             sam_url: o.samUrl,
+            summary: null,
+            description_url: o.description,
           });
           if (inboxDisplay.length + livePreview.length >= PREVIEW_TARGET) {
             break;
@@ -133,6 +269,30 @@ export default async function OpportunitiesPage() {
   }
 
   const display: DisplayOpportunity[] = [...inboxDisplay, ...livePreview];
+
+  // Hydrate live-preview cards with a one-sentence "what they want" summary.
+  // For each card we (a) fetch the SAM.gov noticedesc HTML, then (b) send it
+  // through Claude Haiku for a tight rewrite. Both steps are best-effort and
+  // bounded — the page never waits more than ~6s total and any failure just
+  // leaves `summary` null on that single card.
+  const apiKeyForSummaries =
+    process.env.SAM_GOV_API_KEY ?? process.env.SAM_API_KEY;
+  if (apiKeyForSummaries && livePreview.length > 0) {
+    await Promise.all(
+      livePreview.map(async (card) => {
+        if (card.summary || !card.description_url) return;
+        const raw = await fetchNoticeDescription(
+          card.description_url,
+          apiKeyForSummaries,
+        );
+        if (!raw) return;
+        // Try AI summary first; fall back to a plain truncated extract if
+        // the model is unavailable or rate-limited.
+        card.summary =
+          (await aiSummarize(card.title, raw)) ?? summarizeDescription(raw);
+      }),
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
@@ -267,10 +427,16 @@ export default async function OpportunitiesPage() {
                     ) : null}
                     {r.response_deadline ? (
                       <span className="inline-block rounded-sm border border-[#a06b1a] bg-[#fff7eb] px-2 py-0.5 text-[11px] font-bold text-[#a06b1a]">
-                        Response due {r.response_deadline}
+                        Response due {formatDate(r.response_deadline)}
                       </span>
                     ) : null}
                   </div>
+
+                  {r.summary ? (
+                    <p className="mt-3 text-sm leading-relaxed text-[#456c5f]">
+                      {r.summary}
+                    </p>
+                  ) : null}
 
                   {/* Structured detail rows. Award amount only renders on
                       award notices; active solicitations don't expose a
