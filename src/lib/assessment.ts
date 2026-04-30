@@ -1,6 +1,7 @@
 import {
   getSql,
   initDb,
+  ensureDbReady,
   type AssessmentStatus,
   type CarryForwardStatus,
   type ControlResponseStatus,
@@ -337,6 +338,12 @@ export async function getAssessmentForUser(
   assessmentId: string,
   userId: string,
 ): Promise<{ assessment: AssessmentRow; organization: OrganizationRow } | null> {
+  // Every assessment-area server component begins here, so this is the
+  // single chokepoint that guarantees the schema migration (including the
+  // PR1 evidence_artifact_practices join table) has run on this lambda
+  // instance before any downstream read tries to JOIN against it. Cached
+  // by ensureDbReady so it's a no-op after the first call per cold start.
+  await ensureDbReady();
   const sql = getSql();
   const rows = (await sql`
     SELECT a.id AS a_id, a.organization_id, a.cycle_label, a.status AS a_status,
