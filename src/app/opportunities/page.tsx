@@ -9,6 +9,7 @@ import {
   type OpportunityRow,
 } from "@/lib/sam-radar";
 import { typicalRangeForNaics } from "@/lib/naics-ranges";
+import { pickSampleOpportunities } from "@/lib/sample-opportunities";
 import { dismissOpportunityAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ const PREVIEW_TARGET = 4;
  */
 type DisplayOpportunity = {
   key: string;
-  id: string | null; // null = live preview, no inbox row yet
+  id: string | null; // null = live preview or sample, no inbox row yet
   title: string;
   department: string | null;
   type: string | null;
@@ -38,6 +39,9 @@ type DisplayOpportunity = {
   summary: string | null;
   /** Raw URL of the noticedesc resource so we only fetch on the server. */
   description_url: string | null;
+  /** Synthetic seed used to backfill the page when SAM.gov returns < 4
+   *  matches. Sample cards never deeplink to SAM.gov and aren't dismissable. */
+  is_sample: boolean;
 };
 
 function rowToDisplay(r: OpportunityRow): DisplayOpportunity {
@@ -60,6 +64,7 @@ function rowToDisplay(r: OpportunityRow): DisplayOpportunity {
     // card stays compact.
     summary: summarizeDescription(r.description),
     description_url: null,
+    is_sample: false,
   };
 }
 
@@ -254,6 +259,7 @@ export default async function OpportunitiesPage() {
             sam_url: o.samUrl,
             summary: null,
             description_url: o.description,
+            is_sample: false,
           });
           if (inboxDisplay.length + livePreview.length >= PREVIEW_TARGET) {
             break;
@@ -270,6 +276,42 @@ export default async function OpportunitiesPage() {
   }
 
   const display: DisplayOpportunity[] = [...inboxDisplay, ...livePreview];
+
+  // Backfill with realistic sample opportunities so a brand-new account
+  // (or an outage where SAM.gov is unreachable) never lands on an empty
+  // pipeline. Samples are clearly labeled in the UI and don't deeplink
+  // to SAM.gov so users can't accidentally try to bid on them. Once
+  // the radar starts filling the inbox, real matches push samples down
+  // and eventually replace them entirely.
+  if (display.length < PREVIEW_TARGET) {
+    const bank = pickSampleOpportunities(naics);
+    const need = PREVIEW_TARGET - display.length;
+    const today = new Date();
+    for (let i = 0; i < bank.length && i < need; i += 1) {
+      const s = bank[i];
+      const due = new Date(today);
+      due.setDate(due.getDate() + s.responseDeadlineInDays);
+      display.push({
+        key: `sample:${s.key}`,
+        id: null,
+        title: s.title,
+        department: s.department,
+        type: s.type,
+        naics_code: s.naicsCode,
+        set_aside: s.setAside,
+        posted_date: today.toISOString().slice(0, 10),
+        response_deadline: due.toISOString().slice(0, 10),
+        solicitation_number: null,
+        place_of_performance: s.placeOfPerformance,
+        award_amount: null,
+        sam_url: null,
+        summary: s.summary,
+        description_url: null,
+        is_sample: true,
+      });
+    }
+  }
+  const sampleCount = display.filter((d) => d.is_sample).length;
 
   // Hydrate live-preview cards with a one-sentence "what they want" summary.
   // For each card we (a) fetch the SAM.gov noticedesc HTML, then (b) send it
@@ -383,15 +425,25 @@ export default async function OpportunitiesPage() {
               No opportunities yet.
             </p>
             <p className="mt-1">
-              {liveFetchFailed
-                ? "Couldn't reach SAM.gov for a live preview right now — the radar runs every Monday morning and any new matches will appear here."
-                : naics.length === 0
-                  ? "Add at least one NAICS code on your bid profile to start receiving matches."
-                  : "The radar runs every Monday morning. Any new SAM.gov notices matching your NAICS codes will appear here."}
+              {naics.length === 0
+                ? "Add at least one NAICS code on your bid profile to start receiving matches."
+                : "The radar runs every Monday morning. Any new SAM.gov notices matching your NAICS codes will appear here."}
             </p>
           </div>
         ) : (
           <>
+            {sampleCount > 0 && (
+              <div className="mt-6 rounded-md border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-3 text-xs leading-relaxed text-[#456c5f]">
+                <span className="font-bold uppercase tracking-[0.14em] text-[#0e5c41]">
+                  Pipeline preview ·{" "}
+                </span>
+                {liveFetchFailed
+                  ? "SAM.gov was unreachable just now, so we filled in representative samples for your NAICS so you can see the kind of work that's out there."
+                  : inboxDisplay.length === 0 && livePreview.length === 0
+                    ? "Your weekly radar runs every Monday — until then, here are representative samples for your NAICS so you can see the kind of work that's out there."
+                    : "We filled the bottom of the list with representative samples for your NAICS so you always see at least four. Real matches will replace them as the radar finds them."}
+              </div>
+            )}
             {livePreview.length > 0 && (
               <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.14em] text-[#456c5f]">
                 Live preview from SAM.gov · matched to your NAICS
@@ -416,6 +468,14 @@ export default async function OpportunitiesPage() {
                     {r.title}
                   </h3>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {r.is_sample ? (
+                      <span
+                        title="Representative sample for your NAICS — not a live SAM.gov notice. Real matches will replace it as the weekly radar finds them."
+                        className="inline-block rounded-sm border border-[#a06b1a] bg-[#fff7eb] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#a06b1a]"
+                      >
+                        Sample
+                      </span>
+                    ) : null}
                     {r.type ? (
                       <span className="inline-block rounded-sm bg-[#eaf3ee] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#0e5c41]">
                         {r.type}
@@ -503,7 +563,15 @@ export default async function OpportunitiesPage() {
                   <div className="mt-4 flex-1" />
 
                   <div className="mt-2 border-t border-[#eef3f0] pt-3">
-                    {isAttested ? (
+                    {r.is_sample ? (
+                      <span
+                        title="This is a representative sample, not a live SAM.gov notice. Real matches arrive every Monday."
+                        aria-disabled="true"
+                        className="block w-full cursor-not-allowed select-none rounded-sm border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-2.5 text-center text-sm font-semibold text-[#7a9c90]"
+                      >
+                        Sample preview &mdash; live notices arrive every Monday
+                      </span>
+                    ) : isAttested ? (
                       r.sam_url ? (
                         <a
                           href={r.sam_url}
