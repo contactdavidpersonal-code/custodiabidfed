@@ -73,7 +73,17 @@ export default async function OpportunitiesPage() {
   const livePreview: DisplayOpportunity[] = [];
   let liveFetchFailed = false;
 
-  if (inboxDisplay.length < PREVIEW_TARGET && naics.length > 0) {
+  // Live SAM.gov preview is best-effort: ANY failure here (network, key,
+  // parsing, library quirks) must never bubble up and 500 the page. We
+  // explicitly log to stderr (visible in Vercel runtime logs) so we can
+  // diagnose without taking down the route.
+  const livePreviewEnabled =
+    process.env.OPPORTUNITIES_LIVE_PREVIEW !== "off";
+  if (
+    livePreviewEnabled &&
+    inboxDisplay.length < PREVIEW_TARGET &&
+    naics.length > 0
+  ) {
     const apiKey = process.env.SAM_GOV_API_KEY ?? process.env.SAM_API_KEY;
     if (apiKey) {
       try {
@@ -85,12 +95,13 @@ export default async function OpportunitiesPage() {
           limit: Math.max(need * 2, 8),
         });
         for (const o of live) {
+          if (!o || !o.noticeId) continue;
           if (seenNotices.has(o.noticeId)) continue;
           seenNotices.add(o.noticeId);
           livePreview.push({
             key: `live:${o.noticeId}`,
             id: null,
-            title: o.title,
+            title: o.title ?? "(untitled)",
             department: o.department,
             naics_code: o.naicsCode,
             set_aside: o.setAside,
@@ -104,8 +115,11 @@ export default async function OpportunitiesPage() {
           }
         }
       } catch (err) {
-        console.warn("[opportunities] live preview fetch failed:", err);
         liveFetchFailed = true;
+        const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+        console.error(
+          `[opportunities] live preview fetch failed (org=${org.id}, naics=${naics.join(",")}): ${msg}`,
+        );
       }
     }
   }
