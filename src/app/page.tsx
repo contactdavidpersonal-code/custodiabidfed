@@ -1852,39 +1852,76 @@ export default function Home() {
       {/* 15 — Footer */}
       <footer className="border-t border-[#d5e5dd] bg-[#f7f7f3] px-6 py-14 text-[#44695c]">
         <div className="mx-auto max-w-6xl">
-          <div className="flex flex-col items-start justify-between gap-10 md:flex-row">
+          {/* Top CTA strip */}
+          <div className="mb-12 flex flex-col items-start justify-between gap-4 rounded-md border border-[#cfe3d9] bg-white p-6 md:flex-row md:items-center">
             <div>
+              <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#a06b1a]">
+                Summer Federal Cash Incentive &middot; 100 seats
+              </div>
+              <div className="mt-1 font-serif text-lg font-bold text-[#0f2f26]">
+                First Contract, On Us &mdash; 30 days free, $449/mo after
+                <span className="ml-2 text-sm font-normal text-[#7a9c90] line-through">$749</span>
+              </div>
+            </div>
+            <Link
+              href="/sign-up"
+              className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
+            >
+              Start my 30-day trial &rarr;
+            </Link>
+          </div>
+
+          <div className="flex flex-col items-start justify-between gap-10 md:flex-row">
+            <div className="max-w-sm">
               <div className="text-xl font-black tracking-tight text-[#0f2f26]">
                 Custodia<span className="text-[#2f8f6d]">.</span>
               </div>
-              <p className="mt-2 max-w-xs text-sm text-[#5a7d70]">
-                Your compliance officer for high-stakes federal contracting.
+              <p className="mt-2 text-sm text-[#5a7d70]">
+                The compliance officer for first-time federal contractors. CMMC Level 1 in week 1, matched SAM.gov opportunities in your inbox, and a bid-ready packet no prime can pick apart.
               </p>
-              <p className="mt-6 text-xs text-[#7a9c90]">
+              <p className="mt-4 text-xs text-[#7a9c90]">
+                Custodia, LLC &middot; Pittsburgh, PA &middot; Veteran-owned
+              </p>
+              <p className="mt-2 text-xs text-[#7a9c90]">
                 &copy; {new Date().getFullYear()} Custodia, LLC. All rights reserved.
               </p>
+              <p className="mt-3 text-[10px] uppercase tracking-[0.18em] text-[#9bb3a8]">
+                Not a law firm &middot; Not affiliated with the U.S. Government
+              </p>
             </div>
-            <div className="grid grid-cols-2 gap-12 text-sm md:grid-cols-3">
+            <div className="grid grid-cols-2 gap-12 text-sm md:grid-cols-4">
               <div>
-                <div className="mb-3 text-xs font-bold uppercase tracking-widest text-[#2f8f6d]">Overview</div>
+                <div className="mb-3 text-xs font-bold uppercase tracking-widest text-[#2f8f6d]">Platform</div>
                 <ul className="space-y-2">
-                  <li><a href="#product" className="transition-colors hover:text-[#0f2f26]">Product</a></li>
+                  <li><a href="#product" className="transition-colors hover:text-[#0f2f26]">How it works</a></li>
                   <li><a href="#pricing" className="transition-colors hover:text-[#0f2f26]">Pricing</a></li>
+                  <li><a href="#guarantees" className="transition-colors hover:text-[#0f2f26]">Guarantees</a></li>
                   <li><a href="#faq" className="transition-colors hover:text-[#0f2f26]">FAQ</a></li>
+                </ul>
+              </div>
+              <div>
+                <div className="mb-3 text-xs font-bold uppercase tracking-widest text-[#2f8f6d]">For contractors</div>
+                <ul className="space-y-2">
+                  <li><Link href="/sign-up" className="transition-colors hover:text-[#0f2f26]">Start free trial</Link></li>
+                  <li><Link href="/sign-in" className="transition-colors hover:text-[#0f2f26]">Sign in</Link></li>
+                  <li><Link href="/dashboard" className="transition-colors hover:text-[#0f2f26]">Dashboard</Link></li>
                 </ul>
               </div>
               <div>
                 <div className="mb-3 text-xs font-bold uppercase tracking-widest text-[#2f8f6d]">Legal</div>
                 <ul className="space-y-2">
-                  <li><a href="#" className="transition-colors hover:text-[#0f2f26]">Terms and Conditions</a></li>
-                  <li><a href="#" className="transition-colors hover:text-[#0f2f26]">Privacy Policy</a></li>
+                  <li><a href="/terms" className="transition-colors hover:text-[#0f2f26]">Terms</a></li>
+                  <li><a href="/privacy" className="transition-colors hover:text-[#0f2f26]">Privacy</a></li>
+                  <li><a href="/dpa" className="transition-colors hover:text-[#0f2f26]">DPA</a></li>
+                  <li><a href="/security" className="transition-colors hover:text-[#0f2f26]">Security</a></li>
                 </ul>
               </div>
               <div>
                 <div className="mb-3 text-xs font-bold uppercase tracking-widest text-[#2f8f6d]">Contact</div>
                 <ul className="space-y-2">
-                  <li><a href="mailto:hello@custodiabidfed.com" className="transition-colors hover:text-[#0f2f26]">Email</a></li>
-                  <li><a href="#" className="transition-colors hover:text-[#0f2f26]">LinkedIn</a></li>
+                  <li><a href="mailto:hello@custodiabidfed.com" className="transition-colors hover:text-[#0f2f26]">hello@custodiabidfed.com</a></li>
+                  <li><a href="mailto:support@custodiabidfed.com" className="transition-colors hover:text-[#0f2f26]">Support</a></li>
+                  <li><a href="https://www.linkedin.com/company/custodia-bidfed" target="_blank" rel="noreferrer" className="transition-colors hover:text-[#0f2f26]">LinkedIn</a></li>
                 </ul>
               </div>
             </div>
