@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist_Mono, Lora, Manrope } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { clerkAppearance } from "@/lib/clerk-appearance";
 import "./globals.css";
 
@@ -49,6 +50,7 @@ export default function RootLayout({
         >
           {children}
         </ClerkProvider>
+        <Analytics />
       </body>
     </html>
   );
