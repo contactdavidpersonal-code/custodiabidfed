@@ -2,12 +2,11 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ensureOrgForUser, listAssessmentsForOrg } from "@/lib/assessment";
-import { getAnthropic } from "@/lib/anthropic";
 import {
   listOpportunitiesForOrg,
-  searchSamOpportunities,
   type OpportunityRow,
 } from "@/lib/sam-radar";
+import { getCachedLivePreview } from "@/lib/opportunities-live-cache";
 import { typicalRangeForNaics } from "@/lib/naics-ranges";
 import { pickSampleOpportunities } from "@/lib/sample-opportunities";
 import { dismissOpportunityAction } from "./actions";
@@ -66,84 +65,6 @@ function rowToDisplay(r: OpportunityRow): DisplayOpportunity {
     description_url: null,
     is_sample: false,
   };
-}
-
-/**
- * Fetch the noticedesc resource for a single opportunity. SAM.gov returns
- * `{ description: "<html>…</html>" }` for most notices. Best-effort: any
- * failure (auth, 404, timeout) yields `null` and the card just hides the
- * blurb instead of failing the whole render.
- */
-async function fetchNoticeDescription(
-  url: string | null,
-  apiKey: string,
-): Promise<string | null> {
-  if (!url) return null;
-  try {
-    let target = url;
-    if (target.includes("{api_key}")) {
-      target = target.replace("{api_key}", encodeURIComponent(apiKey));
-    } else if (!/[?&]api_key=/.test(target)) {
-      target += (target.includes("?") ? "&" : "?") + `api_key=${encodeURIComponent(apiKey)}`;
-    }
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 4000);
-    const res = await fetch(target, {
-      headers: { Accept: "application/json" },
-      cache: "no-store",
-      signal: ctl.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) return null;
-    const json = (await res.json()) as { description?: string };
-    return json.description ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * One-sentence AI summary of what a SAM.gov notice is asking for. We feed the
- * raw description to Claude Haiku with a tight prompt that forces a single
- * plain-English sentence starting with a verb (e.g., "Provide…", "Supply…",
- * "Operate and maintain…"). Returns null on any error so the caller can
- * fall back to a plain-text excerpt.
- */
-async function aiSummarize(
-  title: string,
-  rawDescription: string,
-): Promise<string | null> {
-  const cleaned = stripHtml(rawDescription).slice(0, 4000);
-  if (!cleaned || cleaned.length < 40) return null;
-  try {
-    const ctl = new AbortController();
-    const timer = setTimeout(() => ctl.abort(), 5000);
-    const client = getAnthropic();
-    const resp = await client.messages.create(
-      {
-        model: "claude-haiku-4-5",
-        max_tokens: 120,
-        system:
-          "You summarize U.S. federal contracting opportunity notices for a small business owner deciding whether to bid. Output ONE sentence (max 220 characters) describing what the agency is actually asking a contractor to do or supply. Start with an action verb (Provide, Supply, Maintain, Operate, Furnish, etc.). No preamble, no quotes, no markdown, no agency name, no contract numbers, no dates. Plain prose only.",
-        messages: [
-          {
-            role: "user",
-            content: `Title: ${title}\n\nNotice description:\n${cleaned}`,
-          },
-        ],
-      },
-      { signal: ctl.signal },
-    );
-    clearTimeout(timer);
-    const block = resp.content.find((b) => b.type === "text");
-    if (!block || block.type !== "text") return null;
-    const text = block.text.trim().replace(/^["']|["']$/g, "");
-    return text.length > 0 ? text : null;
-  } catch (err) {
-    const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-    console.warn(`[opportunities] aiSummarize failed: ${msg}`);
-    return null;
-  }
 }
 
 /**
@@ -216,62 +137,42 @@ export default async function OpportunitiesPage() {
   const inboxDisplay = rows.map(rowToDisplay);
   const seenNotices = new Set(rows.map((r) => r.notice_id));
   const livePreview: DisplayOpportunity[] = [];
-  let liveFetchFailed = false;
 
-  // Live SAM.gov preview is best-effort: ANY failure here (network, key,
-  // parsing, library quirks) must never bubble up and 500 the page. We
-  // explicitly log to stderr (visible in Vercel runtime logs) so we can
-  // diagnose without taking down the route.
-  const livePreviewEnabled =
-    process.env.OPPORTUNITIES_LIVE_PREVIEW !== "off";
-  if (
-    livePreviewEnabled &&
-    inboxDisplay.length < PREVIEW_TARGET &&
-    naics.length > 0
-  ) {
-    const apiKey = process.env.SAM_GOV_API_KEY ?? process.env.SAM_API_KEY;
-    if (apiKey) {
-      try {
-        const need = PREVIEW_TARGET - inboxDisplay.length;
-        const live = await searchSamOpportunities({
-          apiKey,
-          naicsCodes: naics,
-          postedFromDays: 30,
-          limit: Math.max(need * 2, 8),
-        });
-        for (const o of live) {
-          if (!o || !o.noticeId) continue;
-          if (seenNotices.has(o.noticeId)) continue;
-          seenNotices.add(o.noticeId);
-          livePreview.push({
-            key: `live:${o.noticeId}`,
-            id: null,
-            title: o.title ?? "(untitled)",
-            department: o.department,
-            type: o.type,
-            naics_code: o.naicsCode,
-            set_aside: o.setAside,
-            posted_date: o.postedDate,
-            response_deadline: o.responseDeadline,
-            solicitation_number: o.solicitationNumber,
-            place_of_performance: o.placeOfPerformance,
-            award_amount: o.awardAmount,
-            sam_url: o.samUrl,
-            summary: null,
-            description_url: o.description,
-            is_sample: false,
-          });
-          if (inboxDisplay.length + livePreview.length >= PREVIEW_TARGET) {
-            break;
-          }
-        }
-      } catch (err) {
-        liveFetchFailed = true;
-        const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-        console.error(
-          `[opportunities] live preview fetch failed (org=${org.id}, naics=${naics.join(",")}): ${msg}`,
-        );
-      }
+  // Live SAM.gov preview is fronted by a per-org cache (sam_live_cache).
+  // The cache layer handles the SAM.gov fetch, the Anthropic Haiku summary,
+  // hash-based change detection, and stale-on-failure fallback so this
+  // page render is now a single DB read in the steady state.
+  let liveFetchFailed = false;
+  let staleSamFetch = false;
+  if (inboxDisplay.length < PREVIEW_TARGET && naics.length > 0) {
+    const result = await getCachedLivePreview({
+      organizationId: org.id,
+      naicsCodes: naics,
+    });
+    liveFetchFailed = result.liveFetchFailed;
+    staleSamFetch = result.staleSamFetch;
+    for (const c of result.cards) {
+      if (seenNotices.has(c.noticeId)) continue;
+      seenNotices.add(c.noticeId);
+      livePreview.push({
+        key: `live:${c.noticeId}`,
+        id: null,
+        title: c.title,
+        department: c.department,
+        type: c.type,
+        naics_code: c.naicsCode,
+        set_aside: c.setAside,
+        posted_date: c.postedDate,
+        response_deadline: c.responseDeadline,
+        solicitation_number: c.solicitationNumber,
+        place_of_performance: c.placeOfPerformance,
+        award_amount: c.awardAmount,
+        sam_url: c.samUrl,
+        summary: c.summary,
+        description_url: null,
+        is_sample: false,
+      });
+      if (inboxDisplay.length + livePreview.length >= PREVIEW_TARGET) break;
     }
   }
 
@@ -312,30 +213,6 @@ export default async function OpportunitiesPage() {
     }
   }
   const sampleCount = display.filter((d) => d.is_sample).length;
-
-  // Hydrate live-preview cards with a one-sentence "what they want" summary.
-  // For each card we (a) fetch the SAM.gov noticedesc HTML, then (b) send it
-  // through Claude Haiku for a tight rewrite. Both steps are best-effort and
-  // bounded — the page never waits more than ~6s total and any failure just
-  // leaves `summary` null on that single card.
-  const apiKeyForSummaries =
-    process.env.SAM_GOV_API_KEY ?? process.env.SAM_API_KEY;
-  if (apiKeyForSummaries && livePreview.length > 0) {
-    await Promise.all(
-      livePreview.map(async (card) => {
-        if (card.summary || !card.description_url) return;
-        const raw = await fetchNoticeDescription(
-          card.description_url,
-          apiKeyForSummaries,
-        );
-        if (!raw) return;
-        // Try AI summary first; fall back to a plain truncated extract if
-        // the model is unavailable or rate-limited.
-        card.summary =
-          (await aiSummarize(card.title, raw)) ?? summarizeDescription(raw);
-      }),
-    );
-  }
 
   return (
     <main className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
@@ -438,11 +315,16 @@ export default async function OpportunitiesPage() {
                   Pipeline preview ·{" "}
                 </span>
                 {liveFetchFailed
-                  ? "SAM.gov was unreachable just now, so we filled in representative samples for your NAICS so you can see the kind of work that's out there."
+                  ? "SAM.gov was unreachable just now and we don't have a cached snapshot yet, so we filled in representative samples for your NAICS so you can see the kind of work that's out there."
                   : inboxDisplay.length === 0 && livePreview.length === 0
                     ? "Your weekly radar runs every Monday — until then, here are representative samples for your NAICS so you can see the kind of work that's out there."
                     : "We filled the bottom of the list with representative samples for your NAICS so you always see at least four. Real matches will replace them as the radar finds them."}
               </div>
+            )}
+            {staleSamFetch && livePreview.length > 0 && (
+              <p className="mt-3 text-[11px] uppercase tracking-[0.12em] text-[#a06b1a]">
+                SAM.gov was briefly unreachable — showing the last cached snapshot of your live matches.
+              </p>
             )}
             {livePreview.length > 0 && (
               <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.14em] text-[#456c5f]">

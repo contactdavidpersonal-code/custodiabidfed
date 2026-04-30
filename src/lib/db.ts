@@ -736,6 +736,27 @@ export async function initDb() {
       window_start TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `;
+
+  // Per-org cache of the live SAM.gov "first 4 matches" feed used by the
+  // /opportunities page. Cuts the per-pageview SAM.gov + Anthropic Haiku
+  // spend down to ~zero (one refresh per stale-window or NAICS change),
+  // and lets the page keep rendering real listings even when SAM.gov is
+  // briefly unreachable.
+  //   - payload_hash: stable hash of the (noticeId-sorted) result set so
+  //                   we can detect "result actually changed" without
+  //                   diffing JSON blobs.
+  //   - payload    : array of cached opportunity card data (already
+  //                   AI-summarized) ready to spread into the page.
+  //   - fetched_at : last successful refresh; the read path uses a TTL.
+  await sql`
+    CREATE TABLE IF NOT EXISTS sam_live_cache (
+      organization_id UUID PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
+      naics_key       TEXT NOT NULL,
+      payload_hash    TEXT NOT NULL,
+      payload         JSONB NOT NULL,
+      fetched_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
 }
 
 /**
