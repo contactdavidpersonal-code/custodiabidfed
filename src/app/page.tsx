@@ -1919,8 +1919,8 @@ export default function Home() {
               <div>
                 <div className="mb-3 text-xs font-bold uppercase tracking-widest text-[#2f8f6d]">Contact</div>
                 <ul className="space-y-2">
-                  <li><a href="mailto:hello@custodiabidfed.com" className="transition-colors hover:text-[#0f2f26]">hello@custodiabidfed.com</a></li>
-                  <li><a href="mailto:support@custodiabidfed.com" className="transition-colors hover:text-[#0f2f26]">Support</a></li>
+                  <li><a href="mailto:support@custodia.dev" className="transition-colors hover:text-[#0f2f26]">support@custodia.dev</a></li>
+                  <li><a href="mailto:support@custodia.dev?subject=Support" className="transition-colors hover:text-[#0f2f26]">Support</a></li>
                   <li><a href="https://www.linkedin.com/company/custodia-bidfed" target="_blank" rel="noreferrer" className="transition-colors hover:text-[#0f2f26]">LinkedIn</a></li>
                 </ul>
               </div>
