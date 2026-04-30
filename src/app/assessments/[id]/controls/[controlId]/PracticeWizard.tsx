@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
@@ -15,7 +15,6 @@ import type {
   EvidenceProvider,
   ProviderTemplate,
 } from "@/lib/playbook";
-import type { PracticeQuizQuestion } from "@/lib/practice-quiz";
 import { EvidenceDropzone } from "./EvidenceDropzone";
 
 /**
@@ -37,7 +36,6 @@ const providerLabel: Record<EvidenceProvider, string> = {
 
 const STATUS_LABELS: Record<string, string> = {
   yes: "Met",
-  partial: "Partial",
   no: "Not met",
   not_applicable: "N/A",
 };
@@ -50,7 +48,6 @@ type Props = {
   response: ControlResponseRow;
   evidence: ClientEvidenceRow[];
   remediationPlan: RemediationPlanRow | null;
-  quiz: PracticeQuizQuestion[];
   prevId: string | null;
   nextId: string | null;
   currentIdx: number;
@@ -67,112 +64,45 @@ type Props = {
   upsertRemediationPlanAction: (formData: FormData) => Promise<void> | void;
 };
 
-type QA = "yes" | "no" | "na" | null;
-
 function parseQ(filename: string): { qid: string | null; display: string } {
   const m = /^\[q:([^\]]+)\]__(.*)$/.exec(filename);
   if (m) return { qid: m[1], display: m[2] };
   return { qid: null, display: filename };
 }
 
-const STORAGE_PREFIX = "cmmc:answers:";
-
 /**
- * Practice page, restructured around CMMC's actual unit of evaluation:
- * NIST 800-171A assessment objectives [a]/[b]/[c]/... A practice gets MET
- * when every objective has supporting evidence (CMMC L1 SAG p.7).
+ * Practice page — single top-to-bottom flow per CMMC L1 practice:
+ *   1. What the assessor needs to see (NIST 800-171A objectives)
+ *   2. Templates to download (if any)
+ *   3. Evidence area: upload / Charlie-draft / reuse from another practice
+ *   4. Lock in → next practice
  *
- * The page now shows ONE objectives checklist + ONE evidence area per
- * practice — not per-question dropzones. Diagnostic questions still drive
- * the gap statement (so primes can read a remediation plan in plain
- * English), but they no longer gate uploads. A single artifact applies to
- * the whole practice and contributes toward every objective.
- *
- * Backwards compat: old uploads stored as `[q:<id>]__filename` still render
- * with the prefix stripped. New uploads land under their raw filename.
+ * The practice is MET as soon as at least one artifact has been reviewed
+ * as sufficient. No self-check quiz, no answered/total gating — the
+ * 800-171A objectives ARE the requirement, the AI evidence review IS the
+ * confirmation. Whole-practice N/A is preserved as an escape hatch.
  */
 export function PracticeWizard(props: Props) {
   const router = useRouter();
-  const storageKey = `${STORAGE_PREFIX}${props.assessmentId}:${props.controlId}`;
 
   const allEvidence = props.evidence;
   const sufficientCount = allEvidence.filter(
     (e) => e.ai_review_verdict === "sufficient",
   ).length;
-  const hasAnyEvidence = allEvidence.length > 0;
 
-  const [answers, setAnswers] = useState<Record<string, QA>>(() =>
-    Object.fromEntries(props.quiz.map((q) => [q.id, null])),
-  );
-  const [naReason, setNaReason] = useState("");
+  const [naReason, setNaReason] = useState(props.response.narrative ?? "");
   const [wholeNa, setWholeNa] = useState(
     props.response.status === "not_applicable",
   );
   const [submitting, setSubmitting] = useState(false);
 
-  // Restore previously-given answers from localStorage on mount.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const raw = window.localStorage.getItem(storageKey);
-      if (raw) {
-        const saved = JSON.parse(raw) as {
-          answers?: Record<string, QA>;
-          naReason?: string;
-        };
-        if (saved.answers) {
-          setAnswers((prev) => ({ ...prev, ...saved.answers }));
-        }
-        if (saved.naReason) setNaReason(saved.naReason);
-      }
-    } catch {
-      // ignore corrupt storage
-    }
-  }, [storageKey]);
-
-  // Persist answers locally so they survive uploads / reloads.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      window.localStorage.setItem(
-        storageKey,
-        JSON.stringify({ answers, naReason }),
-      );
-    } catch {
-      // ignore quota errors
-    }
-  }, [answers, naReason, storageKey]);
-
-  const setA = (qid: string, v: QA) => {
-    setAnswers((p) => ({ ...p, [qid]: v }));
-  };
-
-  const total = props.quiz.length;
-  const yesCount = props.quiz.filter((q) => answers[q.id] === "yes").length;
-  const noCount = props.quiz.filter((q) => answers[q.id] === "no").length;
-  const naCount = props.quiz.filter((q) => answers[q.id] === "na").length;
-  const answered = yesCount + noCount + naCount;
-
-  // Lock-in gate: questions answered + at least one piece of sufficient
-  // evidence on file (or the whole practice is N/A). Keeping the
-  // sufficient-verdict requirement in line with the existing evidence
-  // gating model — see feedback_evidence_gating.md.
   const ready = wholeNa
     ? naReason.trim().length >= 10
-    : answered === total && total > 0 && sufficientCount > 0;
+    : sufficientCount > 0;
 
-  const derivedStatus: "yes" | "partial" | "no" | "not_applicable" = wholeNa
+  const derivedStatus: "yes" | "not_applicable" = wholeNa
     ? "not_applicable"
-    : naCount === total
-      ? "not_applicable"
-      : noCount === total - naCount && noCount > 0
-        ? "no"
-        : yesCount === total - naCount && yesCount > 0
-          ? "yes"
-          : "partial";
-
-  const hiddenSaveRef = useRef<HTMLFormElement>(null);
-  const hiddenSuggestRef = useRef<HTMLFormElement>(null);
+    : "yes";
 
   const lockIn = async () => {
     if (!ready || submitting) return;
@@ -244,16 +174,13 @@ export function PracticeWizard(props: Props) {
         <p className="mt-2 text-base leading-relaxed text-[#10231d]/85">
           {props.practice.plainEnglish}
         </p>
-      </header>
-
-      {props.practice.whyItMatters && (
-        <div className="mb-6 rounded-sm border border-[#e5d6c2] bg-[#fdf8ef] px-4 py-3 text-sm leading-relaxed text-[#10231d]">
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#a06b1a]">
-            Why this matters
+        {props.practice.whyItMatters && (
+          <p className="mt-2 text-sm leading-relaxed text-[#5a7d70]">
+            <span className="font-semibold text-[#a06b1a]">Why: </span>
+            {props.practice.whyItMatters}
           </p>
-          <p className="mt-1">{props.practice.whyItMatters}</p>
-        </div>
-      )}
+        )}
+      </header>
 
       {isLocked && !wholeNa && (
         <div className="mb-6 rounded-md border border-[#2f8f6d] bg-[#f7fcf9] p-4">
@@ -279,39 +206,7 @@ export function PracticeWizard(props: Props) {
         </div>
       )}
 
-      {/* Whole-control N/A escape hatch */}
-      <div className="mb-5 rounded-sm border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
-        <label className="flex cursor-pointer items-start gap-3">
-          <input
-            type="checkbox"
-            checked={wholeNa}
-            onChange={(e) => setWholeNa(e.target.checked)}
-            className="mt-0.5 h-4 w-4 flex-none accent-[#0e2a23]"
-          />
-          <div className="min-w-0 flex-1">
-            <span className="text-sm font-semibold text-[#10231d]">
-              This whole practice doesn&rsquo;t apply to my business
-            </span>
-            <p className="mt-0.5 text-xs text-[#5a7d70]">
-              Use sparingly. Briefly explain why &mdash; auditors will read it.
-            </p>
-            {wholeNa && (
-              <textarea
-                value={naReason}
-                onChange={(e) => setNaReason(e.target.value)}
-                rows={2}
-                placeholder="E.g. We have no physical office; all staff work remotely on cloud-only systems."
-                className="mt-2 w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] outline-none transition-colors focus:border-[#0e2a23]"
-              />
-            )}
-          </div>
-        </label>
-      </div>
-
-      {/* Assessment objectives (NIST 800-171A) — the actual checklist that
-          decides whether this practice can be marked MET. Each item is what
-          a 3PAO would look for. Auto-checked when ANY sufficient evidence
-          is on file (objective-level granularity comes in a follow-up). */}
+      {/* Step 1 — what the assessor needs to see (NIST 800-171A objectives). */}
       {!wholeNa && props.objectives.length > 0 && (
         <ObjectivesPanel
           objectives={props.objectives}
@@ -319,10 +214,10 @@ export function PracticeWizard(props: Props) {
         />
       )}
 
-      {/* Templates available for this practice */}
+      {/* Step 2 — templates to download (if any). */}
       {!wholeNa && <TemplatesStrip practice={props.practice} />}
 
-      {/* ONE evidence area for the whole practice. */}
+      {/* Step 3 — evidence: upload, draft with Charlie, or reuse. */}
       {!wholeNa && (
         <EvidenceArea
           assessmentId={props.assessmentId}
@@ -339,41 +234,58 @@ export function PracticeWizard(props: Props) {
         />
       )}
 
-      {/* Quick self-check — these questions drive the gap statement and
-          remediation plan if anything is "Not yet". They no longer gate
-          uploads (you can upload first and answer after, or vice versa). */}
-      {!wholeNa && total > 0 && (
-        <SelfCheck
-          quiz={props.quiz}
-          answers={answers}
-          onAnswer={setA}
-          hasAnyEvidence={hasAnyEvidence}
-        />
+      {/* Whole-control N/A escape hatch — small, near the bottom. */}
+      {!isLocked && (
+        <div className="mb-5 rounded-sm border border-[#cfe3d9] bg-white p-3">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={wholeNa}
+              onChange={(e) => setWholeNa(e.target.checked)}
+              className="mt-0.5 h-4 w-4 flex-none accent-[#0e2a23]"
+            />
+            <div className="min-w-0 flex-1">
+              <span className="text-xs font-semibold text-[#10231d]">
+                This whole practice doesn&rsquo;t apply to my business
+              </span>
+              <p className="mt-0.5 text-[11px] text-[#5a7d70]">
+                Use sparingly. Briefly explain why &mdash; auditors will read it.
+              </p>
+              {wholeNa && (
+                <textarea
+                  value={naReason}
+                  onChange={(e) => setNaReason(e.target.value)}
+                  rows={2}
+                  placeholder="E.g. We have no physical office; all staff work remotely on cloud-only systems."
+                  className="mt-2 w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] outline-none transition-colors focus:border-[#0e2a23]"
+                />
+              )}
+            </div>
+          </label>
+        </div>
       )}
 
-      {/* Progress + lock-in */}
-      {!wholeNa && total > 0 && (
+      {/* Step 4 — lock in and move on. */}
+      {!wholeNa && (
         <div className="mt-6 rounded-md border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
-                Progress
+                Status
               </p>
               <p className="mt-1 text-sm font-semibold text-[#10231d]">
-                {answered} of {total} self-check answered &middot;{" "}
                 {sufficientCount} sufficient artifact
                 {sufficientCount === 1 ? "" : "s"} on file
               </p>
               {ready ? (
                 <p className="mt-1 text-xs text-[#2f8f6d]">
-                  Will be marked{" "}
-                  <strong>{STATUS_LABELS[derivedStatus]}</strong> when you lock
-                  it in. Narrative is drafted automatically.
+                  Charlie has confirmed your evidence. Lock it in to draft the
+                  narrative and move to the next practice.
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-[#5a7d70]">
-                  Answer every self-check question and upload at least one
-                  artifact that the platform reviews as sufficient.
+                  Upload one artifact (or draft one with Charlie) and wait for
+                  the review verdict to turn green.
                 </p>
               )}
             </div>
@@ -406,7 +318,7 @@ export function PracticeWizard(props: Props) {
         </div>
       )}
 
-      {/* Provider-specific quick guidance, kept as a reference panel */}
+      {/* Optional reference: how to capture this in your tools */}
       {!wholeNa && props.practice.providerGuidance.length > 0 && (
         <ProviderReference practice={props.practice} />
       )}
@@ -422,10 +334,6 @@ export function PracticeWizard(props: Props) {
           upsertRemediationPlanAction={props.upsertRemediationPlanAction}
         />
       )}
-
-      {/* Hidden anchors kept for forward compat */}
-      <form ref={hiddenSaveRef} className="hidden" />
-      <form ref={hiddenSuggestRef} className="hidden" />
     </div>
   );
 }
@@ -717,106 +625,6 @@ function ReusePicker({
   );
 }
 
-/* ============================ SELF-CHECK ================================== */
-
-/**
- * Lightweight diagnostic. Every "Not yet" surfaces a fix hint that feeds the
- * remediation plan. This panel does NOT control upload visibility anymore —
- * users can upload first and answer after, or vice versa.
- */
-function SelfCheck({
-  quiz,
-  answers,
-  onAnswer,
-  hasAnyEvidence,
-}: {
-  quiz: PracticeQuizQuestion[];
-  answers: Record<string, QA>;
-  onAnswer: (qid: string, v: QA) => void;
-  hasAnyEvidence: boolean;
-}) {
-  return (
-    <section className="mb-5 rounded-md border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
-      <div className="flex items-baseline justify-between gap-3">
-        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
-          Quick self-check
-        </p>
-        <p className="text-[11px] text-[#5a7d70]">
-          {hasAnyEvidence
-            ? "Confirm what your evidence shows"
-            : "Helps Charlie draft your narrative"}
-        </p>
-      </div>
-      <ol className="mt-3 space-y-3">
-        {quiz.map((q, idx) => (
-          <li
-            key={q.id}
-            className="rounded-sm border border-[#e4eee8] bg-[#fbfdfc] p-3"
-          >
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 inline-flex h-6 w-6 flex-none items-center justify-center rounded-sm bg-[#0e2a23] font-mono text-[11px] font-bold text-[#bdf2cf]">
-                {idx + 1}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold leading-relaxed text-[#10231d]">
-                  {q.prompt}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onAnswer(q.id, "yes")}
-                    className={`rounded-sm px-3 py-1 text-xs font-semibold transition-colors ${
-                      answers[q.id] === "yes"
-                        ? "bg-[#0e2a23] text-[#bdf2cf]"
-                        : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
-                    }`}
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onAnswer(q.id, "no")}
-                    className={`rounded-sm px-3 py-1 text-xs font-semibold transition-colors ${
-                      answers[q.id] === "no"
-                        ? "bg-[#b03a2e] text-white"
-                        : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#b03a2e] hover:bg-[#fdf2f0]"
-                    }`}
-                  >
-                    Not yet
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => onAnswer(q.id, "na")}
-                    className={`rounded-sm px-3 py-1 text-xs font-semibold transition-colors ${
-                      answers[q.id] === "na"
-                        ? "bg-[#5a7d70] text-white"
-                        : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#5a7d70] hover:bg-[#f7fcf9]"
-                    }`}
-                  >
-                    N/A
-                  </button>
-                </div>
-                {answers[q.id] === "no" && (
-                  <p className="mt-2 rounded-sm bg-[#fdf8ef] px-3 py-2 text-xs leading-relaxed text-[#10231d]">
-                    <span className="font-semibold text-[#a06b1a]">
-                      Fix plan:{" "}
-                    </span>
-                    {q.gap}
-                  </p>
-                )}
-                {answers[q.id] === "yes" && (
-                  <p className="mt-2 text-[11px] font-medium text-[#2f8f6d]">
-                    {q.yesMeans}
-                  </p>
-                )}
-              </div>
-            </div>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
 /* ============================ EVIDENCE ROW ================================ */
 
 function EvidenceRow({

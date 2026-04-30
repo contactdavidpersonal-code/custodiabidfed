@@ -20,7 +20,6 @@ import {
   upsertRemediationPlanAction,
   useSuggestedNarrativeAction,
 } from "../../../actions";
-import { practiceQuizzes } from "@/lib/practice-quiz";
 import { PracticeWizard } from "./PracticeWizard";
 
 export default async function ControlDetailPage(
@@ -67,8 +66,6 @@ export default async function ControlDetailPage(
   // Suppress unused linter — kept for future header enrichment.
   void allResponses;
 
-  const quiz = practiceQuizzes[controlId] ?? [];
-
   // Strip non-serializable function field before crossing the server/client
   // boundary. `suggestedNarrative` is invoked server-side by
   // `useSuggestedNarrativeAction`, so the client never needs it.
@@ -86,7 +83,6 @@ export default async function ControlDetailPage(
         response={response}
         evidence={evidenceForClient}
         remediationPlan={remediationPlan}
-        quiz={quiz}
         prevId={prevId}
         nextId={nextId}
         currentIdx={currentIdx}
