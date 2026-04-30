@@ -11,6 +11,7 @@ import {
 import { getObjectives, playbook, playbookById } from "@/lib/playbook";
 import {
   deleteEvidenceAction,
+  generateArtifactAction,
   reReviewEvidenceAction,
   saveControlResponseAction,
   tagArtifactPracticeAction,
@@ -97,6 +98,7 @@ export default async function ControlDetailPage(
         reReviewEvidenceAction={reReviewEvidenceAction}
         tagArtifactPracticeAction={tagArtifactPracticeAction}
         untagArtifactPracticeAction={untagArtifactPracticeAction}
+        generateArtifactAction={generateArtifactAction}
         useSuggestedNarrativeAction={useSuggestedNarrativeAction}
         upsertRemediationPlanAction={upsertRemediationPlanAction}
       />

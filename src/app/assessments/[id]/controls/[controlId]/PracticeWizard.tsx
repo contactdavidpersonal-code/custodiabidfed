@@ -62,6 +62,7 @@ type Props = {
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
   tagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
   untagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
+  generateArtifactAction: (formData: FormData) => Promise<void> | void;
   useSuggestedNarrativeAction: (formData: FormData) => Promise<void> | void;
   upsertRemediationPlanAction: (formData: FormData) => Promise<void> | void;
 };
@@ -334,6 +335,7 @@ export function PracticeWizard(props: Props) {
           reReviewEvidenceAction={props.reReviewEvidenceAction}
           tagArtifactPracticeAction={props.tagArtifactPracticeAction}
           untagArtifactPracticeAction={props.untagArtifactPracticeAction}
+          generateArtifactAction={props.generateArtifactAction}
         />
       )}
 
@@ -509,6 +511,7 @@ function EvidenceArea({
   reReviewEvidenceAction,
   tagArtifactPracticeAction,
   untagArtifactPracticeAction,
+  generateArtifactAction,
 }: {
   assessmentId: string;
   controlId: string;
@@ -520,6 +523,7 @@ function EvidenceArea({
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
   tagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
   untagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
+  generateArtifactAction: (formData: FormData) => Promise<void> | void;
 }) {
   return (
     <section className="mb-5 rounded-md border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04)]">
@@ -566,6 +570,11 @@ function EvidenceArea({
           assessmentId={assessmentId}
           controlId={controlId}
         />
+        <CharlieGenerateButton
+          assessmentId={assessmentId}
+          controlId={controlId}
+          generateArtifactAction={generateArtifactAction}
+        />
       </div>
 
       {reuseCandidates.length > 0 && (
@@ -577,6 +586,47 @@ function EvidenceArea({
         />
       )}
     </section>
+  );
+}
+
+/* ============================ CHARLIE GENERATE ============================ */
+
+/**
+ * Submit-button form that asks Charlie to draft a Markdown policy / roster /
+ * procedure for this practice based on the org's onboarding profile. The
+ * generated artifact lands as evidence with an "[REVIEW BEFORE SUBMITTING]"
+ * banner and `[FILL IN: ...]` placeholders the user must complete. Server
+ * action runs Sonnet — kept inline so the disabled-while-pending state is
+ * handled by the platform's standard form submission.
+ */
+function CharlieGenerateButton({
+  assessmentId,
+  controlId,
+  generateArtifactAction,
+}: {
+  assessmentId: string;
+  controlId: string;
+  generateArtifactAction: (formData: FormData) => Promise<void> | void;
+}) {
+  return (
+    <form
+      action={generateArtifactAction}
+      className="mt-3 flex items-center gap-3 border-t border-dashed border-[#cfe3d9] pt-3"
+    >
+      <input type="hidden" name="assessmentId" value={assessmentId} />
+      <input type="hidden" name="controlId" value={controlId} />
+      <button
+        type="submit"
+        className="rounded-sm border border-[#0e2a23] bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-[#0e2a23] transition-colors hover:bg-[#0e2a23] hover:text-[#bdf2cf]"
+      >
+        Draft with Charlie
+      </button>
+      <p className="flex-1 text-[11px] leading-snug text-[#5a7d70]">
+        Charlie writes a starter document from your onboarding profile.
+        You review, fill in the bracketed blanks, and sign before it counts
+        toward attestation.
+      </p>
+    </form>
   );
 }
 

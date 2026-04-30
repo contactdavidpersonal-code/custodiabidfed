@@ -34,6 +34,10 @@ import {
 } from "@/lib/db";
 import { playbookById } from "@/lib/playbook";
 import { reviewEvidenceArtifact } from "@/lib/ai/evidence-review";
+import {
+  generateArtifactDraft,
+  formatProfileFacts,
+} from "@/lib/ai/artifact-generation";
 import { signAttestation } from "@/lib/security/attestation-signature";
 import { recordAuditEvent } from "@/lib/security/audit-log";
 
@@ -314,6 +318,115 @@ export async function uploadEvidenceAction(formData: FormData) {
     // outer failure. Leave the row in 'pending review' state (null verdict)
     // so the UI prompts a retry.
     console.error("reviewEvidenceArtifact threw:", err);
+  }
+
+  revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
+  revalidatePath(`/assessments/${assessmentId}`);
+}
+
+/**
+ * Charlie-drafted artifact: synthesize a Markdown policy / roster / procedure
+ * from the org's onboarding profile, upload it as evidence, and tag it to the
+ * current practice. The draft always includes a "[REVIEW BEFORE SUBMITTING]"
+ * banner and bracketed `[FILL IN: ...]` placeholders for facts Charlie does
+ * not have, so the user must review/edit before it can pass attestation.
+ *
+ * The vision-review pipeline returns 'unclear' for markdown (it only handles
+ * images/PDFs), which is exactly what we want — the user has to look at it.
+ */
+export async function generateArtifactAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const controlId = String(formData.get("controlId") ?? "");
+
+  const practice = playbookById[controlId];
+  if (!practice) throw new Error("Unknown control");
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Not found");
+
+  const profile = await getBusinessProfile(ctx.organization.id);
+
+  // Strip the non-serializable suggestedNarrative function before passing
+  // to the generator (matches the page.tsx server/client boundary pattern).
+  const { suggestedNarrative: _suggestedNarrative, ...practiceForGen } = practice;
+  void _suggestedNarrative;
+
+  const markdown = await generateArtifactDraft({
+    practice: practiceForGen,
+    companyName: ctx.organization.name,
+    scopedSystems: ctx.organization.scoped_systems ?? "",
+    naicsCodes: ctx.organization.naics_codes,
+    entityType: ctx.organization.entity_type,
+    profileFacts: formatProfileFacts(profile?.data ?? {}),
+  });
+
+  const filename = `${controlId}-charlie-draft-${Date.now()}.md`;
+  const safeName = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
+  const pathname = `evidence/${assessmentId}/${controlId}/${safeName}`;
+  const blob = await put(pathname, markdown, {
+    access: "public",
+    addRandomSuffix: true,
+    contentType: "text/markdown",
+  });
+
+  const sql = getSql();
+  const inserted = (await sql`
+    INSERT INTO evidence_artifacts
+      (assessment_id, control_id, filename, blob_url, mime_type, size_bytes, uploaded_by_user_id)
+    VALUES
+      (${assessmentId}, ${controlId}, ${filename}, ${blob.url},
+       ${"text/markdown"}, ${markdown.length}, ${userId})
+    RETURNING id
+  `) as Array<{ id: string }>;
+  const artifactId = inserted[0].id;
+
+  await sql`
+    INSERT INTO evidence_artifact_practices
+      (artifact_id, assessment_id, control_id, objectives, created_by_user_id)
+    VALUES
+      (${artifactId}, ${assessmentId}, ${controlId}, '{}'::text[], ${userId})
+    ON CONFLICT (artifact_id, assessment_id, control_id) DO NOTHING
+  `;
+
+  await recordAuditEvent({
+    action: "evidence.generated",
+    userId,
+    organizationId: ctx.organization.id,
+    resourceType: "evidence_artifact",
+    resourceId: artifactId,
+    metadata: {
+      assessmentId,
+      controlId,
+      filename,
+      sizeBytes: markdown.length,
+      blobUrl: blob.url,
+    },
+  });
+
+  try {
+    await stampFreshnessOnInsert({
+      artifactId,
+      filename,
+      mimeType: "text/markdown",
+    });
+  } catch (err) {
+    console.error("stampFreshnessOnInsert (generated) threw:", err);
+  }
+
+  // Run the vision-review pipeline so the row gets a verdict in the UI
+  // (will return 'unclear' for markdown, which is the correct signal that
+  // a human must read the draft before it counts toward attestation).
+  try {
+    await reviewEvidenceArtifact({
+      artifactId,
+      claimedControlId: controlId,
+      blobUrl: blob.url,
+      mimeType: "text/markdown",
+      filename,
+    });
+  } catch (err) {
+    console.error("reviewEvidenceArtifact (generated) threw:", err);
   }
 
   revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
