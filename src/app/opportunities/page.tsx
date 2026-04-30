@@ -8,6 +8,7 @@ import {
   searchSamOpportunities,
   type OpportunityRow,
 } from "@/lib/sam-radar";
+import { typicalRangeForNaics } from "@/lib/naics-ranges";
 import { dismissOpportunityAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -425,6 +426,29 @@ export default async function OpportunitiesPage() {
                         {r.set_aside}
                       </span>
                     ) : null}
+                    {/* Value badge: prefer the real award_amount when SAM
+                        returns one (only on award notices); otherwise show
+                        a NAICS-derived "typical range" so every card has a
+                        scale anchor. The label is intentionally honest —
+                        "Typical range" is a heuristic, not an estimate. */}
+                    {r.award_amount ? (
+                      <span
+                        title="Awarded contract value reported by SAM.gov"
+                        className="inline-block rounded-sm bg-[#0e5c41] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white"
+                      >
+                        Awarded {r.award_amount}
+                      </span>
+                    ) : (() => {
+                      const range = typicalRangeForNaics(r.naics_code);
+                      return range ? (
+                        <span
+                          title={`Typical small-business award range for NAICS ${r.naics_code}. Heuristic from FPDS historicals — not the agency's actual ceiling.`}
+                          className="inline-block rounded-sm border border-[#cfe3d9] bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#0e5c41]"
+                        >
+                          Typical {range.label}
+                        </span>
+                      ) : null;
+                    })()}
                     {r.response_deadline ? (
                       <span className="inline-block rounded-sm border border-[#a06b1a] bg-[#fff7eb] px-2 py-0.5 text-[11px] font-bold text-[#a06b1a]">
                         Response due {formatDate(r.response_deadline)}
@@ -469,16 +493,6 @@ export default async function OpportunitiesPage() {
                         </dt>
                         <dd className="text-[#10231d]">
                           {r.place_of_performance}
-                        </dd>
-                      </div>
-                    ) : null}
-                    {r.award_amount ? (
-                      <div className="flex gap-2">
-                        <dt className="w-28 shrink-0 font-semibold uppercase tracking-[0.08em] text-[#7a9c90]">
-                          Award value
-                        </dt>
-                        <dd className="font-bold text-[#0e5c41]">
-                          {r.award_amount}
                         </dd>
                       </div>
                     ) : null}
