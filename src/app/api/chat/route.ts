@@ -12,6 +12,13 @@ import {
 } from "@/lib/ai/memory";
 import { runOfficerAgentStream, SSE_HEADERS } from "@/lib/ai/stream";
 import { ensureOrgForUser, getBusinessProfile } from "@/lib/assessment";
+import {
+  checkRateLimit,
+  rateLimitKey,
+  rateLimitResponse,
+} from "@/lib/security/rate-limit";
+
+const MAX_MESSAGE_LEN = 8_000;
 
 export const runtime = "nodejs";
 
@@ -35,6 +42,18 @@ export async function POST(req: NextRequest) {
   if (!userMessage) {
     return new Response("Empty message", { status: 400 });
   }
+  if (userMessage.length > MAX_MESSAGE_LEN) {
+    return new Response("Message too long", { status: 413 });
+  }
+
+  // Cap LLM cost per user. 60 msgs/hour ≈ several dollars worst case at
+  // current Anthropic prices — well above legitimate use, well below an
+  // abuser draining credits with a single account.
+  const rl = await checkRateLimit(
+    rateLimitKey({ scope: "chat", userId }),
+    { max: 60, windowSec: 60 * 60 },
+  );
+  if (!rl.allowed) return rateLimitResponse(rl);
 
   const org = await ensureOrgForUser(userId);
   const conv = await getOrCreateWorkspaceConversation(org.id);

@@ -10,6 +10,8 @@ import {
 import { resolveOwnerEmail } from "@/lib/email/freshness";
 import { sendOpportunityDigest } from "@/lib/email/opportunities";
 import { sendSamKeyAlert } from "@/lib/email/sam-key-alert";
+import { auditContextFromRequest, recordAuditEvent } from "@/lib/security/audit-log";
+import { verifyCronSecret } from "@/lib/security/cron";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,6 +27,14 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   if (!verifyCronSecret(req)) {
+    const ctx = auditContextFromRequest(req);
+    await recordAuditEvent({
+      action: "cron.unauthorized",
+      resourceType: "cron",
+      resourceId: "sam-radar",
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+    });
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const apiKey = process.env.SAM_GOV_API_KEY;
@@ -125,9 +135,3 @@ export async function GET(req: Request) {
   });
 }
 
-function verifyCronSecret(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return process.env.NODE_ENV !== "production";
-  const header = req.headers.get("authorization") ?? "";
-  return header === `Bearer ${secret}`;
-}

@@ -32,6 +32,8 @@ import {
 } from "@/lib/db";
 import { playbookById } from "@/lib/playbook";
 import { reviewEvidenceArtifact } from "@/lib/ai/evidence-review";
+import { signAttestation } from "@/lib/security/attestation-signature";
+import { recordAuditEvent } from "@/lib/security/audit-log";
 
 async function requireUserId(): Promise<string> {
   const { userId } = await auth();
@@ -170,6 +172,46 @@ export async function uploadEvidenceAction(formData: FormData) {
     throw new Error("File too large — 25 MB max per upload");
   }
 
+  // MIME allowlist for FCI-grade evidence. Refuse executables, scripts,
+  // unknown types, and archives (which can hide malicious content from
+  // the vision-review step). Block at the action layer so a bypassed
+  // client-side accept attribute can't sneak something through.
+  const ALLOWED_MIME = new Set<string>([
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+    "image/gif",
+    "application/pdf",
+    "text/plain",
+    "text/csv",
+    "text/markdown",
+    "application/msword",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ]);
+  const declaredMime = (file.type || "").toLowerCase();
+  if (!declaredMime || !ALLOWED_MIME.has(declaredMime)) {
+    const ctx = await getAssessmentForUser(assessmentId, userId);
+    await recordAuditEvent({
+      action: "evidence.rejected_mime",
+      userId,
+      organizationId: ctx?.organization.id ?? null,
+      resourceType: "assessment",
+      resourceId: assessmentId,
+      metadata: {
+        controlId,
+        filename: file.name,
+        declaredMime: declaredMime || "(empty)",
+        sizeBytes: file.size,
+      },
+    });
+    throw new Error(
+      `File type "${declaredMime || "unknown"}" is not allowed. Upload a screenshot (PNG/JPEG), PDF, plain text, CSV, or Office document.`,
+    );
+  }
+
   const ctx = await getAssessmentForUser(assessmentId, userId);
   if (!ctx) throw new Error("Not found");
 
@@ -198,6 +240,22 @@ export async function uploadEvidenceAction(formData: FormData) {
     RETURNING id
   `) as Array<{ id: string }>;
   const artifactId = inserted[0].id;
+
+  await recordAuditEvent({
+    action: "evidence.uploaded",
+    userId,
+    organizationId: ctx.organization.id,
+    resourceType: "evidence_artifact",
+    resourceId: artifactId,
+    metadata: {
+      assessmentId,
+      controlId,
+      filename: file.name,
+      mimeType: declaredMime,
+      sizeBytes: file.size,
+      blobUrl: blob.url,
+    },
+  });
 
   // Tag freshness class + default valid_until based on the filename / mime
   // type so the watchtower cron can email the user before this artifact
@@ -326,6 +384,15 @@ export async function deleteEvidenceAction(formData: FormData) {
 
   await sql`DELETE FROM evidence_artifacts WHERE id = ${artifactId}`;
 
+  await recordAuditEvent({
+    action: "evidence.deleted",
+    userId,
+    organizationId: ctx.organization.id,
+    resourceType: "evidence_artifact",
+    resourceId: artifactId,
+    metadata: { assessmentId, controlId, blobUrl: rows[0].blob_url },
+  });
+
   revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
   revalidatePath(`/assessments/${assessmentId}`);
 }
@@ -421,6 +488,46 @@ export async function submitAffirmationAction(formData: FormData) {
     ctx.assessment.framework === "cmmc_l1" ? allAccountedFor : null;
 
   const sql = getSql();
+  // CMMC L1 / FAR 52.204-21 evidentiary integrity: produce an HMAC-SHA-256
+  // signature over the canonical attestation payload. Stored alongside the
+  // canonical JSON so the legal artifact can be re-verified at any time.
+  const signed = signAttestation({
+    version: 1,
+    framework: ctx.assessment.framework as "cmmc_l1" | "cmmc_l2",
+    assessmentId,
+    organizationId: ctx.organization.id,
+    organizationName: ctx.organization.name,
+    samUei: ctx.organization.sam_uei ?? null,
+    cageCode: ctx.organization.cage_code ?? null,
+    fiscalYear: ctx.assessment.fiscal_year ?? null,
+    implementsAll17: implementsAll17 ?? false,
+    signerName,
+    signerTitle,
+    signerUserId: userId,
+    signedAt: new Date().toISOString(),
+    responses: [...responses]
+      .sort((a, b) => a.control_id.localeCompare(b.control_id))
+      .map((r) => ({
+        controlId: r.control_id,
+        status: r.status,
+        notes: r.narrative ?? null,
+      })),
+    evidence: [...evidence]
+      .filter((e) => e.carry_forward_status !== "removed")
+      .sort(
+        (a, b) =>
+          a.control_id.localeCompare(b.control_id) || a.id.localeCompare(b.id),
+      )
+      .map((e) => ({
+        controlId: e.control_id,
+        artifactId: e.id,
+        filename: e.filename,
+        mimeType: e.mime_type ?? null,
+        sizeBytes: e.size_bytes ?? null,
+        blobUrl: e.blob_url,
+      })),
+  });
+
   await sql`
     UPDATE assessments
     SET status = 'attested',
@@ -430,9 +537,32 @@ export async function submitAffirmationAction(formData: FormData) {
         affirmed_by_title = ${signerTitle},
         sprs_score = NULL,
         implements_all_17 = ${implementsAll17},
+        attestation_canonical = ${signed.canonical},
+        attestation_payload_sha256 = ${signed.payloadSha256Hex},
+        attestation_signature = ${signed.signatureHex},
+        attestation_signature_key_version = ${signed.keyVersion},
         updated_at = NOW()
     WHERE id = ${assessmentId}
   `;
+
+  await recordAuditEvent({
+    action: "assessment.attested",
+    userId,
+    organizationId: ctx.organization.id,
+    resourceType: "assessment",
+    resourceId: assessmentId,
+    metadata: {
+      framework: ctx.assessment.framework,
+      fiscalYear: ctx.assessment.fiscal_year,
+      signerName,
+      signerTitle,
+      implementsAll17,
+      payloadSha256: signed.payloadSha256Hex,
+      keyVersion: signed.keyVersion,
+      evidenceCount: evidence.length,
+      responseCount: responses.length,
+    },
+  });
 
   revalidatePath(`/assessments/${assessmentId}`);
   revalidatePath("/assessments");

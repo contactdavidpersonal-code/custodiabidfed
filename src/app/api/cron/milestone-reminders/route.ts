@@ -10,6 +10,8 @@ import {
   markMilestonesReminded,
   type MilestoneRow,
 } from "@/lib/fiscal";
+import { auditContextFromRequest, recordAuditEvent } from "@/lib/security/audit-log";
+import { verifyCronSecret } from "@/lib/security/cron";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +24,14 @@ export const dynamic = "force-dynamic";
  */
 export async function GET(req: Request) {
   if (!verifyCronSecret(req)) {
+    const ctx = auditContextFromRequest(req);
+    await recordAuditEvent({
+      action: "cron.unauthorized",
+      resourceType: "cron",
+      resourceId: "milestone-reminders",
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+    });
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -94,11 +104,4 @@ function buildReminderText(milestones: MilestoneRow[]): string {
     "Want me to pick one to work through right now, or snooze what's not urgent?",
   );
   return lines.join("\n");
-}
-
-function verifyCronSecret(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return process.env.NODE_ENV !== "production";
-  const header = req.headers.get("authorization") ?? "";
-  return header === `Bearer ${secret}`;
 }

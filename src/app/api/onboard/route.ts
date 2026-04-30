@@ -12,6 +12,13 @@ import {
   getBusinessProfile,
   isOnboardingComplete,
 } from "@/lib/assessment";
+import {
+  checkRateLimit,
+  rateLimitKey,
+  rateLimitResponse,
+} from "@/lib/security/rate-limit";
+
+const MAX_MESSAGE_LEN = 8_000;
 
 export const runtime = "nodejs";
 
@@ -37,6 +44,15 @@ export async function POST(req: NextRequest) {
   if (!userMessage) {
     return new Response("Empty message", { status: 400 });
   }
+  if (userMessage.length > MAX_MESSAGE_LEN) {
+    return new Response("Message too long", { status: 413 });
+  }
+
+  const rl = await checkRateLimit(
+    rateLimitKey({ scope: "onboard", userId }),
+    { max: 60, windowSec: 60 * 60 },
+  );
+  if (!rl.allowed) return rateLimitResponse(rl);
 
   const org = await ensureOrgForUser(userId);
   const conv = await getOrCreateOnboardingConversation(org.id);

@@ -9,6 +9,8 @@ import {
   fiscalYearOf,
   orgsNeedingRollover,
 } from "@/lib/fiscal";
+import { auditContextFromRequest, recordAuditEvent } from "@/lib/security/audit-log";
+import { verifyCronSecret } from "@/lib/security/cron";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,6 +23,14 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const authed = verifyCronSecret(req);
   if (!authed) {
+    const ctx = auditContextFromRequest(req);
+    await recordAuditEvent({
+      action: "cron.unauthorized",
+      resourceType: "cron",
+      resourceId: "fiscal-rollover",
+      ip: ctx.ip,
+      userAgent: ctx.userAgent,
+    });
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -64,15 +74,4 @@ export async function GET(req: Request) {
   }
 
   return NextResponse.json({ fiscal_year: fy, rolled_over: created });
-}
-
-function verifyCronSecret(req: Request): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    // No secret configured — allow in dev so we can exercise the endpoint
-    // locally. Production MUST set CRON_SECRET.
-    return process.env.NODE_ENV !== "production";
-  }
-  const header = req.headers.get("authorization") ?? "";
-  return header === `Bearer ${secret}`;
 }

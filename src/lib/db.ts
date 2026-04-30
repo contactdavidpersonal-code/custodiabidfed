@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import { validateEnvOnce } from "@/lib/security/env";
 
 export const sprintStages = [
   "lead-intake",
@@ -115,6 +116,7 @@ export function getSql() {
 }
 
 export async function initDb() {
+  validateEnvOnce();
   const sql = getSql();
 
   await sql`
@@ -630,4 +632,80 @@ export async function initDb() {
       ON sam_opportunities (organization_id)
       WHERE dismissed_at IS NULL
   `;
+
+  // -------------------------------------------------------------------------
+  // Security / CMMC L1 platform controls
+  // -------------------------------------------------------------------------
+
+  // HMAC-signed attestations. Canonical JSON of the attestation payload is
+  // stored alongside its SHA-256 hash and HMAC signature so the legal artifact
+  // can be re-verified at any time. Required for evidentiary integrity.
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS attestation_canonical TEXT
+  `;
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS attestation_payload_sha256 TEXT
+  `;
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS attestation_signature TEXT
+  `;
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS attestation_signature_key_version SMALLINT
+  `;
+
+  // Append-only security audit log. Hooked from sign-off, evidence ops,
+  // unauthorized cron hits, org-field updates. Required for CMMC L1 AC.L1
+  // and SI.L1 evidentiary coverage.
+  await sql`
+    CREATE TABLE IF NOT EXISTS audit_log (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      action TEXT NOT NULL,
+      user_id TEXT,
+      organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
+      resource_type TEXT,
+      resource_id TEXT,
+      ip TEXT,
+      user_agent TEXT,
+      metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_audit_log_org_created
+      ON audit_log (organization_id, created_at DESC)
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_audit_log_action_created
+      ON audit_log (action, created_at DESC)
+  `;
+
+  // Postgres-backed fixed-window rate limiter (defense-in-depth against
+  // LLM-cost abuse and waitlist spam). See src/lib/security/rate-limit.ts.
+  await sql`
+    CREATE TABLE IF NOT EXISTS rate_limits (
+      bucket TEXT PRIMARY KEY,
+      count INT NOT NULL DEFAULT 0,
+      window_start TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+}
+
+/**
+ * Cache the init promise so concurrent callers share one migration run per
+ * cold start. Without this, every API route calling `initDb()` would issue
+ * the full DDL set in parallel.
+ */
+let _initPromise: Promise<void> | null = null;
+export function ensureDbReady(): Promise<void> {
+  if (!_initPromise) {
+    _initPromise = initDb().catch((err) => {
+      _initPromise = null;
+      throw err;
+    });
+  }
+  return _initPromise;
 }
