@@ -13,6 +13,10 @@ import {
   type RemediationPlanRow,
 } from "@/lib/assessment";
 import { controlDomains, playbook } from "@/lib/playbook";
+import {
+  auditContextFromRequest,
+  recordAuditEvent,
+} from "@/lib/security/audit-log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -99,6 +103,26 @@ export async function GET(
   const cycleSlug = a.cycle_label.replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase();
   const orgSlug = org.name.replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase();
   const filename = `${orgSlug}-${cycleSlug}-bid-package.zip`;
+
+  // Audit every export. The bid-package contains the full SSP, every
+  // narrative, and every evidence file — it's the most concentrated form
+  // of org-sensitive data we produce. Track who pulls it and when.
+  const auditCtx = auditContextFromRequest(req);
+  await recordAuditEvent({
+    action: "bid_package.exported",
+    userId,
+    organizationId: org.id,
+    resourceType: "assessment",
+    resourceId: id,
+    ip: auditCtx.ip,
+    userAgent: auditCtx.userAgent,
+    metadata: {
+      draft: forceDraft,
+      attested: a.status === "attested",
+      evidenceCount: evidence.length,
+      sizeBytes: buf.length,
+    },
+  });
 
   return new NextResponse(buf as unknown as BodyInit, {
     status: 200,
@@ -477,7 +501,8 @@ function esc(s: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function field(label: string, value: string): string {

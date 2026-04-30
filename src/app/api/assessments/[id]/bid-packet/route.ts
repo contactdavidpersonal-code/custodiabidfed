@@ -2,6 +2,10 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getAssessmentForUser } from "@/lib/assessment";
 import { loadBidProfile, setAsideLabels, type BidProfile } from "@/lib/bid-profile";
+import {
+  auditContextFromRequest,
+  recordAuditEvent,
+} from "@/lib/security/audit-log";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,6 +94,23 @@ export async function GET(
 
   const orgSlug = ctx.organization.name.replace(/[^a-zA-Z0-9]+/g, "-").toLowerCase();
   const filename = `${orgSlug}-bid-ready-packet.html`;
+
+  // Audit every export — packet contains capability statement, past-perf,
+  // and identity fields the org would hand to a contracting officer.
+  const auditCtx = auditContextFromRequest(req);
+  await recordAuditEvent({
+    action: "bid_packet.exported",
+    userId,
+    organizationId: ctx.organization.id,
+    resourceType: "assessment",
+    resourceId: id,
+    ip: auditCtx.ip,
+    userAgent: auditCtx.userAgent,
+    metadata: {
+      tailored: !!overrides,
+      opportunityLabel: overrides?.opportunity_label ?? null,
+    },
+  });
 
   return new NextResponse(html, {
     status: 200,
@@ -328,7 +349,8 @@ function esc(s: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function formatProse(text: string): string {
