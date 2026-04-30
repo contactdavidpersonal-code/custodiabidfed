@@ -59,7 +59,6 @@ type Props = {
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
   tagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
   untagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
-  generateArtifactAction: (formData: FormData) => Promise<void> | void;
   useSuggestedNarrativeAction: (formData: FormData) => Promise<void> | void;
   upsertRemediationPlanAction: (formData: FormData) => Promise<void> | void;
 };
@@ -68,6 +67,29 @@ function parseQ(filename: string): { qid: string | null; display: string } {
   const m = /^\[q:([^\]]+)\]__(.*)$/.exec(filename);
   if (m) return { qid: m[1], display: m[2] };
   return { qid: null, display: filename };
+}
+
+/**
+ * One-liner that tells the user what to upload for a given practice. Every
+ * L1 practice has a downloadable CSV/template; bigger orgs running M365 /
+ * Workspace / AWS / Okta typically have a screenshot from their admin
+ * console that proves the same thing. We point to both so they pick
+ * whichever is faster.
+ */
+function evidenceRecommendation(
+  practice: Omit<ControlPlaybook, "suggestedNarrative">,
+): string | null {
+  const seen = new Set<string>();
+  const templates: ProviderTemplate[] = [];
+  for (const g of practice.providerGuidance) {
+    if (g.template && !seen.has(g.template.filename)) {
+      seen.add(g.template.filename);
+      templates.push(g.template);
+    }
+  }
+  if (templates.length === 0) return null;
+  const labels = templates.map((t) => t.label).join(" or ");
+  return `Fill out the ${labels} template below and upload it — or, if you run M365 / Workspace / AWS / Okta, upload screenshots from your admin console showing the same configuration.`;
 }
 
 /**
@@ -230,7 +252,7 @@ export function PracticeWizard(props: Props) {
           reReviewEvidenceAction={props.reReviewEvidenceAction}
           tagArtifactPracticeAction={props.tagArtifactPracticeAction}
           untagArtifactPracticeAction={props.untagArtifactPracticeAction}
-          generateArtifactAction={props.generateArtifactAction}
+          recommendation={evidenceRecommendation(props.practice)}
         />
       )}
 
@@ -419,7 +441,7 @@ function EvidenceArea({
   reReviewEvidenceAction,
   tagArtifactPracticeAction,
   untagArtifactPracticeAction,
-  generateArtifactAction,
+  recommendation,
 }: {
   assessmentId: string;
   controlId: string;
@@ -431,7 +453,7 @@ function EvidenceArea({
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
   tagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
   untagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
-  generateArtifactAction: (formData: FormData) => Promise<void> | void;
+  recommendation: string | null;
 }) {
   return (
     <section className="mb-5 rounded-md border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04)]">
@@ -439,6 +461,12 @@ function EvidenceArea({
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
           Evidence for this practice
         </p>
+        {recommendation && (
+          <p className="mt-1 text-xs leading-relaxed text-[#10231d]">
+            <span className="font-semibold text-[#0e2a23]">Upload: </span>
+            {recommendation}
+          </p>
+        )}
         {passingEvidence.length > 0 && (
           <ul className="mt-2 space-y-1">
             {passingEvidence.map((item, i) => (
@@ -478,11 +506,6 @@ function EvidenceArea({
           assessmentId={assessmentId}
           controlId={controlId}
         />
-        <CharlieGenerateButton
-          assessmentId={assessmentId}
-          controlId={controlId}
-          generateArtifactAction={generateArtifactAction}
-        />
       </div>
 
       {reuseCandidates.length > 0 && (
@@ -494,47 +517,6 @@ function EvidenceArea({
         />
       )}
     </section>
-  );
-}
-
-/* ============================ CHARLIE GENERATE ============================ */
-
-/**
- * Submit-button form that asks Charlie to draft a Markdown policy / roster /
- * procedure for this practice based on the org's onboarding profile. The
- * generated artifact lands as evidence with an "[REVIEW BEFORE SUBMITTING]"
- * banner and `[FILL IN: ...]` placeholders the user must complete. Server
- * action runs Sonnet — kept inline so the disabled-while-pending state is
- * handled by the platform's standard form submission.
- */
-function CharlieGenerateButton({
-  assessmentId,
-  controlId,
-  generateArtifactAction,
-}: {
-  assessmentId: string;
-  controlId: string;
-  generateArtifactAction: (formData: FormData) => Promise<void> | void;
-}) {
-  return (
-    <form
-      action={generateArtifactAction}
-      className="mt-3 flex items-center gap-3 border-t border-dashed border-[#cfe3d9] pt-3"
-    >
-      <input type="hidden" name="assessmentId" value={assessmentId} />
-      <input type="hidden" name="controlId" value={controlId} />
-      <button
-        type="submit"
-        className="rounded-sm border border-[#0e2a23] bg-white px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-[#0e2a23] transition-colors hover:bg-[#0e2a23] hover:text-[#bdf2cf]"
-      >
-        Draft with Charlie
-      </button>
-      <p className="flex-1 text-[11px] leading-snug text-[#5a7d70]">
-        Charlie writes a starter document from your onboarding profile.
-        You review, fill in the bracketed blanks, and sign before it counts
-        toward attestation.
-      </p>
-    </form>
   );
 }
 
