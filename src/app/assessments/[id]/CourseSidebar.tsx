@@ -96,7 +96,7 @@ export function CourseSidebar({ sections }: Props) {
                 FCI readiness
               </div>
               <div className="font-serif text-sm font-bold text-[#10231d]">
-                Bid-ready course
+                Your bid-ready journey
               </div>
             </div>
           )}
