@@ -23,14 +23,12 @@ export default async function AssessmentsLayout({
               alt="Custodia shield"
               className="h-9 w-auto"
             />
-            <div className="leading-tight">
-              <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
-                Custodia
-              </div>
-              <div className="font-serif text-sm font-bold text-[#10231d]">
-                CMMC Level 1 workspace
-              </div>
-            </div>
+            <span className="font-serif text-2xl font-bold tracking-tight text-[#0f2f26]">
+              Custodia<span className="text-[#2f8f6d]">.</span>
+            </span>
+            <span className="hidden border-l border-[#cfe3d9] pl-3 font-serif text-sm font-bold text-[#10231d] sm:inline">
+              CMMC Level 1 workspace
+            </span>
           </Link>
           <nav className="flex items-center gap-3 text-sm">
             <Link
