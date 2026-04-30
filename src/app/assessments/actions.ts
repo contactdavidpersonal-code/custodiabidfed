@@ -215,12 +215,14 @@ export async function uploadEvidenceAction(formData: FormData) {
   const ctx = await getAssessmentForUser(assessmentId, userId);
   if (!ctx) throw new Error("Not found");
 
-  // Tag the stored filename with the originating quiz question id so the
-  // UI can pair each upload with the question it answers. Format:
-  // `[q:<id>]__<original>`. The display name is reconstructed client-side.
-  const taggedName = questionId
-    ? `[q:${questionId}]__${file.name}`
-    : file.name;
+  // Evidence is now per-practice, not per-question. We keep the `questionId`
+  // form field for backwards compatibility (older clients still send it) but
+  // do NOT prepend a `[q:<id>]__` tag — uploads land under the raw filename
+  // and apply to the whole practice. Older artifacts uploaded with the legacy
+  // prefix continue to render correctly because the wizard strips the tag
+  // for display.
+  void questionId;
+  const taggedName = file.name;
   const safeName = taggedName.replace(/[^a-zA-Z0-9._\[\]:-]+/g, "_");
   const pathname = `evidence/${assessmentId}/${controlId}/${Date.now()}-${safeName}`;
 

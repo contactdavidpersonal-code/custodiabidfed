@@ -7,7 +7,7 @@ import {
   listEvidenceForControl,
   listResponsesForAssessment,
 } from "@/lib/assessment";
-import { playbook, playbookById } from "@/lib/playbook";
+import { getObjectives, playbook, playbookById } from "@/lib/playbook";
 import {
   deleteEvidenceAction,
   reReviewEvidenceAction,
@@ -72,6 +72,7 @@ export default async function ControlDetailPage(
         assessmentId={id}
         controlId={controlId}
         practice={practiceForClient}
+        objectives={getObjectives(controlId)}
         response={response}
         evidence={evidenceForClient}
         remediationPlan={remediationPlan}

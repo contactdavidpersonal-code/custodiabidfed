@@ -9,6 +9,7 @@ import type {
   RemediationPlanRow,
 } from "@/lib/assessment";
 import type {
+  AssessmentObjective,
   ControlPlaybook,
   EvidenceProvider,
   ProviderTemplate,
@@ -43,6 +44,7 @@ type Props = {
   assessmentId: string;
   controlId: string;
   practice: Omit<ControlPlaybook, "suggestedNarrative">;
+  objectives: AssessmentObjective[];
   response: ControlResponseRow;
   evidence: ClientEvidenceRow[];
   remediationPlan: RemediationPlanRow | null;
@@ -70,32 +72,28 @@ function parseQ(filename: string): { qid: string | null; display: string } {
 const STORAGE_PREFIX = "cmmc:answers:";
 
 /**
- * Single integrated checklist. Each quiz question is a card; answering "Yes"
- * reveals an inline upload slot tied to that question (filename prefix
- * `[q:<id>]__`). Uploading evidence auto-marks the question "Yes". Answering
- * "Not yet" feeds the remediation plan. When everything is resolved, one
- * lock-in click derives status, drafts the narrative, and saves.
+ * Practice page, restructured around CMMC's actual unit of evaluation:
+ * NIST 800-171A assessment objectives [a]/[b]/[c]/... A practice gets MET
+ * when every objective has supporting evidence (CMMC L1 SAG p.7).
+ *
+ * The page now shows ONE objectives checklist + ONE evidence area per
+ * practice — not per-question dropzones. Diagnostic questions still drive
+ * the gap statement (so primes can read a remediation plan in plain
+ * English), but they no longer gate uploads. A single artifact applies to
+ * the whole practice and contributes toward every objective.
+ *
+ * Backwards compat: old uploads stored as `[q:<id>]__filename` still render
+ * with the prefix stripped. New uploads land under their raw filename.
  */
 export function PracticeWizard(props: Props) {
   const router = useRouter();
   const storageKey = `${STORAGE_PREFIX}${props.assessmentId}:${props.controlId}`;
 
-  // Group evidence by question id parsed from the stored filename.
-  const grouped = useMemo(() => {
-    const map = new Map<string, ClientEvidenceRow[]>();
-    const loose: ClientEvidenceRow[] = [];
-    for (const e of props.evidence) {
-      const { qid } = parseQ(e.filename);
-      if (qid) {
-        const arr = map.get(qid) ?? [];
-        arr.push(e);
-        map.set(qid, arr);
-      } else {
-        loose.push(e);
-      }
-    }
-    return { map, loose };
-  }, [props.evidence]);
+  const allEvidence = props.evidence;
+  const sufficientCount = allEvidence.filter(
+    (e) => e.ai_review_verdict === "sufficient",
+  ).length;
+  const hasAnyEvidence = allEvidence.length > 0;
 
   const [answers, setAnswers] = useState<Record<string, QA>>(() =>
     Object.fromEntries(props.quiz.map((q) => [q.id, null])),
@@ -126,22 +124,6 @@ export function PracticeWizard(props: Props) {
     }
   }, [storageKey]);
 
-  // Auto-promote a question to "yes" when evidence shows up for it.
-  useEffect(() => {
-    setAnswers((prev) => {
-      let changed = false;
-      const next = { ...prev };
-      for (const q of props.quiz) {
-        const has = (grouped.map.get(q.id)?.length ?? 0) > 0;
-        if (has && next[q.id] !== "yes" && next[q.id] !== "no") {
-          next[q.id] = "yes";
-          changed = true;
-        }
-      }
-      return changed ? next : prev;
-    });
-  }, [grouped.map, props.quiz]);
-
   // Persist answers locally so they survive uploads / reloads.
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -164,14 +146,14 @@ export function PracticeWizard(props: Props) {
   const noCount = props.quiz.filter((q) => answers[q.id] === "no").length;
   const naCount = props.quiz.filter((q) => answers[q.id] === "na").length;
   const answered = yesCount + noCount + naCount;
-  const yesWithEvidence = props.quiz.filter(
-    (q) =>
-      answers[q.id] === "yes" && (grouped.map.get(q.id)?.length ?? 0) > 0,
-  ).length;
 
+  // Lock-in gate: questions answered + at least one piece of sufficient
+  // evidence on file (or the whole practice is N/A). Keeping the
+  // sufficient-verdict requirement in line with the existing evidence
+  // gating model — see feedback_evidence_gating.md.
   const ready = wholeNa
     ? naReason.trim().length >= 10
-    : answered === total && total > 0 && yesWithEvidence === yesCount;
+    : answered === total && total > 0 && sufficientCount > 0;
 
   const derivedStatus: "yes" | "partial" | "no" | "not_applicable" = wholeNa
     ? "not_applicable"
@@ -320,30 +302,43 @@ export function PracticeWizard(props: Props) {
         </label>
       </div>
 
-      {/* Templates available for this practice — surfaced up top so users
-          can grab them, fill them out, and drop them back into Evidence. */}
+      {/* Assessment objectives (NIST 800-171A) — the actual checklist that
+          decides whether this practice can be marked MET. Each item is what
+          a 3PAO would look for. Auto-checked when ANY sufficient evidence
+          is on file (objective-level granularity comes in a follow-up). */}
+      {!wholeNa && props.objectives.length > 0 && (
+        <ObjectivesPanel
+          objectives={props.objectives}
+          satisfied={sufficientCount > 0}
+        />
+      )}
+
+      {/* Templates available for this practice */}
       {!wholeNa && <TemplatesStrip practice={props.practice} />}
 
-      {/* Quiz cards */}
+      {/* ONE evidence area for the whole practice. */}
       {!wholeNa && (
-        <ol className="space-y-4">
-          {props.quiz.map((q, idx) => (
-            <QuestionCard
-              key={q.id}
-              idx={idx}
-              q={q}
-              answer={answers[q.id]}
-              onAnswer={(v) => setA(q.id, v)}
-              practice={props.practice}
-              evidence={grouped.map.get(q.id) ?? []}
-              assessmentId={props.assessmentId}
-              controlId={props.controlId}
-              uploadEvidenceAction={props.uploadEvidenceAction}
-              deleteEvidenceAction={props.deleteEvidenceAction}
-              reReviewEvidenceAction={props.reReviewEvidenceAction}
-            />
-          ))}
-        </ol>
+        <EvidenceArea
+          assessmentId={props.assessmentId}
+          controlId={props.controlId}
+          evidence={allEvidence}
+          passingEvidence={props.practice.passingEvidence}
+          uploadEvidenceAction={props.uploadEvidenceAction}
+          deleteEvidenceAction={props.deleteEvidenceAction}
+          reReviewEvidenceAction={props.reReviewEvidenceAction}
+        />
+      )}
+
+      {/* Quick self-check — these questions drive the gap statement and
+          remediation plan if anything is "Not yet". They no longer gate
+          uploads (you can upload first and answer after, or vice versa). */}
+      {!wholeNa && total > 0 && (
+        <SelfCheck
+          quiz={props.quiz}
+          answers={answers}
+          onAnswer={setA}
+          hasAnyEvidence={hasAnyEvidence}
+        />
       )}
 
       {/* Progress + lock-in */}
@@ -355,8 +350,9 @@ export function PracticeWizard(props: Props) {
                 Progress
               </p>
               <p className="mt-1 text-sm font-semibold text-[#10231d]">
-                {answered} of {total} answered &middot; {yesWithEvidence} of{" "}
-                {yesCount} Yes-answers have evidence
+                {answered} of {total} self-check answered &middot;{" "}
+                {sufficientCount} sufficient artifact
+                {sufficientCount === 1 ? "" : "s"} on file
               </p>
               {ready ? (
                 <p className="mt-1 text-xs text-[#2f8f6d]">
@@ -366,8 +362,8 @@ export function PracticeWizard(props: Props) {
                 </p>
               ) : (
                 <p className="mt-1 text-xs text-[#5a7d70]">
-                  Answer every question and attach evidence for each Yes to
-                  continue.
+                  Answer every self-check question and upload at least one
+                  artifact that the platform reviews as sufficient.
                 </p>
               )}
             </div>
@@ -400,53 +396,6 @@ export function PracticeWizard(props: Props) {
         </div>
       )}
 
-      {/* Loose evidence uploaded outside any question (e.g. legacy uploads) */}
-      {grouped.loose.length > 0 && (
-        <section className="mt-8">
-          <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-[#5a7d70]">
-            Other uploaded evidence
-          </h2>
-          <ul className="mt-2 divide-y divide-[#e4eee8] rounded-sm border border-[#cfe3d9] bg-white">
-            {grouped.loose.map((a) => (
-              <EvidenceRow
-                key={a.id}
-                artifact={a}
-                assessmentId={props.assessmentId}
-                controlId={props.controlId}
-                deleteEvidenceAction={props.deleteEvidenceAction}
-                reReviewEvidenceAction={props.reReviewEvidenceAction}
-              />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* What passing evidence looks like (control-wide reference) */}
-      {!wholeNa && props.practice.passingEvidence.length > 0 && (
-        <section className="mt-8 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2f8f6d]">
-            What &ldquo;passing&rdquo; evidence looks like
-          </p>
-          <p className="mt-1 text-xs leading-relaxed text-[#5a7d70]">
-            Make sure your uploads show every item below. Charlie’s reviewer
-            checks for these.
-          </p>
-          <ul className="mt-3 space-y-1.5">
-            {props.practice.passingEvidence.map((item, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2 text-sm leading-relaxed text-[#10231d]"
-              >
-                <span className="mt-1 inline-flex h-3.5 w-3.5 flex-none items-center justify-center rounded-sm bg-[#0e2a23] text-[10px] font-bold text-[#bdf2cf]">
-                  &#x2713;
-                </span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       {/* Provider-specific quick guidance, kept as a reference panel */}
       {!wholeNa && props.practice.providerGuidance.length > 0 && (
         <ProviderReference practice={props.practice} />
@@ -471,165 +420,242 @@ export function PracticeWizard(props: Props) {
   );
 }
 
-/* ============================ QUESTION CARD =============================== */
+/* ============================ OBJECTIVES PANEL ============================ */
 
-function QuestionCard({
-  idx,
-  q,
-  answer,
-  onAnswer,
-  practice,
-  evidence,
+/**
+ * The NIST 800-171A objectives for the current practice. This is the formal
+ * checklist a 3PAO would walk through. We auto-mark every objective as
+ * satisfied as soon as the practice has at least one artifact the platform
+ * has reviewed as sufficient — that mirrors how the existing evidence-gating
+ * pipeline works today. Per-objective tagging is a planned follow-up that
+ * will let a single artifact cover only some of [a]/[b]/[c]/...
+ */
+function ObjectivesPanel({
+  objectives,
+  satisfied,
+}: {
+  objectives: AssessmentObjective[];
+  satisfied: boolean;
+}) {
+  return (
+    <section className="mb-5 rounded-md border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+          What the assessor needs to see
+        </p>
+        <p className="text-[11px] text-[#5a7d70]">
+          NIST 800-171A objectives
+        </p>
+      </div>
+      <ul className="mt-3 space-y-2">
+        {objectives.map((o) => (
+          <li
+            key={o.letter}
+            className="flex items-start gap-3 text-sm leading-relaxed text-[#10231d]"
+          >
+            <span
+              className={`mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded-sm font-mono text-[10px] font-bold ${
+                satisfied
+                  ? "bg-[#0e2a23] text-[#bdf2cf]"
+                  : "border border-[#cfe3d9] bg-white text-[#5a7d70]"
+              }`}
+            >
+              {satisfied ? "\u2713" : `[${o.letter}]`}
+            </span>
+            <span>
+              <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#5a7d70]">
+                [{o.letter}]
+              </span>
+              <span className="ml-2">{o.ask}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {!satisfied && (
+        <p className="mt-3 rounded-sm bg-[#f7fcf9] px-3 py-2 text-xs leading-relaxed text-[#5a7d70]">
+          Upload one piece of evidence below that demonstrates these
+          objectives. A single artifact (a screenshot, a signed roster, a
+          policy excerpt) typically covers all of them for a CMMC L1
+          practice.
+        </p>
+      )}
+    </section>
+  );
+}
+
+/* ============================ EVIDENCE AREA =============================== */
+
+/**
+ * One evidence area per practice. Replaces the old per-question dropzones.
+ * Shows the practice-wide passing-evidence checklist exactly once at the
+ * top, then the artifacts already on file, then a single upload zone.
+ */
+function EvidenceArea({
   assessmentId,
   controlId,
+  evidence,
+  passingEvidence,
   uploadEvidenceAction,
   deleteEvidenceAction,
   reReviewEvidenceAction,
 }: {
-  idx: number;
-  q: PracticeQuizQuestion;
-  answer: QA;
-  onAnswer: (v: QA) => void;
-  practice: Omit<ControlPlaybook, "suggestedNarrative">;
-  evidence: ClientEvidenceRow[];
   assessmentId: string;
   controlId: string;
+  evidence: ClientEvidenceRow[];
+  passingEvidence: string[];
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
   deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
 }) {
-  const provingHints = practice.passingEvidence.slice(0, 3);
-
   return (
-    <li className="rounded-md border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04)]">
-      <div className="px-5 py-4">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 inline-flex h-7 w-7 flex-none items-center justify-center rounded-sm bg-[#0e2a23] font-mono text-xs font-bold text-[#bdf2cf]">
-            {idx + 1}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold leading-relaxed text-[#10231d]">
-              {q.prompt}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => onAnswer("yes")}
-                className={`rounded-sm px-4 py-1.5 text-xs font-semibold transition-colors ${
-                  answer === "yes"
-                    ? "bg-[#0e2a23] text-[#bdf2cf]"
-                    : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
-                }`}
+    <section className="mb-5 rounded-md border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+      <div className="border-b border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+          Evidence for this practice
+        </p>
+        {passingEvidence.length > 0 && (
+          <ul className="mt-2 space-y-1">
+            {passingEvidence.map((item, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2 text-xs leading-relaxed text-[#10231d]"
               >
-                Yes
-              </button>
-              <button
-                type="button"
-                onClick={() => onAnswer("no")}
-                className={`rounded-sm px-4 py-1.5 text-xs font-semibold transition-colors ${
-                  answer === "no"
-                    ? "bg-[#b03a2e] text-white"
-                    : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#b03a2e] hover:bg-[#fdf2f0]"
-                }`}
-              >
-                Not yet
-              </button>
-              <button
-                type="button"
-                onClick={() => onAnswer("na")}
-                className={`rounded-sm px-4 py-1.5 text-xs font-semibold transition-colors ${
-                  answer === "na"
-                    ? "bg-[#5a7d70] text-white"
-                    : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#5a7d70] hover:bg-[#f7fcf9]"
-                }`}
-              >
-                N/A
-              </button>
-            </div>
-          </div>
-        </div>
+                <span className="mt-0.5 inline-flex h-3 w-3 flex-none items-center justify-center rounded-sm bg-[#0e2a23] text-[9px] font-bold text-[#bdf2cf]">
+                  &#x2713;
+                </span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
-      {answer === "yes" && (
-        <div className="border-t border-[#cfe3d9] bg-[#f7fcf9] px-5 py-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2f8f6d]">
-            {q.yesMeans}
-          </p>
-          {evidence.length === 0 && provingHints.length > 0 && (
-            <ul className="mt-2 space-y-1">
-              {provingHints.map((h, i) => (
-                <li
-                  key={i}
-                  className="flex items-start gap-2 text-xs leading-relaxed text-[#10231d]"
-                >
-                  <span className="mt-0.5 inline-flex h-3 w-3 flex-none items-center justify-center rounded-sm bg-[#0e2a23] text-[9px] font-bold text-[#bdf2cf]">
-                    &#x2713;
-                  </span>
-                  <span>{h}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {evidence.length === 0 ? (
-            <div className="mt-3">
-              <EvidenceDropzone
-                action={uploadEvidenceAction}
-                assessmentId={assessmentId}
-                controlId={controlId}
-                questionId={q.id}
-                compact
-              />
-            </div>
-          ) : (
-            <div className="mt-3">
-              <ul className="divide-y divide-[#e4eee8] rounded-sm border border-[#cfe3d9] bg-white">
-                {evidence.map((a) => (
-                  <EvidenceRow
-                    key={a.id}
-                    artifact={a}
-                    assessmentId={assessmentId}
-                    controlId={controlId}
-                    deleteEvidenceAction={deleteEvidenceAction}
-                    reReviewEvidenceAction={reReviewEvidenceAction}
-                  />
-                ))}
-              </ul>
-              <details className="mt-2">
-                <summary className="cursor-pointer text-xs font-semibold text-[#5a7d70] hover:text-[#10231d]">
-                  Add another file
-                </summary>
-                <div className="mt-2">
-                  <EvidenceDropzone
-                    action={uploadEvidenceAction}
-                    assessmentId={assessmentId}
-                    controlId={controlId}
-                    questionId={q.id}
-                    compact
-                  />
-                </div>
-              </details>
-            </div>
-          )}
-        </div>
+      {evidence.length > 0 && (
+        <ul className="divide-y divide-[#e4eee8]">
+          {evidence.map((a) => (
+            <EvidenceRow
+              key={a.id}
+              artifact={a}
+              assessmentId={assessmentId}
+              controlId={controlId}
+              deleteEvidenceAction={deleteEvidenceAction}
+              reReviewEvidenceAction={reReviewEvidenceAction}
+            />
+          ))}
+        </ul>
       )}
 
-      {answer === "no" && (
-        <div className="border-t border-[#e5d6c2] bg-[#fdf8ef] px-5 py-3 text-xs leading-relaxed text-[#10231d]">
-          <span className="font-semibold text-[#a06b1a]">Fix plan: </span>
-          {q.gap}
-        </div>
-      )}
-
-      {answer === "na" && (
-        <div className="border-t border-[#cfe3d9] bg-[#f7fcf9] px-5 py-3 text-xs leading-relaxed text-[#5a7d70]">
-          Skipping &mdash; this question doesn&rsquo;t apply.
-        </div>
-      )}
-    </li>
+      <div className="border-t border-[#cfe3d9] p-4">
+        <EvidenceDropzone
+          action={uploadEvidenceAction}
+          assessmentId={assessmentId}
+          controlId={controlId}
+        />
+      </div>
+    </section>
   );
 }
 
+/* ============================ SELF-CHECK ================================== */
+
+/**
+ * Lightweight diagnostic. Every "Not yet" surfaces a fix hint that feeds the
+ * remediation plan. This panel does NOT control upload visibility anymore —
+ * users can upload first and answer after, or vice versa.
+ */
+function SelfCheck({
+  quiz,
+  answers,
+  onAnswer,
+  hasAnyEvidence,
+}: {
+  quiz: PracticeQuizQuestion[];
+  answers: Record<string, QA>;
+  onAnswer: (qid: string, v: QA) => void;
+  hasAnyEvidence: boolean;
+}) {
+  return (
+    <section className="mb-5 rounded-md border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+          Quick self-check
+        </p>
+        <p className="text-[11px] text-[#5a7d70]">
+          {hasAnyEvidence
+            ? "Confirm what your evidence shows"
+            : "Helps Charlie draft your narrative"}
+        </p>
+      </div>
+      <ol className="mt-3 space-y-3">
+        {quiz.map((q, idx) => (
+          <li
+            key={q.id}
+            className="rounded-sm border border-[#e4eee8] bg-[#fbfdfc] p-3"
+          >
+            <div className="flex items-start gap-3">
+              <span className="mt-0.5 inline-flex h-6 w-6 flex-none items-center justify-center rounded-sm bg-[#0e2a23] font-mono text-[11px] font-bold text-[#bdf2cf]">
+                {idx + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold leading-relaxed text-[#10231d]">
+                  {q.prompt}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onAnswer(q.id, "yes")}
+                    className={`rounded-sm px-3 py-1 text-xs font-semibold transition-colors ${
+                      answers[q.id] === "yes"
+                        ? "bg-[#0e2a23] text-[#bdf2cf]"
+                        : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
+                    }`}
+                  >
+                    Yes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onAnswer(q.id, "no")}
+                    className={`rounded-sm px-3 py-1 text-xs font-semibold transition-colors ${
+                      answers[q.id] === "no"
+                        ? "bg-[#b03a2e] text-white"
+                        : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#b03a2e] hover:bg-[#fdf2f0]"
+                    }`}
+                  >
+                    Not yet
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onAnswer(q.id, "na")}
+                    className={`rounded-sm px-3 py-1 text-xs font-semibold transition-colors ${
+                      answers[q.id] === "na"
+                        ? "bg-[#5a7d70] text-white"
+                        : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#5a7d70] hover:bg-[#f7fcf9]"
+                    }`}
+                  >
+                    N/A
+                  </button>
+                </div>
+                {answers[q.id] === "no" && (
+                  <p className="mt-2 rounded-sm bg-[#fdf8ef] px-3 py-2 text-xs leading-relaxed text-[#10231d]">
+                    <span className="font-semibold text-[#a06b1a]">
+                      Fix plan:{" "}
+                    </span>
+                    {q.gap}
+                  </p>
+                )}
+                {answers[q.id] === "yes" && (
+                  <p className="mt-2 text-[11px] font-medium text-[#2f8f6d]">
+                    {q.yesMeans}
+                  </p>
+                )}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
 /* ============================ EVIDENCE ROW ================================ */
 
 function EvidenceRow({

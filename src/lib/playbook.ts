@@ -1111,3 +1111,121 @@ export function getControlDomainsForFramework(
   for (const p of entries) seen.add(p.domain);
   return controlDomains.filter((d) => seen.has(d));
 }
+
+/**
+ * NIST SP 800-171A assessment objectives per CMMC L1 practice. The CMMC
+ * Self-Assessment Guide (Dec 2021, v2.0) lists these as letters [a]/[b]/[c]/...
+ * under "ASSESSMENT OBJECTIVES" for each practice. A practice gets MET when
+ * every objective has supporting evidence (NIST 800-171A §2.1; CMMC L1 SAG
+ * p.7: "the response conforms to all objectives").
+ *
+ * Each entry is a single concrete thing the assessor needs to be able to say
+ * "yes, this happens" about. We restate them in plain English so a small-
+ * business owner can read the page and know what's being asked. The official
+ * letter is preserved so a future auditor / 3PAO can map the user's evidence
+ * back to the formal objective.
+ */
+export type AssessmentObjective = {
+  letter: string;
+  ask: string;
+};
+
+export const practiceObjectives: Record<string, AssessmentObjective[]> = {
+  "AC.L1-3.1.1": [
+    { letter: "a", ask: "Authorized users are identified" },
+    { letter: "b", ask: "Processes acting on behalf of authorized users are identified" },
+    { letter: "c", ask: "Devices (and other systems) authorized to connect are identified" },
+    { letter: "d", ask: "System access is limited to authorized users" },
+    { letter: "e", ask: "System access is limited to processes acting on behalf of authorized users" },
+    { letter: "f", ask: "System access is limited to authorized devices (including other systems)" },
+  ],
+  "AC.L1-3.1.2": [
+    { letter: "a", ask: "The transactions and functions authorized users are permitted to execute are defined" },
+    { letter: "b", ask: "System access is limited to those defined transactions and functions" },
+  ],
+  "AC.L1-3.1.20": [
+    { letter: "a", ask: "Connections to external systems are identified" },
+    { letter: "b", ask: "The use of external systems is identified" },
+    { letter: "c", ask: "Connections to external systems are verified" },
+    { letter: "d", ask: "The use of external systems is verified" },
+    { letter: "e", ask: "Connections to external systems are controlled / limited" },
+    { letter: "f", ask: "The use of external systems is controlled / limited" },
+  ],
+  "AC.L1-3.1.22": [
+    { letter: "a", ask: "Individuals authorized to post on publicly accessible systems are identified" },
+    { letter: "b", ask: "Procedures to ensure FCI is not posted publicly are identified" },
+    { letter: "c", ask: "A review process exists prior to posting public content" },
+    { letter: "d", ask: "Public content is reviewed to ensure it does not include FCI" },
+    { letter: "e", ask: "Mechanisms exist to remove and address improper posting of FCI" },
+  ],
+  "IA.L1-3.5.1": [
+    { letter: "a", ask: "System users are identified (unique IDs)" },
+    { letter: "b", ask: "Processes acting on behalf of users are identified" },
+    { letter: "c", ask: "Devices accessing the system are identified" },
+  ],
+  "IA.L1-3.5.2": [
+    { letter: "a", ask: "Each user's identity is authenticated before system access" },
+    { letter: "b", ask: "Each process acting on behalf of a user is authenticated before access" },
+    { letter: "c", ask: "Each device accessing the system is authenticated before access" },
+  ],
+  "MP.L1-3.8.3": [
+    { letter: "a", ask: "Media containing FCI is sanitized or destroyed before disposal" },
+    { letter: "b", ask: "Media containing FCI is sanitized before being released for reuse" },
+  ],
+  "PE.L1-3.10.1": [
+    { letter: "a", ask: "Authorized individuals allowed physical access are identified" },
+    { letter: "b", ask: "Physical access to systems is limited to authorized individuals" },
+    { letter: "c", ask: "Physical access to equipment is limited to authorized individuals" },
+    { letter: "d", ask: "Physical access to operating environments is limited to authorized individuals" },
+  ],
+  "PE.L1-3.10.3": [
+    { letter: "a", ask: "Visitors are escorted" },
+    { letter: "b", ask: "Visitor activity is monitored" },
+  ],
+  "PE.L1-3.10.4": [
+    { letter: "a", ask: "Audit logs of physical access are maintained" },
+  ],
+  "PE.L1-3.10.5": [
+    { letter: "a", ask: "Physical access devices are identified (keys, fobs, badges)" },
+    { letter: "b", ask: "Physical access devices are controlled" },
+    { letter: "c", ask: "Physical access devices are managed (issued, revoked, inventoried)" },
+  ],
+  "SC.L1-3.13.1": [
+    { letter: "a", ask: "The external system boundary is defined" },
+    { letter: "b", ask: "Key internal system boundaries are defined" },
+    { letter: "c", ask: "Communications are monitored at the external boundary" },
+    { letter: "d", ask: "Communications are monitored at key internal boundaries" },
+    { letter: "e", ask: "Communications are controlled at the external boundary" },
+    { letter: "f", ask: "Communications are controlled at key internal boundaries" },
+    { letter: "g", ask: "Communications are protected at the external boundary" },
+    { letter: "h", ask: "Communications are protected at key internal boundaries" },
+  ],
+  "SC.L1-3.13.5": [
+    { letter: "a", ask: "Publicly accessible system components are identified" },
+    { letter: "b", ask: "Publicly accessible subnetworks are physically or logically separated from internal networks" },
+  ],
+  "SI.L1-3.14.1": [
+    { letter: "a", ask: "The time within which to identify system flaws is specified" },
+    { letter: "b", ask: "System flaws are identified within that time frame" },
+    { letter: "c", ask: "The time within which to report system flaws is specified" },
+    { letter: "d", ask: "System flaws are reported within that time frame" },
+    { letter: "e", ask: "The time within which to correct system flaws is specified" },
+    { letter: "f", ask: "System flaws are corrected within that time frame" },
+  ],
+  "SI.L1-3.14.2": [
+    { letter: "a", ask: "Designated locations for malicious-code protection are identified" },
+    { letter: "b", ask: "Protection from malicious code at those locations is provided" },
+  ],
+  "SI.L1-3.14.4": [
+    { letter: "a", ask: "Malicious-code protection mechanisms are updated when new releases are available" },
+  ],
+  "SI.L1-3.14.5": [
+    { letter: "a", ask: "The frequency for malicious-code scans is defined" },
+    { letter: "b", ask: "Malicious-code scans are performed at that frequency" },
+    { letter: "c", ask: "Real-time scans of files from external sources are performed on download / open / execute" },
+  ],
+};
+
+export function getObjectives(controlId: string): AssessmentObjective[] {
+  return practiceObjectives[controlId] ?? [];
+}
