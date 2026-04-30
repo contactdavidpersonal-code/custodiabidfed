@@ -48,3 +48,6 @@ next-env.d.ts
 .gstack/
 
 .env*.local
+
+vlogs.txt
+vlogs.err
