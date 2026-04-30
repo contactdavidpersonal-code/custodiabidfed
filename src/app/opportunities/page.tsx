@@ -5,7 +5,6 @@ import { ensureOrgForUser, listAssessmentsForOrg } from "@/lib/assessment";
 import {
   listOpportunitiesForOrg,
   searchSamOpportunities,
-  truncateDescription,
   type OpportunityRow,
 } from "@/lib/sam-radar";
 import { dismissOpportunityAction } from "./actions";
@@ -24,11 +23,14 @@ type DisplayOpportunity = {
   id: string | null; // null = live preview, no inbox row yet
   title: string;
   department: string | null;
+  type: string | null;
   naics_code: string | null;
   set_aside: string | null;
   posted_date: string | null;
   response_deadline: string | null;
-  description: string | null;
+  solicitation_number: string | null;
+  place_of_performance: string | null;
+  award_amount: string | null;
   sam_url: string | null;
 };
 
@@ -38,11 +40,14 @@ function rowToDisplay(r: OpportunityRow): DisplayOpportunity {
     id: r.id,
     title: r.title,
     department: r.department,
+    type: r.type,
     naics_code: r.naics_code,
     set_aside: r.set_aside,
     posted_date: r.posted_date,
     response_deadline: r.response_deadline,
-    description: r.description,
+    solicitation_number: null,
+    place_of_performance: null,
+    award_amount: null,
     sam_url: r.sam_url,
   };
 }
@@ -103,11 +108,14 @@ export default async function OpportunitiesPage() {
             id: null,
             title: o.title ?? "(untitled)",
             department: o.department,
+            type: o.type,
             naics_code: o.naicsCode,
             set_aside: o.setAside,
             posted_date: o.postedDate,
             response_deadline: o.responseDeadline,
-            description: o.description,
+            solicitation_number: o.solicitationNumber,
+            place_of_performance: o.placeOfPerformance,
+            award_amount: o.awardAmount,
             sam_url: o.samUrl,
           });
           if (inboxDisplay.length + livePreview.length >= PREVIEW_TARGET) {
@@ -236,18 +244,6 @@ export default async function OpportunitiesPage() {
                 >
                   <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-[#456c5f]">
                     {r.department ? <span>{r.department}</span> : null}
-                    {r.naics_code ? (
-                      <>
-                        <span>·</span>
-                        <span className="font-mono">NAICS {r.naics_code}</span>
-                      </>
-                    ) : null}
-                    {r.set_aside ? (
-                      <>
-                        <span>·</span>
-                        <span>{r.set_aside}</span>
-                      </>
-                    ) : null}
                     {r.posted_date ? (
                       <>
                         <span>·</span>
@@ -258,18 +254,69 @@ export default async function OpportunitiesPage() {
                   <h3 className="mt-2 font-serif text-base font-bold leading-snug">
                     {r.title}
                   </h3>
-                  {r.response_deadline ? (
-                    <div className="mt-2">
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                    {r.type ? (
+                      <span className="inline-block rounded-sm bg-[#eaf3ee] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#0e5c41]">
+                        {r.type}
+                      </span>
+                    ) : null}
+                    {r.set_aside ? (
+                      <span className="inline-block rounded-sm bg-[#f1f6f3] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#456c5f]">
+                        {r.set_aside}
+                      </span>
+                    ) : null}
+                    {r.response_deadline ? (
                       <span className="inline-block rounded-sm border border-[#a06b1a] bg-[#fff7eb] px-2 py-0.5 text-[11px] font-bold text-[#a06b1a]">
                         Response due {r.response_deadline}
                       </span>
-                    </div>
-                  ) : null}
-                  {r.description ? (
-                    <p className="mt-3 text-sm text-[#456c5f]">
-                      {truncateDescription(r.description, 240)}
-                    </p>
-                  ) : null}
+                    ) : null}
+                  </div>
+
+                  {/* Structured detail rows. Award amount only renders on
+                      award notices; active solicitations don't expose a
+                      contract value via the public API. */}
+                  <dl className="mt-3 grid grid-cols-1 gap-y-1 text-xs text-[#456c5f]">
+                    {r.naics_code ? (
+                      <div className="flex gap-2">
+                        <dt className="w-28 shrink-0 font-semibold uppercase tracking-[0.08em] text-[#7a9c90]">
+                          NAICS
+                        </dt>
+                        <dd className="font-mono text-[#10231d]">
+                          {r.naics_code}
+                        </dd>
+                      </div>
+                    ) : null}
+                    {r.solicitation_number ? (
+                      <div className="flex gap-2">
+                        <dt className="w-28 shrink-0 font-semibold uppercase tracking-[0.08em] text-[#7a9c90]">
+                          Solicitation
+                        </dt>
+                        <dd className="break-all font-mono text-[#10231d]">
+                          {r.solicitation_number}
+                        </dd>
+                      </div>
+                    ) : null}
+                    {r.place_of_performance ? (
+                      <div className="flex gap-2">
+                        <dt className="w-28 shrink-0 font-semibold uppercase tracking-[0.08em] text-[#7a9c90]">
+                          Location
+                        </dt>
+                        <dd className="text-[#10231d]">
+                          {r.place_of_performance}
+                        </dd>
+                      </div>
+                    ) : null}
+                    {r.award_amount ? (
+                      <div className="flex gap-2">
+                        <dt className="w-28 shrink-0 font-semibold uppercase tracking-[0.08em] text-[#7a9c90]">
+                          Award value
+                        </dt>
+                        <dd className="font-bold text-[#0e5c41]">
+                          {r.award_amount}
+                        </dd>
+                      </div>
+                    ) : null}
+                  </dl>
 
                   {/* Spacer pushes the action row to the bottom of the card so
                       a 2-up grid lines up cleanly even with uneven copy. */}

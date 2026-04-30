@@ -58,6 +58,15 @@ export type SamOpportunity = {
   postedDate: string | null;
   samUrl: string | null;
   description: string | null;
+  /** SAM.gov solicitation/RFQ number — useful for human reference + lookup. */
+  solicitationNumber: string | null;
+  /** Classification (PSC) code — companion to NAICS. */
+  classificationCode: string | null;
+  /** Pre-formatted "City, ST" string when the placeOfPerformance is set. */
+  placeOfPerformance: string | null;
+  /** Award amount on award notices, formatted as USD ($1,234,567). Null on
+   *  active solicitations (which by design don't quote a value). */
+  awardAmount: string | null;
   raw: Record<string, unknown>;
 };
 
@@ -114,10 +123,42 @@ function mapOpportunity(o: Record<string, unknown>): SamOpportunity {
     const v = o[k];
     return typeof v === "string" && v.trim() ? v : null;
   };
-  const placeOfPerf = o.placeOfPerformance as
-    | Record<string, unknown>
-    | undefined;
-  void placeOfPerf;
+
+  // SAM nests place-of-performance as { city: { name }, state: { code|name } }.
+  // We flatten to a single "City, ST" string for display.
+  let placeOfPerformance: string | null = null;
+  const pop = o.placeOfPerformance as Record<string, unknown> | undefined;
+  if (pop && typeof pop === "object") {
+    const city = (pop.city as Record<string, unknown> | undefined)?.name;
+    const state = pop.state as Record<string, unknown> | undefined;
+    const stateCode = state?.code ?? state?.name;
+    const parts = [city, stateCode].filter(
+      (x): x is string => typeof x === "string" && x.trim().length > 0,
+    );
+    if (parts.length > 0) placeOfPerformance = parts.join(", ");
+  }
+
+  // Award amounts only appear on award notices — active solicitations don't
+  // expose a contract value via the public API.
+  let awardAmount: string | null = null;
+  const award = o.award as Record<string, unknown> | undefined;
+  if (award && typeof award === "object") {
+    const raw = award.amount;
+    const n =
+      typeof raw === "number"
+        ? raw
+        : typeof raw === "string" && raw.trim()
+          ? Number(raw)
+          : NaN;
+    if (Number.isFinite(n) && n > 0) {
+      awardAmount = n.toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      });
+    }
+  }
+
   return {
     noticeId: String(o.noticeId ?? o.solicitationNumber ?? cryptoFallback()),
     title: typeof o.title === "string" ? o.title : "(untitled)",
@@ -131,6 +172,10 @@ function mapOpportunity(o: Record<string, unknown>): SamOpportunity {
     postedDate: str("postedDate"),
     samUrl: str("uiLink"),
     description: str("description"),
+    solicitationNumber: str("solicitationNumber"),
+    classificationCode: str("classificationCode"),
+    placeOfPerformance,
+    awardAmount,
     raw: o,
   };
 }
