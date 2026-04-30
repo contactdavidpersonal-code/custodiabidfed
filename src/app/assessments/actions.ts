@@ -247,6 +247,18 @@ export async function uploadEvidenceAction(formData: FormData) {
   `) as Array<{ id: string }>;
   const artifactId = inserted[0].id;
 
+  // Mirror the (assessment, practice) tag into the join table so the new
+  // per-objective query path returns this artifact. Cross-practice reuse
+  // (PR3) appends additional rows; the legacy `control_id` column on the
+  // artifact stays as the primary upload home.
+  await sql`
+    INSERT INTO evidence_artifact_practices
+      (artifact_id, assessment_id, control_id, objectives, created_by_user_id)
+    VALUES
+      (${artifactId}, ${assessmentId}, ${controlId}, '{}'::text[], ${userId})
+    ON CONFLICT (artifact_id, assessment_id, control_id) DO NOTHING
+  `;
+
   await recordAuditEvent({
     action: "evidence.uploaded",
     userId,

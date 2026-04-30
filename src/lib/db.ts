@@ -366,6 +366,50 @@ export async function initDb() {
         CHECK (carry_forward_status IN ('pending_review','kept','needs_replacement','removed'))
   `;
 
+  // Per-objective evidence tagging. CMMC L1 evaluates each practice against
+  // NIST 800-171A assessment objectives [a]/[b]/[c]/...; one artifact often
+  // satisfies multiple objectives, and one artifact can be reused across
+  // practices (e.g. the same authorized-users roster covers AC.L1-3.1.1
+  // AND IA.L1-3.5.1). The legacy schema only had a single `control_id`
+  // column on evidence_artifacts, so we keep that for backwards compat and
+  // overlay this join table for the new model.
+  //
+  // Each row says: artifact X contributes to (assessment Y, practice P)
+  // with this set of objective letters. `objectives` is the official
+  // [a]/[b]/[c]/... letters from NIST 800-171A; an empty array means the
+  // artifact is tagged to the practice as a whole (legacy behaviour).
+  await sql`
+    CREATE TABLE IF NOT EXISTS evidence_artifact_practices (
+      artifact_id UUID NOT NULL REFERENCES evidence_artifacts(id) ON DELETE CASCADE,
+      assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+      control_id TEXT NOT NULL,
+      objectives TEXT[] NOT NULL DEFAULT '{}',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      created_by_user_id TEXT,
+      PRIMARY KEY (artifact_id, assessment_id, control_id)
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_eap_assessment_control
+      ON evidence_artifact_practices (assessment_id, control_id)
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_eap_artifact
+      ON evidence_artifact_practices (artifact_id)
+  `;
+
+  // Backfill: for every existing artifact, mirror its (assessment_id,
+  // control_id) into the join table so the new query path returns the
+  // same rows as the legacy path. Idempotent — `ON CONFLICT DO NOTHING`
+  // handles repeat boots and any rows the app code wrote directly.
+  await sql`
+    INSERT INTO evidence_artifact_practices
+      (artifact_id, assessment_id, control_id, objectives, created_by_user_id)
+    SELECT id, assessment_id, control_id, '{}'::text[], uploaded_by_user_id
+    FROM evidence_artifacts
+    ON CONFLICT (artifact_id, assessment_id, control_id) DO NOTHING
+  `;
+
   // CMMC L1 remediation plans (POA&M-style visibility, not a sign-bypass).
   // L1 affirmation is binary — you can't legally sign while practices are
   // Not met / Partial. Plans give the user a tracked roadmap to closure and

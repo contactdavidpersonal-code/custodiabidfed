@@ -421,22 +421,44 @@ export type EvidenceArtifactRow = {
   ai_review_model: string | null;
   prior_artifact_id: string | null;
   carry_forward_status: CarryForwardStatus;
+  /**
+   * NIST 800-171A objective letters this artifact is tagged to FOR THE
+   * CURRENT QUERY's practice. Empty array means "tagged to the practice as
+   * a whole" (legacy behaviour). Only populated by `listEvidenceForControl`.
+   */
+  tagged_objectives: string[];
 };
 
+/**
+ * List every artifact tagged to (assessmentId, controlId) — including
+ * artifacts that were originally uploaded under a DIFFERENT practice but
+ * have since been cross-tagged via `evidence_artifact_practices`. The
+ * legacy `evidence_artifacts.control_id` column is treated as just one
+ * tag among many; cross-tags from the join table are unioned in.
+ */
 export async function listEvidenceForControl(
   assessmentId: string,
   controlId: string,
 ): Promise<EvidenceArtifactRow[]> {
   const sql = getSql();
   return (await sql`
-    SELECT id, assessment_id, control_id, filename, blob_url, mime_type,
-           size_bytes, captured_at, uploaded_by_user_id,
-           ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
-           ai_reviewed_at, ai_review_model,
-           prior_artifact_id, carry_forward_status
-    FROM evidence_artifacts
-    WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
-    ORDER BY captured_at DESC
+    SELECT a.id, a.assessment_id, a.control_id, a.filename, a.blob_url,
+           a.mime_type, a.size_bytes, a.captured_at, a.uploaded_by_user_id,
+           a.ai_review_verdict, a.ai_review_summary, a.ai_review_mapped_controls,
+           a.ai_reviewed_at, a.ai_review_model,
+           a.prior_artifact_id, a.carry_forward_status,
+           COALESCE(eap.objectives, '{}'::text[]) AS tagged_objectives
+    FROM evidence_artifacts a
+    LEFT JOIN evidence_artifact_practices eap
+      ON eap.artifact_id = a.id
+     AND eap.assessment_id = ${assessmentId}
+     AND eap.control_id = ${controlId}
+    WHERE a.assessment_id = ${assessmentId}
+      AND (
+        a.control_id = ${controlId}
+        OR eap.artifact_id IS NOT NULL
+      )
+    ORDER BY a.captured_at DESC
   `) as EvidenceArtifactRow[];
 }
 
@@ -449,11 +471,55 @@ export async function listEvidenceForAssessment(
            size_bytes, captured_at, uploaded_by_user_id,
            ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
            ai_reviewed_at, ai_review_model,
-           prior_artifact_id, carry_forward_status
+           prior_artifact_id, carry_forward_status,
+           '{}'::text[] AS tagged_objectives
     FROM evidence_artifacts
     WHERE assessment_id = ${assessmentId}
     ORDER BY control_id, captured_at DESC
   `) as EvidenceArtifactRow[];
+}
+
+/**
+ * Tag an existing artifact to a (practice, objectives[]) tuple. Idempotent:
+ * subsequent calls with the same (artifact, practice) update the objectives
+ * list. Returns true if a row was inserted or updated.
+ */
+export async function tagArtifactPractice(args: {
+  artifactId: string;
+  assessmentId: string;
+  controlId: string;
+  objectives: string[];
+  userId: string;
+}): Promise<void> {
+  const sql = getSql();
+  await sql`
+    INSERT INTO evidence_artifact_practices
+      (artifact_id, assessment_id, control_id, objectives, created_by_user_id)
+    VALUES
+      (${args.artifactId}, ${args.assessmentId}, ${args.controlId},
+       ${args.objectives}, ${args.userId})
+    ON CONFLICT (artifact_id, assessment_id, control_id)
+    DO UPDATE SET objectives = EXCLUDED.objectives
+  `;
+}
+
+/**
+ * Remove a (practice) tag from an artifact. Used when the user un-tags an
+ * artifact they had previously cross-tagged. Does NOT delete the artifact
+ * itself or its primary `evidence_artifacts.control_id` association.
+ */
+export async function untagArtifactPractice(args: {
+  artifactId: string;
+  assessmentId: string;
+  controlId: string;
+}): Promise<void> {
+  const sql = getSql();
+  await sql`
+    DELETE FROM evidence_artifact_practices
+    WHERE artifact_id = ${args.artifactId}
+      AND assessment_id = ${args.assessmentId}
+      AND control_id = ${args.controlId}
+  `;
 }
 
 /**
@@ -705,7 +771,8 @@ export async function listCarryForwardPending(
            size_bytes, captured_at, uploaded_by_user_id,
            ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
            ai_reviewed_at, ai_review_model,
-           prior_artifact_id, carry_forward_status
+           prior_artifact_id, carry_forward_status,
+           '{}'::text[] AS tagged_objectives
     FROM evidence_artifacts
     WHERE assessment_id = ${assessmentId}::uuid
       AND carry_forward_status = 'pending_review'
