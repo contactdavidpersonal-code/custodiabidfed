@@ -135,7 +135,7 @@ export default async function DeliverablesPage(
               You&apos;re bid-ready. Now go win the contract.
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#cfe3d9]">
-              The AI sources federal opportunities from SAM.gov matched to your NAICS, set-asides, and capabilities. One click tailors the packet you just downloaded to that exact opportunity.
+              Charlie (your vCO) sources federal opportunities from SAM.gov matched to your NAICS, set-asides, and capabilities. One click tailors the packet you just downloaded to that exact opportunity.
             </p>
           </div>
           <Link

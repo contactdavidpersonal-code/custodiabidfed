@@ -27,12 +27,12 @@ const PRACTICES = [
 // What you get the moment you start the 30-day First Contract, On Us trial.
 // Stacked Hormozi-style: each line shows the standalone value, then anchored to the bundle.
 const VALUE_STACK = [
-  { name: "AI-guided CMMC Level 1 Build", desc: "All 17 FAR 52.204-21 practices walked in plain English &mdash; no jargon, no blank pages.", value: "$2,400" },
+  { name: "Charlie-guided CMMC Level 1 Build", desc: "Your vCO walks all 17 FAR 52.204-21 practices in plain English &mdash; no jargon, no blank pages.", value: "$2,400" },
   { name: "Auto-Drafted SSP &amp; Affirmation Memo", desc: "Your System Security Plan and signed affirmation, pre-written from your inputs.", value: "$1,800" },
   { name: "Bid-Ready Package Generator", desc: "One-click ZIP: SSP, affirmation, full evidence inventory &mdash; ready to attach to any RFP.", value: "$3,500" },
   { name: "AI Evidence Auto-Review", desc: "Every artifact you upload runs through gap detection instantly. No waiting on humans.", value: "$1,200/mo" },
   { name: "Weekly SAM.gov Opportunity Radar", desc: "Every Monday at 7am: live federal contracts matched to your NAICS, in your inbox.", value: "$497/mo" },
-  { name: "Live SAM.gov Search In-Chat", desc: "&lsquo;Find me cyber contracts in 541512 closing in 30 days&rsquo; &mdash; the AI searches live, right inside the platform.", value: "$297/mo" },
+  { name: "Live SAM.gov Search In-Chat", desc: "&lsquo;Find me cyber contracts in 541512 closing in 30 days&rsquo; &mdash; Charlie searches live, right inside the platform.", value: "$297/mo" },
   { name: "AI Per-Opportunity Packet Tailor", desc: "One click on any SAM.gov notice and your bid package adapts to that solicitation.", value: "$897/bid" },
   { name: "Compliance Officer On Demand", desc: "Open a ticket any time and a real Custodia compliance officer answers in writing.", value: "$300/hr" },
   { name: "Year-Round Posture Watchtower", desc: "We flag expiring scans, screenshots, training, and changed controls before they bite.", value: "$1,200/yr" },
@@ -66,7 +66,7 @@ const GUARANTEES = [
 const FAQ_ITEMS = [
   {
     q: "How does the 30-day First Contract, On Us trial work?",
-    a: "Drop your card to lock your seat &mdash; we&apos;re only opening 100 of these. You get the full platform free for 30 days: AI-guided CMMC Level 1 build, on-demand AI opportunity sourcing from SAM.gov, officer chat, and bid-ready package generator. Most users go bid-ready in week 1 and submit their first federal bid the same week. The other ~3 weeks are runway to land your first award before your card is ever charged. Cancel any time before day 30 in 2 clicks &mdash; \$0 charged. If you stay, $449/mo (locked-in Summer Federal Cash Incentive pricing for the next 100 clients; list price is $749) keeps the whole engine running.",
+    a: "Drop your card to lock your seat &mdash; we&apos;re only opening 100 of these. You get the full platform free for 30 days: Charlie (your vCO) walks you through CMMC Level 1, sources opportunities from SAM.gov on demand, runs the officer chat, and generates your bid-ready package. Most users go bid-ready in week 1 and submit their first federal bid the same week. The other ~3 weeks are runway to land your first award before your card is ever charged. Cancel any time before day 30 in 2 clicks &mdash; \$0 charged. If you stay, $449/mo (locked-in Summer Federal Cash Incentive pricing for the next 100 clients; list price is $749) keeps the whole engine running.",
   },
   {
     q: "Why $449 instead of $749? What&apos;s the catch?",
@@ -585,7 +585,7 @@ export default function Home() {
                 {
                   n: "02",
                   title: "AI-automated, officer-supported",
-                  body: "Every artifact you upload runs through Custodia's AI auto-review for instant gap detection. When you hit a question only a human can answer, open a ticket and a Custodia compliance officer responds &mdash; the cybersec expertise is on-call, not in the way.",
+                  body: "Every artifact you upload runs through Charlie (your vCO) for instant gap detection. When you hit a question only a human can answer, open a ticket and a Custodia compliance officer responds &mdash; the cybersec expertise is on-call, not in the way.",
                 },
                 {
                   n: "03",
@@ -678,7 +678,7 @@ export default function Home() {
                 {[
                   "<b>Every Monday</b> &mdash; SAM.gov radar email with new contract opportunities matched to your NAICS (in-app inbox keeps a rolling history; toggle email on/off in your bid profile)",
                   "<b>Continuously</b> &mdash; AI evidence freshness watchtower flags expiring scans, screenshots, training, and policies before they go stale",
-                  "<b>On demand</b> &mdash; one-click AI tailor a packet to any specific opportunity",
+                  "<b>On demand</b> &mdash; one-click Charlie-tailored packet for any specific opportunity",
                   "<b>Quarterly</b> &mdash; posture-drift detection flags changed controls and new requirements",
                   "<b>October 1</b> &mdash; annual SPRS re-affirmation prepped automatically &mdash; included, no extra fee",
                   "<b>Anytime</b> &mdash; open a ticket, a Custodia compliance officer answers your CMMC question",
@@ -774,7 +774,7 @@ export default function Home() {
                   Every Monday at 7am, the contracts find <em>you</em>.
                 </h3>
                 <p className="mt-4 text-sm leading-relaxed text-[#a8cfc0] md:text-base">
-                  Custodia scans SAM.gov, DSIP, GSA eBuy, and the major federal opportunity feeds, then emails you a curated digest of the live solicitations matched to your NAICS codes &mdash; with deadlines, set-aside flags, and one-click AI tailoring already wired up.
+                  Custodia scans SAM.gov, DSIP, GSA eBuy, and the major federal opportunity feeds, then emails you a curated digest of the live solicitations matched to your NAICS codes &mdash; with deadlines, set-aside flags, and one-click Charlie tailoring already wired up.
                 </p>
 
                 <ul className="mt-6 space-y-3 text-sm text-[#cce5da]">
@@ -783,7 +783,7 @@ export default function Home() {
                     "Set-aside flags: SDB, WOSB, HUBZone, 8(a), VOSB / SDVOSB",
                     "Sorted by closing date so you act on what&apos;s urgent first",
                     "Every email links straight into your in-app inbox &mdash; full history kept",
-                    "One click: AI tailors your bid-ready packet to that specific solicitation",
+                    "One click: Charlie tailors your bid-ready packet to that specific solicitation",
                     "Or skip the email and <b>ask the in-platform AI</b>: &lsquo;find me cyber contracts in 541512 closing in 30 days&rsquo; &mdash; live SAM.gov search is built into the chat",
                     "Don&apos;t want the email? Toggle it off in your bid profile in 2 seconds",
                   ].map((b) => (
@@ -914,7 +914,7 @@ export default function Home() {
                 Join the bid-ready community
               </h4>
               <p className="mt-2 text-sm leading-relaxed text-[#496f61]">
-                You&apos;re now part of a network of small businesses securing themselves for federal work. Custodia delivers matched opportunities every week and points the AI tailoring engine at any one with a single click.
+                You&apos;re now part of a network of small businesses securing themselves for federal work. Custodia delivers matched opportunities every week and points Charlie&apos;s tailoring engine at any one with a single click.
               </p>
             </div>
             <div className="border border-[#cfe3d9] bg-white p-7">
@@ -1065,7 +1065,7 @@ export default function Home() {
                 paid: true,
                 title: "Generate your bid-ready package",
                 time: "On demand",
-                desc: "AI auto-reviews every artifact for instant gap detection. Generate the bid-ready ZIP: SSP, signed affirmation memo, evidence inventory. The rest of your 30-day trial is yours to ask the AI for opportunities, submit bids, and land your first federal award before your card is ever charged.",
+                desc: "Charlie auto-reviews every artifact for instant gap detection. Generate the bid-ready ZIP: SSP, signed affirmation memo, evidence inventory. The rest of your 30-day trial is yours to ask Charlie for opportunities, submit bids, and land your first federal award before your card is ever charged.",
               },
               {
                 n: "07",
@@ -1184,7 +1184,7 @@ export default function Home() {
               <p className="mt-3 text-sm text-[#496f61]">Walk the 17 practices, capture evidence, draft your SSP &mdash; without writing it from scratch.</p>
               <ul className="mt-6 space-y-3">
                 {[
-                  { t: "AI-guided onboarding", d: "Conversational intake captures your business, FCI scope, tech stack &mdash; no 40-field forms." },
+                  { t: "Charlie-guided onboarding", d: "Your vCO captures your business, FCI scope, and tech stack in conversation &mdash; no 40-field forms." },
                   { t: "All 17 practices, plain English", d: "Each FAR 52.204-21 control walked with capture steps tailored to M365, Google, Okta, AWS, on-prem, or no IT at all." },
                   { t: "Evidence vault per control", d: "Tag screenshots, exports, signed rosters, and policy PDFs to the controls they prove." },
                   { t: "Auto-drafted SSP narratives", d: "Every control&apos;s SSP section pre-written from your inputs. Accept or edit in one click." },
@@ -1294,10 +1294,10 @@ export default function Home() {
 
           <div className="mt-12 border border-[#cfe3d9] bg-[#f7fcf9] p-6 text-center md:p-8">
             <p className="font-serif text-xl text-[#10231d] md:text-2xl">
-              Every capability above is included in your 30-day trial &mdash; the build, the AI opportunity sourcing, the bid generator, and the officer.
+              Every capability above is included in your 30-day trial &mdash; the build, Charlie&apos;s opportunity sourcing, the bid generator, and the officer.
             </p>
             <p className="mt-3 text-sm text-[#5a7d70]">
-              Drop your card, get 30 days free. Build your CMMC package in week 1, ask the AI for opportunities, submit bids, and try to land your first federal award before day 30. \$449/mo only kicks in if you stay (locked-in summer pricing).
+              Drop your card, get 30 days free. Build your CMMC package in week 1, ask Charlie (your vCO) for opportunities, submit bids, and try to land your first federal award before day 30. \$449/mo only kicks in if you stay (locked-in summer pricing).
             </p>
           </div>
         </div>
@@ -1698,12 +1698,12 @@ export default function Home() {
                 {
                   day: "Day 6",
                   stat: "AI sourced",
-                  label: "Asks the AI for matching FCI-scoped opportunities. Gets a live SAM.gov shortlist same session.",
+                  label: "Asks Charlie for matching FCI-scoped opportunities. Gets a live SAM.gov shortlist same session.",
                 },
                 {
                   day: "Day 7",
                   stat: "First bid",
-                  label: "Submits first federal response &mdash; in week 1 of the trial &mdash; with AI auto-tailored package.",
+                  label: "Submits first federal response &mdash; in week 1 of the trial &mdash; with a Charlie-tailored package.",
                 },
                 {
                   day: "Day 22",
@@ -1782,7 +1782,7 @@ export default function Home() {
             </div>
             <p className="mx-auto mt-5 max-w-2xl font-serif text-xl leading-[1.5] text-white md:text-2xl">
               Spend <span className="font-bold text-[#bdf2cf]">week 1</span> finishing CMMC Level 1.<br className="hidden md:inline" />
-              {" "}Ask the AI for opportunities. Submit bids in <span className="font-bold text-[#bdf2cf]">week 1</span>.<br className="hidden md:inline" />
+              {" "}Ask Charlie for opportunities. Submit bids in <span className="font-bold text-[#bdf2cf]">week 1</span>.<br className="hidden md:inline" />
               {" "}Win a contract <span className="font-bold text-[#bdf2cf]">before day 30</span>. The first one&apos;s on us.
             </p>
             <p className="mx-auto mt-6 max-w-2xl text-sm italic leading-relaxed text-[#a8cfc0]">
@@ -1873,12 +1873,16 @@ export default function Home() {
 
           <div className="flex flex-col items-start justify-between gap-10 md:flex-row">
             <div className="max-w-sm">
-              <div className="text-xl font-black tracking-tight text-[#0f2f26]">
-                Custodia<span className="text-[#2f8f6d]">.</span>
+              <div className="flex items-center gap-2.5">
+                <img
+                  src="/custodia-logo.png"
+                  alt="Custodia shield"
+                  className="h-8 w-auto"
+                />
+                <div className="text-xl font-black tracking-tight text-[#0f2f26]">
+                  Custodia<span className="text-[#2f8f6d]">.</span>
+                </div>
               </div>
-              <p className="mt-2 text-sm text-[#5a7d70]">
-                The compliance officer for first-time federal contractors. CMMC Level 1 in week 1, matched SAM.gov opportunities in your inbox, and a bid-ready packet no prime can pick apart.
-              </p>
               <p className="mt-4 text-xs text-[#7a9c90]">
                 Custodia, LLC &middot; Pittsburgh, PA &middot; Veteran-owned
               </p>

@@ -141,7 +141,7 @@ export function TailorForm({
               ? "Tailoring…"
               : drafted
                 ? "↻ Re-tailor with new opportunity"
-                : "✨ Tailor with AI"}
+                : "✨ Tailor with Charlie"}
           </button>
         </div>
       </section>
@@ -152,7 +152,7 @@ export function TailorForm({
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="font-serif text-lg font-bold">
-                  2. AI draft — edit freely
+                  2. Charlie’s draft — edit freely
                 </h2>
                 <p className="mt-1 text-xs text-[#456c5f]">
                   Make this yours. The AI proposes; you decide what ships.

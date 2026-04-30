@@ -228,11 +228,11 @@ export function ComplianceOfficerRail() {
       <button
         type="button"
         onClick={toggle}
-        aria-label="Open compliance officer"
+        aria-label="Open Charlie, your vCO"
         className="fixed right-0 top-1/2 z-30 flex -translate-y-1/2 rotate-90 origin-bottom-right items-center gap-2 rounded-t-sm border border-b-0 border-[#cfe3d9] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#0e2a23] shadow-md transition-colors hover:bg-[#eaf3ee] print:hidden"
       >
         <span className="h-1.5 w-1.5 rounded-sm bg-[#2f8f6d]" />
-        Compliance officer
+        Charlie · vCO
       </button>
     );
   }
@@ -245,21 +245,21 @@ export function ComplianceOfficerRail() {
       <header className="flex items-center justify-between gap-3 border-b border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
         <div className="flex items-center gap-2.5">
           <span className="inline-flex items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]">
-            Officer
+            vCO
           </span>
           <div className="leading-tight">
             <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
-              Compliance officer
+              Charlie &middot; vCO
             </div>
             <div className="text-[11px] text-[#5a7d70]">
-              CMMC L1 · trained on FAR 52.204-21
+              Your virtual compliance officer &middot; CMMC L1
             </div>
           </div>
         </div>
         <button
           type="button"
           onClick={toggle}
-          aria-label="Hide compliance officer"
+          aria-label="Hide Charlie"
           className="rounded-sm p-1 text-[#7a9c90] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
         >
           <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
@@ -464,10 +464,11 @@ function WelcomeBubble({ recap }: { recap: string | null }) {
           ) : (
             <>
               <p>
-                Hi — I&apos;m your Custodia compliance officer. I&apos;ll walk
-                you through every step of your CMMC Level 1 annual
-                affirmation and review every piece of evidence you upload
-                so nothing weak sneaks into your SPRS package.
+                Hi — I&apos;m Charlie, your personal virtual compliance
+                officer (vCO) for your business. I&apos;ll walk you through
+                every step of your CMMC Level 1 annual affirmation and review
+                every piece of evidence you upload so nothing weak sneaks into
+                your SPRS package.
               </p>
               <p className="mt-2">
                 Ask me anything, or jump into your first practice from the

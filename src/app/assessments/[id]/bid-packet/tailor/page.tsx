@@ -39,7 +39,7 @@ export default async function TailorPacketPage(
           Paste a SAM.gov notice, scope of work, or solicitation text below.
           We&apos;ll rewrite your capability statement and differentiators to
           map to the language of that specific opportunity — without touching
-          your master profile. Edit the AI draft, then generate.
+          your master profile. Edit Charlie&apos;s draft, then generate.
         </p>
         <p className="mt-2 max-w-2xl text-xs text-[#456c5f]">
           Your master profile stays clean. Each tailored packet is a fresh

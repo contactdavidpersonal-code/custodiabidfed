@@ -31,7 +31,7 @@ export async function tailorOpportunityAction(
   if (!assessmentId) throw new Error("Missing assessment");
   if (opportunityText.length < 50) {
     throw new Error(
-      "Paste at least a paragraph of the solicitation so the AI has enough to tailor against.",
+      "Paste at least a paragraph of the solicitation so Charlie (your vCO) has enough to tailor against.",
     );
   }
   if (opportunityText.length > 30000) {

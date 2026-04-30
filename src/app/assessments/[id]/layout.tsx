@@ -152,7 +152,7 @@ export default async function CourseLayout(
       href: `/opportunities`,
       title: "Find & submit bids",
       subtitle: attested
-        ? "AI-sourced federal opportunities"
+        ? "Charlie-sourced federal opportunities"
         : "Unlocks after signing",
       status: attested ? "available" : "locked",
       match: "prefix",

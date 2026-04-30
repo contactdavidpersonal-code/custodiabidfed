@@ -118,7 +118,7 @@ export default async function TailorFromOpportunityPage(props: {
           {opp.title}
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#5a7d70]">
-          We pre-filled the solicitation text from SAM.gov. Click <strong>Tailor with AI</strong>{" "}
+          We pre-filled the solicitation text from SAM.gov. Click <strong>Tailor with Charlie</strong>{" "}
           and we&apos;ll rewrite your capability statement to match this
           agency&apos;s exact language. Edit the draft, then generate.
         </p>

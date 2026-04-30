@@ -196,14 +196,14 @@ export function OnboardingChat({
       <div className="flex flex-none items-center justify-between border-b border-[#cfe3d9] bg-white px-5 py-3">
         <div className="flex items-center gap-2.5">
           <span className="inline-flex items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]">
-            Officer
+            vCO
           </span>
           <div className="leading-tight">
             <div className="font-serif text-sm font-bold text-[#10231d]">
-              Custodia Compliance Officer
+              Charlie &middot; Your vCO
             </div>
             <div className="text-[11px] text-[#5a7d70]">
-              Capturing your business profile
+              Virtual Compliance Officer &middot; capturing your business profile
             </div>
           </div>
         </div>
@@ -401,12 +401,14 @@ function StarterBubble() {
     <div className="flex flex-col gap-4">
       <div className="flex gap-2.5">
         <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
-          Officer
+          vCO
         </div>
         <div className="max-w-[88%] rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3 text-sm leading-relaxed text-[#10231d]">
           <p>
-            Welcome. I&apos;m going to ask you a few questions so the rest of
-            this platform fits your business. No forms — just a conversation.
+            Hi, I&apos;m Charlie &mdash; your personal virtual compliance
+            officer (vCO) for your business. I&apos;m going to ask you a few
+            questions so the rest of this platform fits how you actually
+            operate. No forms — just a conversation.
           </p>
           <p className="mt-2">
             To start, tell me in a sentence or two: <strong>what does your

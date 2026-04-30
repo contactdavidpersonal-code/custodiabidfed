@@ -421,7 +421,7 @@ export function PracticeWizard(props: Props) {
             What &ldquo;passing&rdquo; evidence looks like
           </p>
           <p className="mt-1 text-xs leading-relaxed text-[#5a7d70]">
-            Make sure your uploads show every item below. The AI reviewer
+            Make sure your uploads show every item below. Charlie’s reviewer
             checks for these.
           </p>
           <ul className="mt-3 space-y-1.5">

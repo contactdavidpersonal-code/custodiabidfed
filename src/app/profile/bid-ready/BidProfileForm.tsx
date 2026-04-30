@@ -153,7 +153,7 @@ export function BidProfileForm({
               }
               className="rounded-sm border border-[#2f8f6d] bg-white px-3 py-1.5 text-xs font-semibold text-[#2f8f6d] hover:bg-[#f1f9f4] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {draftingCap ? "Drafting…" : profile.capability_statement.trim() ? "↻ Re-draft with AI" : "✨ Draft with AI"}
+              {draftingCap ? "Drafting…" : profile.capability_statement.trim() ? "↻ Re-draft with Charlie" : "✨ Draft with Charlie"}
             </button>
           </div>
         </Field>
@@ -195,7 +195,7 @@ export function BidProfileForm({
               }
               className="rounded-sm border border-[#2f8f6d] bg-white px-3 py-1.5 text-xs font-semibold text-[#2f8f6d] hover:bg-[#f1f9f4] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {draftingDiff ? "Drafting…" : profile.differentiators.trim() ? "↻ Re-draft with AI" : "✨ Draft with AI"}
+              {draftingDiff ? "Drafting…" : profile.differentiators.trim() ? "↻ Re-draft with Charlie" : "✨ Draft with Charlie"}
             </button>
           </div>
         </Field>
