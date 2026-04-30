@@ -36,6 +36,14 @@ export default async function ControlDetailPage(
   if (!response) notFound();
 
   const evidence = await listEvidenceForControl(id, controlId);
+  // Strip the raw blob URL before crossing into the client component. Clients
+  // load evidence through `/api/evidence/{id}` which performs auth + tenant +
+  // audit on every read; the bare blob URL stays server-side.
+  const evidenceForClient = evidence.map((e) => {
+    const { blob_url: _blobUrl, ...rest } = e;
+    void _blobUrl;
+    return rest;
+  });
   const allResponses = await listResponsesForAssessment(id);
   const remediationPlan = await getRemediationPlan(id, controlId);
   const orderedIds = playbook.map((p) => p.id);
@@ -65,7 +73,7 @@ export default async function ControlDetailPage(
         controlId={controlId}
         practice={practiceForClient}
         response={response}
-        evidence={evidence}
+        evidence={evidenceForClient}
         remediationPlan={remediationPlan}
         quiz={quiz}
         prevId={prevId}

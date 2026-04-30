@@ -370,9 +370,6 @@ function MessageBubble({
   }
   return (
     <div className="flex gap-2">
-      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
-        Officer
-      </div>
       <div className="flex max-w-[92%] flex-col gap-1.5">
         {tools.length > 0 && (
           <div className="flex flex-col gap-1">
@@ -386,6 +383,9 @@ function MessageBubble({
             <p className="whitespace-pre-wrap">{text}</p>
           </div>
         )}
+      </div>
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+        Officer
       </div>
     </div>
   );
@@ -419,15 +419,15 @@ function ToolChip({ tool }: { tool: ToolEvent }) {
 function TypingIndicator() {
   return (
     <div className="flex gap-2">
-      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
-        Officer
-      </div>
       <div className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2.5">
         <div className="flex gap-1">
           <span className="h-1.5 w-1.5 animate-bounce rounded-sm bg-[#7a9c90] [animation-delay:-0.3s]" />
           <span className="h-1.5 w-1.5 animate-bounce rounded-sm bg-[#7a9c90] [animation-delay:-0.15s]" />
           <span className="h-1.5 w-1.5 animate-bounce rounded-sm bg-[#7a9c90]" />
         </div>
+      </div>
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+        Officer
       </div>
     </div>
   );
@@ -447,9 +447,6 @@ function WelcomeBubble({ recap }: { recap: string | null }) {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
-          Officer
-        </div>
         <div className="max-w-[92%] rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2 text-sm leading-relaxed text-[#10231d]">
           {recapText ? (
             <>
@@ -476,6 +473,9 @@ function WelcomeBubble({ recap }: { recap: string | null }) {
               </p>
             </>
           )}
+        </div>
+        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+          Officer
         </div>
       </div>
     </div>

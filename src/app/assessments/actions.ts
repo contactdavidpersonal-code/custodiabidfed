@@ -224,9 +224,13 @@ export async function uploadEvidenceAction(formData: FormData) {
   const safeName = taggedName.replace(/[^a-zA-Z0-9._\[\]:-]+/g, "_");
   const pathname = `evidence/${assessmentId}/${controlId}/${Date.now()}-${safeName}`;
 
+  // `addRandomSuffix: true` injects ~21 bytes of url-safe entropy into the
+  // returned URL so it can't be enumerated even if an attacker knows the
+  // org/assessment/control structure. The URL itself is still treated as
+  // server-side secret — clients only ever see /api/evidence/{id}.
   const blob = await put(pathname, file, {
     access: "public",
-    addRandomSuffix: false,
+    addRandomSuffix: true,
     contentType: file.type || "application/octet-stream",
   });
 

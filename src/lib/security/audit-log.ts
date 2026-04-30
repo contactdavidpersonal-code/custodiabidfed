@@ -4,6 +4,7 @@ export type AuditAction =
   | "assessment.attested"
   | "assessment.signed"
   | "evidence.uploaded"
+  | "evidence.viewed"
   | "evidence.deleted"
   | "evidence.rejected_mime"
   | "organization.fields_updated"

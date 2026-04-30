@@ -16,6 +16,13 @@ import type {
 import type { PracticeQuizQuestion } from "@/lib/practice-quiz";
 import { EvidenceDropzone } from "./EvidenceDropzone";
 
+/**
+ * Client-side evidence shape: identical to EvidenceArtifactRow minus
+ * `blob_url`, which never crosses the server/client boundary. The browser
+ * loads bytes through the authenticated `/api/evidence/{id}` proxy.
+ */
+type ClientEvidenceRow = Omit<EvidenceArtifactRow, "blob_url">;
+
 const providerLabel: Record<EvidenceProvider, string> = {
   m365: "Microsoft 365",
   google_workspace: "Google Workspace",
@@ -37,7 +44,7 @@ type Props = {
   controlId: string;
   practice: Omit<ControlPlaybook, "suggestedNarrative">;
   response: ControlResponseRow;
-  evidence: EvidenceArtifactRow[];
+  evidence: ClientEvidenceRow[];
   remediationPlan: RemediationPlanRow | null;
   quiz: PracticeQuizQuestion[];
   prevId: string | null;
@@ -75,8 +82,8 @@ export function PracticeWizard(props: Props) {
 
   // Group evidence by question id parsed from the stored filename.
   const grouped = useMemo(() => {
-    const map = new Map<string, EvidenceArtifactRow[]>();
-    const loose: EvidenceArtifactRow[] = [];
+    const map = new Map<string, ClientEvidenceRow[]>();
+    const loose: ClientEvidenceRow[] = [];
     for (const e of props.evidence) {
       const { qid } = parseQ(e.filename);
       if (qid) {
@@ -484,7 +491,7 @@ function QuestionCard({
   answer: QA;
   onAnswer: (v: QA) => void;
   practice: Omit<ControlPlaybook, "suggestedNarrative">;
-  evidence: EvidenceArtifactRow[];
+  evidence: ClientEvidenceRow[];
   assessmentId: string;
   controlId: string;
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
@@ -632,7 +639,7 @@ function EvidenceRow({
   deleteEvidenceAction,
   reReviewEvidenceAction,
 }: {
-  artifact: EvidenceArtifactRow;
+  artifact: ClientEvidenceRow;
   assessmentId: string;
   controlId: string;
   deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
@@ -665,7 +672,7 @@ function EvidenceRow({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <a
-                href={a.blob_url}
+                href={`/api/evidence/${a.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="truncate text-sm font-semibold text-[#10231d] hover:text-[#2f8f6d]"

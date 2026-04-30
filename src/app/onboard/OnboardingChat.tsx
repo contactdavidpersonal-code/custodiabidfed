@@ -350,9 +350,6 @@ function MessageBubble({
   }
   return (
     <div className="flex gap-2.5">
-      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
-        Officer
-      </div>
       <div className="flex max-w-[88%] flex-col gap-2">
         {tools.length > 0 && (
           <div className="flex flex-wrap gap-1.5">
@@ -366,6 +363,9 @@ function MessageBubble({
             <p className="whitespace-pre-wrap">{text}</p>
           </div>
         )}
+      </div>
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+        Officer
       </div>
     </div>
   );
@@ -400,9 +400,6 @@ function StarterBubble() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex gap-2.5">
-        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
-          vCO
-        </div>
         <div className="max-w-[88%] rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3 text-sm leading-relaxed text-[#10231d]">
           <p>
             Hi, I&apos;m Charlie &mdash; your personal virtual compliance
@@ -416,6 +413,9 @@ function StarterBubble() {
             be)?</strong>
           </p>
         </div>
+        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+          vCO
+        </div>
       </div>
     </div>
   );
@@ -424,15 +424,15 @@ function StarterBubble() {
 function TypingIndicator() {
   return (
     <div className="flex gap-2.5">
-      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
-        Officer
-      </div>
       <div className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
         <div className="flex gap-1">
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5a7d70] [animation-delay:-0.3s]" />
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5a7d70] [animation-delay:-0.15s]" />
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5a7d70]" />
         </div>
+      </div>
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+        Officer
       </div>
     </div>
   );
