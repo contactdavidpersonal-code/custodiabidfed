@@ -21,6 +21,8 @@ import {
   listResponsesForAssessment,
   setArtifactCarryStatus,
   setResponseCarryStatus,
+  tagArtifactPractice,
+  untagArtifactPractice,
   upsertRemediationPlan,
 } from "@/lib/assessment";
 import { stampFreshnessOnInsert } from "@/lib/freshness";
@@ -409,6 +411,92 @@ export async function deleteEvidenceAction(formData: FormData) {
     resourceType: "evidence_artifact",
     resourceId: artifactId,
     metadata: { assessmentId, controlId, blobUrl: rows[0].blob_url },
+  });
+
+  revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
+  revalidatePath(`/assessments/${assessmentId}`);
+}
+
+/**
+ * Cross-tag an existing artifact to ANOTHER practice in the same assessment.
+ * Does not move or copy the artifact — both practices share the same file.
+ * Idempotent (safe to click twice). Used by the reuse picker on the practice
+ * page so a single uploaded screenshot can satisfy multiple CMMC practices.
+ */
+export async function tagArtifactPracticeAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const controlId = String(formData.get("controlId") ?? "");
+  const artifactId = String(formData.get("artifactId") ?? "");
+  if (!playbookById[controlId]) throw new Error("Unknown control");
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Not found");
+
+  // Confirm the artifact actually belongs to this assessment before tagging.
+  const sql = getSql();
+  const owns = (await sql`
+    SELECT 1 FROM evidence_artifacts
+    WHERE id = ${artifactId} AND assessment_id = ${assessmentId}
+    LIMIT 1
+  `) as Array<{ "?column?": number }>;
+  if (owns.length === 0) throw new Error("Artifact not found");
+
+  await tagArtifactPractice({
+    artifactId,
+    assessmentId,
+    controlId,
+    objectives: [],
+    userId,
+  });
+
+  await recordAuditEvent({
+    action: "evidence.tagged",
+    userId,
+    organizationId: ctx.organization.id,
+    resourceType: "evidence_artifact",
+    resourceId: artifactId,
+    metadata: { assessmentId, controlId },
+  });
+
+  revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
+  revalidatePath(`/assessments/${assessmentId}`);
+}
+
+/**
+ * Remove a cross-practice tag. Does NOT delete the artifact — the artifact
+ * stays on its original practice. No-op if the tag matches the artifact's
+ * primary `control_id` (you can't untag from the home practice).
+ */
+export async function untagArtifactPracticeAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const controlId = String(formData.get("controlId") ?? "");
+  const artifactId = String(formData.get("artifactId") ?? "");
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Not found");
+
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT control_id FROM evidence_artifacts
+    WHERE id = ${artifactId} AND assessment_id = ${assessmentId}
+    LIMIT 1
+  `) as Array<{ control_id: string }>;
+  if (rows.length === 0) return;
+  // Block untagging from the artifact's primary practice — that would
+  // orphan the file. The user must use Remove from the home practice.
+  if (rows[0].control_id === controlId) {
+    throw new Error("Cannot untag from primary practice; use Remove instead.");
+  }
+
+  await untagArtifactPractice({ artifactId, assessmentId, controlId });
+
+  await recordAuditEvent({
+    action: "evidence.untagged",
+    userId,
+    organizationId: ctx.organization.id,
+    resourceType: "evidence_artifact",
+    resourceId: artifactId,
+    metadata: { assessmentId, controlId },
   });
 
   revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);

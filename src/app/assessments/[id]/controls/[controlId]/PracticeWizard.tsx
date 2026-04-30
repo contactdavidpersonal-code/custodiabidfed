@@ -7,6 +7,7 @@ import type {
   ControlResponseRow,
   EvidenceArtifactRow,
   RemediationPlanRow,
+  ReuseCandidate,
 } from "@/lib/assessment";
 import type {
   AssessmentObjective,
@@ -23,6 +24,7 @@ import { EvidenceDropzone } from "./EvidenceDropzone";
  * loads bytes through the authenticated `/api/evidence/{id}` proxy.
  */
 type ClientEvidenceRow = Omit<EvidenceArtifactRow, "blob_url">;
+type ClientReuseCandidate = Omit<ReuseCandidate, "blob_url">;
 
 const providerLabel: Record<EvidenceProvider, string> = {
   m365: "Microsoft 365",
@@ -53,10 +55,13 @@ type Props = {
   nextId: string | null;
   currentIdx: number;
   total: number;
+  reuseCandidates: ClientReuseCandidate[];
   saveResponseAction: (formData: FormData) => Promise<void> | void;
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
   deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
+  tagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
+  untagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
   useSuggestedNarrativeAction: (formData: FormData) => Promise<void> | void;
   upsertRemediationPlanAction: (formData: FormData) => Promise<void> | void;
 };
@@ -323,9 +328,12 @@ export function PracticeWizard(props: Props) {
           controlId={props.controlId}
           evidence={allEvidence}
           passingEvidence={props.practice.passingEvidence}
+          reuseCandidates={props.reuseCandidates}
           uploadEvidenceAction={props.uploadEvidenceAction}
           deleteEvidenceAction={props.deleteEvidenceAction}
           reReviewEvidenceAction={props.reReviewEvidenceAction}
+          tagArtifactPracticeAction={props.tagArtifactPracticeAction}
+          untagArtifactPracticeAction={props.untagArtifactPracticeAction}
         />
       )}
 
@@ -495,17 +503,23 @@ function EvidenceArea({
   controlId,
   evidence,
   passingEvidence,
+  reuseCandidates,
   uploadEvidenceAction,
   deleteEvidenceAction,
   reReviewEvidenceAction,
+  tagArtifactPracticeAction,
+  untagArtifactPracticeAction,
 }: {
   assessmentId: string;
   controlId: string;
   evidence: ClientEvidenceRow[];
   passingEvidence: string[];
+  reuseCandidates: ClientReuseCandidate[];
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
   deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
+  tagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
+  untagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
 }) {
   return (
     <section className="mb-5 rounded-md border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04)]">
@@ -540,6 +554,7 @@ function EvidenceArea({
               controlId={controlId}
               deleteEvidenceAction={deleteEvidenceAction}
               reReviewEvidenceAction={reReviewEvidenceAction}
+              untagArtifactPracticeAction={untagArtifactPracticeAction}
             />
           ))}
         </ul>
@@ -552,7 +567,103 @@ function EvidenceArea({
           controlId={controlId}
         />
       </div>
+
+      {reuseCandidates.length > 0 && (
+        <ReusePicker
+          assessmentId={assessmentId}
+          controlId={controlId}
+          candidates={reuseCandidates}
+          tagArtifactPracticeAction={tagArtifactPracticeAction}
+        />
+      )}
     </section>
+  );
+}
+
+/* ============================ REUSE PICKER ================================ */
+
+/**
+ * Lets the user attach an artifact already uploaded under another practice
+ * to THIS practice. CMMC L1 frequently overlaps — one screenshot of MFA
+ * settings, one screen-lock policy doc — and this avoids forcing the user
+ * to re-upload the same file 6 times. "Suggested" candidates are ones the
+ * AI vision review already mapped to this control.
+ */
+function ReusePicker({
+  assessmentId,
+  controlId,
+  candidates,
+  tagArtifactPracticeAction,
+}: {
+  assessmentId: string;
+  controlId: string;
+  candidates: ClientReuseCandidate[];
+  tagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
+}) {
+  // Suggested first, then most recent.
+  const sorted = [...candidates].sort((a, b) => {
+    if (a.suggested !== b.suggested) return a.suggested ? -1 : 1;
+    return b.captured_at.localeCompare(a.captured_at);
+  });
+  const [open, setOpen] = useState(false);
+  const suggestedCount = sorted.filter((c) => c.suggested).length;
+
+  return (
+    <details
+      className="border-t border-[#cfe3d9] bg-[#fbfdfb]"
+      open={open}
+      onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
+    >
+      <summary className="cursor-pointer px-4 py-3 text-xs font-semibold text-[#2f8f6d]">
+        Reuse evidence from another practice ({sorted.length}
+        {suggestedCount > 0 ? ` · ${suggestedCount} suggested` : ""})
+      </summary>
+      <ul className="divide-y divide-[#e4eee8]">
+        {sorted.map((c) => {
+          const display = parseQ(c.filename).display;
+          return (
+            <li key={c.id} className="flex items-center gap-3 px-4 py-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <a
+                    href={`/api/evidence/${c.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="truncate text-xs font-semibold text-[#10231d] hover:text-[#2f8f6d]"
+                  >
+                    {display}
+                  </a>
+                  <span className="rounded-sm bg-[#e4eee8] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[#5a7d70]">
+                    From {c.source_control_id}
+                  </span>
+                  {c.suggested && (
+                    <span className="rounded-sm bg-[#0e2a23] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#bdf2cf]">
+                      Suggested
+                    </span>
+                  )}
+                </div>
+                {c.ai_review_summary && (
+                  <p className="mt-1 line-clamp-2 text-[11px] leading-snug text-[#5a7d70]">
+                    {c.ai_review_summary}
+                  </p>
+                )}
+              </div>
+              <form action={tagArtifactPracticeAction}>
+                <input type="hidden" name="assessmentId" value={assessmentId} />
+                <input type="hidden" name="controlId" value={controlId} />
+                <input type="hidden" name="artifactId" value={c.id} />
+                <button
+                  type="submit"
+                  className="rounded-sm border border-[#0e2a23] bg-[#0e2a23] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+                >
+                  Use here
+                </button>
+              </form>
+            </li>
+          );
+        })}
+      </ul>
+    </details>
   );
 }
 
@@ -664,12 +775,14 @@ function EvidenceRow({
   controlId,
   deleteEvidenceAction,
   reReviewEvidenceAction,
+  untagArtifactPracticeAction,
 }: {
   artifact: ClientEvidenceRow;
   assessmentId: string;
   controlId: string;
   deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
+  untagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
 }) {
   const verdictTone =
     a.ai_review_verdict === "sufficient"
@@ -683,6 +796,7 @@ function EvidenceRow({
             : { pill: "bg-[#cfe3d9] text-[#10231d]", label: "Reviewing\u2026" };
 
   const display = parseQ(a.filename).display;
+  const crossTagged = a.control_id !== controlId;
 
   return (
     <li className="px-4 py-3">
@@ -710,6 +824,14 @@ function EvidenceRow({
               >
                 {verdictTone.label}
               </span>
+              {crossTagged && (
+                <span
+                  title={`Originally uploaded for ${a.control_id}`}
+                  className="rounded-sm bg-[#e4eee8] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[#5a7d70]"
+                >
+                  Reused from {a.control_id}
+                </span>
+              )}
             </div>
             <div className="mt-0.5 text-xs text-[#5a7d70]">
               {new Date(a.captured_at).toLocaleDateString(undefined, {
@@ -733,17 +855,32 @@ function EvidenceRow({
               Re-review
             </button>
           </form>
-          <form action={deleteEvidenceAction}>
-            <input type="hidden" name="assessmentId" value={assessmentId} />
-            <input type="hidden" name="controlId" value={controlId} />
-            <input type="hidden" name="artifactId" value={a.id} />
-            <button
-              type="submit"
-              className="rounded-sm px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#fdf2f0] hover:text-[#b03a2e]"
-            >
-              Remove
-            </button>
-          </form>
+          {crossTagged ? (
+            <form action={untagArtifactPracticeAction}>
+              <input type="hidden" name="assessmentId" value={assessmentId} />
+              <input type="hidden" name="controlId" value={controlId} />
+              <input type="hidden" name="artifactId" value={a.id} />
+              <button
+                type="submit"
+                title="Untag from this practice (the artifact stays on its home practice)"
+                className="rounded-sm px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#f7fcf9] hover:text-[#10231d]"
+              >
+                Untag
+              </button>
+            </form>
+          ) : (
+            <form action={deleteEvidenceAction}>
+              <input type="hidden" name="assessmentId" value={assessmentId} />
+              <input type="hidden" name="controlId" value={controlId} />
+              <input type="hidden" name="artifactId" value={a.id} />
+              <button
+                type="submit"
+                className="rounded-sm px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#fdf2f0] hover:text-[#b03a2e]"
+              >
+                Remove
+              </button>
+            </form>
+          )}
         </div>
       </div>
       {a.ai_review_summary && (

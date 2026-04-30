@@ -522,6 +522,54 @@ export async function untagArtifactPractice(args: {
   `;
 }
 
+export type ReuseCandidate = EvidenceArtifactRow & {
+  /** True if Charlie's prior vision review mapped this artifact to the
+   * target control, i.e. it's a confident suggestion rather than just
+   * "anything in the assessment". */
+  suggested: boolean;
+  /** The practice this artifact was originally uploaded for, used as the
+   * grouping label in the picker. */
+  source_control_id: string;
+};
+
+/**
+ * Artifacts in this assessment that are NOT yet tagged to `controlId` and
+ * could plausibly be reused. We surface every other-practice artifact so the
+ * user always has the option, then sort suggested ones (where the AI vision
+ * review already mapped the file to this control) to the top.
+ */
+export async function getReuseCandidates(
+  assessmentId: string,
+  controlId: string,
+): Promise<ReuseCandidate[]> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT a.id, a.assessment_id, a.control_id, a.filename, a.blob_url,
+           a.mime_type, a.size_bytes, a.captured_at, a.uploaded_by_user_id,
+           a.ai_review_verdict, a.ai_review_summary, a.ai_review_mapped_controls,
+           a.ai_reviewed_at, a.ai_review_model,
+           a.prior_artifact_id, a.carry_forward_status,
+           '{}'::text[] AS tagged_objectives,
+           a.control_id AS source_control_id
+    FROM evidence_artifacts a
+    WHERE a.assessment_id = ${assessmentId}
+      AND a.control_id <> ${controlId}
+      AND NOT EXISTS (
+        SELECT 1 FROM evidence_artifact_practices eap
+        WHERE eap.artifact_id = a.id
+          AND eap.assessment_id = ${assessmentId}
+          AND eap.control_id = ${controlId}
+      )
+    ORDER BY a.captured_at DESC
+  `) as Array<EvidenceArtifactRow & { source_control_id: string }>;
+  return rows.map((r) => ({
+    ...r,
+    suggested:
+      Array.isArray(r.ai_review_mapped_controls) &&
+      r.ai_review_mapped_controls.includes(controlId),
+  }));
+}
+
 /**
  * An artifact counts toward attestation readiness only if the AI vision review
  * actually reviewed it AND rendered a non-insufficient, non-not_relevant

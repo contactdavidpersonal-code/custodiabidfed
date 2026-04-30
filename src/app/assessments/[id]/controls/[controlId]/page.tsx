@@ -4,6 +4,7 @@ import {
   getAssessmentForUser,
   getRemediationPlan,
   getResponse,
+  getReuseCandidates,
   listEvidenceForControl,
   listResponsesForAssessment,
 } from "@/lib/assessment";
@@ -12,6 +13,8 @@ import {
   deleteEvidenceAction,
   reReviewEvidenceAction,
   saveControlResponseAction,
+  tagArtifactPracticeAction,
+  untagArtifactPracticeAction,
   uploadEvidenceAction,
   upsertRemediationPlanAction,
   useSuggestedNarrativeAction,
@@ -41,6 +44,12 @@ export default async function ControlDetailPage(
   // audit on every read; the bare blob URL stays server-side.
   const evidenceForClient = evidence.map((e) => {
     const { blob_url: _blobUrl, ...rest } = e;
+    void _blobUrl;
+    return rest;
+  });
+  const reuseCandidates = await getReuseCandidates(id, controlId);
+  const reuseForClient = reuseCandidates.map((c) => {
+    const { blob_url: _blobUrl, ...rest } = c;
     void _blobUrl;
     return rest;
   });
@@ -81,10 +90,13 @@ export default async function ControlDetailPage(
         nextId={nextId}
         currentIdx={currentIdx}
         total={orderedIds.length}
+        reuseCandidates={reuseForClient}
         saveResponseAction={saveControlResponseAction}
         uploadEvidenceAction={uploadEvidenceAction}
         deleteEvidenceAction={deleteEvidenceAction}
         reReviewEvidenceAction={reReviewEvidenceAction}
+        tagArtifactPracticeAction={tagArtifactPracticeAction}
+        untagArtifactPracticeAction={untagArtifactPracticeAction}
         useSuggestedNarrativeAction={useSuggestedNarrativeAction}
         upsertRemediationPlanAction={upsertRemediationPlanAction}
       />

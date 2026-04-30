@@ -7,6 +7,8 @@ export type AuditAction =
   | "evidence.viewed"
   | "evidence.deleted"
   | "evidence.rejected_mime"
+  | "evidence.tagged"
+  | "evidence.untagged"
   | "bid_package.exported"
   | "bid_packet.exported"
   | "organization.fields_updated"
