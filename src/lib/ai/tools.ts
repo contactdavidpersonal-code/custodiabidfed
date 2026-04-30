@@ -777,7 +777,7 @@ async function handleSearchSamOpportunities(
   input: Record<string, unknown>,
   ctx: ToolContext,
 ): Promise<ToolResult> {
-  const apiKey = process.env.SAM_GOV_API_KEY;
+  const apiKey = process.env.SAM_GOV_API_KEY ?? process.env.SAM_API_KEY;
   if (!apiKey) {
     return {
       ok: false,

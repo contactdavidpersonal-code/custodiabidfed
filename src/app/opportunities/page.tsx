@@ -74,7 +74,7 @@ export default async function OpportunitiesPage() {
   let liveFetchFailed = false;
 
   if (inboxDisplay.length < PREVIEW_TARGET && naics.length > 0) {
-    const apiKey = process.env.SAM_GOV_API_KEY;
+    const apiKey = process.env.SAM_GOV_API_KEY ?? process.env.SAM_API_KEY;
     if (apiKey) {
       try {
         const need = PREVIEW_TARGET - inboxDisplay.length;

@@ -37,7 +37,7 @@ export async function GET(req: Request) {
     });
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const apiKey = process.env.SAM_GOV_API_KEY;
+  const apiKey = process.env.SAM_GOV_API_KEY ?? process.env.SAM_API_KEY;
   if (!apiKey) {
     return NextResponse.json({
       sent: 0,
