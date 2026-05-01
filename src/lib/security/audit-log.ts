@@ -16,7 +16,14 @@ export type AuditAction =
   | "cron.unauthorized"
   | "cron.executed"
   | "auth.unauthorized"
-  | "rate_limit.exceeded";
+  | "rate_limit.exceeded"
+  | "connector.connected"
+  | "connector.revoked"
+  | "connector.refresh_failed"
+  | "manual_evidence.uploaded"
+  | "trust_page.published"
+  | "trust_page.unpublished"
+  | "sprs_quiz.submitted";
 
 export type AuditEvent = {
   action: AuditAction;

@@ -2,6 +2,8 @@ import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ensureOrgForUser } from "@/lib/assessment";
+import { countUnreadOfficerRepliesForOrg } from "@/lib/escalations";
 import { ComplianceOfficerRail } from "./ComplianceOfficerRail";
 
 export default async function AssessmentsLayout({
@@ -12,6 +14,9 @@ export default async function AssessmentsLayout({
   const { userId, has } = await auth();
   if (!userId) redirect("/sign-in");
   if (!has({ plan: "user:cmmc_lv1_full_access" })) redirect("/upgrade");
+
+  const org = await ensureOrgForUser(userId);
+  const unreadOfficerReplies = await countUnreadOfficerRepliesForOrg(org.id);
 
   return (
     <div className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
@@ -42,6 +47,17 @@ export default async function AssessmentsLayout({
               className="rounded-sm px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
             >
               Bid profile
+            </Link>
+            <Link
+              href="/assessments/tickets"
+              className="relative rounded-sm px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
+            >
+              Tickets
+              {unreadOfficerReplies > 0 && (
+                <span className="ml-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                  {unreadOfficerReplies}
+                </span>
+              )}
             </Link>
             <Link
               href="/"

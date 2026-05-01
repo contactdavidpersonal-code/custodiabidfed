@@ -20,13 +20,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Custodia | Add 6–7 Figures in Federal Revenue, Without a Compliance Team",
+  title: "Custodia | TurboTax for CMMC Level 1",
   description:
-    "How established business owners are adding 6–7 figures in federal revenue — without a compliance team, an RFP chase, or a single disruption to their operations. CMMC Level 1 in plain English, weekly matched contracts, officer support.",
+    "Federal compliance for small contractors, in plain English. Charlie — your AI compliance officer — walks you through CMMC Level 1 in 7 days. $249/month, flat. 14-day free trial.",
   openGraph: {
-    title: "Custodia | Add 6–7 Figures in Federal Revenue",
+    title: "Custodia | TurboTax for CMMC Level 1",
     description:
-      "Established owners are adding 6–7 figures in federal revenue with no compliance team and no RFP chase. CMMC L1 made simple. Free to build. One award covers years of subscription.",
+      "Federal bid-ready in 7 days. $249/month, flat. 14-day free trial. Built by Carnegie Mellon-trained information security engineers.",
     type: "website",
   },
 };

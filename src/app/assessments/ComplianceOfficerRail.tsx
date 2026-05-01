@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   useCallback,
@@ -339,6 +340,13 @@ export function ComplianceOfficerRail() {
           The officer cites FAR / NIST when it makes a claim. Evidence uploads
           are reviewed automatically before they count toward attestation.
         </p>
+        <Link
+          href="/assessments/tickets/new"
+          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-sm border border-[#cfe3d9] bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
+          Talk to a human officer
+        </Link>
       </form>
 
       <div

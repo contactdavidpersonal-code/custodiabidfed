@@ -586,6 +586,37 @@ export async function initDb() {
       ON officer_escalations (organization_id, status)
   `;
 
+  // Two-way ticket thread under each officer_escalations row. Inbound email
+  // replies from support@custodia.dev land here as sender_type='officer';
+  // user replies from the platform land here as sender_type='user'. The AI's
+  // initial summary is inserted as sender_type='system' when the row is
+  // created. email_message_id holds the RFC 5322 Message-ID for thread
+  // stitching across providers.
+  await sql`
+    CREATE TABLE IF NOT EXISTS escalation_messages (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      escalation_id UUID NOT NULL REFERENCES officer_escalations(id) ON DELETE CASCADE,
+      sender_type TEXT NOT NULL
+        CHECK (sender_type IN ('user','officer','system')),
+      sender_user_id TEXT,
+      sender_email TEXT,
+      body TEXT NOT NULL,
+      email_message_id TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      read_by_user_at TIMESTAMPTZ,
+      read_by_officer_at TIMESTAMPTZ
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_escalation_messages_escalation
+      ON escalation_messages (escalation_id, created_at)
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_escalation_messages_email_msg
+      ON escalation_messages (email_message_id)
+      WHERE email_message_id IS NOT NULL
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS guarantee_claims (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -756,6 +787,176 @@ export async function initDb() {
       payload         JSONB NOT NULL,
       fetched_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
+  `;
+
+  // -------------------------------------------------------------------------
+  // CMMC L1 pivot — connectors, scheduler, monitors, manual evidence,
+  // trust pages, and free SPRS quiz lead-gen.
+  // -------------------------------------------------------------------------
+
+  // OAuth-issued connector tokens for evidence sources (Microsoft 365,
+  // Google Workspace, future: Okta, AWS, on-prem AD). Encrypted at rest
+  // with the same envelope as attestations (src/lib/security/crypto.ts).
+  // One row per (org, provider).
+  await sql`
+    CREATE TABLE IF NOT EXISTS connector_tokens (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL,
+      account_label TEXT,
+      encrypted_access_token TEXT NOT NULL,
+      encrypted_refresh_token TEXT,
+      scopes TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+      expires_at TIMESTAMPTZ,
+      connected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_used_at TIMESTAMPTZ,
+      revoked_at TIMESTAMPTZ,
+      UNIQUE (organization_id, provider)
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_connector_tokens_org
+      ON connector_tokens (organization_id)
+      WHERE revoked_at IS NULL
+  `;
+
+  // Per-customer task scheduler. Pulls due tasks every ~5min via
+  // /api/cron/scheduler. Keeps the task graph in Postgres so we can
+  // reschedule, retry, and audit without touching code.
+  await sql`
+    CREATE TABLE IF NOT EXISTS scheduled_tasks (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL,
+      payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+      next_run_at TIMESTAMPTZ NOT NULL,
+      last_run_at TIMESTAMPTZ,
+      last_status TEXT,
+      last_error TEXT,
+      run_count INT NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_scheduled_tasks_due
+      ON scheduled_tasks (next_run_at)
+      WHERE last_status IS DISTINCT FROM 'cancelled'
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_scheduled_tasks_org_kind
+      ON scheduled_tasks (organization_id, kind)
+  `;
+
+  // Continuous-monitoring alerts. Charlie raises these when an automated
+  // check (MFA disabled on a user, screen-lock policy turned off, etc.)
+  // detects a regression. Surface in the dashboard banner + Pulse email.
+  await sql`
+    CREATE TABLE IF NOT EXISTS monitor_alerts (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL,
+      severity TEXT NOT NULL DEFAULT 'info',
+      control_id TEXT,
+      message TEXT NOT NULL,
+      detail JSONB NOT NULL DEFAULT '{}'::jsonb,
+      opened_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      acknowledged_at TIMESTAMPTZ,
+      resolved_at TIMESTAMPTZ
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_monitor_alerts_org_open
+      ON monitor_alerts (organization_id, opened_at DESC)
+      WHERE resolved_at IS NULL
+  `;
+
+  // Weekly Compliance Pulse digest log. One row per (org, week_of). The
+  // status is the green/yellow/red rollup driving the email subject line.
+  await sql`
+    CREATE TABLE IF NOT EXISTS compliance_pulses (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      week_of DATE NOT NULL,
+      status TEXT NOT NULL,
+      summary JSONB NOT NULL,
+      sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (organization_id, week_of)
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_compliance_pulses_org_week
+      ON compliance_pulses (organization_id, week_of DESC)
+  `;
+
+  // Manual evidence uploads — when a customer can't or doesn't want to
+  // wire a connector, they upload spreadsheets / PDFs / screenshots tied
+  // to a control. Distinct from `evidence_artifacts` (which is the per-
+  // assessment evidence pipeline) so that orgs can capture standing
+  // evidence between assessments.
+  await sql`
+    CREATE TABLE IF NOT EXISTS manual_evidence (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      control_id TEXT NOT NULL,
+      template_slug TEXT,
+      blob_url TEXT NOT NULL,
+      file_name TEXT NOT NULL,
+      file_kind TEXT NOT NULL,
+      captured_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      uploaded_by TEXT,
+      notes TEXT
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_manual_evidence_org_control
+      ON manual_evidence (organization_id, control_id, captured_at DESC)
+  `;
+
+  // Public, opt-in trust pages. Render at /trust/<slug> with ISR. Exposes
+  // attestation status, last refresh date, and a generic FCI-handling
+  // posture statement — never raw evidence.
+  await sql`
+    CREATE TABLE IF NOT EXISTS trust_pages (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL UNIQUE REFERENCES organizations(id) ON DELETE CASCADE,
+      slug TEXT NOT NULL UNIQUE,
+      is_public BOOLEAN NOT NULL DEFAULT FALSE,
+      headline TEXT,
+      summary TEXT,
+      contact_email TEXT,
+      fields JSONB NOT NULL DEFAULT '{}'::jsonb,
+      published_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_trust_pages_public
+      ON trust_pages (slug)
+      WHERE is_public = TRUE
+  `;
+
+  // Free public SPRS quiz lead-gen. Captures the quiz answers + computed
+  // SPRS score for a non-authenticated visitor, joined to an email so
+  // sales / lifecycle can follow up.
+  await sql`
+    CREATE TABLE IF NOT EXISTS sprs_quiz_submissions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email TEXT,
+      company_name TEXT,
+      naics_codes TEXT[],
+      answers JSONB NOT NULL,
+      score INT NOT NULL,
+      max_score INT NOT NULL,
+      gap_summary JSONB NOT NULL DEFAULT '{}'::jsonb,
+      utm_source TEXT,
+      ip TEXT,
+      user_agent TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_sprs_quiz_email_created
+      ON sprs_quiz_submissions (email, created_at DESC)
   `;
 }
 
