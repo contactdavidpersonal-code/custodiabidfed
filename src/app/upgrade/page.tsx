@@ -39,13 +39,21 @@ export default async function UpgradePage() {
       <main className="mx-auto max-w-4xl px-6 py-16">
         <div className="mb-12 text-center">
           <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-            CMMC Level 1 Membership
+            First Contract, On Us &middot; Summer Federal Cash Incentive
           </div>
           <h1 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-5xl">
-            Clear, guided compliance for $249/mo.
+            Bid-ready in week 1.
+            <br className="hidden md:block" /> First contract on us in 30 days.
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-[#4a7164]">
-            The Platform guides all 17 FAR 52.204-21 practices, and a Custodia compliance officer is in the loop for support and pushback scenarios. 7-day free trial, no credit card required.
+            All 17 FAR&nbsp;52.204-21 practices walked in plain English, a Custodia
+            compliance officer in the loop, and SAM.gov-matched opportunities until you
+            win one. <span className="font-semibold text-[#10231d]">$449/mo</span>{" "}
+            <span className="text-[#5a7f72] line-through">$749</span> &mdash; locked-in
+            launch pricing for the next 100 customers.
+          </p>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-[#5a7f72]">
+            30-day free trial. Cancel any time before day 30 in 2 clicks &mdash; $0 charged.
           </p>
         </div>
 
@@ -54,13 +62,13 @@ export default async function UpgradePage() {
         </div>
 
         <p className="mt-8 text-center text-sm text-[#5a7f72]">
-          7-day free trial &mdash; cancel any time before it ends and you
-          won&apos;t be charged. Questions?{" "}
+          A single $150K sub-contract at 10% net margin pays for ~28 years of Custodia
+          at today&apos;s price. Questions?{" "}
           <a
-            href="mailto:hello@custodia.gov"
+            href="mailto:support@custodia.dev"
             className="font-medium text-[#20684f] underline underline-offset-2 hover:text-[#174f3c]"
           >
-            Email us
+            support@custodia.dev
           </a>
           .
         </p>
