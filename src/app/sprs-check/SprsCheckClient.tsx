@@ -290,7 +290,7 @@ function ResultView({ result, answers }: { result: QuizResult; answers: AnswersM
           Want Charlie to fix these for you?
         </h3>
         <p className="mb-4 text-sm text-slate-700">
-          Custodia is TurboTax for CMMC Level 1. $249/month, flat. 14-day
+          Custodia is TurboTax for CMMC Level 1. $449/month, flat. 14-day
           free trial. Federal bid-ready in 7 days, or your money back.
         </p>
         <Link

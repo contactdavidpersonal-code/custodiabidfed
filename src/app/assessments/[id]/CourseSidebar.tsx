@@ -197,7 +197,7 @@ export function CourseSidebar({ sections }: Props) {
 
         {open && (
           <div className="border-t border-[#cfe3d9] px-4 py-3 text-[11px] text-[#5a7d70]">
-            Every step is open during your 30-day trial. Steps with a lock icon need a prior step finished before they fully unlock &mdash; click any step to see what&apos;s missing.
+            Every step is open during your 14-day free trial. Steps with a lock icon need a prior step finished before they fully unlock &mdash; click any step to see what&apos;s missing.
           </div>
         )}
       </div>

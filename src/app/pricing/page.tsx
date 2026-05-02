@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Pricing | Custodia",
   description:
-    "$249/month. Flat. Everything included — Charlie, evidence collection, signed artifact pack, audit support, continuous monitoring, Bid Radar. 14-day free trial.",
+    "$449/month. Flat. Everything included — Charlie, evidence collection, signed artifact pack, audit support, continuous monitoring, Bid Radar. 14-day free trial. No credit card required.",
 };
 
 const INCLUDED = [
@@ -72,7 +72,7 @@ export default function PricingPage() {
               Custodia
             </div>
             <div className="mb-1 flex items-baseline gap-1">
-              <span className="text-5xl font-bold">$249</span>
+              <span className="text-5xl font-bold">$449</span>
               <span className="text-lg text-slate-300">/month</span>
             </div>
             <div className="mb-6 text-xs text-slate-400">

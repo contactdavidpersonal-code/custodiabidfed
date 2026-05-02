@@ -78,7 +78,7 @@ export default function TermsPage() {
         <section>
           <h2 className="text-lg font-semibold text-slate-900">4. Subscriptions, fees, and renewal</h2>
           <ul className="list-disc pl-5 space-y-1">
-            <li>The standard subscription fee is two hundred forty-nine U.S. dollars ($249) per month, exclusive of applicable taxes.</li>
+            <li>The standard subscription fee is four hundred forty-nine U.S. dollars ($449) per month, exclusive of applicable taxes.</li>
             <li>New customers receive a fourteen (14) day free trial. No charge is made until the trial ends.</li>
             <li>Subscriptions auto-renew on a monthly basis until cancelled. Cancellation takes effect at the end of the then-current billing period.</li>
             <li>

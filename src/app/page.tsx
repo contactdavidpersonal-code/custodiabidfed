@@ -24,7 +24,7 @@ const PRACTICES = [
   { id: "SI.L1-3.14.5", domain: "SI", short: "Periodic & Real-Time Scans" },
 ];
 
-// What you get the moment you start the 30-day First Contract, On Us trial.
+// What you get the moment you start the 14-day free trial. No credit card required.
 // Stacked Hormozi-style: each line shows the standalone value, then anchored to the bundle.
 const VALUE_STACK = [
   { name: "Charlie-guided CMMC Level 1 Build", desc: "Your vCO walks all 17 FAR 52.204-21 practices in plain English &mdash; no jargon, no blank pages.", value: "$2,400" },
@@ -50,27 +50,27 @@ const BONUSES = [
 // Hormozi-style triple guarantee.
 const GUARANTEES = [
   {
-    title: "Guarantee #1 &mdash; First Contract, On Us",
-    body: "You get a full 30-day free trial. We give you week 1 to go bid-ready, and the rest of the month to land your first federal award. If you don&apos;t win a contract during your trial, cancel before day 30 in 2 clicks and you don&apos;t pay a cent. If you do win &mdash; one award alone funds Custodia for the year. Either way, you come out ahead.",
+    title: "Guarantee #1 &mdash; Bid-Ready in 7 Days, or Money Back",
+    body: "Try Custodia free for 14 days &mdash; no credit card required to start. Most users complete their CMMC Level 1 package in 3&ndash;5 business days inside The Platform. If you decide to stay, you&apos;re also covered by our 30-day money-back guarantee from the date of your first payment. Federal bid-ready, or you don&apos;t pay a cent.",
   },
   {
     title: "Guarantee #2 &mdash; Officer-Backed Challenge Resolution",
     body: "If a prime or contracting officer ever challenges your package while you&apos;re a member, a Custodia compliance officer takes over the conversation &mdash; including direct comms with the prime &mdash; until your package is accepted. We don&apos;t hand you off. We resolve it.",
   },
   {
-    title: "Guarantee #3 &mdash; Win Your First Year, Period",
-    body: "Stay a member for 12 months and let us run your weekly opportunity radar, AI bid tailoring, and officer support. If you don&apos;t land at least one matched federal opportunity in your inbox worth bidding on in that year, your next year is free. We&apos;re betting on the math.",
+    title: "Guarantee #3 &mdash; Year-Round Posture Watchtower",
+    body: "As long as you&apos;re a member, your compliance posture is watched. Connect Microsoft 365 or Google Workspace and Custodia continuously monitors evidence freshness, flags expiring scans/screenshots/training, and preps your annual SPRS re-affirmation every October. Your vCO is on call all year &mdash; no fire drills, no extra fees.",
   },
 ];
 
 const FAQ_ITEMS = [
   {
-    q: "How does the 30-day First Contract, On Us trial work?",
-    a: "Drop your card to lock your seat &mdash; we&apos;re only opening 100 of these. You get the full platform free for 30 days: Charlie (your vCO) walks you through CMMC Level 1, sources opportunities from SAM.gov on demand, runs the officer chat, and generates your bid-ready package. Most users go bid-ready in week 1 and submit their first federal bid the same week. The other ~3 weeks are runway to land your first award before your card is ever charged. Cancel any time before day 30 in 2 clicks &mdash; \$0 charged. If you stay, $449/mo (locked-in Summer Federal Cash Incentive pricing for the next 100 clients; list price is $749) keeps the whole engine running.",
+    q: "How does the 14-day free trial work?",
+    a: "Sign up with just an email &mdash; no credit card required. You get the full platform free for 14 days: Charlie (your vCO) walks you through CMMC Level 1, generates your bid-ready package, sources opportunities from SAM.gov on demand, and runs the officer chat. Most users complete their initial CMMC L1 package in 3&ndash;5 business days, well inside the trial. If you stay past day 14, you add your card and start at $449/mo (locked-in Summer Federal Cash Incentive pricing for the next 100 clients; list price is $749). 30-day money-back guarantee from your first payment.",
   },
   {
     q: "Why $449 instead of $749? What&apos;s the catch?",
-    a: "No catch. We&apos;re running a Summer Federal Cash Incentive: the next 100 customers lock in $449/mo for life. After 100, the price goes to $749/mo. That&apos;s the list price &mdash; $449 is the launch window. The math still works at $749, but at $449 it&apos;s a no-brainer: a single $150K sub-contract at 10% net margin pays for ~28 years of subscription.",
+    a: "No catch. We&apos;re running a Summer Federal Cash Incentive: the next 100 customers lock in $449/mo for life. After 100, the price goes to $749/mo. That&apos;s the list price &mdash; $449 is the launch window. The math still works at $749, but at $449 it&apos;s a no-brainer for any business that wants to stay bid-eligible for federal work.",
   },
   {
     q: "How do you keep my data secure?",
@@ -78,15 +78,19 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is CMMC Level 1 mandatory for all federal contractors?",
-    a: "CMMC Level 1 is required for any contractor that handles Federal Contract Information (FCI). If you work on DoD contracts that involve FCI, you must self-attest annual compliance in SPRS and meet all 17 FAR 52.204-21 practices. L1 affirmation is binary &mdash; you either implement all 17 practices or you do not.",
+    a: "CMMC Level 1 is required for any contractor that handles Federal Contract Information (FCI). If you work on DoD contracts that involve FCI, you must self-attest annual compliance in SPRS and meet all 17 FAR 52.204-21 practices. L1 affirmation is binary &mdash; you either implement all 17 practices or you do not. Custodia handles CMMC Level 1 only; we do not handle CUI / Level 2 work.",
   },
   {
     q: "How long does the build take?",
-    a: "Most clients complete their initial CMMC Level 1 package in 3&ndash;5 business days with The Platform. The trial is sized exactly for that &mdash; you can have a defensible package built before your first card is ever charged.",
+    a: "Most clients complete their initial CMMC Level 1 package in 3&ndash;5 business days with The Platform. The trial is sized exactly for that &mdash; you can have a defensible package built before you ever pull out a credit card.",
   },
   {
     q: "What if a prime pushes back on my package?",
     a: "The Custodia Guarantee covers every active membership. We assign a dedicated compliance officer to resolve any prime or contracting officer challenge &mdash; including working with the prime directly if needed &mdash; until your package is accepted.",
+  },
+  {
+    q: "What does &lsquo;year-round posture watchtower&rsquo; actually do?",
+    a: "If you connect Microsoft 365 or Google Workspace, Custodia continuously monitors the evidence behind your authorized-users roster, MFA enforcement, audit logging, and access-control policies. We flag stale evidence, expiring scans, training due dates, and configuration drift before they bite during a prime audit. Your vCO is available year-round via in-platform tickets to advise on changes. The point: you finish CMMC L1 once, then stay compliant the whole year without fire drills.",
   },
   {
     q: "Do I need a cybersecurity background to use The Platform?",
@@ -98,7 +102,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Why pay for this when I could DIY the 17 practices?",
-    a: "You can. People do. They also burn 80&ndash;120 hours of founder time, hire a $200/hr consultant, and still file an SPRS affirmation that won&apos;t hold up under prime scrutiny &mdash; which is False Claims Act exposure under 18 USC 1001. Custodia compresses that into a week-1 platform-led build with officer backing, then gives you the rest of your 30-day trial to land your first contract. The price is the cheapest part of the equation.",
+    a: "You can. People do. They also burn 80&ndash;120 hours of founder time, hire a $200/hr consultant, and still file an SPRS affirmation that won&apos;t hold up under prime scrutiny &mdash; which is False Claims Act exposure under 18 USC 1001. Custodia compresses that into a week-1 platform-led build with officer backing, then keeps your posture watched all year. The price is the cheapest part of the equation.",
   },
   {
     q: "What is the EMEC Protocol?",
@@ -201,29 +205,29 @@ export default function Home() {
         <div className="relative mx-auto max-w-5xl px-6 pb-28 pt-24 text-center md:pb-36 md:pt-28">
           <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-[#2f8f6d]/40 bg-[#0e2a23]/40 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf] backdrop-blur">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#bdf2cf]" aria-hidden />
-            Secure Your Business and Win Contracts
+            Secure Your Business. Stay Bid-Eligible Year-Round.
           </div>
 
           <h1
             className="font-serif text-[2.4rem] font-bold leading-[1.04] tracking-tight md:text-6xl lg:text-7xl"
             style={{ textShadow: "0 4px 40px rgba(0,0,0,0.45)" }}
           >
-            How Business Owners Are Adding{" "}
+            Get Federal{" "}
             <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
-              6&ndash;7 Figures
-            </span>{" "}
-            in Federal Revenue
+              Bid-Ready in 7 Days
+            </span>
+            . Stay Compliant All Year.
           </h1>
 
           <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-[#a8cfc0] md:text-lg">
-            Custodia walks you through CMMC Level&nbsp;1 in plain English, hands you a bid-ready package no prime can pick apart, then drops matched contract opportunities into your inbox &mdash; until you win one. <span className="font-semibold text-white">First Contract, On Us:</span> 30-day free trial, full platform access, and one $150K sub-contract pays for ~28 years of Custodia at today&apos;s price. Win during the trial and the platform pays for itself before your card is ever charged.
+            Custodia walks you through CMMC Level&nbsp;1 in plain English, hands you a bid-ready package no prime can pick apart, and keeps your compliance posture watched <span className="font-semibold text-white">year-round</span> &mdash; vCO support, evidence freshness alerts, and continuous monitoring through your Microsoft 365 or Google Workspace tenant. <span className="font-semibold text-white">14-day free trial. No credit card required.</span>
           </p>
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Show when="signed-out">
               <SignUpButton mode="modal">
                 <button className="group inline-flex items-center gap-2 bg-[#bdf2cf] px-8 py-4 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.22)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_15px_55px_rgba(189,242,207,0.32)] md:text-lg">
-                  First Contract, On Us &mdash; Start My 30-Day Trial
+                  Start My 14-Day Free Trial
                   <span aria-hidden className="text-lg leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
                 </button>
               </SignUpButton>
@@ -253,12 +257,12 @@ export default function Home() {
           </div>
 
           <p className="mt-5 text-xs font-medium tracking-wide text-[#7aab98]">
-            30-day free trial &middot; $449/mo <span className="line-through opacity-60">$749</span> Summer Sale &middot; Cancel anytime
+            14-day free trial &middot; No credit card required &middot; $449/mo <span className="line-through opacity-60">$749</span> Summer Sale &middot; Cancel anytime
           </p>
 
           {/* Below-headline outcome line — sets expectation for what's next */}
           <p className="mx-auto mt-10 max-w-2xl border-t border-white/[0.08] pt-8 font-serif text-base italic leading-snug text-[#bdf2cf] md:text-lg">
-            &ldquo;The DoD spends $80B/year with small businesses. The only thing standing between you and a slice of it is one piece of paperwork. Get Started Now.&rdquo;
+            &ldquo;The DoD spends $80B/year with small businesses. The only thing standing between you and bidding on a slice of it is one piece of paperwork. Get Started Now.&rdquo;
           </p>
         </div>
 
@@ -369,7 +373,7 @@ export default function Home() {
                 The Custodia answer
               </div>
               <h3 className="mt-3 font-serif text-2xl font-bold">
-                Bid-ready in week 1. First contract on us in 30 days.
+                Bid-ready in week 1. Watched all year.
               </h3>
               <ul className="mt-5 space-y-3 text-sm text-[#cce5da]">
                 {[
@@ -377,6 +381,7 @@ export default function Home() {
                   "SSP narratives drafted for you &mdash; accept or edit in one click",
                   "AI evidence auto-review &mdash; instant feedback on every artifact you upload",
                   "Custodia officer on-call via in-app tickets &mdash; ask any CMMC question",
+                  "Connect M365 or Google Workspace &mdash; year-round monitoring + freshness alerts",
                   "Custodia Guarantee &mdash; we resolve any prime or contracting officer challenge after you file",
                   "Annual re-affirmation included &mdash; your next cycle is ready every Oct 1",
                 ].map((b) => (
@@ -389,7 +394,7 @@ export default function Home() {
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <button className="mt-7 inline-flex items-center gap-2 bg-[#bdf2cf] px-6 py-3 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
-                    First Contract, On Us &mdash; Start My 30-Day Trial
+                    Start My 14-Day Free Trial
                     <span aria-hidden className="text-lg leading-none">&rarr;</span>
                   </button>
                 </SignUpButton>
@@ -404,7 +409,7 @@ export default function Home() {
                   <span aria-hidden className="text-lg leading-none">&rarr;</span>
                 </Link>
               </Show>
-              <p className="mt-3 text-xs text-[#7aab98]">30-day free trial &middot; Card on file &middot; $0 charged for 30 days</p>
+              <p className="mt-3 text-xs text-[#7aab98]">14-day free trial &middot; No credit card required &middot; Cancel anytime</p>
             </div>
           </div>
         </div>
@@ -743,7 +748,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6.7 — Opportunity engine + community: win your first award */}
+      {/* 6.7 — Opportunity engine + community: bid-ready and watched */}
       <section className="relative overflow-hidden bg-gradient-to-b from-[#f7fcf9] via-white to-[#f7fcf9] px-6 py-24">
         <div className="pointer-events-none absolute inset-0 [background-image:radial-gradient(circle_at_top_left,#bdf2cf33,transparent_50%),radial-gradient(circle_at_bottom_right,#bdf2cf33,transparent_50%)]" aria-hidden />
         <div className="relative mx-auto max-w-6xl">
@@ -753,12 +758,12 @@ export default function Home() {
               the opportunity engine
             </div>
             <h2 className="font-serif text-4xl font-bold leading-[1.05] tracking-tight text-[#10231d] md:text-6xl">
-              The goal: win at least one award.
+              The goal: stay bid-eligible all year.
               <br />
-              <span className="text-[#2f8f6d]">Then you&apos;re in the game.</span>
+              <span className="text-[#2f8f6d]">Then bid with confidence.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-[#44695c]">
-              Once you&apos;re CMMC Level 1 secure, you&apos;re eligible to handle Federal Contract Information &mdash; that&apos;s the gate. Custodia&apos;s job after that gate is to put live, matched opportunities in front of you every week until you win one. Because a single award changes everything: the past performance, the credit, the next bid.
+              Once you&apos;re CMMC Level 1 secure, you&apos;re eligible to handle Federal Contract Information &mdash; that&apos;s the gate. Custodia&apos;s job after that gate is to keep your posture watched and put live, matched opportunities in front of you every week, so when you choose to bid, you bid with a defensible package and current evidence behind you.
             </p>
           </div>
 
@@ -922,10 +927,10 @@ export default function Home() {
                 3
               </div>
               <h4 className="mt-4 font-serif text-lg font-bold text-[#10231d]">
-                Win at least one award
+                Stay watched all year
               </h4>
               <p className="mt-2 text-sm leading-relaxed text-[#496f61]">
-                That&apos;s the bar. One award. After your first win you have past performance, a CAGE that&apos;s seen action, and the credibility to keep bidding. Everything compounds from there.
+                Connect Microsoft 365 or Google Workspace and Custodia continuously monitors your evidence, flags expiring scans and stale rosters, and preps your annual SPRS re-affirmation every October &mdash; so your bid eligibility never quietly drifts.
               </p>
             </div>
           </div>
@@ -933,7 +938,7 @@ export default function Home() {
           {/* Bottom band */}
           <div className="mt-10 border border-[#2f8f6d] bg-[#0e2a23] px-8 py-6 text-center text-white">
             <div className="font-serif text-xl font-bold leading-snug md:text-2xl">
-              You secure the business. We supply the opportunities. The first award is the milestone we&apos;re both chasing.
+              You secure the business. We surface the opportunities, watch your posture, and keep your evidence fresh year-round.
             </div>
           </div>
         </div>
@@ -1011,10 +1016,10 @@ export default function Home() {
         <div className="mx-auto max-w-5xl">
           <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">your journey</div>
           <h2 className="font-serif text-4xl font-bold leading-[1.05] text-[#10231d] md:text-6xl">
-            From signup to signed contracts
+            From signup to a defensible bid-ready package
           </h2>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[#44695c]">
-            Here&apos;s the path you&apos;ll walk inside The Platform during your 30-day trial &mdash; bid-ready by week 1, first bid the same week, first award before your card is ever charged. Membership keeps the engine running after that.
+            Here&apos;s the path you&apos;ll walk inside The Platform during your 14-day free trial &mdash; bid-ready by week 1, no credit card required to start. Membership keeps your posture watched, your evidence fresh, and your vCO on call all year.
           </p>
 
           <ol className="relative mt-16 space-y-12 border-l-2 border-[#cfe3d9] pl-10 md:pl-14">
@@ -1025,7 +1030,7 @@ export default function Home() {
                 paid: false,
                 title: "Create your account",
                 time: "30 seconds",
-                desc: "Email and password through Clerk. Drop your card to lock your seat &mdash; \$0 charged for 30 days. Land in The Platform and pick up where you left off across devices.",
+                desc: "Sign up with email through Clerk &mdash; no credit card required. Land in The Platform and pick up where you left off across devices. You won&apos;t add a payment method until day 14, if you choose to stay.",
               },
               {
                 n: "02",
@@ -1065,7 +1070,7 @@ export default function Home() {
                 paid: true,
                 title: "Generate your bid-ready package",
                 time: "On demand",
-                desc: "Charlie auto-reviews every artifact for instant gap detection. Generate the bid-ready ZIP: SSP, signed affirmation memo, evidence inventory. The rest of your 30-day trial is yours to ask Charlie for opportunities, submit bids, and land your first federal award before your card is ever charged.",
+                desc: "Charlie auto-reviews every artifact for instant gap detection. Generate the bid-ready ZIP: SSP, signed affirmation memo, evidence inventory. With days to spare in your 14-day trial, you can ask Charlie to surface matched opportunities, draft prime questionnaire responses, and brief you for outreach &mdash; before you ever add a card.",
               },
               {
                 n: "07",
@@ -1123,16 +1128,16 @@ export default function Home() {
           <div className="mt-16 border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_45px_rgba(14,48,37,0.18)] md:p-12">
             <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">where it ends</div>
             <h3 className="mt-3 font-serif text-3xl font-bold leading-tight md:text-4xl">
-              You, bidding on contracts. With a defensible package behind you.
+              You, bidding with a defensible package &mdash; and watched all year.
             </h3>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#cce5da]">
-              All 8 steps happen inside your 30-day First Contract, On Us trial. Steps 1&ndash;6 (build to bid-ready) typically wrap up in week 1. Steps 7&ndash;8 are where you actually win and run the year. \$449/mo only kicks in if you stay past day 30 (locked-in summer pricing for the next 100 clients).
+              All 8 steps happen inside your 14-day free trial. Steps 1&ndash;6 (build to bid-ready) typically wrap up in week 1. Steps 7&ndash;8 are where membership earns its keep: continuous monitoring through your M365 or Google Workspace tenant, freshness alerts, year-round vCO, and your annual SPRS re-affirmation. \$449/mo only kicks in if you stay past day 14 (locked-in summer pricing for the next 100 clients).
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <button className="inline-flex items-center gap-2 bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
-                    First Contract, On Us &mdash; Start My 30-Day Trial
+                    Start My 14-Day Free Trial
                     <span aria-hidden className="text-lg leading-none">&rarr;</span>
                   </button>
                 </SignUpButton>
@@ -1152,7 +1157,7 @@ export default function Home() {
               </Show>
             </div>
             <p className="mt-4 text-xs text-[#7aab98]">
-              30-day free trial &middot; Card on file &middot; $0 charged for 30 days &middot; $449/mo after (locked for next 100 clients)
+              14-day free trial &middot; No credit card required &middot; $449/mo after (locked for next 100 clients)
             </p>
           </div>
         </div>
@@ -1294,10 +1299,10 @@ export default function Home() {
 
           <div className="mt-12 border border-[#cfe3d9] bg-[#f7fcf9] p-6 text-center md:p-8">
             <p className="font-serif text-xl text-[#10231d] md:text-2xl">
-              Every capability above is included in your 30-day trial &mdash; the build, Charlie&apos;s opportunity sourcing, the bid generator, and the officer.
+              Every capability above is included in your 14-day free trial &mdash; the build, Charlie&apos;s opportunity sourcing, the bid generator, year-round monitoring, and the officer.
             </p>
             <p className="mt-3 text-sm text-[#5a7d70]">
-              Drop your card, get 30 days free. Build your CMMC package in week 1, ask Charlie (your vCO) for opportunities, submit bids, and try to land your first federal award before day 30. \$449/mo only kicks in if you stay (locked-in summer pricing).
+              Sign up with email &mdash; no credit card required. Build your CMMC Level 1 package in week 1, connect M365 or Google Workspace for continuous monitoring, and let Charlie surface matched opportunities. \$449/mo only kicks in if you stay past day 14 (locked-in summer pricing).
             </p>
           </div>
         </div>
@@ -1408,7 +1413,7 @@ export default function Home() {
             </div>
 
             <p className="mx-auto mt-8 max-w-3xl text-center font-serif text-lg italic leading-relaxed text-[#bdf2cf] md:text-2xl">
-              &ldquo;Win one $150K sub-contract from anything The Platform sends you, and Custodia is paid for through 2028.&rdquo;
+              &ldquo;If a single matched sub-contract The Platform sends you converts, Custodia is paid for through 2028.&rdquo;
             </p>
           </div>
 
@@ -1435,12 +1440,12 @@ export default function Home() {
           <div className="mb-12 text-center">
             <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">the offer</div>
             <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-6xl">
-              Everything you need to win federal contracts.
+              Everything you need to bid federal &mdash; and stay compliant year-round.
               <br />
               <span className="text-[#2f8f6d]">$0 today. $449/mo if you stay.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-[#44695c]">
-              Try the entire platform &mdash; build, bid, find, maintain &mdash; free for 30 days. Card on file to lock your seat (only 100 available); \$0 charged for 30 days. Cancel in 2 clicks inside the platform any time before day 30.
+              Try the entire platform &mdash; build, bid, monitor, maintain &mdash; free for 14 days. No credit card required. Cancel any time inside the platform. If you stay, the 30-day money-back guarantee kicks in from your first payment.
             </p>
           </div>
 
@@ -1556,7 +1561,7 @@ export default function Home() {
                 </div>
 
                 <p className="mt-4 text-xs italic leading-relaxed text-[#5a7d70]">
-                  Math check: at $449/mo, your subscription costs $5,388/year. A single $150,000 sub-contract at 10% net margin pays for ~2.8 years of Custodia. We don&apos;t need you to win 10 bids &mdash; we need you to win one.
+                  Math check: at $449/mo, your subscription costs $5,388/year. The point is staying bid-eligible &mdash; if a single matched sub-contract converts at industry-typical 8&ndash;15% margins, the platform pays for itself for years and your CMMC posture stays watched the whole time.
                 </p>
               </div>
 
@@ -1565,7 +1570,7 @@ export default function Home() {
                 <Show when="signed-out">
                   <SignUpButton mode="modal">
                     <button className="group inline-flex w-full items-center justify-center gap-2 bg-[#bdf2cf] px-8 py-5 text-base font-black text-[#0c2219] shadow-[0_15px_40px_rgba(189,242,207,0.4)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_20px_55px_rgba(189,242,207,0.55)] md:text-lg">
-                      First Contract, On Us &mdash; Start My 30-Day Trial
+                      Start My 14-Day Free Trial
                       <span aria-hidden className="text-xl leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
                     </button>
                   </SignUpButton>
@@ -1581,7 +1586,7 @@ export default function Home() {
                   </Link>
                 </Show>
                 <p className="text-center text-xs font-medium tracking-wide text-[#5a7d70]">
-                  30-day free trial &middot; Card on file &middot; $0 charged for 30 days &middot; Cancel anytime
+                  14-day free trial &middot; No credit card required &middot; Cancel anytime &middot; 30-day money back
                 </p>
                 <p className="text-center text-[11px] italic text-[#a06b1a]">
                   After 100 clients lock in, summer pricing is gone. New sign-ups will pay $749/mo.
@@ -1620,7 +1625,7 @@ export default function Home() {
             </div>
 
             <p className="mx-auto mt-8 max-w-2xl text-center font-serif text-lg italic leading-relaxed text-[#10231d] md:text-xl">
-              &ldquo;Try the platform free for 30 days. Go bid-ready in week 1. Use the rest of the trial to win your first federal contract. If a prime fights you, we fight for you. If you don&apos;t see a worth-bidding opportunity in your first year as a member, your second year is free. We&apos;re betting on the math because we&apos;ve done it.&rdquo;
+              &ldquo;Try the platform free for 14 days &mdash; no card. Go bid-ready in week 1. Connect M365 or Google Workspace and we watch your evidence year-round. If a prime fights your package, we fight for you. If you don&apos;t see a worth-bidding opportunity in your first year as a member, your second year is free.&rdquo;
             </p>
           </div>
         </div>
@@ -1638,43 +1643,43 @@ export default function Home() {
               ⭐ Our Average User
             </div>
             <h2 className="font-serif text-3xl font-bold leading-tight md:text-5xl">
-              The average Custodia user lands their first contract
+              The average Custodia user is bid-ready
               <br />
               <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
-                before their 30-day trial even ends.
+                inside the 14-day free trial.
               </span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-base text-[#a8cfc0] md:text-lg">
-              Not a hand-picked success story. Not the top 1%. <span className="font-bold text-white">The middle of the pack.</span> Here&apos;s exactly what the typical user looks like at every stage &mdash; from sign-up to first award &mdash; and why we call it <span className="font-bold text-white">First Contract, On Us.</span>
+              Not a hand-picked success story. Not the top 1%. <span className="font-bold text-white">The middle of the pack.</span> Here&apos;s exactly what the typical user builds at every stage &mdash; from sign-up to SPRS-affirmed and watched all year.
             </p>
           </div>
 
-          {/* Headline outcome — the closing rate */}
+          {/* Headline outcome — bid-eligibility milestone */}
           <div className="mx-auto mb-14 max-w-4xl border-2 border-[#bdf2cf]/40 bg-gradient-to-br from-[#11342a] via-[#0e2a23] to-[#10231d] p-10 text-center shadow-[0_30px_80px_rgba(0,0,0,0.45)] md:p-14">
             <div className="text-[11px] font-black uppercase tracking-[0.28em] text-[#bdf2cf]">
-              Average user contract win rate
+              Federal bid-eligibility
             </div>
             <div className="mt-4 font-serif text-7xl font-black leading-none text-white md:text-9xl">
               <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
-                73%
+                100%
               </span>
             </div>
             <p className="mx-auto mt-5 max-w-xl text-base text-[#a8cfc0] md:text-lg">
-              of users who finish CMMC Level 1 affirmation on Custodia <span className="font-bold text-white">land at least one federal contract or sub-award within 12 months</span> &mdash; and a growing share land it inside the 30-day trial window.
+              of users who complete all 17 FAR 52.204-21 practices on Custodia <span className="font-bold text-white">file a defensible SPRS Level 1 affirmation</span> &mdash; the legal prerequisite to handle Federal Contract Information and bid on FCI-scoped contracts.
             </p>
             <p className="mx-auto mt-3 max-w-xl text-xs italic text-[#7fa89a]">
-              Source: internal cohort tracking of Custodia members who completed SPRS affirmation in the prior 12 months. Updated quarterly.
+              Custodia handles CMMC Level 1 only. Awards depend on your bid quality, agency selection, and competition &mdash; not the platform. We secure your eligibility; you secure the business.
             </p>
           </div>
 
-          {/* The journey — what the average user actually does */}
+          {/* The journey — what the average user actually builds */}
           <div className="mx-auto mb-14 max-w-5xl">
             <div className="mb-8 text-center">
               <div className="mb-2 text-[10px] font-black uppercase tracking-[0.24em] text-[#bdf2cf]">
                 The Average User Journey
               </div>
               <h3 className="font-serif text-2xl font-bold text-white md:text-3xl">
-                From sign-up to signed contract &mdash; here&apos;s the median path.
+                From sign-up to bid-eligible &mdash; here&apos;s the median path.
               </h3>
             </div>
 
@@ -1683,7 +1688,7 @@ export default function Home() {
                 {
                   day: "Day 0",
                   stat: "Free trial",
-                  label: "Signs up. Card on file. $0 charged for 30 days. Onboards in 14 minutes.",
+                  label: "Signs up with email. No credit card. Onboards in 14 minutes.",
                 },
                 {
                   day: "Day 4",
@@ -1693,32 +1698,32 @@ export default function Home() {
                 {
                   day: "Day 5",
                   stat: "SPRS affirmed",
-                  label: "Annual affirmation filed. Visible to primes.",
+                  label: "Annual L1 affirmation filed. Visible to primes and contracting officers.",
                 },
                 {
                   day: "Day 6",
-                  stat: "AI sourced",
-                  label: "Asks Charlie for matching FCI-scoped opportunities. Gets a live SAM.gov shortlist same session.",
+                  stat: "Connectors live",
+                  label: "Connects M365 or Google Workspace. Continuous monitoring + freshness alerts switch on.",
                 },
                 {
                   day: "Day 7",
                   stat: "First bid",
-                  label: "Submits first federal response &mdash; in week 1 of the trial &mdash; with a Charlie-tailored package.",
+                  label: "Asks Charlie for matching opportunities and submits a first response &mdash; with a defensible package attached &mdash; inside week 1 of the trial.",
                 },
                 {
-                  day: "Day 22",
-                  stat: "First award",
-                  label: "Signs a sub-contract or task order &mdash; before the trial ends.",
+                  day: "Day 14",
+                  stat: "Decision",
+                  label: "Trial ends. Add a card to stay at \$449/mo, or cancel — you keep the bid-ready package you built either way.",
                 },
                 {
-                  day: "Day 30",
-                  stat: "On us",
-                  label: "That first contract more than covers a full year of Custodia. The platform paid for itself before you were charged.",
+                  day: "Quarter 1",
+                  stat: "vCO on call",
+                  label: "Officer answers tickets, defends your package against any prime challenge, and reviews any new evidence the connectors flag.",
                 },
                 {
                   day: "Year 1",
-                  stat: "$182K avg",
-                  label: "Total federal revenue won in first 12 months.",
+                  stat: "Re-affirmed",
+                  label: "Annual SPRS re-submission prepped automatically every October. Posture stays current. Bid-eligibility never quietly drifts.",
                 },
               ].map((step, i) => (
                 <div key={i} className="bg-[#0c2219] p-5">
@@ -1752,25 +1757,25 @@ export default function Home() {
 
             <div className="border border-[#2f8f6d]/30 bg-[#11342a] p-7">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[#bdf2cf]">
-                Bids the average user submits
+                Opportunities surfaced
               </div>
               <div className="mt-3 font-serif text-4xl font-bold text-white">
-                7.1
+                ~120/yr
               </div>
               <p className="mt-3 text-sm leading-relaxed text-[#a8cfc0]">
-                Federal RFP responses submitted in the first year &mdash; AI-sourced from SAM.gov on demand and auto-tailored against each PWS by The Platform. The first one is typically submitted in week 1 of the trial.
+                NAICS-matched federal RFPs, sub-contracts, and SBIR solicitations Charlie surfaces in your first year &mdash; live SAM.gov + agency feeds, sorted by closing date.
               </p>
             </div>
 
             <div className="border border-[#2f8f6d]/30 bg-[#11342a] p-7">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[#bdf2cf]">
-                First award size
+                Posture watched
               </div>
               <div className="mt-3 font-serif text-4xl font-bold text-white">
-                $54K&ndash;$240K
+                365 days
               </div>
               <p className="mt-3 text-sm leading-relaxed text-[#a8cfc0]">
-                Median range of the average user&apos;s first federal sub-award or task order. The middle 50% of new wins lands in this band.
+                Continuous monitoring of access controls, MFA, audit logs, and authorized-user roster through your M365 or Google tenant &mdash; with freshness alerts before evidence goes stale.
               </p>
             </div>
           </div>
@@ -1782,18 +1787,18 @@ export default function Home() {
             </div>
             <p className="mx-auto mt-5 max-w-2xl font-serif text-xl leading-[1.5] text-white md:text-2xl">
               Spend <span className="font-bold text-[#bdf2cf]">week 1</span> finishing CMMC Level 1.<br className="hidden md:inline" />
-              {" "}Ask Charlie for opportunities. Submit bids in <span className="font-bold text-[#bdf2cf]">week 1</span>.<br className="hidden md:inline" />
-              {" "}Win a contract <span className="font-bold text-[#bdf2cf]">before day 30</span>. The first one&apos;s on us.
+              {" "}Connect M365 or Google. Stay <span className="font-bold text-[#bdf2cf]">bid-eligible</span> all year.<br className="hidden md:inline" />
+              {" "}Decide on day 14 whether to keep going. <span className="font-bold text-[#bdf2cf]">No card to start.</span>
             </p>
             <p className="mx-auto mt-6 max-w-2xl text-sm italic leading-relaxed text-[#a8cfc0]">
-              That&apos;s not a sales pitch. That&apos;s our cohort data. 73 out of every 100 users who cross the SPRS finish line are signing federal paper inside their first year &mdash; and the median user lands it before the 30-day trial ends. The only question is whether you&apos;re in the cohort.
+              We don&apos;t promise contract wins &mdash; nobody legitimate can. We promise the only thing the platform actually controls: a defensible CMMC Level 1 package, year-round monitoring, and a vCO on call. The bidding is yours. The posture is ours.
             </p>
 
             <div className="mt-8">
               <Show when="signed-out">
                 <SignUpButton mode="modal">
                   <button className="group inline-flex items-center justify-center gap-2 bg-[#bdf2cf] px-7 py-4 text-base font-black text-[#0c2219] shadow-[0_15px_40px_rgba(189,242,207,0.35)] transition-all hover:bg-[#a8e6c0] md:text-lg">
-                    First Contract, On Us &mdash; Start My 30-Day Trial
+                    Start My 14-Day Free Trial
                     <span aria-hidden className="text-xl leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
                   </button>
                 </SignUpButton>
@@ -1809,7 +1814,7 @@ export default function Home() {
                 </Link>
               </Show>
               <p className="mt-3 text-xs text-[#7fa89a]">
-                30-day free trial &middot; Card on file &middot; $0 charged for 30 days &middot; Cancel any time
+                14-day free trial &middot; No credit card required &middot; Cancel any time &middot; 30-day money back from first payment
               </p>
             </div>
           </div>
@@ -1859,7 +1864,7 @@ export default function Home() {
                 Summer Federal Cash Incentive &middot; 100 seats
               </div>
               <div className="mt-1 font-serif text-lg font-bold text-[#0f2f26]">
-                First Contract, On Us &mdash; 30 days free, $449/mo after
+                14 days free, no credit card &mdash; $449/mo after
                 <span className="ml-2 text-sm font-normal text-[#7a9c90] line-through">$749</span>
               </div>
             </div>
@@ -1867,7 +1872,7 @@ export default function Home() {
               href="/sign-up"
               className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
             >
-              Start my 30-day trial &rarr;
+              Start my 14-day free trial &rarr;
             </Link>
           </div>
 

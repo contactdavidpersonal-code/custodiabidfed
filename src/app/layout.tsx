@@ -22,11 +22,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Custodia | TurboTax for CMMC Level 1",
   description:
-    "Federal compliance for small contractors, in plain English. Charlie — your AI compliance officer — walks you through CMMC Level 1 in 7 days. $249/month, flat. 14-day free trial.",
+    "Federal compliance for small contractors, in plain English. Charlie — your AI compliance officer — walks you through CMMC Level 1 in 7 days. $449/month, flat. 14-day free trial. No credit card required.",
   openGraph: {
     title: "Custodia | TurboTax for CMMC Level 1",
     description:
-      "Federal bid-ready in 7 days. $249/month, flat. 14-day free trial. Built by Carnegie Mellon-trained information security engineers.",
+      "Federal bid-ready in 7 days. $449/month, flat. 14-day free trial. No credit card required. Built by Carnegie Mellon-trained information security engineers.",
     type: "website",
   },
 };

@@ -250,7 +250,7 @@ export default async function OpportunitiesPage() {
                   Browse opportunities now &mdash; finish steps 1&ndash;6 to submit.
                 </h2>
                 <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#5a3d0a]">
-                  We need a signed CMMC Level 1 affirmation on file before primes will accept your bid. The opportunity feed is fully visible during your 30-day trial; the &ldquo;Tailor packet&rdquo; and &ldquo;View on SAM.gov&rdquo; actions unlock the moment you finish step 4 (Sign &amp; affirm).
+                  We need a signed CMMC Level 1 affirmation on file before primes will accept your bid. The opportunity feed is fully visible during your 14-day free trial; the &ldquo;Tailor packet&rdquo; and &ldquo;View on SAM.gov&rdquo; actions unlock the moment you finish step 4 (Sign &amp; affirm).
                 </p>
               </div>
               <Link

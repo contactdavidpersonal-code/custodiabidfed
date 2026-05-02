@@ -110,7 +110,7 @@ export default function MeetCharliePage() {
         <section className="mt-12 rounded-2xl border border-slate-200 bg-slate-900 p-8 text-center text-white shadow-sm">
           <h2 className="mb-2 font-serif text-2xl">Try Charlie free for 14 days.</h2>
           <p className="mb-6 text-slate-300">
-            Federal bid-ready in 7 days. $249/month, flat. Cancel any time.
+            Federal bid-ready in 7 days. $449/month, flat. Cancel any time.
           </p>
           <Link
             href="/sign-up"
