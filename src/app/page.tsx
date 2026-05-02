@@ -51,7 +51,7 @@ const BONUSES = [
 const GUARANTEES = [
   {
     title: "Guarantee #1 &mdash; Bid-Ready in 7 Days, or Money Back",
-    body: "Try Custodia free for 14 days &mdash; no credit card required to start. Most users complete their CMMC Level 1 package in 3&ndash;5 business days inside The Platform. If you decide to stay, you&apos;re also covered by our 30-day money-back guarantee from the date of your first payment. Federal bid-ready, or you don&apos;t pay a cent.",
+    body: "Try Custodia free for 14 days &mdash; no credit card required to start. Most users complete their CMMC Level 1 package in 3&ndash;5 business days inside The Platform. If you decide to stay, you&apos;re also covered by our 14-day money-back guarantee from the date of your first payment. Federal bid-ready, or you don&apos;t pay a cent.",
   },
   {
     title: "Guarantee #2 &mdash; Officer-Backed Challenge Resolution",
@@ -66,7 +66,7 @@ const GUARANTEES = [
 const FAQ_ITEMS = [
   {
     q: "How does the 14-day free trial work?",
-    a: "Sign up with just an email &mdash; no credit card required. You get the full platform free for 14 days: Charlie (your vCO) walks you through CMMC Level 1, generates your bid-ready package, sources opportunities from SAM.gov on demand, and runs the officer chat. Most users complete their initial CMMC L1 package in 3&ndash;5 business days, well inside the trial. If you stay past day 14, you add your card and start at $449/mo (locked-in Summer Federal Cash Incentive pricing for the next 100 clients; list price is $749). 30-day money-back guarantee from your first payment.",
+    a: "Sign up with just an email &mdash; no credit card required. You get the full platform free for 14 days: Charlie (your vCO) walks you through CMMC Level 1, generates your bid-ready package, sources opportunities from SAM.gov on demand, and runs the officer chat. Most users complete their initial CMMC L1 package in 3&ndash;5 business days, well inside the trial. If you stay past day 14, you add your card and start at $449/mo (locked-in Summer Federal Cash Incentive pricing for the next 100 clients; list price is $749). 14-day money-back guarantee from your first payment.",
   },
   {
     q: "Why $449 instead of $749? What&apos;s the catch?",
@@ -1445,7 +1445,7 @@ export default function Home() {
               <span className="text-[#2f8f6d]">$0 today. $449/mo if you stay.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-[#44695c]">
-              Try the entire platform &mdash; build, bid, monitor, maintain &mdash; free for 14 days. No credit card required. Cancel any time inside the platform. If you stay, the 30-day money-back guarantee kicks in from your first payment.
+              Try the entire platform &mdash; build, bid, monitor, maintain &mdash; free for 14 days. No credit card required. Cancel any time inside the platform. If you stay, the 14-day money-back guarantee kicks in from your first payment.
             </p>
           </div>
 
@@ -1586,7 +1586,7 @@ export default function Home() {
                   </Link>
                 </Show>
                 <p className="text-center text-xs font-medium tracking-wide text-[#5a7d70]">
-                  14-day free trial &middot; No credit card required &middot; Cancel anytime &middot; 30-day money back
+                  14-day free trial &middot; No credit card required &middot; Cancel anytime &middot; 14-day money back
                 </p>
                 <p className="text-center text-[11px] italic text-[#a06b1a]">
                   After 100 clients lock in, summer pricing is gone. New sign-ups will pay $749/mo.
@@ -1814,7 +1814,7 @@ export default function Home() {
                 </Link>
               </Show>
               <p className="mt-3 text-xs text-[#7fa89a]">
-                14-day free trial &middot; No credit card required &middot; Cancel any time &middot; 30-day money back from first payment
+                14-day free trial &middot; No credit card required &middot; Cancel any time &middot; 14-day money back from first payment
               </p>
             </div>
           </div>

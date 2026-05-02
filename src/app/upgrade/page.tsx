@@ -62,7 +62,7 @@ export default async function UpgradePage() {
             launch pricing for the next 100 customers.
           </p>
           <p className="mx-auto mt-3 max-w-xl text-sm text-[#5a7f72]">
-            30-day money-back guarantee from your first payment. Cancel any time inside
+            14-day money-back guarantee from your first payment. Cancel any time inside
             the platform.
           </p>
         </div>

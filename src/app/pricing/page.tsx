@@ -93,7 +93,7 @@ export default function PricingPage() {
             <ul className="space-y-2 text-xs text-slate-300">
               <li>&middot; No credit card required to start</li>
               <li>&middot; Federal bid-ready in 7 days, typical</li>
-              <li>&middot; 30-day money-back guarantee</li>
+              <li>&middot; 14-day money-back guarantee</li>
               <li>&middot; One price for the life of your subscription</li>
             </ul>
           </aside>
@@ -119,10 +119,10 @@ export default function PricingPage() {
 
         <div className="rounded-2xl border border-slate-200 bg-emerald-50 p-6 text-slate-800 shadow-sm">
           <h3 className="mb-2 font-serif text-lg text-slate-900">
-            The 30-day money-back guarantee
+            The 14-day money-back guarantee
           </h3>
           <p className="text-sm">
-            If, within the first 30 days of a paid subscription, you decide
+            If, within the first 14 days of a paid subscription, you decide
             Custodia isn&apos;t the right fit — for any reason — write us at
             support@custodia.security and we&apos;ll refund the full month.
             No interrogation, no &ldquo;cancellation specialist&rdquo; on the
