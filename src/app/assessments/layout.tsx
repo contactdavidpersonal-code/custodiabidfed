@@ -49,6 +49,12 @@ export default async function AssessmentsLayout({
               Bid profile
             </Link>
             <Link
+              href="/assessments/connections"
+              className="rounded-sm px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
+            >
+              Connections
+            </Link>
+            <Link
               href="/assessments/tickets"
               className="relative rounded-sm px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
             >

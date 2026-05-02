@@ -19,6 +19,7 @@ import {
   upsertRemediationPlanAction,
   useSuggestedNarrativeAction,
 } from "../../../actions";
+import { ConnectorHint } from "../../../_components/ConnectorHint";
 import { PracticeWizard } from "./PracticeWizard";
 
 export default async function ControlDetailPage(
@@ -74,6 +75,12 @@ export default async function ControlDetailPage(
 
   return (
     <main>
+      <div className="mx-auto max-w-4xl px-6 pt-6">
+        <ConnectorHint
+          controlId={controlId}
+          organizationId={ctx.organization.id}
+        />
+      </div>
       <PracticeWizard
         assessmentId={id}
         controlId={controlId}
