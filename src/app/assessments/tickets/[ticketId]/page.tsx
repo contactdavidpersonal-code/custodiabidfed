@@ -9,7 +9,7 @@ import {
   type EscalationMessageRow,
   type EscalationRow,
 } from "@/lib/escalations";
-import { replyToTicketAction } from "../../actions";
+import { replyToTicketAction } from "../actions";
 
 const STATUS_LABEL: Record<EscalationRow["status"], string> = {
   open: "Open · awaiting officer",
