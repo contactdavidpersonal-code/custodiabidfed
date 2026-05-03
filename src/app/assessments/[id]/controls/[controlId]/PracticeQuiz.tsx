@@ -165,8 +165,10 @@ export function PracticeQuiz(props: Props) {
 
   return (
     <div className="mx-auto max-w-3xl px-6 pb-10">
-      {/* ======== STICKY HEADER ======== */}
-      <div className="sticky top-0 z-20 -mx-6 border-b border-[#cfe3d9] bg-[#fbfdfb]/95 px-6 pt-5 pb-3 backdrop-blur supports-[backdrop-filter]:bg-[#fbfdfb]/80">
+      {/* ======== STICKY HEADER ========
+          Global assessments nav is sticky at top-0 z-30 (~60px tall),
+          so we anchor below it. */}
+      <div className="sticky top-[60px] z-20 -mx-6 border-b border-[#cfe3d9] bg-[#fbfdfb]/95 px-6 pt-5 pb-3 backdrop-blur supports-[backdrop-filter]:bg-[#fbfdfb]/80">
         <div className="mb-2 flex items-center justify-between gap-4 text-sm">
           <Link
             href={`/assessments/${props.assessmentId}`}
@@ -252,7 +254,7 @@ export function PracticeQuiz(props: Props) {
       </div>
 
       {/* ======== ACTIVE STEP ======== */}
-      <div ref={activeStepRef} className="mt-3 scroll-mt-44">
+      <div ref={activeStepRef} className="mt-3 scroll-mt-56">
         <AnimatePresence mode="wait">
           <motion.div
             key={step.id}
