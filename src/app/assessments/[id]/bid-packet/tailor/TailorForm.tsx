@@ -83,7 +83,7 @@ export function TailorForm({
 
   return (
     <div className="space-y-6">
-      <section className="rounded-md border border-[#cfe3d9] bg-white p-6">
+      <section className=" border border-[#cfe3d9] bg-white p-6">
         <h2 className="font-serif text-lg font-bold">1. The opportunity</h2>
         <p className="mt-1 text-xs text-[#456c5f]">
           Paste the SAM.gov notice description, scope of work, or
@@ -100,7 +100,7 @@ export function TailorForm({
               value={opportunityLabel}
               onChange={(e) => setOpportunityLabel(e.target.value)}
               placeholder="e.g. DHS S&T NAICS 541512 RFQ — Cyber Engineer Support"
-              className="mt-1 w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none"
+              className="mt-1 w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none"
             />
             <span className="mt-1 block text-[11px] text-[#456c5f]">
               Shown on the packet so you can keep tailored versions straight.
@@ -115,7 +115,7 @@ export function TailorForm({
               onChange={(e) => setOpportunity(e.target.value)}
               rows={10}
               placeholder="Paste the full notice, scope of work, or relevant sections of the solicitation here…"
-              className="mt-1 w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 font-mono text-xs focus:border-[#2f8f6d] focus:outline-none"
+              className="mt-1 w-full  border border-[#cfe3d9] bg-white px-3 py-2 font-mono text-xs focus:border-[#2f8f6d] focus:outline-none"
             />
             <span className="mt-1 block text-[11px] text-[#456c5f]">
               {opportunity.trim().length.toLocaleString()} characters
@@ -135,7 +135,7 @@ export function TailorForm({
             type="button"
             onClick={handleTailor}
             disabled={pending || opportunity.trim().length < 50}
-            className="rounded-sm bg-[#10231d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0e2a23] disabled:cursor-not-allowed disabled:opacity-60"
+            className=" bg-[#10231d] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#0e2a23] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {pending
               ? "Tailoring…"
@@ -148,7 +148,7 @@ export function TailorForm({
 
       {drafted ? (
         <>
-          <section className="rounded-md border border-[#cfe3d9] bg-white p-6">
+          <section className=" border border-[#cfe3d9] bg-white p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="font-serif text-lg font-bold">
@@ -161,7 +161,7 @@ export function TailorForm({
               <button
                 type="button"
                 onClick={reset}
-                className="rounded-sm border border-[#cfe3d9] bg-white px-3 py-1.5 text-xs font-semibold text-[#10231d] hover:bg-[#f1f6f3]"
+                className=" border border-[#cfe3d9] bg-white px-3 py-1.5 text-xs font-semibold text-[#10231d] hover:bg-[#f1f6f3]"
               >
                 Discard draft
               </button>
@@ -176,13 +176,13 @@ export function TailorForm({
                   value={capability}
                   onChange={(e) => setCapability(e.target.value)}
                   rows={14}
-                  className="mt-2 w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none"
+                  className="mt-2 w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none"
                 />
                 <details className="mt-2 text-xs">
                   <summary className="cursor-pointer font-semibold text-[#456c5f] hover:text-[#10231d]">
                     Show master version for comparison
                   </summary>
-                  <pre className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap rounded-sm border border-[#e3eee8] bg-[#f7fcf9] p-3 text-[12px] text-[#10231d]">
+                  <pre className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap  border border-[#e3eee8] bg-[#f7fcf9] p-3 text-[12px] text-[#10231d]">
                     {masterCapability || "(empty)"}
                   </pre>
                 </details>
@@ -195,13 +195,13 @@ export function TailorForm({
                   value={differentiators}
                   onChange={(e) => setDifferentiators(e.target.value)}
                   rows={14}
-                  className="mt-2 w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none"
+                  className="mt-2 w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none"
                 />
                 <details className="mt-2 text-xs">
                   <summary className="cursor-pointer font-semibold text-[#456c5f] hover:text-[#10231d]">
                     Show master version for comparison
                   </summary>
-                  <pre className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap rounded-sm border border-[#e3eee8] bg-[#f7fcf9] p-3 text-[12px] text-[#10231d]">
+                  <pre className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap  border border-[#e3eee8] bg-[#f7fcf9] p-3 text-[12px] text-[#10231d]">
                     {masterDifferentiators || "(empty)"}
                   </pre>
                 </details>
@@ -209,7 +209,7 @@ export function TailorForm({
             </div>
           </section>
 
-          <section className="rounded-md border border-[#10231d] bg-[#10231d] p-6 text-white">
+          <section className=" border border-[#10231d] bg-[#10231d] p-6 text-white">
             <h2 className="font-serif text-lg font-bold text-white">
               3. Generate the tailored packet
             </h2>
@@ -222,14 +222,14 @@ export function TailorForm({
                 href={packetUrl()}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="rounded-sm bg-[#bdf2cf] px-5 py-2.5 text-sm font-bold text-[#0e2a23] hover:bg-white"
+                className=" bg-[#bdf2cf] px-5 py-2.5 text-sm font-bold text-[#0e2a23] hover:bg-white"
               >
                 Open tailored packet
               </a>
               <a
                 href={packetUrl()}
                 download
-                className="rounded-sm border border-[#bdf2cf] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] hover:bg-[#0e2a23]"
+                className=" border border-[#bdf2cf] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] hover:bg-[#0e2a23]"
               >
                 Download HTML
               </a>

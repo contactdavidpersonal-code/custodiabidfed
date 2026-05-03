@@ -83,7 +83,7 @@ export default async function SignPage(
       </header>
 
       {!ready && (
-        <div className="mb-8 rounded-2xl border border-rose-200 bg-rose-50 p-5">
+        <div className="mb-8  border border-rose-200 bg-rose-50 p-5">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-rose-800">
             Not ready to sign yet
           </h2>
@@ -166,7 +166,7 @@ export default async function SignPage(
           </ul>
           <Link
             href={`/assessments/${id}`}
-            className="mt-4 inline-block rounded-lg bg-rose-900 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-rose-800"
+            className="mt-4 inline-block  bg-rose-900 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-rose-800"
           >
             Back to overview
           </Link>
@@ -174,7 +174,7 @@ export default async function SignPage(
       )}
 
       {openRemediation.length > 0 && (
-        <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+        <div className="mb-8  border border-amber-200 bg-amber-50 p-5">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-amber-800">
             Open remediation plans
           </h2>
@@ -187,7 +187,7 @@ export default async function SignPage(
             {openRemediation.map((p) => (
               <li
                 key={p.id}
-                className="rounded-lg border border-amber-200 bg-white px-3 py-2"
+                className=" border border-amber-200 bg-white px-3 py-2"
               >
                 <span className="font-mono text-xs font-bold">
                   {p.control_id}
@@ -202,7 +202,7 @@ export default async function SignPage(
         </div>
       )}
 
-      <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="mb-8  border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-bold tracking-tight text-slate-900">
           Compliance summary
         </h2>
@@ -216,7 +216,7 @@ export default async function SignPage(
 
       <form
         action={submitAffirmationAction}
-        className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+        className="space-y-6  border border-slate-200 bg-white p-6 shadow-sm"
       >
         <input type="hidden" name="assessmentId" value={id} />
 
@@ -240,7 +240,7 @@ export default async function SignPage(
               name="signerName"
               required
               placeholder="Jane Doe"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+              className="w-full  border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
             />
           </label>
           <label className="block">
@@ -252,12 +252,12 @@ export default async function SignPage(
               name="signerTitle"
               required
               placeholder="Chief Executive Officer"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+              className="w-full  border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
             />
           </label>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+        <div className=" border border-slate-200 bg-slate-50 p-5">
           <h3 className="text-sm font-semibold text-slate-900">
             Affirmation statement
           </h3>
@@ -289,13 +289,13 @@ export default async function SignPage(
           <button
             type="submit"
             disabled={!ready}
-            className="rounded-lg bg-amber-400 px-5 py-3 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
+            className=" bg-amber-400 px-5 py-3 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Sign and affirm &rarr;
           </button>
           <Link
             href={`/assessments/${id}`}
-            className="rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+            className=" border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
           >
             Cancel
           </Link>
@@ -321,7 +321,7 @@ function Summary({
     amber: "border-amber-200 bg-amber-50 text-amber-800",
   };
   return (
-    <div className={`rounded-xl border px-4 py-3 ${tones[tone]}`}>
+    <div className={` border px-4 py-3 ${tones[tone]}`}>
       <div className="text-[11px] font-semibold uppercase tracking-wider opacity-80">
         {label}
       </div>

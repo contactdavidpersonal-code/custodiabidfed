@@ -67,7 +67,7 @@ export default async function SystemSecurityPlanPage(
         <PrintButton label="Print / save as PDF" />
       </div>
 
-      <article className="print-document rounded-2xl border border-slate-200 bg-white p-10 shadow-sm print:border-0 print:p-0 print:shadow-none">
+      <article className="print-document  border border-slate-200 bg-white p-10 shadow-sm print:border-0 print:p-0 print:shadow-none">
         <header className="mb-10 border-b border-slate-200 pb-8">
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             System Security Plan
@@ -115,7 +115,7 @@ export default async function SystemSecurityPlanPage(
             2. Senior official affirmation
           </h2>
           {a.affirmed_at && a.affirmed_by_name ? (
-            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800">
+            <div className="mt-3  border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800">
               <p>
                 <strong>{a.affirmed_by_name}</strong>
                 {a.affirmed_by_title ? `, ${a.affirmed_by_title}` : ""} affirmed
@@ -162,7 +162,7 @@ export default async function SystemSecurityPlanPage(
                       return (
                         <div
                           key={practice.id}
-                          className="rounded-lg border border-slate-200 p-4"
+                          className=" border border-slate-200 p-4"
                         >
                           <div className="flex flex-wrap items-baseline justify-between gap-2">
                             <div>

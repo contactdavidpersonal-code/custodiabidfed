@@ -41,7 +41,7 @@ export default async function AffirmationMemoPage(
         <PrintButton label="Print / save as PDF" />
       </div>
 
-      <article className="print-document rounded-2xl border border-slate-200 bg-white p-10 shadow-sm print:border-0 print:p-0 print:shadow-none">
+      <article className="print-document  border border-slate-200 bg-white p-10 shadow-sm print:border-0 print:p-0 print:shadow-none">
         <header className="mb-10 text-center">
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
             Annual Affirmation of Compliance
@@ -75,7 +75,7 @@ export default async function AffirmationMemoPage(
               The scope of this self-assessment covers all information systems
               that process, store, or transmit Federal Contract Information
               (FCI), described in the accompanying System Security Plan as:
-              <span className="mt-2 block rounded-lg border border-slate-200 bg-slate-50 p-3 whitespace-pre-wrap text-xs text-slate-800">
+              <span className="mt-2 block  border border-slate-200 bg-slate-50 p-3 whitespace-pre-wrap text-xs text-slate-800">
                 {org.scoped_systems ?? "[Scope pending — complete the business profile.]"}
               </span>
             </li>

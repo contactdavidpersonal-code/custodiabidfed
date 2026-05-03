@@ -67,7 +67,7 @@ export default async function ProfilePage(
         </p>
       </header>
 
-      <section className="mb-6 rounded-md border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+      <section className="mb-6  border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="font-serif text-lg font-bold text-[#10231d]">
@@ -80,7 +80,7 @@ export default async function ProfilePage(
           <div className="flex items-center gap-2">
             <Link
               href="/onboard"
-              className="rounded-sm border border-[#cfe3d9] bg-white px-3 py-1.5 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
+              className=" border border-[#cfe3d9] bg-white px-3 py-1.5 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
             >
               Refine with officer
             </Link>
@@ -90,7 +90,7 @@ export default async function ProfilePage(
           {rows.map((r) => (
             <div
               key={r.label}
-              className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3"
+              className=" border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3"
             >
               <dt className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
                 {r.label}
@@ -106,7 +106,7 @@ export default async function ProfilePage(
               </dd>
             </div>
           ))}
-          <div className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3 md:col-span-2">
+          <div className=" border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3 md:col-span-2">
             <dt className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
               Systems in scope
             </dt>
@@ -119,13 +119,13 @@ export default async function ProfilePage(
         </dl>
       </section>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-dashed border-[#cfe3d9] bg-white px-5 py-4 text-sm text-[#5a7d70]">
+      <div className="flex flex-wrap items-center justify-between gap-3  border border-dashed border-[#cfe3d9] bg-white px-5 py-4 text-sm text-[#5a7d70]">
         <span>
           Profile drives every downstream artifact &mdash; keep it accurate.
         </span>
         <Link
           href={`/assessments/${id}/registration`}
-          className="rounded-sm bg-[#0e2a23] px-4 py-2 text-xs font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
+          className=" bg-[#0e2a23] px-4 py-2 text-xs font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
         >
           Continue to federal registration &rarr;
         </Link>

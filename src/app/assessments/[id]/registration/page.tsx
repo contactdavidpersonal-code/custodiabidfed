@@ -69,7 +69,7 @@ export default async function RegistrationPage(
 
       <form
         action={saveFederalRegistrationAction}
-        className="rounded-md border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04)]"
+        className=" border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04)]"
       >
         <div className="grid gap-5 md:grid-cols-2">
           <Field
@@ -97,7 +97,7 @@ export default async function RegistrationPage(
             <select
               name="entityType"
               defaultValue={org.entity_type ?? ""}
-              className="w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2.5 text-sm text-[#10231d] outline-none transition-colors focus:border-[#2f8f6d]"
+              className="w-full  border border-[#cfe3d9] bg-white px-3 py-2.5 text-sm text-[#10231d] outline-none transition-colors focus:border-[#2f8f6d]"
             >
               <option value="">Select&hellip;</option>
               {entityOptions.map((opt) => (
@@ -123,18 +123,18 @@ export default async function RegistrationPage(
           </p>
           <button
             type="submit"
-            className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
+            className=" bg-[#0e2a23] px-5 py-2.5 text-sm font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
           >
             Save and continue
           </button>
         </div>
       </form>
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-md border border-dashed border-[#cfe3d9] bg-white px-5 py-4 text-sm text-[#5a7d70]">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3  border border-dashed border-[#cfe3d9] bg-white px-5 py-4 text-sm text-[#5a7d70]">
         <span>Once saved, head into the 17 CMMC L1 practices.</span>
         <Link
           href={`/assessments/${id}`}
-          className="rounded-sm border border-[#cfe3d9] bg-white px-4 py-2 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
+          className=" border border-[#cfe3d9] bg-white px-4 py-2 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
         >
           Continue to practices &rarr;
         </Link>
@@ -157,8 +157,8 @@ function Step({
   cta?: string;
 }) {
   return (
-    <li className="flex gap-3 rounded-md border border-[#cfe3d9] bg-white px-4 py-3 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
-      <span className="flex h-6 w-6 flex-none items-center justify-center rounded-sm bg-[#0e2a23] text-xs font-bold text-[#bdf2cf]">
+    <li className="flex gap-3  border border-[#cfe3d9] bg-white px-4 py-3 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+      <span className="flex h-6 w-6 flex-none items-center justify-center  bg-[#0e2a23] text-xs font-bold text-[#bdf2cf]">
         {n}
       </span>
       <div className="min-w-0 flex-1">
@@ -169,7 +169,7 @@ function Step({
               href={href}
               target="_blank"
               rel="noreferrer noopener"
-              className="rounded-sm border border-[#cfe3d9] px-2.5 py-1 text-[11px] font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
+              className=" border border-[#cfe3d9] px-2.5 py-1 text-[11px] font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
             >
               {cta} &rarr;
             </a>
@@ -215,7 +215,7 @@ function Field({
         defaultValue={defaultValue}
         placeholder={placeholder}
         maxLength={maxLength}
-        className="w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2.5 text-sm font-mono uppercase tracking-wider text-[#10231d] outline-none transition-colors placeholder:text-[#a8bdb3] placeholder:font-sans placeholder:normal-case focus:border-[#2f8f6d]"
+        className="w-full  border border-[#cfe3d9] bg-white px-3 py-2.5 text-sm font-mono uppercase tracking-wider text-[#10231d] outline-none transition-colors placeholder:text-[#a8bdb3] placeholder:font-sans placeholder:normal-case focus:border-[#2f8f6d]"
       />
       {hint && (
         <p className="mt-1 text-[11px] text-[#7a9c90]">{hint}</p>

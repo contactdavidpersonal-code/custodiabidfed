@@ -37,7 +37,7 @@ export async function ConnectorHint({ controlId, organizationId }: Props) {
 
   if (matched) {
     return (
-      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+      <div className="mb-4 flex flex-wrap items-center gap-2  border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
         <span className="font-bold">✓ Auto-collectable.</span>
         <span>
           Charlie can pull this evidence directly from your connected{" "}
@@ -56,7 +56,7 @@ export async function ConnectorHint({ controlId, organizationId }: Props) {
 
   const labels = eligible.map((c) => PROVIDER_LABEL[c.provider]).join(" or ");
   return (
-    <div className="mb-4 flex flex-wrap items-center gap-2 rounded-md border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-3 text-sm text-[#10231d]">
+    <div className="mb-4 flex flex-wrap items-center gap-2  border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-3 text-sm text-[#10231d]">
       <span aria-hidden className="text-base leading-none">💡</span>
       <span>
         <strong>Skip the screenshot.</strong> Connect <strong>{labels}</strong> and
@@ -64,7 +64,7 @@ export async function ConnectorHint({ controlId, organizationId }: Props) {
       </span>
       <Link
         href="/assessments/connections"
-        className="ml-auto whitespace-nowrap rounded-md bg-[#10231d] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#0a1814]"
+        className="ml-auto whitespace-nowrap  bg-[#10231d] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#0a1814]"
       >
         Connect →
       </Link>

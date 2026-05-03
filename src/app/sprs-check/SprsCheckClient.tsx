@@ -102,7 +102,7 @@ export default function SprsCheckClient() {
       </div>
 
       {isQuestionStep && current && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className=" border border-slate-200 bg-white p-6 shadow-sm">
           <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-emerald-700">
             {current.family}
           </div>
@@ -116,7 +116,7 @@ export default function SprsCheckClient() {
                 key={a}
                 type="button"
                 onClick={() => setAnswer(current.id, a)}
-                className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:border-emerald-500 hover:bg-emerald-50"
+                className=" border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:border-emerald-500 hover:bg-emerald-50"
               >
                 {ANSWER_LABELS[a]}
               </button>
@@ -135,7 +135,7 @@ export default function SprsCheckClient() {
       )}
 
       {isContactStep && (
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className=" border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-2 text-xl font-semibold text-slate-900">
             Where should we send your gap report?
           </h2>
@@ -154,7 +154,7 @@ export default function SprsCheckClient() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none"
+                className="w-full  border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none"
               />
             </label>
             <label className="block">
@@ -166,7 +166,7 @@ export default function SprsCheckClient() {
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Acme Federal Services LLC"
-                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none"
+                className="w-full  border border-slate-200 bg-white px-4 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:outline-none"
               />
             </label>
             {error && (
@@ -176,7 +176,7 @@ export default function SprsCheckClient() {
               <button
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
-                className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className=" border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
               >
                 &larr; Back
               </button>
@@ -184,7 +184,7 @@ export default function SprsCheckClient() {
                 type="button"
                 onClick={submit}
                 disabled={submitting}
-                className="flex-1 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
+                className="flex-1  bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-60"
               >
                 {submitting ? "Scoring…" : "Get my SPRS score"}
               </button>
@@ -216,7 +216,7 @@ function ResultView({ result, answers }: { result: QuizResult; answers: AnswersM
         <button
           type="button"
           onClick={() => window.print()}
-          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+          className=" border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
         >
           Save as PDF
         </button>
@@ -230,7 +230,7 @@ function ResultView({ result, answers }: { result: QuizResult; answers: AnswersM
       </h1>
 
       <div
-        className={`mb-8 rounded-2xl border-2 p-8 text-center ${
+        className={`mb-8  border-2 p-8 text-center ${
           color === "emerald"
             ? "border-emerald-500 bg-emerald-50"
             : color === "amber"
@@ -262,7 +262,7 @@ function ResultView({ result, answers }: { result: QuizResult; answers: AnswersM
           {result.gaps.map((g) => (
             <li
               key={g.questionId}
-              className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+              className=" border border-slate-200 bg-white p-4 shadow-sm"
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -276,7 +276,7 @@ function ResultView({ result, answers }: { result: QuizResult; answers: AnswersM
                     Your answer: {ANSWER_LABELS[g.answer]}
                   </div>
                 </div>
-                <div className="rounded-lg bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700">
+                <div className=" bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700">
                   −{g.pointsLost}
                 </div>
               </div>
@@ -285,7 +285,7 @@ function ResultView({ result, answers }: { result: QuizResult; answers: AnswersM
         </ul>
       )}
 
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6 print:hidden">
+      <div className=" border border-slate-200 bg-slate-50 p-6 print:hidden">
         <h3 className="mb-2 font-serif text-xl text-slate-900">
           Want Charlie to fix these for you?
         </h3>
@@ -295,7 +295,7 @@ function ResultView({ result, answers }: { result: QuizResult; answers: AnswersM
         </p>
         <Link
           href="/pricing"
-          className="inline-flex rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
+          className="inline-flex  bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800"
         >
           Start my 14-day free trial
         </Link>

@@ -33,7 +33,7 @@ export default function OpportunitiesError({
           </div>
           <Link
             href="/assessments"
-            className="rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm font-medium text-[#10231d] hover:bg-[#f1f6f3]"
+            className=" border border-[#cfe3d9] bg-white px-3 py-2 text-sm font-medium text-[#10231d] hover:bg-[#f1f6f3]"
           >
             ← Workspace
           </Link>
@@ -41,7 +41,7 @@ export default function OpportunitiesError({
       </header>
 
       <section className="mx-auto max-w-3xl px-6 py-12">
-        <div className="rounded-md border border-[#a06b1a] bg-[#fff7e8] p-6">
+        <div className=" border border-[#a06b1a] bg-[#fff7e8] p-6">
           <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a06b1a]">
             Temporary error
           </p>
@@ -62,13 +62,13 @@ export default function OpportunitiesError({
             <button
               type="button"
               onClick={() => reset()}
-              className="rounded-sm bg-[#0e2a23] px-4 py-2 text-sm font-bold text-[#bdf2cf] hover:bg-[#10342a]"
+              className=" bg-[#0e2a23] px-4 py-2 text-sm font-bold text-[#bdf2cf] hover:bg-[#10342a]"
             >
               Try again
             </button>
             <Link
               href="/assessments"
-              className="rounded-sm border border-[#cfe3d9] bg-white px-4 py-2 text-sm font-medium text-[#10231d] hover:bg-[#f1f6f3]"
+              className=" border border-[#cfe3d9] bg-white px-4 py-2 text-sm font-medium text-[#10231d] hover:bg-[#f1f6f3]"
             >
               ← Back to workspace
             </Link>

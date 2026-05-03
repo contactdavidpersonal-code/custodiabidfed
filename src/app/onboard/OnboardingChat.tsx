@@ -192,10 +192,10 @@ export function OnboardingChat({
   }, [draft, streaming, refreshStatus]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden  border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
       <div className="flex flex-none items-center justify-between border-b border-[#cfe3d9] bg-white px-5 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="inline-flex items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]">
+          <span className="inline-flex items-center justify-center  bg-[#0e2a23] px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]">
             vCO
           </span>
           <div className="leading-tight">
@@ -247,7 +247,7 @@ export function OnboardingChat({
             <button
               type="button"
               onClick={() => router.push("/assessments")}
-              className="rounded-sm bg-[#0e2a23] px-4 py-2 text-sm font-bold tracking-tight text-white transition-colors hover:bg-[#10231d]"
+              className=" bg-[#0e2a23] px-4 py-2 text-sm font-bold tracking-tight text-white transition-colors hover:bg-[#10231d]"
             >
               Open my dashboard &rarr;
             </button>
@@ -268,7 +268,7 @@ export function OnboardingChat({
         }}
         className="border-t border-[#cfe3d9] bg-[#f7fcf9] p-4"
       >
-        <div className="flex items-end gap-2 rounded-sm border border-[#cfe3d9] bg-white p-2 focus-within:border-[#2f8f6d] focus-within:ring-2 focus-within:ring-[#2f8f6d]/20">
+        <div className="flex items-end gap-2  border border-[#cfe3d9] bg-white p-2 focus-within:border-[#2f8f6d] focus-within:ring-2 focus-within:ring-[#2f8f6d]/20">
           <textarea
             ref={inputRef}
             value={draft}
@@ -288,7 +288,7 @@ export function OnboardingChat({
           <button
             type="submit"
             disabled={streaming || !draft.trim()}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:bg-[#cfe3d9] disabled:text-white"
+            className="flex h-9 w-9 shrink-0 items-center justify-center  bg-[#0e2a23] text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:bg-[#cfe3d9] disabled:text-white"
             aria-label="Send"
           >
             <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
@@ -317,7 +317,7 @@ function CompletenessMeter({ value }: { value: number }) {
       <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#5a7d70]">
         Profile
       </span>
-      <div className="h-1.5 w-24 overflow-hidden rounded-sm bg-[#e3eee8]">
+      <div className="h-1.5 w-24 overflow-hidden  bg-[#e3eee8]">
         <div
           className={`h-full transition-all ${tone}`}
           style={{ width: `${pct}%` }}
@@ -342,7 +342,7 @@ function MessageBubble({
   if (role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[80%] rounded-sm border border-[#0e2a23] bg-[#0e2a23] px-4 py-2.5 text-sm leading-relaxed text-white">
+        <div className="max-w-[80%]  border border-[#0e2a23] bg-[#0e2a23] px-4 py-2.5 text-sm leading-relaxed text-white">
           <p className="whitespace-pre-wrap">{text}</p>
         </div>
       </div>
@@ -359,12 +359,12 @@ function MessageBubble({
           </div>
         )}
         {text && (
-          <div className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-2.5 text-sm leading-relaxed text-[#10231d]">
+          <div className=" border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-2.5 text-sm leading-relaxed text-[#10231d]">
             <p className="whitespace-pre-wrap">{text}</p>
           </div>
         )}
       </div>
-      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center  bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
         Officer
       </div>
     </div>
@@ -387,7 +387,7 @@ function ToolChip({ tool }: { tool: ToolEvent }) {
         : "bg-[#a06b1a] animate-pulse";
   return (
     <div
-      className={`inline-flex items-center gap-2 rounded-sm border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${tone}`}
+      className={`inline-flex items-center gap-2  border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${tone}`}
     >
       <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
       {label}
@@ -400,7 +400,7 @@ function StarterBubble() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex gap-2.5">
-        <div className="max-w-[88%] rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3 text-sm leading-relaxed text-[#10231d]">
+        <div className="max-w-[88%]  border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3 text-sm leading-relaxed text-[#10231d]">
           <p>
             Hi, I&apos;m Charlie &mdash; your personal virtual compliance
             officer (vCO) for your business. I&apos;m going to ask you a few
@@ -413,7 +413,7 @@ function StarterBubble() {
             be)?</strong>
           </p>
         </div>
-        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center  bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
           vCO
         </div>
       </div>
@@ -424,14 +424,14 @@ function StarterBubble() {
 function TypingIndicator() {
   return (
     <div className="flex gap-2.5">
-      <div className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
+      <div className=" border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
         <div className="flex gap-1">
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5a7d70] [animation-delay:-0.3s]" />
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5a7d70] [animation-delay:-0.15s]" />
           <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#5a7d70]" />
         </div>
       </div>
-      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center  bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
         Officer
       </div>
     </div>
@@ -441,7 +441,7 @@ function TypingIndicator() {
 function LoadingBubble() {
   return (
     <div className="flex items-center gap-2 text-xs text-[#7a9c90]">
-      <span className="h-1.5 w-1.5 animate-pulse rounded-sm bg-[#2f8f6d]" />
+      <span className="h-1.5 w-1.5 animate-pulse  bg-[#2f8f6d]" />
       Loading…
     </div>
   );

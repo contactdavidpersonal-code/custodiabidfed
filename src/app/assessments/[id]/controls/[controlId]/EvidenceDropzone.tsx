@@ -95,7 +95,7 @@ export function EvidenceDropzone({
             inputRef.current?.click();
           }
         }}
-        className={`relative cursor-pointer rounded-md border border-dashed transition-colors ${
+        className={`relative cursor-pointer  border border-dashed transition-colors ${
           compact ? "px-4 py-5" : "px-6 py-8"
         } ${
           dragActive
@@ -115,7 +115,7 @@ export function EvidenceDropzone({
           onChange={(e) => setFromList(e.target.files)}
         />
         <div className="flex flex-col items-center text-center">
-          <span className="flex h-10 w-10 items-center justify-center rounded-sm bg-[#0e2a23] text-[#bdf2cf]">
+          <span className="flex h-10 w-10 items-center justify-center  bg-[#0e2a23] text-[#bdf2cf]">
             <svg viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor" aria-hidden>
               <path d="M10 3a1 1 0 01.7.29l4 4a1 1 0 11-1.4 1.42L11 6.41V13a1 1 0 11-2 0V6.41L6.7 8.71A1 1 0 015.29 7.3l4-4A1 1 0 0110 3zM4 14a1 1 0 011 1v1h10v-1a1 1 0 112 0v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2a1 1 0 011-1z" />
             </svg>
@@ -155,7 +155,7 @@ export function EvidenceDropzone({
               setFile(null);
               if (inputRef.current) inputRef.current.value = "";
             }}
-            className="rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
+            className=" border border-[#cfe3d9] bg-white px-3 py-2 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
           >
             Clear
           </button>
@@ -163,7 +163,7 @@ export function EvidenceDropzone({
         <button
           type="submit"
           disabled={!file || uploading}
-          className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a] disabled:cursor-not-allowed disabled:opacity-40"
+          className=" bg-[#0e2a23] px-5 py-2.5 text-sm font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {uploading ? "Uploading\u2026" : "Upload to vault"}
         </button>

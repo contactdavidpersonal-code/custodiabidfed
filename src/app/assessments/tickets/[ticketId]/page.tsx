@@ -76,7 +76,7 @@ export default async function TicketThreadPage(
       {ticket.status !== "resolved" && ticket.status !== "dismissed" && (
         <form
           action={replyToTicketAction}
-          className="mt-8 space-y-3 rounded-sm border border-[#cfe3d9] bg-white p-5"
+          className="mt-8 space-y-3  border border-[#cfe3d9] bg-white p-5"
         >
           <input type="hidden" name="escalationId" value={ticket.id} />
           <label
@@ -93,7 +93,7 @@ export default async function TicketThreadPage(
             maxLength={8000}
             rows={5}
             placeholder="Add context, answer the officer's question, or push back."
-            className="w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none focus:ring-2 focus:ring-[#2f8f6d]/20"
+            className="w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none focus:ring-2 focus:ring-[#2f8f6d]/20"
           />
           <div className="flex items-center justify-between gap-3">
             <p className="text-[11px] text-[#7a9c90]">
@@ -101,7 +101,7 @@ export default async function TicketThreadPage(
             </p>
             <button
               type="submit"
-              className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+              className=" bg-[#0e2a23] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
             >
               Send reply
             </button>
@@ -126,7 +126,7 @@ function MessageBlock({ message }: { message: EscalationMessageRow }) {
       ? "System"
       : "You";
   return (
-    <li className={`rounded-sm border p-4 ${tone}`}>
+    <li className={` border p-4 ${tone}`}>
       <div className="flex items-baseline justify-between gap-3">
         <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#10231d]">
           {label}

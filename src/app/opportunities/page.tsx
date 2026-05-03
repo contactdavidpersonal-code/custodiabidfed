@@ -231,7 +231,7 @@ export default async function OpportunitiesPage() {
           </div>
           <Link
             href="/assessments"
-            className="rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm font-medium text-[#10231d] hover:bg-[#f1f6f3]"
+            className=" border border-[#cfe3d9] bg-white px-3 py-2 text-sm font-medium text-[#10231d] hover:bg-[#f1f6f3]"
           >
             ← Workspace
           </Link>
@@ -240,7 +240,7 @@ export default async function OpportunitiesPage() {
 
       <section className="mx-auto max-w-5xl px-6 py-8">
         {!isAttested && (
-          <div className="mb-6 overflow-hidden rounded-md border border-[#a06b1a] bg-[#fff7e8] p-5 shadow-[0_2px_0_rgba(160,107,26,0.08)]">
+          <div className="mb-6 overflow-hidden  border border-[#a06b1a] bg-[#fff7e8] p-5 shadow-[0_2px_0_rgba(160,107,26,0.08)]">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a06b1a]">
@@ -259,7 +259,7 @@ export default async function OpportunitiesPage() {
                     ? `/assessments/${inProgressAssessment.id}`
                     : `/assessments`
                 }
-                className="rounded-sm bg-[#0e2a23] px-4 py-2.5 text-sm font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
+                className=" bg-[#0e2a23] px-4 py-2.5 text-sm font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
               >
                 Finish my CMMC L1 &rarr;
               </Link>
@@ -267,7 +267,7 @@ export default async function OpportunitiesPage() {
           </div>
         )}
 
-        <div className="rounded-md border border-[#cfe3d9] bg-white p-5">
+        <div className=" border border-[#cfe3d9] bg-white p-5">
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span className="font-bold uppercase tracking-[0.14em] text-[#456c5f]">
               Watching NAICS:
@@ -276,7 +276,7 @@ export default async function OpportunitiesPage() {
               naics.map((c) => (
                 <span
                   key={c}
-                  className="rounded-sm bg-[#f1f6f3] px-2 py-1 font-mono text-[11px] text-[#10231d]"
+                  className=" bg-[#f1f6f3] px-2 py-1 font-mono text-[11px] text-[#10231d]"
                 >
                   {c}
                 </span>
@@ -297,7 +297,7 @@ export default async function OpportunitiesPage() {
         </div>
 
         {display.length === 0 ? (
-          <div className="mt-6 rounded-md border border-dashed border-[#cfe3d9] bg-white p-10 text-center text-sm text-[#456c5f]">
+          <div className="mt-6  border border-dashed border-[#cfe3d9] bg-white p-10 text-center text-sm text-[#456c5f]">
             <p className="font-semibold text-[#10231d]">
               No opportunities yet.
             </p>
@@ -310,7 +310,7 @@ export default async function OpportunitiesPage() {
         ) : (
           <>
             {sampleCount > 0 && (
-              <div className="mt-6 rounded-md border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-3 text-xs leading-relaxed text-[#456c5f]">
+              <div className="mt-6  border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-3 text-xs leading-relaxed text-[#456c5f]">
                 <span className="font-bold uppercase tracking-[0.14em] text-[#0e5c41]">
                   Pipeline preview ·{" "}
                 </span>
@@ -335,7 +335,7 @@ export default async function OpportunitiesPage() {
               {display.map((r) => (
                 <li
                   key={r.key}
-                  className="flex flex-col rounded-md border border-[#cfe3d9] bg-white p-5"
+                  className="flex flex-col  border border-[#cfe3d9] bg-white p-5"
                 >
                   <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-[0.12em] text-[#456c5f]">
                     {r.department ? <span>{r.department}</span> : null}
@@ -353,18 +353,18 @@ export default async function OpportunitiesPage() {
                     {r.is_sample ? (
                       <span
                         title="Representative sample for your NAICS — not a live SAM.gov notice. Real matches will replace it as the weekly radar finds them."
-                        className="inline-block rounded-sm border border-[#a06b1a] bg-[#fff7eb] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#a06b1a]"
+                        className="inline-block  border border-[#a06b1a] bg-[#fff7eb] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#a06b1a]"
                       >
                         Sample
                       </span>
                     ) : null}
                     {r.type ? (
-                      <span className="inline-block rounded-sm bg-[#eaf3ee] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#0e5c41]">
+                      <span className="inline-block  bg-[#eaf3ee] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#0e5c41]">
                         {r.type}
                       </span>
                     ) : null}
                     {r.set_aside ? (
-                      <span className="inline-block rounded-sm bg-[#f1f6f3] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#456c5f]">
+                      <span className="inline-block  bg-[#f1f6f3] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#456c5f]">
                         {r.set_aside}
                       </span>
                     ) : null}
@@ -376,7 +376,7 @@ export default async function OpportunitiesPage() {
                     {r.award_amount ? (
                       <span
                         title="Awarded contract value reported by SAM.gov"
-                        className="inline-block rounded-sm bg-[#0e5c41] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white"
+                        className="inline-block  bg-[#0e5c41] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white"
                       >
                         Awarded {r.award_amount}
                       </span>
@@ -385,14 +385,14 @@ export default async function OpportunitiesPage() {
                       return range ? (
                         <span
                           title={`Typical small-business award range for NAICS ${r.naics_code}. Heuristic from FPDS historicals — not the agency's actual ceiling.`}
-                          className="inline-block rounded-sm border border-[#cfe3d9] bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#0e5c41]"
+                          className="inline-block  border border-[#cfe3d9] bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#0e5c41]"
                         >
                           Typical {range.label}
                         </span>
                       ) : null;
                     })()}
                     {r.response_deadline ? (
-                      <span className="inline-block rounded-sm border border-[#a06b1a] bg-[#fff7eb] px-2 py-0.5 text-[11px] font-bold text-[#a06b1a]">
+                      <span className="inline-block  border border-[#a06b1a] bg-[#fff7eb] px-2 py-0.5 text-[11px] font-bold text-[#a06b1a]">
                         Response due {formatDate(r.response_deadline)}
                       </span>
                     ) : null}
@@ -449,7 +449,7 @@ export default async function OpportunitiesPage() {
                       <span
                         title="This is a representative sample, not a live SAM.gov notice. Real matches arrive every Monday."
                         aria-disabled="true"
-                        className="block w-full cursor-not-allowed select-none rounded-sm border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-2.5 text-center text-sm font-semibold text-[#7a9c90]"
+                        className="block w-full cursor-not-allowed select-none  border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-2.5 text-center text-sm font-semibold text-[#7a9c90]"
                       >
                         Sample preview &mdash; live notices arrive every Monday
                       </span>
@@ -459,12 +459,12 @@ export default async function OpportunitiesPage() {
                           href={r.sam_url}
                           target="_blank"
                           rel="noreferrer noopener"
-                          className="block w-full rounded-sm bg-[#10231d] px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-[#0e2a23]"
+                          className="block w-full  bg-[#10231d] px-4 py-2.5 text-center text-sm font-semibold text-white transition-colors hover:bg-[#0e2a23]"
                         >
                           View on SAM.gov →
                         </a>
                       ) : (
-                        <span className="block w-full cursor-not-allowed rounded-sm border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-2.5 text-center text-sm font-semibold text-[#7a9c90]">
+                        <span className="block w-full cursor-not-allowed  border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-2.5 text-center text-sm font-semibold text-[#7a9c90]">
                           No SAM.gov link on file
                         </span>
                       )
@@ -472,7 +472,7 @@ export default async function OpportunitiesPage() {
                       <span
                         title="Sign your CMMC L1 affirmation (step 4) to unlock viewing this opportunity on SAM.gov."
                         aria-disabled="true"
-                        className="block w-full cursor-not-allowed select-none rounded-sm border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-2.5 text-center text-sm font-semibold text-[#7a9c90]"
+                        className="block w-full cursor-not-allowed select-none  border border-[#cfe3d9] bg-[#f1f6f3] px-4 py-2.5 text-center text-sm font-semibold text-[#7a9c90]"
                       >
                         🔒 View on SAM.gov &mdash; finish CMMC L1 to unlock
                       </span>

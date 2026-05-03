@@ -136,7 +136,7 @@ export function BidProfileForm({
             value={profile.capability_statement}
             onChange={(e) => setField("capability_statement", e.target.value)}
             rows={6}
-            className="w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none"
+            className="w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none"
             placeholder="Acme Federal Solutions provides managed IT services to federal civilian agencies, with a focus on secure cloud migration, identity governance, and CMMC-compliant managed endpoint services for primes and subcontractors..."
           />
           <div className="mt-2 flex items-center justify-between gap-3">
@@ -151,7 +151,7 @@ export function BidProfileForm({
                   setDraftingCap,
                 )
               }
-              className="rounded-sm border border-[#2f8f6d] bg-white px-3 py-1.5 text-xs font-semibold text-[#2f8f6d] hover:bg-[#f1f9f4] disabled:cursor-not-allowed disabled:opacity-60"
+              className=" border border-[#2f8f6d] bg-white px-3 py-1.5 text-xs font-semibold text-[#2f8f6d] hover:bg-[#f1f9f4] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {draftingCap ? "Drafting…" : profile.capability_statement.trim() ? "↻ Re-draft with Charlie" : "✨ Draft with Charlie"}
             </button>
@@ -166,7 +166,7 @@ export function BidProfileForm({
             value={profile.core_competencies}
             onChange={(e) => setField("core_competencies", e.target.value)}
             rows={5}
-            className="w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none"
+            className="w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none"
             placeholder={"Managed CMMC L1 compliance services\nIdentity & access management (SSO, MFA)\nSecure cloud migration (Azure GovCloud)\nIncident response & tabletop exercises"}
           />
         </Field>
@@ -179,7 +179,7 @@ export function BidProfileForm({
             value={profile.differentiators}
             onChange={(e) => setField("differentiators", e.target.value)}
             rows={4}
-            className="w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none"
+            className="w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none"
             placeholder="Veteran-led with 20+ years of DoD experience. CMMC L1 attested. 24/7 CONUS support. Average ticket resolution under 4 hours."
           />
           <div className="mt-2 flex justify-end">
@@ -193,7 +193,7 @@ export function BidProfileForm({
                   setDraftingDiff,
                 )
               }
-              className="rounded-sm border border-[#2f8f6d] bg-white px-3 py-1.5 text-xs font-semibold text-[#2f8f6d] hover:bg-[#f1f9f4] disabled:cursor-not-allowed disabled:opacity-60"
+              className=" border border-[#2f8f6d] bg-white px-3 py-1.5 text-xs font-semibold text-[#2f8f6d] hover:bg-[#f1f9f4] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {draftingDiff ? "Drafting…" : profile.differentiators.trim() ? "↻ Re-draft with Charlie" : "✨ Draft with Charlie"}
             </button>
@@ -255,7 +255,7 @@ export function BidProfileForm({
           {(Object.keys(setAsideLabels) as SetAside[]).map((s) => (
             <label
               key={s}
-              className={`flex cursor-pointer items-start gap-3 rounded-sm border px-3 py-2 text-sm transition-colors ${
+              className={`flex cursor-pointer items-start gap-3  border px-3 py-2 text-sm transition-colors ${
                 profile.set_asides.includes(s)
                   ? "border-[#2f8f6d] bg-[#f1f9f4]"
                   : "border-[#cfe3d9] bg-white hover:bg-[#f7fcf9]"
@@ -338,7 +338,7 @@ export function BidProfileForm({
         subtitle="Government and commercial contracts that demonstrate you can deliver. Three relevant entries beats ten generic ones."
       >
         {profile.past_performance.length === 0 ? (
-          <p className="rounded-sm border border-dashed border-[#cfe3d9] bg-[#f7fcf9] px-4 py-6 text-center text-sm text-[#456c5f]">
+          <p className=" border border-dashed border-[#cfe3d9] bg-[#f7fcf9] px-4 py-6 text-center text-sm text-[#456c5f]">
             No past-performance entries yet.
           </p>
         ) : (
@@ -346,7 +346,7 @@ export function BidProfileForm({
             {profile.past_performance.map((entry, idx) => (
               <li
                 key={entry.id}
-                className="rounded-md border border-[#cfe3d9] bg-[#f7fcf9] p-4"
+                className=" border border-[#cfe3d9] bg-[#f7fcf9] p-4"
               >
                 <div className="mb-3 flex items-center justify-between">
                   <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#2f8f6d]">
@@ -412,7 +412,7 @@ export function BidProfileForm({
                         updatePP(entry.id, { scope: e.target.value })
                       }
                       rows={3}
-                      className="w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none"
+                      className="w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none"
                       placeholder="Migrated 200 endpoints to Azure GovCloud and stood up a CMMC L1 compliance program from scratch in 6 months."
                     />
                   </Field>
@@ -450,7 +450,7 @@ export function BidProfileForm({
         <button
           type="button"
           onClick={addPP}
-          className="mt-4 rounded-sm border border-[#2f8f6d] bg-white px-4 py-2 text-sm font-semibold text-[#2f8f6d] hover:bg-[#f1f9f4]"
+          className="mt-4  border border-[#2f8f6d] bg-white px-4 py-2 text-sm font-semibold text-[#2f8f6d] hover:bg-[#f1f9f4]"
         >
           + Add past-performance entry
         </button>
@@ -473,7 +473,7 @@ export function BidProfileForm({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-sm bg-[#10231d] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0e2a23] disabled:cursor-not-allowed disabled:opacity-60"
+            className=" bg-[#10231d] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#0e2a23] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {pending ? "Saving…" : "Save bid profile"}
           </button>
@@ -497,7 +497,7 @@ function ReadinessBanner({
         ? "bg-[#fff7e8] border-[#a06b1a] text-[#5a3d0a]"
         : "bg-white border-[#cfe3d9] text-[#10231d]";
   return (
-    <div className={`rounded-md border p-4 ${tone}`}>
+    <div className={` border p-4 ${tone}`}>
       <div className="flex items-center justify-between">
         <h3 className="font-serif text-base font-bold">
           Profile readiness: {score}/100
@@ -535,7 +535,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-md border border-[#cfe3d9] bg-white p-5">
+    <section className=" border border-[#cfe3d9] bg-white p-5">
       <header className="mb-4">
         <h2 className="font-serif text-lg font-bold">{title}</h2>
         {subtitle ? (
@@ -586,7 +586,7 @@ function Input({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none"
+      className="w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none"
     />
   );
 }

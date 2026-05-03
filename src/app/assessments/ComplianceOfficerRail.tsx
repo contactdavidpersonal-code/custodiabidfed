@@ -230,9 +230,9 @@ export function ComplianceOfficerRail() {
         type="button"
         onClick={toggle}
         aria-label="Open Charlie, your vCO"
-        className="fixed right-0 top-1/2 z-30 flex -translate-y-1/2 rotate-90 origin-bottom-right items-center gap-2 rounded-t-sm border border-b-0 border-[#cfe3d9] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#0e2a23] shadow-md transition-colors hover:bg-[#eaf3ee] print:hidden"
+        className="fixed right-0 top-1/2 z-30 flex -translate-y-1/2 rotate-90 origin-bottom-right items-center gap-2  border border-b-0 border-[#cfe3d9] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#0e2a23] shadow-md transition-colors hover:bg-[#eaf3ee] print:hidden"
       >
-        <span className="h-1.5 w-1.5 rounded-sm bg-[#2f8f6d]" />
+        <span className="h-1.5 w-1.5  bg-[#2f8f6d]" />
         Charlie · vCO
       </button>
     );
@@ -245,7 +245,7 @@ export function ComplianceOfficerRail() {
     >
       <header className="flex items-center justify-between gap-3 border-b border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <span className="inline-flex items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]">
+          <span className="inline-flex items-center justify-center  bg-[#0e2a23] px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]">
             vCO
           </span>
           <div className="leading-tight">
@@ -261,7 +261,7 @@ export function ComplianceOfficerRail() {
           type="button"
           onClick={toggle}
           aria-label="Hide Charlie"
-          className="rounded-sm p-1 text-[#7a9c90] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
+          className=" p-1 text-[#7a9c90] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
         >
           <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
             <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
@@ -310,7 +310,7 @@ export function ComplianceOfficerRail() {
         }}
         className="border-t border-[#cfe3d9] bg-[#f7fcf9] p-3"
       >
-        <div className="flex items-end gap-2 rounded-sm border border-[#cfe3d9] bg-white p-2 focus-within:border-[#2f8f6d] focus-within:ring-2 focus-within:ring-[#2f8f6d]/20">
+        <div className="flex items-end gap-2  border border-[#cfe3d9] bg-white p-2 focus-within:border-[#2f8f6d] focus-within:ring-2 focus-within:ring-[#2f8f6d]/20">
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
@@ -328,7 +328,7 @@ export function ComplianceOfficerRail() {
           <button
             type="submit"
             disabled={streaming || !draft.trim()}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:bg-[#cfe3d9] disabled:text-white"
+            className="flex h-8 w-8 shrink-0 items-center justify-center  bg-[#0e2a23] text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:bg-[#cfe3d9] disabled:text-white"
             aria-label="Send"
           >
             <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
@@ -342,7 +342,7 @@ export function ComplianceOfficerRail() {
         </p>
         <Link
           href="/assessments/tickets/new"
-          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-sm border border-[#cfe3d9] bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
+          className="mt-2 inline-flex w-full items-center justify-center gap-1.5  border border-[#cfe3d9] bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
         >
           <span className="h-1.5 w-1.5 rounded-full bg-rose-500" />
           Talk to a human officer
@@ -370,7 +370,7 @@ function MessageBubble({
   if (role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[90%] rounded-sm border border-[#0e2a23] bg-[#0e2a23] px-3 py-2 text-sm leading-relaxed text-white">
+        <div className="max-w-[90%]  border border-[#0e2a23] bg-[#0e2a23] px-3 py-2 text-sm leading-relaxed text-white">
           <p className="whitespace-pre-wrap">{text}</p>
         </div>
       </div>
@@ -387,12 +387,12 @@ function MessageBubble({
           </div>
         )}
         {text && (
-          <div className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2 text-sm leading-relaxed text-[#10231d]">
+          <div className=" border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2 text-sm leading-relaxed text-[#10231d]">
             <p className="whitespace-pre-wrap">{text}</p>
           </div>
         )}
       </div>
-      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center  bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
         Officer
       </div>
     </div>
@@ -415,9 +415,9 @@ function ToolChip({ tool }: { tool: ToolEvent }) {
         : "bg-[#a06b1a] animate-pulse";
   return (
     <div
-      className={`inline-flex items-center gap-2 self-start rounded-sm border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${tone}`}
+      className={`inline-flex items-center gap-2 self-start  border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${tone}`}
     >
-      <span className={`h-1.5 w-1.5 rounded-sm ${dot}`} />
+      <span className={`h-1.5 w-1.5  ${dot}`} />
       {label}
       {tool.status === "running" && "…"}
     </div>
@@ -427,14 +427,14 @@ function ToolChip({ tool }: { tool: ToolEvent }) {
 function TypingIndicator() {
   return (
     <div className="flex gap-2">
-      <div className="rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2.5">
+      <div className=" border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2.5">
         <div className="flex gap-1">
-          <span className="h-1.5 w-1.5 animate-bounce rounded-sm bg-[#7a9c90] [animation-delay:-0.3s]" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-sm bg-[#7a9c90] [animation-delay:-0.15s]" />
-          <span className="h-1.5 w-1.5 animate-bounce rounded-sm bg-[#7a9c90]" />
+          <span className="h-1.5 w-1.5 animate-bounce  bg-[#7a9c90] [animation-delay:-0.3s]" />
+          <span className="h-1.5 w-1.5 animate-bounce  bg-[#7a9c90] [animation-delay:-0.15s]" />
+          <span className="h-1.5 w-1.5 animate-bounce  bg-[#7a9c90]" />
         </div>
       </div>
-      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+      <div className="mt-0.5 inline-flex shrink-0 items-center justify-center  bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
         Officer
       </div>
     </div>
@@ -444,7 +444,7 @@ function TypingIndicator() {
 function LoadingBubble() {
   return (
     <div className="flex items-center gap-2 text-xs text-[#7a9c90]">
-      <span className="h-1.5 w-1.5 animate-pulse rounded-sm bg-[#2f8f6d]" />
+      <span className="h-1.5 w-1.5 animate-pulse  bg-[#2f8f6d]" />
       Loading conversation…
     </div>
   );
@@ -455,7 +455,7 @@ function WelcomeBubble({ recap }: { recap: string | null }) {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        <div className="max-w-[92%] rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2 text-sm leading-relaxed text-[#10231d]">
+        <div className="max-w-[92%]  border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2 text-sm leading-relaxed text-[#10231d]">
           {recapText ? (
             <>
               <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.16em] text-[#2f8f6d]">
@@ -482,7 +482,7 @@ function WelcomeBubble({ recap }: { recap: string | null }) {
             </>
           )}
         </div>
-        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center rounded-sm bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
+        <div className="mt-0.5 inline-flex shrink-0 items-center justify-center  bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
           Officer
         </div>
       </div>

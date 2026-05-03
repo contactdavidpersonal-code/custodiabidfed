@@ -357,7 +357,7 @@ export default async function VerifiedPublicPage(
 
         {/* Continuous monitoring */}
         {page.show_continuous_monitoring ? (
-          <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="mb-6  border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="font-serif text-xl text-slate-900">
                 Continuous monitoring
@@ -400,7 +400,7 @@ export default async function VerifiedPublicPage(
               />
             </div>
             {page.status_health_reason ? (
-              <p className={`mt-4 rounded-md border px-3 py-2 text-sm ${HEALTH_PILL[health]}`}>
+              <p className={`mt-4  border px-3 py-2 text-sm ${HEALTH_PILL[health]}`}>
                 {page.status_health_reason}
               </p>
             ) : null}
@@ -409,7 +409,7 @@ export default async function VerifiedPublicPage(
 
         {/* About */}
         {page.custom_about ? (
-          <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <section className="mb-6  border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="mb-2 font-serif text-xl text-slate-900">About</h2>
             <p className="whitespace-pre-line text-sm leading-relaxed text-slate-700">
               {page.custom_about}
@@ -418,7 +418,7 @@ export default async function VerifiedPublicPage(
         ) : null}
 
         {/* What this page is */}
-        <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mb-6  border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-2 font-serif text-xl text-slate-900">
             How to read this page
           </h2>
@@ -487,7 +487,7 @@ export default async function VerifiedPublicPage(
         </section>
 
         {/* Footer */}
-        <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-900 p-6 text-center text-white shadow-sm">
+        <div className="mt-8  border border-slate-200 bg-slate-900 p-6 text-center text-white shadow-sm">
           <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-amber-300">
             Custodia
           </div>
@@ -524,7 +524,7 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className=" border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="font-serif text-lg text-slate-900">{title}</h2>
       {subtitle ? (
         <p className="mb-3 mt-0.5 text-xs text-slate-500">{subtitle}</p>

@@ -87,7 +87,7 @@ export default async function ConnectionsPage() {
           return (
             <section
               key={provider}
-              className="rounded-lg border border-[#cfe3d9] bg-white p-6 shadow-sm"
+              className=" border border-[#cfe3d9] bg-white p-6 shadow-sm"
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -109,7 +109,7 @@ export default async function ConnectionsPage() {
                 </div>
 
                 {!configured ? (
-                  <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  <div className=" border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
                     <div className="font-bold uppercase tracking-wider">
                       Setup pending
                     </div>
@@ -122,7 +122,7 @@ export default async function ConnectionsPage() {
                     <input type="hidden" name="provider" value={provider} />
                     <button
                       type="submit"
-                      className="rounded-md border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50"
+                      className=" border border-rose-300 bg-white px-4 py-2 text-sm font-semibold text-rose-700 transition-colors hover:bg-rose-50"
                     >
                       Disconnect
                     </button>
@@ -130,7 +130,7 @@ export default async function ConnectionsPage() {
                 ) : (
                   <a
                     href={startPath}
-                    className="rounded-md bg-[#10231d] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0a1814]"
+                    className=" bg-[#10231d] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0a1814]"
                   >
                     Connect {cfg.label}
                   </a>

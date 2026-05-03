@@ -53,7 +53,7 @@ export default function PricingPage() {
         </p>
 
         <div className="mb-12 grid gap-6 md:grid-cols-[1fr_360px] md:items-start">
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className=" border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="mb-4 font-serif text-2xl text-slate-900">
               What you get
             </h2>
@@ -67,7 +67,7 @@ export default function PricingPage() {
             </ul>
           </div>
 
-          <aside className="rounded-2xl border-2 border-slate-900 bg-slate-900 p-6 text-white shadow-lg">
+          <aside className=" border-2 border-slate-900 bg-slate-900 p-6 text-white shadow-lg">
             <div className="mb-1 text-xs font-semibold uppercase tracking-widest text-amber-300">
               Custodia
             </div>
@@ -80,13 +80,13 @@ export default function PricingPage() {
             </div>
             <Link
               href="/sign-up"
-              className="mb-3 block w-full rounded-xl bg-amber-400 px-4 py-3 text-center text-sm font-bold text-slate-900 hover:bg-amber-300"
+              className="mb-3 block w-full  bg-amber-400 px-4 py-3 text-center text-sm font-bold text-slate-900 hover:bg-amber-300"
             >
               Start 14-day free trial
             </Link>
             <Link
               href="/sprs-check"
-              className="mb-6 block w-full rounded-xl border border-slate-700 bg-transparent px-4 py-3 text-center text-sm font-semibold text-white hover:bg-slate-800"
+              className="mb-6 block w-full  border border-slate-700 bg-transparent px-4 py-3 text-center text-sm font-semibold text-white hover:bg-slate-800"
             >
               Take the free SPRS quiz
             </Link>
@@ -99,7 +99,7 @@ export default function PricingPage() {
           </aside>
         </div>
 
-        <div className="mb-12 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="mb-12  border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-4 font-serif text-xl text-slate-900">
             What&apos;s NOT included
           </h2>
@@ -117,7 +117,7 @@ export default function PricingPage() {
           </ul>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-emerald-50 p-6 text-slate-800 shadow-sm">
+        <div className=" border border-slate-200 bg-emerald-50 p-6 text-slate-800 shadow-sm">
           <h3 className="mb-2 font-serif text-lg text-slate-900">
             The 14-day money-back guarantee
           </h3>

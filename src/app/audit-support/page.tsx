@@ -30,7 +30,7 @@ export default function AuditSupportPage() {
           panic. Custodia customers don&apos;t.
         </p>
 
-        <section className="mb-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mb-10  border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-4 font-serif text-2xl text-slate-900">
             What&apos;s included
           </h2>
@@ -98,7 +98,7 @@ export default function AuditSupportPage() {
           </ul>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-slate-900 p-8 text-center text-white shadow-sm">
+        <section className=" border border-slate-200 bg-slate-900 p-8 text-center text-white shadow-sm">
           <h2 className="mb-2 font-serif text-2xl">
             All of this is in the $449 plan.
           </h2>
@@ -108,7 +108,7 @@ export default function AuditSupportPage() {
           </p>
           <Link
             href="/pricing"
-            className="inline-flex rounded-xl bg-amber-400 px-6 py-3 text-sm font-bold text-slate-900 hover:bg-amber-300"
+            className="inline-flex  bg-amber-400 px-6 py-3 text-sm font-bold text-slate-900 hover:bg-amber-300"
           >
             See pricing
           </Link>

@@ -67,7 +67,7 @@ export default async function UpgradePage() {
           </p>
         </div>
 
-        <div className="rounded-md border border-[#cfe3d9] bg-white p-8 shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
+        <div className=" border border-[#cfe3d9] bg-white p-8 shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
           <PricingTable />
         </div>
 
@@ -88,7 +88,7 @@ export default async function UpgradePage() {
           ].map((b) => (
             <div
               key={b.title}
-              className="rounded-md border border-[#cfe3d9] bg-white p-5"
+              className=" border border-[#cfe3d9] bg-white p-5"
             >
               <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
                 {b.title}

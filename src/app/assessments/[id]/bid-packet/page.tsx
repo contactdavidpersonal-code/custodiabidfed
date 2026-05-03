@@ -50,7 +50,7 @@ export default async function BidPacketPage(
       </header>
 
       {blockers.length > 0 ? (
-        <div className="mb-6 rounded-md border border-[#a06b1a] bg-[#fff7e8] p-4 text-sm text-[#5a3d0a]">
+        <div className="mb-6  border border-[#a06b1a] bg-[#fff7e8] p-4 text-sm text-[#5a3d0a]">
           <div className="font-semibold">
             Fix these before generating a polished packet:
           </div>
@@ -63,7 +63,7 @@ export default async function BidPacketPage(
             {!registrationOk ? (
               <Link
                 href={`/assessments/${id}/registration`}
-                className="rounded-sm border border-[#a06b1a] bg-white px-3 py-1.5 text-xs font-semibold text-[#5a3d0a] hover:bg-[#fff2d8]"
+                className=" border border-[#a06b1a] bg-white px-3 py-1.5 text-xs font-semibold text-[#5a3d0a] hover:bg-[#fff2d8]"
               >
                 → Fix registration
               </Link>
@@ -71,14 +71,14 @@ export default async function BidPacketPage(
             {!attested ? (
               <Link
                 href={`/assessments/${id}/sign`}
-                className="rounded-sm border border-[#a06b1a] bg-white px-3 py-1.5 text-xs font-semibold text-[#5a3d0a] hover:bg-[#fff2d8]"
+                className=" border border-[#a06b1a] bg-white px-3 py-1.5 text-xs font-semibold text-[#5a3d0a] hover:bg-[#fff2d8]"
               >
                 → Go sign &amp; affirm
               </Link>
             ) : null}
             <Link
               href="/profile/bid-ready"
-              className="rounded-sm border border-[#a06b1a] bg-white px-3 py-1.5 text-xs font-semibold text-[#5a3d0a] hover:bg-[#fff2d8]"
+              className=" border border-[#a06b1a] bg-white px-3 py-1.5 text-xs font-semibold text-[#5a3d0a] hover:bg-[#fff2d8]"
             >
               → Edit bid profile
             </Link>
@@ -87,7 +87,7 @@ export default async function BidPacketPage(
       ) : null}
 
       <div className="grid gap-6 md:grid-cols-3">
-        <section className="md:col-span-2 rounded-md border border-[#cfe3d9] bg-white p-6">
+        <section className="md:col-span-2  border border-[#cfe3d9] bg-white p-6">
           <h2 className="font-serif text-lg font-bold">What&apos;s in the packet</h2>
           <ul className="mt-4 space-y-3 text-sm">
             <PacketRow
@@ -159,7 +159,7 @@ export default async function BidPacketPage(
           </ul>
         </section>
 
-        <aside className="rounded-md border border-[#cfe3d9] bg-white p-6">
+        <aside className=" border border-[#cfe3d9] bg-white p-6">
           <h2 className="font-serif text-lg font-bold">Profile readiness</h2>
           <div className="mt-4 flex items-baseline gap-2">
             <span className="font-serif text-4xl font-bold text-[#0e2a23]">
@@ -167,7 +167,7 @@ export default async function BidPacketPage(
             </span>
             <span className="text-sm text-[#456c5f]">/ 100</span>
           </div>
-          <div className="mt-3 h-2 w-full overflow-hidden rounded-sm bg-[#e3eee8]">
+          <div className="mt-3 h-2 w-full overflow-hidden  bg-[#e3eee8]">
             <div
               className="h-full bg-[#2f8f6d]"
               style={{ width: `${score}%` }}
@@ -196,14 +196,14 @@ export default async function BidPacketPage(
           )}
           <Link
             href="/profile/bid-ready"
-            className="mt-5 block rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-center text-xs font-semibold text-[#10231d] hover:bg-[#f1f6f3]"
+            className="mt-5 block  border border-[#cfe3d9] bg-white px-3 py-2 text-center text-xs font-semibold text-[#10231d] hover:bg-[#f1f6f3]"
           >
             Edit bid profile →
           </Link>
         </aside>
       </div>
 
-      <section className="mt-8 rounded-md border border-[#10231d] bg-[#10231d] p-6 text-white">
+      <section className="mt-8  border border-[#10231d] bg-[#10231d] p-6 text-white">
         <h2 className="font-serif text-lg font-bold text-white">
           Generate the packet
         </h2>
@@ -217,14 +217,14 @@ export default async function BidPacketPage(
             href={`/api/assessments/${id}/bid-packet`}
             target="_blank"
             rel="noreferrer noopener"
-            className="rounded-sm bg-[#bdf2cf] px-5 py-2.5 text-sm font-bold text-[#0e2a23] hover:bg-white"
+            className=" bg-[#bdf2cf] px-5 py-2.5 text-sm font-bold text-[#0e2a23] hover:bg-white"
           >
             Open packet in new tab
           </a>
           <a
             href={`/api/assessments/${id}/bid-packet`}
             download
-            className="rounded-sm border border-[#bdf2cf] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] hover:bg-[#0e2a23]"
+            className=" border border-[#bdf2cf] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] hover:bg-[#0e2a23]"
           >
             Download HTML
           </a>
@@ -242,7 +242,7 @@ export default async function BidPacketPage(
         </p>
       </section>
 
-      <section className="mt-6 rounded-md border border-[#cfe3d9] bg-[#f7fcf9] p-6">
+      <section className="mt-6  border border-[#cfe3d9] bg-[#f7fcf9] p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h2 className="font-serif text-lg font-bold">
@@ -257,7 +257,7 @@ export default async function BidPacketPage(
           </div>
           <Link
             href={`/assessments/${id}/bid-packet/tailor`}
-            className="flex-none rounded-sm bg-[#10231d] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0e2a23]"
+            className="flex-none  bg-[#10231d] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0e2a23]"
           >
             Tailor for opportunity →
           </Link>
@@ -288,11 +288,11 @@ function PacketRow({
       </div>
       <div className="flex flex-none items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em]">
         {locked ? (
-          <span className="rounded-sm bg-[#10231d] px-2 py-1 text-[#bdf2cf]">
+          <span className=" bg-[#10231d] px-2 py-1 text-[#bdf2cf]">
             Locked
           </span>
         ) : (
-          <span className="rounded-sm border border-[#cfe3d9] bg-white px-2 py-1 text-[#2f8f6d]">
+          <span className=" border border-[#cfe3d9] bg-white px-2 py-1 text-[#2f8f6d]">
             Editable
           </span>
         )}

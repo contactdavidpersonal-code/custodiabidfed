@@ -66,7 +66,7 @@ export default async function VerifiedOwnerPanel(
         </p>
         <Link
           href={`/assessments/${id}`}
-          className="mt-6 inline-flex rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-800"
+          className="mt-6 inline-flex  bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-emerald-800"
         >
           ← Back to assessment
         </Link>
@@ -119,7 +119,7 @@ export default async function VerifiedOwnerPanel(
       </div>
 
       {/* Publish toggle */}
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="mb-6  border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="font-serif text-lg text-slate-900">Visibility</h2>
         <p className="mt-1 text-sm text-slate-600">
           When published, your page is indexed by search engines and visible at{" "}
@@ -139,7 +139,7 @@ export default async function VerifiedOwnerPanel(
               <input type="hidden" name="assessmentId" value={id} />
               <button
                 type="submit"
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:border-slate-400"
+                className=" border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:border-slate-400"
               >
                 Unpublish
               </button>
@@ -149,7 +149,7 @@ export default async function VerifiedOwnerPanel(
               <input type="hidden" name="assessmentId" value={id} />
               <button
                 type="submit"
-                className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-800"
+                className=" bg-emerald-700 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-emerald-800"
               >
                 Publish
               </button>
@@ -159,7 +159,7 @@ export default async function VerifiedOwnerPanel(
             href={publicUrl}
             target="_blank"
             rel="noreferrer"
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:border-slate-400"
+            className=" border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 hover:border-slate-400"
           >
             View public page →
           </a>
@@ -174,7 +174,7 @@ export default async function VerifiedOwnerPanel(
 
       {/* Set-asides nudge */}
       {setAsides.length === 0 ? (
-        <section className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+        <section className="mb-6  border border-amber-200 bg-amber-50 p-6 shadow-sm">
           <h2 className="font-serif text-lg text-amber-900">
             Add your designations
           </h2>
@@ -185,13 +185,13 @@ export default async function VerifiedOwnerPanel(
           </p>
           <Link
             href="/profile/bid-ready"
-            className="mt-3 inline-flex rounded-lg bg-amber-700 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-amber-800"
+            className="mt-3 inline-flex  bg-amber-700 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-amber-800"
           >
             Open bid-ready profile →
           </Link>
         </section>
       ) : (
-        <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mb-6  border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="font-serif text-lg text-slate-900">
             Designations on file
           </h2>
@@ -207,7 +207,7 @@ export default async function VerifiedOwnerPanel(
       )}
 
       {/* Content + toggles */}
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="mb-6  border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="font-serif text-lg text-slate-900">
           Content &amp; sections
         </h2>
@@ -226,7 +226,7 @@ export default async function VerifiedOwnerPanel(
               defaultValue={trustPage.custom_about ?? ""}
               maxLength={500}
               rows={5}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+              className="mt-1 w-full  border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
               placeholder="What you build, who you serve, and what makes you a strong subcontractor."
             />
             <p className="mt-1 text-xs text-slate-500">
@@ -246,7 +246,7 @@ export default async function VerifiedOwnerPanel(
               name="contactEmail"
               type="email"
               defaultValue={trustPage.contact_email ?? ""}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+              className="mt-1 w-full  border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
               placeholder="bd@yourcompany.com"
             />
           </div>
@@ -277,7 +277,7 @@ export default async function VerifiedOwnerPanel(
           </fieldset>
           <button
             type="submit"
-            className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-slate-800"
+            className=" bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-slate-800"
           >
             Save changes
           </button>
@@ -285,7 +285,7 @@ export default async function VerifiedOwnerPanel(
       </section>
 
       {/* Embed snippets */}
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="mb-6  border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="font-serif text-lg text-slate-900">Embed your badge</h2>
         <p className="mt-1 text-sm text-slate-600">
           Drop into your website footer, capability statement, or email
@@ -326,7 +326,7 @@ export default async function VerifiedOwnerPanel(
       </section>
 
       {/* Rotate slug */}
-      <section className="mb-6 rounded-2xl border border-red-200 bg-red-50/40 p-6 shadow-sm">
+      <section className="mb-6  border border-red-200 bg-red-50/40 p-6 shadow-sm">
         <h2 className="font-serif text-lg text-red-900">
           Rotate Custodia ID &amp; URL
         </h2>
@@ -342,7 +342,7 @@ export default async function VerifiedOwnerPanel(
           <input type="hidden" name="assessmentId" value={id} />
           <button
             type="submit"
-            className="rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-bold text-red-900 hover:bg-red-50"
+            className=" border border-red-300 bg-white px-4 py-2 text-sm font-bold text-red-900 hover:bg-red-50"
           >
             Rotate ID and URL
           </button>
@@ -371,7 +371,7 @@ function ToggleField({
         name={name}
         defaultChecked={defaultChecked}
         value="on"
-        className="h-4 w-4 rounded border-slate-300 text-emerald-700 focus:ring-emerald-500"
+        className="h-4 w-4  border-slate-300 text-emerald-700 focus:ring-emerald-500"
       />
       <span>{label}</span>
     </label>
@@ -384,7 +384,7 @@ function CodeBlock({ label, code }: { label: string; code: string }) {
       <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
         {label}
       </div>
-      <pre className="mt-1 overflow-x-auto rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
+      <pre className="mt-1 overflow-x-auto  border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
         <code>{code}</code>
       </pre>
     </div>

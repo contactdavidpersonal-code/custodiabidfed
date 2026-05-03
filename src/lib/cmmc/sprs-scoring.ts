@@ -148,7 +148,7 @@ export const QUIZ_QUESTIONS: ReadonlyArray<QuizQuestion> = [
 
 /**
  * Map an answer to the SPRS-style point deduction for a given question
- * weight. "yes" loses 0, "partial" loses half (rounded up), "no" loses
+ * weight. "yes" loses 0, "partial" loses half ( up), "no" loses
  * full weight, "unsure" is treated as "no" (defensive — primes do the same).
  */
 function deduction(answer: QuizAnswer, weight: 1 | 3 | 5): number {

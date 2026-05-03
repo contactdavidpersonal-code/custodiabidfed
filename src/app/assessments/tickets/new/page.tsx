@@ -20,7 +20,7 @@ export default function NewTicketPage() {
 
       <form
         action={createTicketAction}
-        className="mt-8 space-y-6 rounded-sm border border-[#cfe3d9] bg-white p-6"
+        className="mt-8 space-y-6  border border-[#cfe3d9] bg-white p-6"
       >
         <div>
           <label
@@ -35,7 +35,7 @@ export default function NewTicketPage() {
             required
             maxLength={140}
             placeholder="e.g. Does our HRIS need MFA for AC.L1-3.1.1?"
-            className="mt-2 w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none focus:ring-2 focus:ring-[#2f8f6d]/20"
+            className="mt-2 w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none focus:ring-2 focus:ring-[#2f8f6d]/20"
           />
         </div>
 
@@ -70,7 +70,7 @@ export default function NewTicketPage() {
             maxLength={8000}
             rows={8}
             placeholder="Describe the situation. Include the practice ID, the prime/contract if relevant, and what you've already tried."
-            className="mt-2 w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none focus:ring-2 focus:ring-[#2f8f6d]/20"
+            className="mt-2 w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm focus:border-[#2f8f6d] focus:outline-none focus:ring-2 focus:ring-[#2f8f6d]/20"
           />
           <p className="mt-1 text-[11px] text-[#7a9c90]">
             Don&apos;t paste secrets, passwords, or PII. The officer can ask
@@ -85,7 +85,7 @@ export default function NewTicketPage() {
           </p>
           <button
             type="submit"
-            className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+            className=" bg-[#0e2a23] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
           >
             Send to an officer
           </button>
@@ -107,7 +107,7 @@ function UrgencyOption({
   defaultChecked?: boolean;
 }) {
   return (
-    <label className="flex cursor-pointer items-start gap-2 rounded-sm border border-[#cfe3d9] bg-white p-3 transition-colors hover:border-[#2f8f6d] has-[:checked]:border-[#2f8f6d] has-[:checked]:bg-[#f7fcf9]">
+    <label className="flex cursor-pointer items-start gap-2  border border-[#cfe3d9] bg-white p-3 transition-colors hover:border-[#2f8f6d] has-[:checked]:border-[#2f8f6d] has-[:checked]:bg-[#f7fcf9]">
       <input
         type="radio"
         name="urgency"

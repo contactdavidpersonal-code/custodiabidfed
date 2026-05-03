@@ -75,7 +75,7 @@ export default async function StatementOfCompliancePage(
         <PrintButton label="Print / save as PDF" />
       </div>
 
-      <article className="print-document rounded-2xl border border-slate-200 bg-white p-10 shadow-sm print:border-0 print:p-0 print:shadow-none">
+      <article className="print-document  border border-slate-200 bg-white p-10 shadow-sm print:border-0 print:p-0 print:shadow-none">
         <header className="mb-10 text-center">
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
             Statement of Compliance
@@ -99,7 +99,7 @@ export default async function StatementOfCompliancePage(
             Information (&ldquo;FCI&rdquo;).
           </p>
 
-          <div className="grid grid-cols-2 gap-6 rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm">
+          <div className="grid grid-cols-2 gap-6  border border-slate-200 bg-slate-50 p-5 text-sm">
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Organization

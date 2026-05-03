@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -179,7 +179,7 @@ export function PracticeWizard(props: Props) {
 
       <header className="mb-6">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded-sm bg-[#0e2a23] px-2 py-0.5 text-[11px] font-bold tracking-wider text-[#bdf2cf]">
+          <span className=" bg-[#0e2a23] px-2 py-0.5 text-[11px] font-bold tracking-wider text-[#bdf2cf]">
             {props.practice.domain}
           </span>
           <span className="font-mono text-xs font-semibold text-[#5a7d70]">
@@ -205,7 +205,7 @@ export function PracticeWizard(props: Props) {
       </header>
 
       {isLocked && !wholeNa && (
-        <div className="mb-6 rounded-md border border-[#2f8f6d] bg-[#f7fcf9] p-4">
+        <div className="mb-6  border border-[#2f8f6d] bg-[#f7fcf9] p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#2f8f6d]">
@@ -219,7 +219,7 @@ export function PracticeWizard(props: Props) {
             {props.nextId && (
               <Link
                 href={`/assessments/${props.assessmentId}/controls/${props.nextId}`}
-                className="rounded-sm bg-[#0e2a23] px-4 py-2 text-xs font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+                className=" bg-[#0e2a23] px-4 py-2 text-xs font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
               >
                 Next practice &rarr;
               </Link>
@@ -258,7 +258,7 @@ export function PracticeWizard(props: Props) {
 
       {/* Whole-control N/A escape hatch — small, near the bottom. */}
       {!isLocked && (
-        <div className="mb-5 rounded-sm border border-[#cfe3d9] bg-white p-3">
+        <div className="mb-5  border border-[#cfe3d9] bg-white p-3">
           <label className="flex cursor-pointer items-start gap-3">
             <input
               type="checkbox"
@@ -279,7 +279,7 @@ export function PracticeWizard(props: Props) {
                   onChange={(e) => setNaReason(e.target.value)}
                   rows={2}
                   placeholder="E.g. We have no physical office; all staff work remotely on cloud-only systems."
-                  className="mt-2 w-full rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] outline-none transition-colors focus:border-[#0e2a23]"
+                  className="mt-2 w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] outline-none transition-colors focus:border-[#0e2a23]"
                 />
               )}
             </div>
@@ -289,7 +289,7 @@ export function PracticeWizard(props: Props) {
 
       {/* Step 4 — lock in and move on. */}
       {!wholeNa && (
-        <div className="mt-6 rounded-md border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+        <div className="mt-6  border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#5a7d70]">
@@ -315,7 +315,7 @@ export function PracticeWizard(props: Props) {
               type="button"
               disabled={!ready || submitting}
               onClick={lockIn}
-              className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:opacity-40"
+              className=" bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {submitting
                 ? "Saving\u2026"
@@ -333,7 +333,7 @@ export function PracticeWizard(props: Props) {
             type="button"
             disabled={!ready || submitting}
             onClick={lockIn}
-            className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:opacity-40"
+            className=" bg-[#0e2a23] px-5 py-2.5 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {submitting ? "Saving\u2026" : "Mark N/A and continue \u2192"}
           </button>
@@ -378,7 +378,7 @@ function ObjectivesPanel({
   satisfied: boolean;
 }) {
   return (
-    <section className="mb-5 rounded-md border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+    <section className="mb-5  border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
           What the assessor needs to see
@@ -394,7 +394,7 @@ function ObjectivesPanel({
             className="flex items-start gap-3 text-sm leading-relaxed text-[#10231d]"
           >
             <span
-              className={`mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center rounded-sm font-mono text-[10px] font-bold ${
+              className={`mt-0.5 inline-flex h-5 w-5 flex-none items-center justify-center  font-mono text-[10px] font-bold ${
                 satisfied
                   ? "bg-[#0e2a23] text-[#bdf2cf]"
                   : "border border-[#cfe3d9] bg-white text-[#5a7d70]"
@@ -412,7 +412,7 @@ function ObjectivesPanel({
         ))}
       </ul>
       {!satisfied && (
-        <p className="mt-3 rounded-sm bg-[#f7fcf9] px-3 py-2 text-xs leading-relaxed text-[#5a7d70]">
+        <p className="mt-3  bg-[#f7fcf9] px-3 py-2 text-xs leading-relaxed text-[#5a7d70]">
           Upload one piece of evidence below that demonstrates these
           objectives. A single artifact (a screenshot, a signed roster, a
           policy excerpt) typically covers all of them for a CMMC L1
@@ -456,7 +456,7 @@ function EvidenceArea({
   recommendation: string | null;
 }) {
   return (
-    <section className="mb-5 rounded-md border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+    <section className="mb-5  border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04)]">
       <div className="border-b border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
           Evidence for this practice
@@ -474,7 +474,7 @@ function EvidenceArea({
                 key={i}
                 className="flex items-start gap-2 text-xs leading-relaxed text-[#10231d]"
               >
-                <span className="mt-0.5 inline-flex h-3 w-3 flex-none items-center justify-center rounded-sm bg-[#0e2a23] text-[9px] font-bold text-[#bdf2cf]">
+                <span className="mt-0.5 inline-flex h-3 w-3 flex-none items-center justify-center  bg-[#0e2a23] text-[9px] font-bold text-[#bdf2cf]">
                   &#x2713;
                 </span>
                 <span>{item}</span>
@@ -573,11 +573,11 @@ function ReusePicker({
                   >
                     {display}
                   </a>
-                  <span className="rounded-sm bg-[#e4eee8] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[#5a7d70]">
+                  <span className=" bg-[#e4eee8] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[#5a7d70]">
                     From {c.source_control_id}
                   </span>
                   {c.suggested && (
-                    <span className="rounded-sm bg-[#0e2a23] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#bdf2cf]">
+                    <span className=" bg-[#0e2a23] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[#bdf2cf]">
                       Suggested
                     </span>
                   )}
@@ -594,7 +594,7 @@ function ReusePicker({
                 <input type="hidden" name="artifactId" value={c.id} />
                 <button
                   type="submit"
-                  className="rounded-sm border border-[#0e2a23] bg-[#0e2a23] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+                  className=" border border-[#0e2a23] bg-[#0e2a23] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
                 >
                   Use here
                 </button>
@@ -642,7 +642,7 @@ function EvidenceRow({
     <li className="px-4 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <span className="flex h-9 w-9 flex-none items-center justify-center rounded-sm bg-[#0e2a23] font-mono text-[10px] font-bold text-[#bdf2cf]">
+          <span className="flex h-9 w-9 flex-none items-center justify-center  bg-[#0e2a23] font-mono text-[10px] font-bold text-[#bdf2cf]">
             {a.mime_type?.startsWith("image/")
               ? "IMG"
               : a.mime_type?.includes("pdf")
@@ -660,14 +660,14 @@ function EvidenceRow({
                 {display}
               </a>
               <span
-                className={`inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${verdictTone.pill}`}
+                className={`inline-flex items-center  px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${verdictTone.pill}`}
               >
                 {verdictTone.label}
               </span>
               {crossTagged && (
                 <span
                   title={`Originally uploaded for ${a.control_id}`}
-                  className="rounded-sm bg-[#e4eee8] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[#5a7d70]"
+                  className=" bg-[#e4eee8] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-[#5a7d70]"
                 >
                   Reused from {a.control_id}
                 </span>
@@ -690,7 +690,7 @@ function EvidenceRow({
             <button
               type="submit"
               title="Re-run platform review"
-              className="rounded-sm px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#f7fcf9] hover:text-[#10231d]"
+              className=" px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#f7fcf9] hover:text-[#10231d]"
             >
               Re-review
             </button>
@@ -703,7 +703,7 @@ function EvidenceRow({
               <button
                 type="submit"
                 title="Untag from this practice (the artifact stays on its home practice)"
-                className="rounded-sm px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#f7fcf9] hover:text-[#10231d]"
+                className=" px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#f7fcf9] hover:text-[#10231d]"
               >
                 Untag
               </button>
@@ -715,7 +715,7 @@ function EvidenceRow({
               <input type="hidden" name="artifactId" value={a.id} />
               <button
                 type="submit"
-                className="rounded-sm px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#fdf2f0] hover:text-[#b03a2e]"
+                className=" px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#fdf2f0] hover:text-[#b03a2e]"
               >
                 Remove
               </button>
@@ -724,7 +724,7 @@ function EvidenceRow({
         </div>
       </div>
       {a.ai_review_summary && (
-        <p className="mt-2 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2 text-xs leading-relaxed text-[#10231d]">
+        <p className="mt-2  border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2 text-xs leading-relaxed text-[#10231d]">
           {a.ai_review_summary}
         </p>
       )}
@@ -743,7 +743,7 @@ function ProviderReference({
   const providers = practice.providerGuidance;
   const active = open ? providers.find((p) => p.provider === open) : null;
   return (
-    <details className="mt-6 rounded-md border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+    <details className="mt-6  border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04)]">
       <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-[#10231d]">
         How to capture this in your tools (M365, Workspace, AWS&hellip;)
       </summary>
@@ -754,7 +754,7 @@ function ProviderReference({
               key={p.provider}
               type="button"
               onClick={() => setOpen(open === p.provider ? null : p.provider)}
-              className={`rounded-sm px-3 py-1.5 text-xs font-semibold transition-colors ${
+              className={` px-3 py-1.5 text-xs font-semibold transition-colors ${
                 open === p.provider
                   ? "bg-[#0e2a23] text-[#bdf2cf]"
                   : "border border-[#cfe3d9] bg-white text-[#0e2a23] hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
@@ -765,7 +765,7 @@ function ProviderReference({
           ))}
         </div>
         {active && (
-          <div className="mt-4 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] p-4">
+          <div className="mt-4  border border-[#cfe3d9] bg-[#f7fcf9] p-4">
             <ol className="list-decimal space-y-1 pl-5 text-sm leading-relaxed text-[#10231d]">
               {active.steps.map((s, i) => (
                 <li key={i}>{s}</li>
@@ -781,7 +781,7 @@ function ProviderReference({
                   href={active.adminUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-sm bg-[#0e2a23] px-3 py-1.5 text-xs font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+                  className=" bg-[#0e2a23] px-3 py-1.5 text-xs font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
                 >
                   Open in {providerLabel[active.provider]} &#x2197;
                 </a>
@@ -790,7 +790,7 @@ function ProviderReference({
                 <a
                   href={`/templates/${active.template.filename}`}
                   download
-                  className="rounded-sm border border-[#cfe3d9] bg-white px-3 py-1.5 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
+                  className=" border border-[#cfe3d9] bg-white px-3 py-1.5 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
                 >
                   Download template &middot; {active.template.label}
                 </a>
@@ -827,7 +827,7 @@ function TemplatesStrip({
   if (templates.length === 0) return null;
 
   return (
-    <section className="mb-5 rounded-md border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+    <section className="mb-5  border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
           Templates &mdash; download, fill out, then upload as evidence
@@ -844,7 +844,7 @@ function TemplatesStrip({
             <a
               href={`/templates/${t.filename}`}
               download
-              className="group relative flex items-start gap-3 rounded-sm border border-[#cfe3d9] bg-[#f7fcf9] p-3 transition-colors hover:border-[#2f8f6d] hover:bg-white"
+              className="group relative flex items-start gap-3  border border-[#cfe3d9] bg-[#f7fcf9] p-3 transition-colors hover:border-[#2f8f6d] hover:bg-white"
               title={`Download ${t.label}`}
             >
               {/* File icon with download badge overlay */}
@@ -945,7 +945,7 @@ function RemediationInline({
 
   return (
     <details
-      className="mt-5 rounded-sm border border-[#e5d6c2] bg-[#fdf8ef]"
+      className="mt-5  border border-[#e5d6c2] bg-[#fdf8ef]"
       open={!plan}
     >
       <summary className="cursor-pointer px-4 py-3 text-sm font-semibold text-[#10231d]">
@@ -972,7 +972,7 @@ function RemediationInline({
               required
               defaultValue={plan?.gap_summary ?? ""}
               placeholder="What's missing today?"
-              className="w-full rounded-sm border border-[#e5d6c2] bg-white px-3 py-2 text-sm text-[#10231d] outline-none focus:border-[#0e2a23]"
+              className="w-full  border border-[#e5d6c2] bg-white px-3 py-2 text-sm text-[#10231d] outline-none focus:border-[#0e2a23]"
             />
           </label>
           <label className="block">
@@ -985,7 +985,7 @@ function RemediationInline({
               required
               defaultValue={plan?.planned_actions ?? ""}
               placeholder="Concrete steps and dates."
-              className="w-full rounded-sm border border-[#e5d6c2] bg-white px-3 py-2 text-sm text-[#10231d] outline-none focus:border-[#0e2a23]"
+              className="w-full  border border-[#e5d6c2] bg-white px-3 py-2 text-sm text-[#10231d] outline-none focus:border-[#0e2a23]"
             />
           </label>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -998,7 +998,7 @@ function RemediationInline({
                 name="targetCloseDate"
                 required
                 defaultValue={plan?.target_close_date ?? defaultTarget}
-                className="w-full rounded-sm border border-[#e5d6c2] bg-white px-3 py-2 text-sm text-[#10231d] outline-none focus:border-[#0e2a23]"
+                className="w-full  border border-[#e5d6c2] bg-white px-3 py-2 text-sm text-[#10231d] outline-none focus:border-[#0e2a23]"
               />
             </label>
             <label className="block">
@@ -1008,7 +1008,7 @@ function RemediationInline({
               <select
                 name="status"
                 defaultValue={plan?.status ?? "open"}
-                className="w-full rounded-sm border border-[#e5d6c2] bg-white px-3 py-2 text-sm text-[#10231d] outline-none focus:border-[#0e2a23]"
+                className="w-full  border border-[#e5d6c2] bg-white px-3 py-2 text-sm text-[#10231d] outline-none focus:border-[#0e2a23]"
               >
                 {REMEDIATION_STATUS_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>
@@ -1020,7 +1020,7 @@ function RemediationInline({
           </div>
           <button
             type="submit"
-            className="rounded-sm bg-[#0e2a23] px-4 py-2 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+            className=" bg-[#0e2a23] px-4 py-2 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
           >
             {plan ? "Update plan" : "Save plan"}
           </button>

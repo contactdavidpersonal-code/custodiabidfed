@@ -52,7 +52,7 @@ export default async function TicketsIndexPage() {
         </div>
         <Link
           href="/assessments/tickets/new"
-          className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+          className=" bg-[#0e2a23] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
         >
           + Ask a human officer
         </Link>
@@ -66,7 +66,7 @@ export default async function TicketsIndexPage() {
             <li key={t.id}>
               <Link
                 href={`/assessments/tickets/${t.id}`}
-                className="block rounded-sm border border-[#cfe3d9] bg-white p-5 transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
+                className="block  border border-[#cfe3d9] bg-white p-5 transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0 flex-1">
@@ -112,7 +112,7 @@ export default async function TicketsIndexPage() {
 
 function EmptyState() {
   return (
-    <div className="rounded-sm border border-dashed border-[#cfe3d9] bg-white p-10 text-center">
+    <div className=" border border-dashed border-[#cfe3d9] bg-white p-10 text-center">
       <h2 className="font-serif text-xl font-bold text-[#10231d]">
         No tickets yet
       </h2>
@@ -123,7 +123,7 @@ function EmptyState() {
       </p>
       <Link
         href="/assessments/tickets/new"
-        className="mt-6 inline-block rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+        className="mt-6 inline-block  bg-[#0e2a23] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
       >
         Open your first ticket
       </Link>

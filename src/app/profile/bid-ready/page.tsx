@@ -41,7 +41,7 @@ export default async function BidReadyProfilePage() {
           </div>
           <Link
             href="/assessments"
-            className="rounded-sm border border-[#cfe3d9] bg-white px-3 py-2 text-sm font-medium text-[#10231d] hover:bg-[#f1f6f3]"
+            className=" border border-[#cfe3d9] bg-white px-3 py-2 text-sm font-medium text-[#10231d] hover:bg-[#f1f6f3]"
           >
             ← Workspace
           </Link>
@@ -49,7 +49,7 @@ export default async function BidReadyProfilePage() {
       </header>
 
       <section className="mx-auto max-w-5xl px-6 py-8">
-        <div className="mb-6 rounded-md border border-[#cfe3d9] bg-white p-5">
+        <div className="mb-6  border border-[#cfe3d9] bg-white p-5">
           <h2 className="font-serif text-lg font-bold">
             Locked identifiers
           </h2>
@@ -93,7 +93,7 @@ export default async function BidReadyProfilePage() {
           draftDifferentiatorsAction={draftDifferentiatorsAction}
         />
 
-        <div className="mt-6 rounded-md border border-[#cfe3d9] bg-white p-5">
+        <div className="mt-6  border border-[#cfe3d9] bg-white p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="font-serif text-lg font-bold">
@@ -137,8 +137,8 @@ export default async function BidReadyProfilePage() {
                 type="submit"
                 className={
                   radarEmailsEnabled
-                    ? "rounded-sm border border-[#a06b1a] bg-white px-3 py-2 text-sm font-semibold text-[#a06b1a] hover:bg-[#fff5e8]"
-                    : "rounded-sm border border-[#2f8f6d] bg-[#2f8f6d] px-3 py-2 text-sm font-semibold text-white hover:bg-[#287a5d]"
+                    ? " border border-[#a06b1a] bg-white px-3 py-2 text-sm font-semibold text-[#a06b1a] hover:bg-[#fff5e8]"
+                    : " border border-[#2f8f6d] bg-[#2f8f6d] px-3 py-2 text-sm font-semibold text-white hover:bg-[#287a5d]"
                 }
               >
                 {radarEmailsEnabled ? "Unsubscribe" : "Subscribe"}

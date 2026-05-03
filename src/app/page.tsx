@@ -1859,7 +1859,7 @@ export default function Home() {
       <footer className="border-t border-[#d5e5dd] bg-[#f7f7f3] px-6 py-14 text-[#44695c]">
         <div className="mx-auto max-w-6xl">
           {/* Top CTA strip */}
-          <div className="mb-12 flex flex-col items-start justify-between gap-4 rounded-md border border-[#cfe3d9] bg-white p-6 md:flex-row md:items-center">
+          <div className="mb-12 flex flex-col items-start justify-between gap-4  border border-[#cfe3d9] bg-white p-6 md:flex-row md:items-center">
             <div>
               <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#a06b1a]">
                 Summer Federal Cash Incentive &middot; 100 seats
@@ -1871,7 +1871,7 @@ export default function Home() {
             </div>
             <Link
               href="/sign-up"
-              className="rounded-sm bg-[#0e2a23] px-5 py-2.5 text-sm font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
+              className=" bg-[#0e2a23] px-5 py-2.5 text-sm font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
             >
               Start my 14-day free trial &rarr;
             </Link>

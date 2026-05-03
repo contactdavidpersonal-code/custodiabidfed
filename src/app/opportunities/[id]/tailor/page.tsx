@@ -73,7 +73,7 @@ export default async function TailorFromOpportunityPage(props: {
         </p>
         <Link
           href="/assessments"
-          className="mt-6 inline-block rounded-sm bg-[#10231d] px-5 py-2.5 text-sm font-bold text-white"
+          className="mt-6 inline-block  bg-[#10231d] px-5 py-2.5 text-sm font-bold text-white"
         >
           Go to Workspace
         </Link>

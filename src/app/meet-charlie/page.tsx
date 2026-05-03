@@ -19,7 +19,7 @@ export default function MeetCharliePage() {
         </div>
 
         <div className="grid gap-8 md:grid-cols-[280px_1fr] md:items-start">
-          <div className="flex h-72 w-full items-center justify-center rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex h-72 w-full items-center justify-center  border border-slate-200 bg-white shadow-sm">
             <div className="text-center">
               <div className="text-7xl font-bold text-slate-900">C</div>
               <div className="mt-2 text-xs font-semibold uppercase tracking-widest text-slate-500">
@@ -55,7 +55,7 @@ export default function MeetCharliePage() {
             {CHARLIE_BIO.credentials.map((c) => (
               <li
                 key={c}
-                className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
+                className="flex items-start gap-3  border border-slate-200 bg-white p-4 shadow-sm"
               >
                 <span className="mt-1 inline-block h-2 w-2 flex-shrink-0 rounded-full bg-emerald-500" />
                 <span className="text-slate-700">{c}</span>
@@ -76,28 +76,28 @@ export default function MeetCharliePage() {
             What Charlie won&apos;t do
           </h2>
           <ul className="grid gap-3 md:grid-cols-2">
-            <li className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">
+            <li className=" border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">
               <strong className="block text-slate-900">
                 Pretend it&apos;s a lawyer.
               </strong>
               Affirmations carry False Claims Act exposure. Charlie flags it
               and sends you to counsel.
             </li>
-            <li className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">
+            <li className=" border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">
               <strong className="block text-slate-900">
                 Sign off on weak evidence.
               </strong>
               Charlie blocks attestation when any of the 17 practices are
               still partial or unclear. No exceptions.
             </li>
-            <li className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">
+            <li className=" border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">
               <strong className="block text-slate-900">
                 Drift into Level 2 or DFARS.
               </strong>
               Charlie is scoped to CMMC L1 — and tells you when an officer
               should take over.
             </li>
-            <li className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">
+            <li className=" border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">
               <strong className="block text-slate-900">
                 Make up citations.
               </strong>
@@ -107,14 +107,14 @@ export default function MeetCharliePage() {
           </ul>
         </section>
 
-        <section className="mt-12 rounded-2xl border border-slate-200 bg-slate-900 p-8 text-center text-white shadow-sm">
+        <section className="mt-12  border border-slate-200 bg-slate-900 p-8 text-center text-white shadow-sm">
           <h2 className="mb-2 font-serif text-2xl">Try Charlie free for 14 days.</h2>
           <p className="mb-6 text-slate-300">
             Federal bid-ready in 7 days. $449/month, flat. Cancel any time.
           </p>
           <Link
             href="/sign-up"
-            className="inline-flex rounded-xl bg-amber-400 px-6 py-3 text-sm font-bold text-slate-900 hover:bg-amber-300"
+            className="inline-flex  bg-amber-400 px-6 py-3 text-sm font-bold text-slate-900 hover:bg-amber-300"
           >
             Start my free trial
           </Link>

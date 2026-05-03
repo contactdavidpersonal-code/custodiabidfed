@@ -168,7 +168,7 @@ export default async function AssessmentOverviewPage(
               <div key={domain}>
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-baseline gap-3">
-                    <span className="rounded-sm bg-[#0e2a23] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#bdf2cf]">
+                    <span className=" bg-[#0e2a23] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#bdf2cf]">
                       {domain}
                     </span>
                     <h3 className="font-serif text-base font-bold text-[#10231d]">
@@ -187,11 +187,11 @@ export default async function AssessmentOverviewPage(
                       <Link
                         key={practice.id}
                         href={`/assessments/${ctx.assessment.id}/controls/${practice.id}`}
-                        className="group block rounded-md border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)] transition-all hover:border-[#2f8f6d] hover:shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.10)]"
+                        className="group block  border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)] transition-all hover:border-[#2f8f6d] hover:shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.10)]"
                       >
                         <div className="flex items-start gap-3">
                           <span
-                            className={`mt-1.5 h-2 w-2 flex-none rounded-sm ${statusDotStyles[status]}`}
+                            className={`mt-1.5 h-2 w-2 flex-none  ${statusDotStyles[status]}`}
                           />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-2">
@@ -199,7 +199,7 @@ export default async function AssessmentOverviewPage(
                                 {practice.id}
                               </span>
                               <span
-                                className={`inline-flex items-center rounded-sm px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] ring-1 ring-inset ${statusPillStyles[status]}`}
+                                className={`inline-flex items-center  px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] ring-1 ring-inset ${statusPillStyles[status]}`}
                               >
                                 {statusLabels[status]}
                               </span>
@@ -238,7 +238,7 @@ function CarryForwardReviewBanner({
 }) {
   const total = pendingResponseCount + pendingArtifactCount;
   return (
-    <div className="mb-6 rounded-2xl border border-sky-300 bg-sky-50 p-5">
+    <div className="mb-6  border border-sky-300 bg-sky-50 p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-800">
@@ -267,7 +267,7 @@ function CarryForwardReviewBanner({
         {firstControlId && (
           <Link
             href={`/assessments/${assessmentId}/controls/${firstControlId}`}
-            className="rounded-lg bg-sky-700 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-sky-600"
+            className=" bg-sky-700 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-sky-600"
           >
             Start reviewing &rarr;
           </Link>
@@ -279,7 +279,7 @@ function CarryForwardReviewBanner({
 
 function CelebrationBanner({ assessmentId }: { assessmentId: string }) {
   return (
-    <div className="mb-8 overflow-hidden rounded-2xl border border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 shadow-sm">
+    <div className="mb-8 overflow-hidden  border border-emerald-300 bg-gradient-to-br from-emerald-50 via-white to-amber-50 p-6 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div className="max-w-xl">
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
@@ -298,25 +298,25 @@ function CelebrationBanner({ assessmentId }: { assessmentId: string }) {
         <div className="flex flex-wrap gap-2">
           <a
             href={`/api/assessments/${assessmentId}/bid-package`}
-            className="rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300"
+            className=" bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300"
           >
             Download bid-ready package (.zip)
           </a>
           <Link
             href={`/assessments/${assessmentId}/ssp`}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
+            className=" border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
           >
             SSP only
           </Link>
           <Link
             href={`/assessments/${assessmentId}/affirmation`}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
+            className=" border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
           >
             Affirmation only
           </Link>
           <Link
             href="/opportunities"
-            className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
+            className=" bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
           >
             Step 7 → Find &amp; submit bids
           </Link>
@@ -367,7 +367,7 @@ function SprsFilingSection({
     });
     return (
       <>
-        <div className="mb-8 rounded-2xl border border-emerald-300 bg-emerald-50/70 p-6 shadow-sm">
+        <div className="mb-8  border border-emerald-300 bg-emerald-50/70 p-6 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div className="max-w-xl">
               <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
@@ -420,13 +420,13 @@ function SprsFilingSection({
             <div className="flex flex-wrap gap-2">
               <Link
                 href={`/assessments/${assessmentId}/statement`}
-                className="rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
+                className=" bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
               >
                 Download Statement of Compliance
               </Link>
               <Link
                 href="/opportunities"
-                className="rounded-lg border border-emerald-300 bg-white px-4 py-2.5 text-sm font-bold text-emerald-900 transition-colors hover:border-emerald-400"
+                className=" border border-emerald-300 bg-white px-4 py-2.5 text-sm font-bold text-emerald-900 transition-colors hover:border-emerald-400"
               >
                 Find bids →
               </Link>
@@ -446,7 +446,7 @@ function SprsFilingSection({
 
   // Not yet filed — capture form.
   return (
-    <div className="mb-8 rounded-2xl border border-amber-300 bg-amber-50/60 p-6 shadow-sm">
+    <div className="mb-8  border border-amber-300 bg-amber-50/60 p-6 shadow-sm">
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
         <div>
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
@@ -495,7 +495,7 @@ function SprsFilingSection({
         </div>
         <form
           action={recordSprsFilingAction}
-          className="rounded-xl border border-amber-200 bg-white p-5 shadow-sm"
+          className=" border border-amber-200 bg-white p-5 shadow-sm"
         >
           <input type="hidden" name="assessmentId" value={assessmentId} />
           <label
@@ -514,7 +514,7 @@ function SprsFilingSection({
             maxLength={64}
             pattern="[A-Za-z0-9_\-]+"
             placeholder="e.g. CMMC-AFF-XXXXXX"
-            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+            className="mt-2 w-full  border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
           />
           <p className="mt-2 text-xs text-slate-500">
             Letters, numbers, dashes, underscores. Recorded as the legal
@@ -523,7 +523,7 @@ function SprsFilingSection({
           </p>
           <button
             type="submit"
-            className="mt-4 w-full rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
+            className="mt-4 w-full  bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
           >
             Record SPRS filing
           </button>
@@ -556,7 +556,7 @@ function VerifiedPageOfferCard({
 }) {
   if (verifiedPagePublic && verifiedPageSlug) {
     return (
-      <div className="mb-8 rounded-2xl border border-emerald-300 bg-white p-6 shadow-sm">
+      <div className="mb-8  border border-emerald-300 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="max-w-2xl">
             <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
@@ -572,7 +572,7 @@ function VerifiedPageOfferCard({
               only your Custodia ID is shown publicly.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
-              <span className="inline-flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-mono font-semibold text-emerald-900">
+              <span className="inline-flex items-center gap-2  border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-mono font-semibold text-emerald-900">
                 {custodiaVerificationId ?? "—"}
               </span>
               <a
@@ -588,7 +588,7 @@ function VerifiedPageOfferCard({
           <div className="flex flex-wrap gap-2">
             <Link
               href={`/assessments/${assessmentId}/verified`}
-              className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-slate-800"
+              className=" bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-slate-800"
             >
               Manage Verified page
             </Link>
@@ -600,7 +600,7 @@ function VerifiedPageOfferCard({
 
   // Not yet published — the opt-in offer.
   return (
-    <div className="mb-8 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-emerald-50/40 to-amber-50/40 shadow-sm">
+    <div className="mb-8 overflow-hidden  border border-slate-200 bg-gradient-to-br from-white via-emerald-50/40 to-amber-50/40 shadow-sm">
       <div className="grid gap-0 lg:grid-cols-[1fr_360px]">
         <div className="p-6 lg:p-8">
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
@@ -660,7 +660,7 @@ function VerifiedPageOfferCard({
               <span>500-character custom about section — your words.</span>
             </li>
           </ul>
-          <p className="mt-4 rounded-md border border-slate-200 bg-white/80 p-3 text-xs leading-relaxed text-slate-600">
+          <p className="mt-4  border border-slate-200 bg-white/80 p-3 text-xs leading-relaxed text-slate-600">
             <strong>Privacy:</strong> your SPRS confirmation number is never
             shown on the public page or in the URL. The Custodia Verification
             ID is the only public identifier and reveals nothing private. You
@@ -680,14 +680,14 @@ function VerifiedPageOfferCard({
             <input type="hidden" name="assessmentId" value={assessmentId} />
             <button
               type="submit"
-              className="w-full rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
+              className="w-full  bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
             >
               Publish my Verified page
             </button>
           </form>
           <Link
             href={`/assessments/${assessmentId}/verified`}
-            className="mt-2 block w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-900 transition-colors hover:border-slate-400"
+            className="mt-2 block w-full  border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-900 transition-colors hover:border-slate-400"
           >
             Preview &amp; customize first
           </Link>
@@ -705,7 +705,7 @@ function ProgressRing({ percent }: { percent: number }) {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - percent / 100);
   return (
-    <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-sm">
+    <div className="flex items-center gap-4  border border-slate-200 bg-white px-5 py-3 shadow-sm">
       <div className="relative h-16 w-16">
         <svg className="h-16 w-16 -rotate-90" viewBox="0 0 64 64">
           <circle
@@ -761,7 +761,7 @@ function NextStepBanner({
 }) {
   if (attested) {
     return (
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-emerald-200 bg-emerald-50 p-5">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
             Attested
@@ -778,19 +778,19 @@ function NextStepBanner({
         <div className="flex flex-wrap gap-2">
           <a
             href={`/api/assessments/${assessmentId}/bid-package`}
-            className="rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300"
+            className=" bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300"
           >
             Download bid-ready package (.zip)
           </a>
           <Link
             href={`/assessments/${assessmentId}/ssp`}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
+            className=" border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
           >
             SSP only
           </Link>
           <Link
             href={`/assessments/${assessmentId}/affirmation`}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
+            className=" border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
           >
             Affirmation only
           </Link>
@@ -801,7 +801,7 @@ function NextStepBanner({
 
   if (!profileDone) {
     return (
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-5">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-amber-200 bg-amber-50 p-5">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-amber-700">
             Action needed · Step 1 of 7
@@ -816,7 +816,7 @@ function NextStepBanner({
         </div>
         <Link
           href="/onboard"
-          className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-800"
+          className=" bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-800"
         >
           Open onboarding &rarr;
         </Link>
@@ -826,7 +826,7 @@ function NextStepBanner({
 
   if (!allAnswered) {
     return (
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-sky-200 bg-sky-50 p-5">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-sky-200 bg-sky-50 p-5">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-sky-700">
             Step 3 of 7 · You are here
@@ -844,7 +844,7 @@ function NextStepBanner({
   }
 
   return (
-    <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-slate-900 bg-slate-900 p-5 text-white">
+    <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-slate-900 bg-slate-900 p-5 text-white">
       <div>
         <div className="text-xs font-semibold uppercase tracking-wider text-amber-400">
           Ready for step 4 · Sign &amp; affirm
@@ -863,7 +863,7 @@ function NextStepBanner({
       {!hasBlockers && (
         <Link
           href={`/assessments/${assessmentId}/sign`}
-          className="rounded-lg bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:bg-amber-300"
+          className=" bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:bg-amber-300"
         >
           Review & sign &rarr;
         </Link>
@@ -889,7 +889,7 @@ function ProgressPill({
     slate: "border-slate-200 bg-white text-slate-700",
   };
   return (
-    <div className={`rounded-xl border px-4 py-3 ${toneStyles[tone]}`}>
+    <div className={` border px-4 py-3 ${toneStyles[tone]}`}>
       <div className="text-[11px] font-semibold uppercase tracking-wider opacity-80">
         {label}
       </div>
@@ -918,7 +918,7 @@ function ProfileSection({
   return (
     <section
       id="profile"
-      className="mb-10 scroll-mt-20 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="mb-10 scroll-mt-20  border border-slate-200 bg-white p-6 shadow-sm"
     >
       <div className="mb-5 flex items-start justify-between gap-3">
         <div>
@@ -939,7 +939,7 @@ function ProfileSection({
           )}
           <Link
             href="/onboard"
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+            className=" border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
           >
             Refine with officer
           </Link>
@@ -949,7 +949,7 @@ function ProfileSection({
         {rows.map((r) => (
           <div
             key={r.label}
-            className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3"
+            className=" border border-slate-200 bg-slate-50/60 px-4 py-3"
           >
             <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
               {r.label}
@@ -963,7 +963,7 @@ function ProfileSection({
             </dd>
           </div>
         ))}
-        <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-4 py-3 md:col-span-2">
+        <div className=" border border-slate-200 bg-slate-50/60 px-4 py-3 md:col-span-2">
           <dt className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             Systems in scope
           </dt>

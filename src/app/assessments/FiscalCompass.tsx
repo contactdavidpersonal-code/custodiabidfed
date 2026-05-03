@@ -50,7 +50,7 @@ export function FiscalCompass({
     .slice(0, 4);
 
   return (
-    <section className="mb-10 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
+    <section className="mb-10  border border-slate-200 bg-white p-6 shadow-sm md:p-8">
       <div className="flex flex-wrap items-start justify-between gap-6">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">
@@ -67,7 +67,7 @@ export function FiscalCompass({
             you stay locked in year over year, not just the day you sign.
           </p>
         </div>
-        <div className="min-w-[220px] rounded-2xl border border-slate-200 bg-slate-50 p-4">
+        <div className="min-w-[220px]  border border-slate-200 bg-slate-50 p-4">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             FY progress
           </div>
@@ -111,7 +111,7 @@ export function FiscalCompass({
           </span>
         </div>
         {upcoming.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-5 text-center text-sm text-slate-500">
+          <div className=" border border-dashed border-slate-200 bg-slate-50/60 px-4 py-5 text-center text-sm text-slate-500">
             No pending milestones — the officer will seed new ones for FY{fy + 1}{" "}
             when the next cycle rolls over on Oct 1.
           </div>
@@ -149,7 +149,7 @@ function MilestoneRowCard({ milestone }: { milestone: MilestoneRow }) {
 
   return (
     <li
-      className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 ${tone}`}
+      className={`flex flex-wrap items-center justify-between gap-3  border px-4 py-3 ${tone}`}
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
@@ -170,7 +170,7 @@ function MilestoneRowCard({ milestone }: { milestone: MilestoneRow }) {
           <input type="hidden" name="days" value="7" />
           <button
             type="submit"
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
+            className=" border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
           >
             Snooze 7d
           </button>
@@ -179,7 +179,7 @@ function MilestoneRowCard({ milestone }: { milestone: MilestoneRow }) {
           <input type="hidden" name="milestoneId" value={milestone.id} />
           <button
             type="submit"
-            className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-slate-800"
+            className=" bg-slate-900 px-3 py-1.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-slate-800"
           >
             Mark done
           </button>
@@ -187,7 +187,7 @@ function MilestoneRowCard({ milestone }: { milestone: MilestoneRow }) {
         {milestone.kind === "affirmation_due" && milestone.assessment_id && (
           <Link
             href={`/assessments/${milestone.assessment_id}/sign`}
-            className="rounded-lg bg-amber-400 px-3 py-1.5 text-xs font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300"
+            className=" bg-amber-400 px-3 py-1.5 text-xs font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300"
           >
             Sign now &rarr;
           </Link>
