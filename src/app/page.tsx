@@ -179,7 +179,7 @@ export default function Home() {
 
         {/* Top tactical strip */}
         <div className="relative border-b border-white/[0.06]">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3 font-mono text-[10px] uppercase tracking-[0.24em] text-[#7aab98]">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5 font-mono text-[9px] uppercase tracking-[0.2em] text-[#7aab98] sm:px-6 sm:py-3 sm:text-[10px] sm:tracking-[0.24em]">
             <span className="flex items-center gap-2">
               <span aria-hidden className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#bdf2cf] opacity-75" />
@@ -193,18 +193,18 @@ export default function Home() {
 
         {/* Nav */}
         <nav className="relative">
-          <div className="mx-auto flex h-20 max-w-6xl items-center justify-between px-6">
-            <Link href="/" className="flex items-center gap-3">
+          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:h-20 sm:px-6">
+            <Link href="/" className="flex items-center gap-2 sm:gap-3">
               <img
                 src="/custodia-logo.png"
                 alt="Custodia shield"
-                className="h-10 w-auto [filter:drop-shadow(0_0_14px_rgba(0,0,0,0.85))_drop-shadow(0_2px_6px_rgba(0,0,0,0.7))]"
+                className="h-8 w-auto [filter:drop-shadow(0_0_14px_rgba(0,0,0,0.85))_drop-shadow(0_2px_6px_rgba(0,0,0,0.7))] sm:h-10"
               />
-              <span className="font-serif text-2xl font-bold tracking-tight text-white [text-shadow:0_0_18px_rgba(0,0,0,0.9),0_2px_6px_rgba(0,0,0,0.75)]">
+              <span className="font-serif text-xl font-bold tracking-tight text-white [text-shadow:0_0_18px_rgba(0,0,0,0.9),0_2px_6px_rgba(0,0,0,0.75)] sm:text-2xl">
                 Custodia<span className="text-[#8dd2b1]">.</span>
               </span>
             </Link>
-            <div className="flex items-center gap-7 text-sm font-medium text-[#cce5da]">
+            <div className="flex items-center gap-4 text-sm font-medium text-[#cce5da] sm:gap-7">
               <a href="#product" className="hidden transition-colors hover:text-white sm:inline">Product</a>
               <a href="#pricing" className="hidden transition-colors hover:text-white sm:inline">Pricing</a>
               <Link href="/blog" className="hidden transition-colors hover:text-white sm:inline">Blog</Link>
@@ -227,14 +227,14 @@ export default function Home() {
         </nav>
 
         {/* Hero text */}
-        <div className="relative mx-auto max-w-5xl px-6 pb-28 pt-24 text-center md:pb-36 md:pt-28">
-          <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-[#2f8f6d]/40 bg-[#0e2a23]/40 px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf] backdrop-blur">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#bdf2cf]" aria-hidden />
-            Secure Your Business. Stay Bid-Eligible Year-Round.
+        <div className="relative mx-auto max-w-5xl px-4 pb-20 pt-14 text-center sm:px-6 sm:pb-28 sm:pt-20 md:pb-36 md:pt-28">
+          <div className="mx-auto mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-[#2f8f6d]/40 bg-[#0e2a23]/40 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-[#bdf2cf] backdrop-blur sm:px-4 sm:text-[10px] sm:tracking-[0.22em]">
+            <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#bdf2cf]" aria-hidden />
+            <span className="truncate">Secure Your Business. Stay Bid-Eligible Year-Round.</span>
           </div>
 
           <h1
-            className="font-serif text-[2.4rem] font-bold leading-[1.04] tracking-tight md:text-6xl lg:text-7xl"
+            className="font-serif text-[2rem] font-bold leading-[1.05] tracking-tight sm:text-[2.4rem] md:text-6xl lg:text-7xl"
             style={{ textShadow: "0 4px 40px rgba(0,0,0,0.45)" }}
           >
             <span className="block">
@@ -246,7 +246,7 @@ export default function Home() {
           </h1>
 
           {/* Platform demo screenshot in browser chrome */}
-          <div className="mx-auto mt-12 max-w-4xl overflow-hidden rounded-xl border border-white/[0.12] bg-[#1a1a1a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] ring-1 ring-[#2f8f6d]/20">
+          <div className="mx-auto mt-8 max-w-4xl overflow-hidden rounded-lg border border-white/[0.12] bg-[#1a1a1a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] ring-1 ring-[#2f8f6d]/20 sm:mt-12 sm:rounded-xl">
             {/* Browser top bar */}
             <div className="flex items-center gap-3 border-b border-white/[0.08] bg-[#262626] px-4 py-2.5">
               <div className="flex items-center gap-1.5">
@@ -279,21 +279,21 @@ export default function Home() {
             />
           </div>
 
-          <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-[#a8cfc0] md:text-lg">
+          <p className="mx-auto mt-5 max-w-3xl text-[15px] leading-relaxed text-[#a8cfc0] sm:mt-6 sm:text-base md:text-lg">
             Custodia walks you through CMMC Level&nbsp;1 in plain English, hands you a bid-ready package no prime can pick apart, and keeps your compliance posture watched <span className="font-semibold text-white">year-round</span> &mdash; vCO support, evidence freshness alerts, and continuous monitoring through your Microsoft 365 or Google Workspace tenant. <span className="font-semibold text-white">14-day free trial. No credit card required.</span>
           </p>
 
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center">
             <Show when="signed-out">
               <SignUpButton mode="modal">
-                <button className="group inline-flex items-center gap-2 bg-[#bdf2cf] px-8 py-4 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.22)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_15px_55px_rgba(189,242,207,0.32)] md:text-lg">
+                <button className="group inline-flex items-center justify-center gap-2 bg-[#bdf2cf] px-6 py-3.5 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.22)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_15px_55px_rgba(189,242,207,0.32)] sm:px-8 sm:py-4 md:text-lg">
                   Start My 14-Day Free Trial
                   <span aria-hidden className="text-lg leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
                 </button>
               </SignUpButton>
               <a
                 href="#pricing"
-                className="border border-[#2f8f6d]/50 bg-white/[0.02] px-7 py-3.5 text-base font-semibold text-[#cce5da] backdrop-blur transition-colors hover:border-[#8dd2b1]/70 hover:bg-white/[0.05] hover:text-white"
+                className="inline-flex items-center justify-center border border-[#2f8f6d]/50 bg-white/[0.02] px-6 py-3 text-base font-semibold text-[#cce5da] backdrop-blur transition-colors hover:border-[#8dd2b1]/70 hover:bg-white/[0.05] hover:text-white sm:px-7 sm:py-3.5"
               >
                 See the math
               </a>
@@ -1883,32 +1883,39 @@ export default function Home() {
 
 
       {/* 14 — FAQ */}
-      <RevealSection id="faq" className="scroll-mt-16 bg-white px-6 py-24">
+      <RevealSection id="faq" className="scroll-mt-16 bg-white px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-3xl">
-          <div className="mb-12 text-center">
-            <h2 className="font-serif text-3xl font-bold text-[#10231d] md:text-5xl">
+          <div className="mb-10 text-center sm:mb-12">
+            <h2 className="font-serif text-2xl font-bold text-[#10231d] sm:text-3xl md:text-5xl">
               Frequently asked questions
             </h2>
           </div>
           <div className="space-y-3">
             {FAQ_ITEMS.map((item, idx) => (
-              <div key={idx} className="overflow-hidden border border-[#d2e6dc] bg-[#f7fcf9]">
-                <button
-                  className="flex w-full items-center justify-between px-6 py-5 text-left font-semibold text-[#10231d] transition-colors hover:bg-[#eef8f3]"
-                  onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+              <details
+                key={idx}
+                className="group overflow-hidden border border-[#d2e6dc] bg-[#f7fcf9] [&[open]]:bg-white"
+                open={openFaq === idx}
+              >
+                <summary
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setOpenFaq(openFaq === idx ? null : idx);
+                  }}
+                  className="flex w-full cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-left font-semibold text-[#10231d] transition-colors hover:bg-[#eef8f3] sm:px-6 sm:py-5 [&::-webkit-details-marker]:hidden"
                 >
-                  <span>{item.q}</span>
-                  <span className="ml-4 flex-none text-xl font-light text-[#2f8f6d]">
-                    {openFaq === idx ? "−" : "+"}
+                  <span className="text-sm sm:text-base">{item.q}</span>
+                  <span className="flex-none text-xl font-light text-[#2f8f6d] transition-transform group-[&[open]]:rotate-45">
+                    +
                   </span>
-                </button>
+                </summary>
                 {openFaq === idx && (
                   <div
-                    className="border-t border-[#d2e6dc] px-6 py-5 text-sm leading-relaxed text-[#44695c]"
+                    className="border-t border-[#d2e6dc] px-5 py-4 text-sm leading-relaxed text-[#44695c] sm:px-6 sm:py-5"
                     dangerouslySetInnerHTML={{ __html: item.a }}
                   />
                 )}
-              </div>
+              </details>
             ))}
           </div>
         </div>
@@ -1997,6 +2004,21 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Mobile-only sticky bottom CTA — signed-out only */}
+      <Show when="signed-out">
+        <div
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-[#cfe3d9] bg-white/95 px-4 py-3 backdrop-blur sm:hidden"
+          style={{ paddingBottom: "calc(0.75rem + var(--safe-bottom))" }}
+        >
+          <SignUpButton mode="modal">
+            <button className="flex w-full items-center justify-center gap-2 bg-[#0e2a23] px-6 py-3.5 text-sm font-bold text-[#bdf2cf] shadow-[0_8px_24px_-8px_rgba(14,42,35,0.5)] transition-colors hover:bg-[#10342a]">
+              Start 14-day free trial
+              <span aria-hidden>&rarr;</span>
+            </button>
+          </SignUpButton>
+        </div>
+      </Show>
 
     </div>
   );
