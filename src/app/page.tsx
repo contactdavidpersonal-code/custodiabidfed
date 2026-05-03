@@ -373,9 +373,6 @@ export default function Home() {
           </div>
         </div>
 
-        <p className="mx-auto mt-10 max-w-3xl px-6 text-center text-[11px] font-medium tracking-wide text-[#10231d]/40">
-          Logos shown for context only. Custodia is not endorsed by, affiliated with, or a contractor of any agency or company listed.
-        </p>
       </RevealSection>
 
 
@@ -1986,6 +1983,9 @@ export default function Home() {
               </p>
               <p className="mt-3 text-[10px] uppercase tracking-[0.18em] text-[#9bb3a8]">
                 Not a law firm &middot; Not affiliated with the U.S. Government
+              </p>
+              <p className="mt-3 text-[10px] leading-relaxed text-[#9bb3a8]">
+                Logos and names shown for context only. Custodia is not endorsed by, affiliated with, or a contractor of any agency or company referenced on this site. All trademarks are the property of their respective owners.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-12 text-sm md:grid-cols-4">
