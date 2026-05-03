@@ -633,7 +633,12 @@ function EvidenceRow({
           ? { pill: "bg-[#a06b1a] text-white", label: "Unclear" }
           : a.ai_review_verdict === "not_relevant"
             ? { pill: "bg-[#5a7d70] text-white", label: "Not relevant" }
-            : { pill: "bg-[#cfe3d9] text-[#10231d]", label: "Reviewing\u2026" };
+            : {
+                pill:
+                  "bg-[#e4eee8] text-[#5a7d70] border border-[#cfe3d9]",
+                label: "Not reviewed",
+              };
+  const hasVerdict = a.ai_review_verdict !== null;
 
   const display = parseQ(a.filename).display;
   const crossTagged = a.control_id !== controlId;
@@ -689,10 +694,18 @@ function EvidenceRow({
             <input type="hidden" name="artifactId" value={a.id} />
             <button
               type="submit"
-              title="Re-run platform review"
-              className=" px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#f7fcf9] hover:text-[#10231d]"
+              title={
+                hasVerdict
+                  ? "Re-run Charlie's review on this artifact"
+                  : "Have Charlie review this against the practice"
+              }
+              className={
+                hasVerdict
+                  ? " px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#f7fcf9] hover:text-[#10231d]"
+                  : " border border-[#0e2a23] bg-[#0e2a23] px-2.5 py-1 text-xs font-semibold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+              }
             >
-              Re-review
+              {hasVerdict ? "Re-review" : "Ask Charlie to review"}
             </button>
           </form>
           {crossTagged ? (

@@ -303,30 +303,11 @@ export async function uploadEvidenceAction(formData: FormData) {
     console.error("stampFreshnessOnInsert threw:", err);
   }
 
-  // Every upload is reviewed immediately — see feedback_evidence_gating.md.
-  // We block the action until the review returns so the user sees the verdict
-  // inline rather than discovering it later at attestation time.
-  const profile = await getBusinessProfile(ctx.organization.id);
-  const companyContext = summarizeBusinessContext(
-    ctx.organization.name,
-    ctx.organization.scoped_systems,
-    profile?.data,
-  );
-  try {
-    await reviewEvidenceArtifact({
-      artifactId,
-      claimedControlId: controlId,
-      blobUrl: blob.url,
-      mimeType: file.type || null,
-      filename: file.name,
-      companyContext,
-    });
-  } catch (err) {
-    // Review persistence already wraps its own errors; this catches any
-    // outer failure. Leave the row in 'pending review' state (null verdict)
-    // so the UI prompts a retry.
-    console.error("reviewEvidenceArtifact threw:", err);
-  }
+  // Charlie's review is opt-in. The artifact lands with `ai_review_verdict
+  // = NULL` ("not yet reviewed"). The user can click "Ask Charlie to
+  // review" on the artifact row when they want a verdict. Attestation
+  // gating still requires a verdict before this artifact can count, so
+  // they're nudged to review once they're ready to attest.
 
   revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
   revalidatePath(`/assessments/${assessmentId}`);
@@ -422,20 +403,9 @@ export async function generateArtifactAction(formData: FormData) {
     console.error("stampFreshnessOnInsert (generated) threw:", err);
   }
 
-  // Run the vision-review pipeline so the row gets a verdict in the UI
-  // (will return 'unclear' for markdown, which is the correct signal that
-  // a human must read the draft before it counts toward attestation).
-  try {
-    await reviewEvidenceArtifact({
-      artifactId,
-      claimedControlId: controlId,
-      blobUrl: blob.url,
-      mimeType: "text/markdown",
-      filename,
-    });
-  } catch (err) {
-    console.error("reviewEvidenceArtifact (generated) threw:", err);
-  }
+  // Charlie's review is opt-in (same pattern as user uploads). The draft
+  // lands as "not yet reviewed" so the user reviews it manually and clicks
+  // "Ask Charlie to review" once they've filled in the [FILL IN: …] slots.
 
   revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
   revalidatePath(`/assessments/${assessmentId}`);
