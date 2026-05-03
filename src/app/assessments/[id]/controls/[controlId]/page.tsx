@@ -9,11 +9,12 @@ import {
   listResponsesForAssessment,
 } from "@/lib/assessment";
 import { getObjectives, playbook, playbookById } from "@/lib/playbook";
-import { getPracticeGuide } from "@/lib/practice-guides";
+import { getPracticeQuiz } from "@/lib/practice-quizzes";
 import {
   deleteEvidenceAction,
   reReviewEvidenceAction,
   saveControlResponseAction,
+  submitVaultEntryAction,
   tagArtifactPracticeAction,
   untagArtifactPracticeAction,
   uploadEvidenceAction,
@@ -22,7 +23,9 @@ import {
 } from "../../../actions";
 import { ConnectorHint } from "../../../_components/ConnectorHint";
 import { PracticeWizard } from "./PracticeWizard";
-import { GuidedPracticeFlow } from "./GuidedPracticeFlow";
+import { PracticeQuiz } from "./PracticeQuiz";
+import { getConnectorTokenStatus } from "@/lib/connectors/storage";
+import type { ConnectorProvider } from "@/lib/connectors/types";
 
 export default async function ControlDetailPage(
   props: PageProps<"/assessments/[id]/controls/[controlId]">,
@@ -75,6 +78,14 @@ export default async function ControlDetailPage(
     practice;
   void _suggestedNarrative;
 
+  // Which connector providers does this org currently have a live token for?
+  // Used by PracticeQuiz to render "Connected" vs "Connect" labels on the
+  // evidence-path cards.
+  const tokenStatus = await getConnectorTokenStatus(ctx.organization.id);
+  const connectedProviders: ConnectorProvider[] = tokenStatus
+    .filter((t) => !t.revoked_at)
+    .map((t) => t.provider);
+
   return (
     <main>
       <div className="mx-auto max-w-4xl px-6 pt-6">
@@ -84,26 +95,24 @@ export default async function ControlDetailPage(
         />
       </div>
       {(() => {
-        const guide = getPracticeGuide(controlId);
-        if (guide) {
+        const quiz = getPracticeQuiz(controlId);
+        if (quiz) {
           return (
-            <GuidedPracticeFlow
+            <PracticeQuiz
               assessmentId={id}
               controlId={controlId}
               practice={practiceForClient}
-              guide={guide}
-              response={response}
+              quiz={quiz}
+              connectedProviders={connectedProviders}
               evidence={evidenceForClient}
-              reuseCandidates={reuseForClient}
               prevId={prevId}
               nextId={nextId}
               currentIdx={currentIdx}
               total={orderedIds.length}
               saveResponseAction={saveControlResponseAction}
               uploadEvidenceAction={uploadEvidenceAction}
-              deleteEvidenceAction={deleteEvidenceAction}
+              submitVaultEntryAction={submitVaultEntryAction}
               reReviewEvidenceAction={reReviewEvidenceAction}
-              tagArtifactPracticeAction={tagArtifactPracticeAction}
               useSuggestedNarrativeAction={useSuggestedNarrativeAction}
             />
           );

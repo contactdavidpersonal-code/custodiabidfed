@@ -10,6 +10,7 @@ export type AuditAction =
   | "evidence.tagged"
   | "evidence.untagged"
   | "evidence.generated"
+  | "evidence.vault_entry"
   | "bid_package.exported"
   | "bid_packet.exported"
   | "organization.fields_updated"

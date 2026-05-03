@@ -415,6 +415,118 @@ export async function generateArtifactAction(formData: FormData) {
   revalidatePath(`/assessments/${assessmentId}`);
 }
 
+/**
+ * Vault entry — turn a structured form (rows of key/value cells the user
+ * filled inline in the practice quiz) into a CSV artifact stored as
+ * evidence. Identical lifecycle to a user upload: lands as
+ * "Not yet reviewed", clickable "Ask Charlie to review" gives a verdict.
+ *
+ * Body: assessmentId, controlId, title, filenameStem, headers (JSON string
+ *       of column labels), rows (JSON string of string[][]).
+ */
+export async function submitVaultEntryAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const controlId = String(formData.get("controlId") ?? "");
+  const title = String(formData.get("title") ?? "Vault entry").slice(0, 120);
+  const filenameStem = String(formData.get("filenameStem") ?? "vault-entry")
+    .replace(/[^a-zA-Z0-9._-]+/g, "-")
+    .slice(0, 80) || "vault-entry";
+
+  let headers: string[] = [];
+  let rows: string[][] = [];
+  try {
+    const h = JSON.parse(String(formData.get("headers") ?? "[]"));
+    const r = JSON.parse(String(formData.get("rows") ?? "[]"));
+    if (!Array.isArray(h) || !Array.isArray(r)) throw new Error("bad shape");
+    headers = h.map((s) => String(s).slice(0, 200));
+    rows = r.map((row: unknown) =>
+      Array.isArray(row) ? row.map((cell) => String(cell ?? "").slice(0, 1000)) : [],
+    );
+  } catch {
+    throw new Error("Vault entry was malformed.");
+  }
+  if (headers.length === 0 || rows.length === 0) {
+    throw new Error("Vault entry needs at least one row.");
+  }
+
+  if (!playbookById[controlId]) throw new Error("Unknown control");
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Not found");
+
+  // Build CSV with proper escaping for quotes / commas / newlines.
+  const escape = (s: string) =>
+    /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  const csvLines = [
+    `# ${title}`,
+    `# Captured by ${ctx.organization.name} on ${new Date().toISOString().slice(0, 10)}`,
+    `# Practice: ${controlId}`,
+    headers.map(escape).join(","),
+    ...rows.map((row) =>
+      headers.map((_, i) => escape(row[i] ?? "")).join(","),
+    ),
+  ];
+  const csv = csvLines.join("\r\n") + "\r\n";
+
+  const filename = `${filenameStem}-${Date.now()}.csv`;
+  const safeName = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
+  const pathname = `evidence/${assessmentId}/${controlId}/${safeName}`;
+  const blob = await put(pathname, csv, {
+    access: "private",
+    addRandomSuffix: true,
+    contentType: "text/csv",
+  });
+
+  const sql = getSql();
+  const inserted = (await sql`
+    INSERT INTO evidence_artifacts
+      (assessment_id, control_id, filename, blob_url, mime_type, size_bytes, uploaded_by_user_id)
+    VALUES
+      (${assessmentId}, ${controlId}, ${filename}, ${blob.url},
+       ${"text/csv"}, ${csv.length}, ${userId})
+    RETURNING id
+  `) as Array<{ id: string }>;
+  const artifactId = inserted[0].id;
+
+  await sql`
+    INSERT INTO evidence_artifact_practices
+      (artifact_id, assessment_id, control_id, objectives, created_by_user_id)
+    VALUES
+      (${artifactId}, ${assessmentId}, ${controlId}, '{}'::text[], ${userId})
+    ON CONFLICT (artifact_id, assessment_id, control_id) DO NOTHING
+  `;
+
+  await recordAuditEvent({
+    action: "evidence.vault_entry",
+    userId,
+    organizationId: ctx.organization.id,
+    resourceType: "evidence_artifact",
+    resourceId: artifactId,
+    metadata: {
+      assessmentId,
+      controlId,
+      filename,
+      title,
+      rowCount: rows.length,
+      sizeBytes: csv.length,
+      blobUrl: blob.url,
+    },
+  });
+
+  try {
+    await stampFreshnessOnInsert({
+      artifactId,
+      filename,
+      mimeType: "text/csv",
+    });
+  } catch (err) {
+    console.error("stampFreshnessOnInsert (vault) threw:", err);
+  }
+
+  revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
+  revalidatePath(`/assessments/${assessmentId}`);
+}
+
 export async function reReviewEvidenceAction(formData: FormData) {
   const userId = await requireUserId();
   const assessmentId = String(formData.get("assessmentId") ?? "");
