@@ -124,13 +124,18 @@ export function PracticeQuiz(props: Props) {
     for (const a of answers) {
       if (a.kind === "choice" && a.choice.failsObjectives?.length) failed = true;
     }
-    // Need at least one evidence path to have produced an artifact for [a]/[d]
-    const hasUserRoster = answers.some(
-      (a) => a.kind === "evidence" && a.stepId === "users_evidence",
-    );
-    if (!hasUserRoster) failed = true;
+    // Every evidence_picker step in the quiz must have an answer (either an
+    // artifact recorded or an explicit skip via allowSkip).
+    for (const s of props.quiz.steps) {
+      if (s.kind !== "evidence_picker") continue;
+      const answered = answers.some(
+        (a) =>
+          a.stepId === s.id && (a.kind === "evidence" || a.kind === "skip"),
+      );
+      if (!answered) failed = true;
+    }
     return failed ? "not_met" : "met";
-  }, [answers]);
+  }, [answers, props.quiz.steps]);
 
   const finalize = async () => {
     if (submitting) return;
@@ -199,7 +204,15 @@ export function PracticeQuiz(props: Props) {
               {props.practice.shortName}
             </h1>
           </div>
-          <StatusBadge verdict={verdict} locked={showCompleted} />
+          <div className="flex flex-col items-end gap-1.5">
+            <StatusBadge verdict={verdict} locked={showCompleted} />
+            {props.quiz.connectors && props.quiz.connectors.length > 0 && (
+              <ConnectorPill
+                applicable={props.quiz.connectors}
+                connected={props.connectedProviders}
+              />
+            )}
+          </div>
         </div>
 
         <div className="mt-3">
@@ -351,6 +364,49 @@ function StatusBadge({
       />
       {showMet ? "Met" : "Not met"}
     </span>
+  );
+}
+
+function ConnectorPill({
+  applicable,
+  connected,
+}: {
+  applicable: ConnectorProvider[];
+  connected: ConnectorProvider[];
+}) {
+  // Is at least one applicable provider already connected?
+  const liveProviders = applicable.filter((p) => connected.includes(p));
+  const isConnected = liveProviders.length > 0;
+  const labelMap: Record<ConnectorProvider, string> = {
+    m365: "Microsoft 365",
+    google_workspace: "Google Workspace",
+  };
+
+  if (isConnected) {
+    const name = labelMap[liveProviders[0]];
+    return (
+      <Link
+        href="/assessments/connections"
+        className="inline-flex items-center gap-1.5 border border-[#2f8f6d] bg-[#eaf5ef] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#0e2a23] transition-colors hover:bg-[#d8ecdf]"
+        title={`${name} connected — refresh evidence`}
+      >
+        <span className="inline-block h-1.5 w-1.5 bg-[#2f8f6d]" />
+        {name} &middot; refresh
+      </Link>
+    );
+  }
+
+  // Not connected. Show short pill linking to the connections page.
+  const labels = applicable.map((p) => labelMap[p]).join(" or ");
+  return (
+    <Link
+      href="/assessments/connections"
+      className="inline-flex items-center gap-1.5 border border-[#cfe3d9] bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#456c5f] transition-colors hover:border-[#2f8f6d] hover:text-[#0e2a23]"
+      title={`Connect ${labels} for auto-evidence`}
+    >
+      <span className="inline-block h-1.5 w-1.5 bg-[#5a7d70]" />
+      Connect {labels}
+    </Link>
   );
 }
 
