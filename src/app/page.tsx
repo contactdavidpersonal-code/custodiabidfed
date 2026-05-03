@@ -236,11 +236,15 @@ export default function Home() {
             className="font-serif text-[2.4rem] font-bold leading-[1.04] tracking-tight md:text-6xl lg:text-7xl"
             style={{ textShadow: "0 4px 40px rgba(0,0,0,0.45)" }}
           >
-            Secure Your Federal Contract Info.{" "}
-            <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
-              Land The Contracts.
-            </span>{" "}
-            Stay Verified Year-Round.
+            <span className="block">
+              Secure Your Federal Contract Information<span className="text-[#8dd2b1]">.</span>
+            </span>
+            <span className="block bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
+              Land The Contracts<span className="text-[#8dd2b1] [-webkit-text-fill-color:#8dd2b1]">.</span>
+            </span>
+            <span className="block">
+              Stay Verified Year-Round<span className="text-[#8dd2b1]">.</span>
+            </span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-[#a8cfc0] md:text-lg">
