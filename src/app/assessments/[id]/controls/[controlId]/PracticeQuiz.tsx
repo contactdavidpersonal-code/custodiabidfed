@@ -169,11 +169,11 @@ export function PracticeQuiz(props: Props) {
   // =========================================================================
 
   return (
-    <div className="mx-auto max-w-3xl px-6 pb-10">
+    <div className="mx-auto max-w-3xl px-4 pb-10 md:px-6">
       {/* ======== STICKY HEADER ========
           Global assessments nav is sticky at top-0 z-30 (~60px tall),
           so we anchor below it. */}
-      <div className="sticky top-[60px] z-20 -mx-6 border-b border-[#cfe3d9] bg-[#fbfdfb]/95 px-6 pt-5 pb-3 backdrop-blur supports-[backdrop-filter]:bg-[#fbfdfb]/80">
+      <div className="sticky top-[56px] z-20 -mx-4 border-b border-[#cfe3d9] bg-[#fbfdfb]/95 px-4 pt-4 pb-3 backdrop-blur supports-[backdrop-filter]:bg-[#fbfdfb]/80 md:top-[60px] md:-mx-6 md:px-6 md:pt-5">
         <div className="mb-2 flex items-center justify-between gap-4 text-sm">
           <Link
             href={`/assessments/${props.assessmentId}`}

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist_Mono, Lora, Manrope } from "next/font/google";
 import { clerkAppearance } from "@/lib/clerk-appearance";
@@ -19,10 +19,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0d2e25",
+  interactiveWidget: "resizes-content",
+};
+
 export const metadata: Metadata = {
   title: "Custodia | TurboTax for CMMC Level 1",
   description:
     "Federal compliance for small contractors, in plain English. Charlie — your AI compliance officer — walks you through CMMC Level 1 in 7 days. $449/month, flat. 14-day free trial. No credit card required.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Custodia",
+  },
   openGraph: {
     title: "Custodia | TurboTax for CMMC Level 1",
     description:

@@ -1,0 +1,25 @@
+{
+  "name": "Custodia — CMMC Level 1",
+  "short_name": "Custodia",
+  "description": "Bid-ready CMMC Level 1 in plain English. Charlie walks you through every practice.",
+  "start_url": "/assessments",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d2e25",
+  "theme_color": "#0d2e25",
+  "icons": [
+    {
+      "src": "/custodia-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/custodia-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
