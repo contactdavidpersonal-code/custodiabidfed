@@ -2,7 +2,30 @@
 
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
+import { motion } from "motion/react";
+
+// Cinematic Apple-style easing
+const SECTION_EASE = [0.16, 1, 0.3, 1] as const;
+
+// Viewport-revealed <section>. Drop-in replacement: same props, fades + lifts in
+// once when 15% of the section enters the viewport.
+function RevealSection({
+  children,
+  ...rest
+}: ComponentProps<typeof motion.section>) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 48 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.85, ease: SECTION_EASE }}
+      {...rest}
+    >
+      {children}
+    </motion.section>
+  );
+}
 
 const PRACTICES = [
   { id: "AC.L1-3.1.1", domain: "AC", short: "Authorized Access Control" },
@@ -117,7 +140,7 @@ export default function Home() {
     <div className="min-h-screen bg-white text-[#10231d]">
 
       {/* 1 + 2 — Cinematic header & hero */}
-      <section className="relative overflow-hidden bg-[#08201a] text-white">
+      <RevealSection className="relative overflow-hidden bg-[#08201a] text-white">
         {/* Atmospheric layers */}
         <div
           aria-hidden
@@ -287,11 +310,11 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </RevealSection>
 
 
       {/* 4 — Opportunity (the deal + the gap) */}
-      <section id="product" className="scroll-mt-16 bg-[#f7f7f3] px-6 py-24">
+      <RevealSection id="product" className="scroll-mt-16 bg-[#f7f7f3] px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
             the opportunity
@@ -414,10 +437,10 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       {/* 5 — How federal contracting actually works */}
-      <section className="bg-white px-6 py-24">
+      <RevealSection className="bg-white px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-16 text-center">
             <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">how it works</div>
@@ -509,10 +532,10 @@ export default function Home() {
             Step 3 is where most SMBs stall. The compliance package is the difference between a bid and a no-bid &mdash; and it&apos;s the part Custodia builds for you.
           </p>
         </div>
-      </section>
+      </RevealSection>
 
       {/* 6 — Stakes + Custodia Shield */}
-      <section className="bg-[#f7f7f3] px-6 py-24">
+      <RevealSection className="bg-[#f7f7f3] px-6 py-24">
         <div className="mx-auto max-w-6xl">
           {/* Stakes header */}
           <div className="mb-14 text-center">
@@ -625,10 +648,10 @@ export default function Home() {
             </p>
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       {/* 6.5 — The yearly rhythm: one-time vs ongoing */}
-      <section className="bg-white px-6 py-24">
+      <RevealSection className="bg-white px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-14 text-center">
             <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">the yearly rhythm</div>
@@ -747,10 +770,10 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       {/* 6.7 — Opportunity engine + community: bid-ready and watched */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-[#f7fcf9] via-white to-[#f7fcf9] px-6 py-24">
+      <RevealSection className="relative overflow-hidden bg-gradient-to-b from-[#f7fcf9] via-white to-[#f7fcf9] px-6 py-24">
         <div className="pointer-events-none absolute inset-0 [background-image:radial-gradient(circle_at_top_left,#bdf2cf33,transparent_50%),radial-gradient(circle_at_bottom_right,#bdf2cf33,transparent_50%)]" aria-hidden />
         <div className="relative mx-auto max-w-6xl">
           <div className="mb-12 text-center">
@@ -943,10 +966,10 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       {/* 7 — Why Custodia is different */}
-      <section className="bg-[#0e2a23] px-6 py-24 text-white">
+      <RevealSection className="bg-[#0e2a23] px-6 py-24 text-white">
         <div className="mx-auto max-w-6xl">
           <div className="mb-16 text-center">
             <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">why custodia</div>
@@ -1010,10 +1033,10 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       {/* 9 — Your journey */}
-      <section className="bg-[#f7f7f3] px-6 py-24">
+      <RevealSection className="bg-[#f7f7f3] px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">your journey</div>
           <h2 className="font-serif text-4xl font-bold leading-[1.05] text-[#10231d] md:text-6xl">
@@ -1162,10 +1185,10 @@ export default function Home() {
             </p>
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       {/* 9.5 — Inside The Platform: full feature showcase */}
-      <section className="bg-white px-6 py-24">
+      <RevealSection className="bg-white px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-14 text-center">
             <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">inside the platform</div>
@@ -1307,10 +1330,10 @@ export default function Home() {
             </p>
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       {/* 9.9 — Your potential profit / ROI */}
-      <section className="bg-[#0e2a23] px-6 py-24 text-white">
+      <RevealSection className="bg-[#0e2a23] px-6 py-24 text-white">
         <div className="mx-auto max-w-6xl">
           <div className="mb-14 text-center">
             <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">your potential profit</div>
@@ -1423,10 +1446,10 @@ export default function Home() {
             Source ranges based on FY2023 SBA Small Business Goaling Report and DoD CAS / FAR 15.404 weighted-guidelines analysis. Net margins for federal small-business contractors typically run 6&ndash;20% depending on contract type (cost-plus, FFP, T&amp;M, sub-contract). Your numbers will vary &mdash; the directional math doesn&apos;t.
           </p>
         </div>
-      </section>
+      </RevealSection>
 
       {/* 10 — Pricing: ONE OFFER, Hormozi-stacked */}
-      <section id="pricing" className="scroll-mt-16 border-y border-[#d5e5dd] bg-white px-6 py-24">
+      <RevealSection id="pricing" className="scroll-mt-16 border-y border-[#d5e5dd] bg-white px-6 py-24">
         <div className="mx-auto max-w-5xl">
           {/* Scarcity banner */}
           <div className="mb-8 flex flex-col items-center gap-2 border border-[#a06b1a] bg-[#fff8e8] px-6 py-4 text-center md:flex-row md:justify-center md:gap-4">
@@ -1630,10 +1653,10 @@ export default function Home() {
             </p>
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       {/* 11 — Our Average User: outcome-based social proof */}
-      <section className="relative overflow-hidden bg-[#0c2219] px-6 py-28 text-white">
+      <RevealSection className="relative overflow-hidden bg-[#0c2219] px-6 py-28 text-white">
         {/* Ambient gradient halos */}
         <div aria-hidden className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-[#2f8f6d] opacity-20 blur-[120px]" />
         <div aria-hidden className="pointer-events-none absolute -right-32 bottom-0 h-96 w-96 rounded-full bg-[#bdf2cf] opacity-10 blur-[120px]" />
@@ -1820,11 +1843,11 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </RevealSection>
 
 
       {/* 14 — FAQ */}
-      <section id="faq" className="scroll-mt-16 bg-white px-6 py-24">
+      <RevealSection id="faq" className="scroll-mt-16 bg-white px-6 py-24">
         <div className="mx-auto max-w-3xl">
           <div className="mb-12 text-center">
             <h2 className="font-serif text-3xl font-bold text-[#10231d] md:text-5xl">
@@ -1853,7 +1876,7 @@ export default function Home() {
             ))}
           </div>
         </div>
-      </section>
+      </RevealSection>
 
       {/* 15 — Footer */}
       <footer className="border-t border-[#d5e5dd] bg-[#f7f7f3] px-6 py-14 text-[#44695c]">
