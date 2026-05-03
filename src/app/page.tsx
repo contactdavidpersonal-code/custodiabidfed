@@ -239,11 +239,8 @@ export default function Home() {
             <span className="block">
               Federally Secure Your Business With CMMC Level&nbsp;1<span className="text-[#8dd2b1]">.</span>
             </span>
-            <span className="block">
-              Stay Secure Year-Round<span className="text-[#8dd2b1]">.</span>
-            </span>
             <span className="block bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
-              Secure The Contracts<span className="text-[#8dd2b1] [-webkit-text-fill-color:#8dd2b1]">.</span>
+              Stay Secure Year Round<span className="text-[#8dd2b1] [-webkit-text-fill-color:#8dd2b1]">.</span>
             </span>
           </h1>
 
