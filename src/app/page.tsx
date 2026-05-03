@@ -92,7 +92,7 @@ const FAQ_ITEMS = [
     a: "Sign up with just an email &mdash; no credit card required. You get the full platform free for 14 days: Charlie (your vCO) walks you through CMMC Level 1, generates your bid-ready package, sources opportunities from SAM.gov on demand, and runs the officer chat. Most users complete their initial CMMC L1 package in 3&ndash;5 business days, well inside the trial. If you stay past day 14, you add your card and start at $449/mo (locked-in Summer Federal Cash Incentive pricing for the next 100 clients; list price is $749). 14-day money-back guarantee from your first payment.",
   },
   {
-    q: "Why $449 instead of $749? What&apos;s the catch?",
+    q: "Why $449 instead of $749? What's the catch?",
     a: "No catch. We&apos;re running a Summer Federal Cash Incentive: the next 100 customers lock in $449/mo for life. After 100, the price goes to $749/mo. That&apos;s the list price &mdash; $449 is the launch window. The math still works at $749, but at $449 it&apos;s a no-brainer for any business that wants to stay bid-eligible for federal work.",
   },
   {
@@ -1983,9 +1983,6 @@ export default function Home() {
               </p>
               <p className="mt-3 text-[10px] uppercase tracking-[0.18em] text-[#9bb3a8]">
                 Not a law firm &middot; Not affiliated with the U.S. Government
-              </p>
-              <p className="mt-3 text-[10px] leading-relaxed text-[#9bb3a8]">
-                Logos and names shown for context only. Custodia is not endorsed by, affiliated with, or a contractor of any agency or company referenced on this site. All trademarks are the property of their respective owners.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-12 text-sm md:grid-cols-4">
