@@ -2,6 +2,7 @@
 
 import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import Image from "next/image";
 import { useState, type ComponentProps } from "react";
 import { motion } from "motion/react";
 
@@ -243,6 +244,40 @@ export default function Home() {
               Stay Secure Year Round<span className="text-[#8dd2b1] [-webkit-text-fill-color:#8dd2b1]">.</span>
             </span>
           </h1>
+
+          {/* Platform demo screenshot in browser chrome */}
+          <div className="mx-auto mt-12 max-w-4xl overflow-hidden rounded-xl border border-white/[0.12] bg-[#1a1a1a] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] ring-1 ring-[#2f8f6d]/20">
+            {/* Browser top bar */}
+            <div className="flex items-center gap-3 border-b border-white/[0.08] bg-[#262626] px-4 py-2.5">
+              <div className="flex items-center gap-1.5">
+                <span className="h-3 w-3 rounded-full bg-[#ff5f57]" aria-hidden />
+                <span className="h-3 w-3 rounded-full bg-[#febc2e]" aria-hidden />
+                <span className="h-3 w-3 rounded-full bg-[#28c840]" aria-hidden />
+              </div>
+              <div className="mx-auto flex max-w-md flex-1 items-center gap-1.5 rounded-md bg-[#3a3a3a] px-3 py-1 text-[11px] text-[#a8cfc0]">
+                <svg
+                  className="h-3 w-3 text-[#8dd2b1]"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  aria-hidden
+                >
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                <span className="truncate">bidfedcmmc.com</span>
+              </div>
+              <div className="w-[54px]" aria-hidden />
+            </div>
+            <Image
+              src="/demo_image1.png"
+              alt="Custodia platform — Charlie walking a user through CMMC Level 1"
+              width={1600}
+              height={1000}
+              priority
+              className="h-auto w-full"
+            />
+          </div>
 
           <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-[#a8cfc0] md:text-lg">
             Custodia walks you through CMMC Level&nbsp;1 in plain English, hands you a bid-ready package no prime can pick apart, and keeps your compliance posture watched <span className="font-semibold text-white">year-round</span> &mdash; vCO support, evidence freshness alerts, and continuous monitoring through your Microsoft 365 or Google Workspace tenant. <span className="font-semibold text-white">14-day free trial. No credit card required.</span>
