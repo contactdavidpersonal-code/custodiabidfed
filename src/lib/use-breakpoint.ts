@@ -67,3 +67,29 @@ export function usePrefersReducedMotion(): boolean {
   }, []);
   return reduced;
 }
+
+/**
+ * Returns true when the on-screen keyboard is likely visible.
+ * Uses visualViewport: when the visible viewport is meaningfully shorter
+ * than the layout viewport (>150px), an IME or software keyboard is up.
+ * SSR-safe (returns false on server / when visualViewport unavailable).
+ */
+export function useKeyboardOpen(): boolean {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const delta = window.innerHeight - vv.height;
+      setOpen(delta > 150);
+    };
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
+  return open;
+}

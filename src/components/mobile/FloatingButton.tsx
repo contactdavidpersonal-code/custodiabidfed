@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
+import { useKeyboardOpen } from "@/lib/use-breakpoint";
 
 type Props = {
   onClick: () => void;
@@ -13,6 +14,7 @@ type Props = {
 
 /**
  * Floating Action Button — mobile/tablet only.
+ * Auto-hides while the on-screen keyboard is open.
  */
 export function FloatingButton({
   onClick,
@@ -21,6 +23,8 @@ export function FloatingButton({
   badge,
   children,
 }: Props) {
+  const keyboardOpen = useKeyboardOpen();
+  if (keyboardOpen) return null;
   return (
     <motion.button
       type="button"

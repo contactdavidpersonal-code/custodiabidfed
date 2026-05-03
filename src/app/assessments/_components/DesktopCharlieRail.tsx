@@ -1,7 +1,15 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useBreakpoint } from "@/lib/use-breakpoint";
-import { ComplianceOfficerRail } from "../ComplianceOfficerRail";
+
+// Lazy-loaded — the rail is heavy (chat history, motion, SSE parser) and
+// it's never needed on mobile. Skipping SSR keeps the initial workspace
+// HTML lean for first paint on slow networks.
+const ComplianceOfficerRail = dynamic(
+  () => import("../ComplianceOfficerRail").then((m) => m.ComplianceOfficerRail),
+  { ssr: false },
+);
 
 /**
  * Desktop-only mount for the persistent compliance officer rail.

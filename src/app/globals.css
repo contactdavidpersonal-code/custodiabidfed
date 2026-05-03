@@ -60,17 +60,31 @@ body {
   [data-tap] {
     min-height: 44px;
   }
+
+  /* Prevent iOS Safari from zooming when focusing form inputs.
+     iOS only zooms when font-size is < 16px. We keep visual sizing via
+     Tailwind classes but enforce a 16px floor at the form-element level
+     on mobile. Hidden inputs are excluded so they don't get a height. */
+  input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  textarea,
+  select {
+    font-size: max(16px, 1em);
+  }
 }
 
-/* Respect users who ask for less motion */
+/* Respect users who ask for less motion.
+   Scoped to motion-y properties (transform, animation) — we don't kill
+   color / background-color transitions because those are functional
+   feedback, not motion. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+    transition-property: color, background-color, border-color, fill, stroke, opacity !important;
+    transition-duration: 0.15s !important;
   }
 }
 

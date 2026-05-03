@@ -15,10 +15,14 @@ type SheetProps = {
   dismissable?: boolean;
 };
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 /**
  * Bottom sheet that rises from the bottom of the screen on mobile.
  * Drag down to dismiss. Backdrop tap dismisses. Escape key dismisses.
- * Focus is trapped while open.
+ * Focus is trapped while open and restored to the previously focused
+ * element on close.
  */
 export function Sheet({
   open,
@@ -29,18 +33,63 @@ export function Sheet({
   dismissable = true,
 }: SheetProps) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+
+    // Move focus into the sheet on the next tick (after motion mounts the
+    // panel). Prefer the first interactive element; fall back to the panel
+    // itself so screen readers anchor inside the dialog.
+    const focusFirst = () => {
+      const panel = ref.current;
+      if (!panel) return;
+      const first = panel.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (first) {
+        first.focus();
+      } else {
+        panel.setAttribute("tabindex", "-1");
+        panel.focus();
+      }
+    };
+    const t = window.setTimeout(focusFirst, 30);
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && dismissable) onClose();
+      if (e.key === "Escape" && dismissable) {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      // Trap Tab inside the panel
+      const panel = ref.current;
+      if (!panel) return;
+      const items = panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (items.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
+      window.clearTimeout(t);
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
+      // Restore focus to whatever the user was on before the sheet opened
+      previouslyFocused.current?.focus?.();
     };
   }, [open, onClose, dismissable]);
 

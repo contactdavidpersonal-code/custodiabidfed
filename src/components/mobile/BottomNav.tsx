@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
+import { useKeyboardOpen } from "@/lib/use-breakpoint";
 
 export type BottomNavItem = {
   href: string;
@@ -16,10 +17,14 @@ export type BottomNavItem = {
 
 /**
  * App-style bottom tab bar. Hidden above mobile breakpoint via `lg:hidden`.
+ * Auto-hides while the on-screen keyboard is open so it doesn't float on
+ * top of focused inputs on iOS.
  * Safe-area padded so it sits above the iPhone home indicator.
  */
 export function BottomNav({ items }: { items: BottomNavItem[] }) {
   const pathname = usePathname() ?? "";
+  const keyboardOpen = useKeyboardOpen();
+  if (keyboardOpen) return null;
   return (
     <nav
       aria-label="Primary"

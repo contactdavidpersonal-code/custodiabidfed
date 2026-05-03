@@ -1,9 +1,17 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Sheet } from "@/components/mobile/Sheet";
 import { FloatingButton } from "@/components/mobile/FloatingButton";
-import { ComplianceOfficerRail } from "../ComplianceOfficerRail";
+
+// Same component the desktop rail uses, but lazy-loaded so the FAB itself
+// (and its bundle) doesn't pay the price until the user actually opens
+// the sheet.
+const ComplianceOfficerRail = dynamic(
+  () => import("../ComplianceOfficerRail").then((m) => m.ComplianceOfficerRail),
+  { ssr: false },
+);
 
 /**
  * Mobile/tablet only: floating Charlie button that opens the compliance

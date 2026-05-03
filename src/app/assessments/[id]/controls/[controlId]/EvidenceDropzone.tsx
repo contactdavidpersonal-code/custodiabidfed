@@ -24,6 +24,7 @@ export function EvidenceDropzone({
 }: Props) {
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -148,6 +149,23 @@ export function EvidenceDropzone({
       )}
 
       <div className="mt-4 flex flex-wrap items-center justify-end gap-2">
+        {/* Mobile camera shortcut — opens the rear camera directly so users
+            can photograph a printed sign-in sheet, sticker, etc. as evidence. */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="sr-only"
+          onChange={(e) => setFromList(e.target.files)}
+        />
+        <button
+          type="button"
+          onClick={() => cameraInputRef.current?.click()}
+          className="lg:hidden border border-[#cfe3d9] bg-white px-3 py-2 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
+        >
+          Use camera
+        </button>
         {file && (
           <button
             type="button"
