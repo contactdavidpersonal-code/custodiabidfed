@@ -314,6 +314,52 @@ export default function Home() {
       </RevealSection>
 
 
+      {/* 3.5 — Trust logos: who you'll be working alongside */}
+      <RevealSection className="border-b border-[#e3ecdf] bg-[#f7f7f3] px-6 py-16 md:py-20">
+        <div className="mx-auto max-w-6xl">
+          <p className="text-center text-[11px] font-bold uppercase tracking-[0.24em] text-[#2f8f6d]">
+            CMMC Level&nbsp;1 unlocks contracts with
+          </p>
+          <p className="mx-auto mt-3 max-w-2xl text-center font-serif text-xl italic leading-snug text-[#10231d]/70 md:text-2xl">
+            The agencies and primes below all require Cybersecurity Maturity
+            Model Certification Level&nbsp;1, at minimum, to handle Federal
+            Contract Information.
+          </p>
+
+          <div className="mt-12 grid grid-cols-2 items-center justify-items-center gap-x-6 gap-y-10 sm:grid-cols-3 md:grid-cols-6">
+            {[
+              { name: "U.S. Department of Defense", short: "Department of Defense" },
+              { name: "U.S. Army Corps of Engineers", short: "Army Corps of Engineers" },
+              { name: "Department of the Air Force", short: "Department of the Air Force" },
+              { name: "Department of the Navy", short: "Department of the Navy" },
+              { name: "Defense Logistics Agency", short: "Defense Logistics Agency" },
+              { name: "General Services Administration", short: "GSA" },
+              { name: "Lockheed Martin", short: "Lockheed Martin" },
+              { name: "Raytheon Technologies", short: "Raytheon Technologies" },
+              { name: "Northrop Grumman", short: "Northrop Grumman" },
+              { name: "Boeing Defense", short: "Boeing Defense" },
+              { name: "L3Harris", short: "L3Harris" },
+              { name: "BAE Systems", short: "BAE Systems" },
+            ].map((p) => (
+              <div
+                key={p.name}
+                title={p.name}
+                className="flex h-14 w-full items-center justify-center border border-[#10231d]/10 bg-white px-4 transition-all hover:border-[#2f8f6d]/40 hover:shadow-[0_6px_24px_-12px_rgba(47,143,109,0.35)]"
+              >
+                <span className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-[#10231d]/75">
+                  {p.short}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <p className="mt-10 text-center text-[11px] font-medium tracking-wide text-[#10231d]/40">
+            Logos shown for context only. Custodia is not endorsed by, affiliated with, or a contractor of any agency or company listed.
+          </p>
+        </div>
+      </RevealSection>
+
+
       {/* 4 — Opportunity (the deal + the gap) */}
       <RevealSection id="product" className="scroll-mt-16 bg-[#f7f7f3] px-6 py-24">
         <div className="mx-auto max-w-6xl">
