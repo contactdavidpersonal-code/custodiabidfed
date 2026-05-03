@@ -135,7 +135,7 @@ export function EvidenceDropzone({
                 {dragActive ? "Drop to attach" : "Drag a file here, or click to browse"}
               </div>
               <div className="mt-0.5 text-[11px] text-[#5a7d70]">
-                PNG / JPG / PDF auto-review. CSV / Excel / Word need officer clearance.
+                PNG / JPG / PDF / CSV / TXT auto-review. Excel / Word need officer clearance.
                 25&nbsp;MB max.
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { get } from "@vercel/blob";
 import { NextResponse } from "next/server";
 import { getSql } from "@/lib/db";
 import { getAssessmentForUser } from "@/lib/assessment";
@@ -79,12 +80,23 @@ export async function GET(
     return new NextResponse("Not found", { status: 404 });
   }
 
-  // Server-side fetch. The blob URL stays in this process; the client never
-  // sees it. We forward a few useful headers and stream bytes through.
-  const upstream = await fetch(artifact.blob_url, { cache: "no-store" });
-  if (!upstream.ok || !upstream.body) {
+  // Server-side fetch via the Vercel Blob SDK. The store is configured for
+  // private access, so we use `get()` (which sends the BLOB_READ_WRITE_TOKEN
+  // automatically) instead of a raw `fetch()` on the URL. The blob URL never
+  // leaves this process.
+  let upstream: Awaited<ReturnType<typeof get>>;
+  try {
+    upstream = await get(artifact.blob_url, {
+      access: "private",
+      useCache: false,
+    });
+  } catch (err) {
+    console.error(`[evidence-proxy] get() failed for ${artifactId}`, err);
+    return new NextResponse("Evidence unavailable", { status: 502 });
+  }
+  if (!upstream || upstream.statusCode !== 200 || !upstream.stream) {
     console.error(
-      `[evidence-proxy] upstream ${upstream.status} for ${artifactId}`,
+      `[evidence-proxy] no stream for ${artifactId} (status=${upstream?.statusCode ?? "null"})`,
     );
     return new NextResponse("Evidence unavailable", { status: 502 });
   }
@@ -127,5 +139,5 @@ export async function GET(
   const upstreamLength = upstream.headers.get("content-length");
   if (upstreamLength) headers.set("Content-Length", upstreamLength);
 
-  return new NextResponse(upstream.body, { status: 200, headers });
+  return new NextResponse(upstream.stream, { status: 200, headers });
 }

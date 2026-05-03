@@ -245,7 +245,7 @@ export async function uploadEvidenceAction(formData: FormData) {
   // org/assessment/control structure. The URL itself is still treated as
   // server-side secret — clients only ever see /api/evidence/{id}.
   const blob = await put(pathname, file, {
-    access: "public",
+    access: "private",
     addRandomSuffix: true,
     contentType: file.type || "application/octet-stream",
   });
@@ -373,7 +373,7 @@ export async function generateArtifactAction(formData: FormData) {
   const safeName = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
   const pathname = `evidence/${assessmentId}/${controlId}/${safeName}`;
   const blob = await put(pathname, markdown, {
-    access: "public",
+    access: "private",
     addRandomSuffix: true,
     contentType: "text/markdown",
   });
