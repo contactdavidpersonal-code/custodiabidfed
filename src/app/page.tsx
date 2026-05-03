@@ -325,38 +325,57 @@ export default function Home() {
             Model Certification Level&nbsp;1, at minimum, to handle Federal
             Contract Information.
           </p>
+        </div>
 
-          <div className="mt-12 grid grid-cols-2 items-center justify-items-center gap-x-6 gap-y-10 sm:grid-cols-3 md:grid-cols-6">
-            {[
-              { name: "U.S. Department of Defense", short: "Department of Defense" },
-              { name: "U.S. Army Corps of Engineers", short: "Army Corps of Engineers" },
-              { name: "Department of the Air Force", short: "Department of the Air Force" },
-              { name: "Department of the Navy", short: "Department of the Navy" },
-              { name: "Defense Logistics Agency", short: "Defense Logistics Agency" },
-              { name: "General Services Administration", short: "GSA" },
-              { name: "Lockheed Martin", short: "Lockheed Martin" },
-              { name: "Raytheon Technologies", short: "Raytheon Technologies" },
-              { name: "Northrop Grumman", short: "Northrop Grumman" },
-              { name: "Boeing Defense", short: "Boeing Defense" },
-              { name: "L3Harris", short: "L3Harris" },
-              { name: "BAE Systems", short: "BAE Systems" },
-            ].map((p) => (
+        {/* Edge-to-edge marquee */}
+        <div
+          className="group relative mt-12 overflow-hidden"
+          style={{
+            maskImage:
+              "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)",
+          }}
+        >
+          <div className="flex w-max animate-marquee items-center gap-3 group-hover:[animation-play-state:paused]">
+            {[...Array(2)].map((_, dup) => (
               <div
-                key={p.name}
-                title={p.name}
-                className="flex h-14 w-full items-center justify-center border border-[#10231d]/10 bg-white px-4 transition-all hover:border-[#2f8f6d]/40 hover:shadow-[0_6px_24px_-12px_rgba(47,143,109,0.35)]"
+                key={dup}
+                className="flex shrink-0 items-center gap-3"
+                aria-hidden={dup === 1}
               >
-                <span className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-[#10231d]/75">
-                  {p.short}
-                </span>
+                {[
+                  "U.S. Department of Defense",
+                  "U.S. Army Corps of Engineers",
+                  "Department of the Air Force",
+                  "Department of the Navy",
+                  "Defense Logistics Agency",
+                  "General Services Administration",
+                  "Lockheed Martin",
+                  "Raytheon Technologies",
+                  "Northrop Grumman",
+                  "Boeing Defense",
+                  "L3Harris",
+                  "BAE Systems",
+                ].map((name) => (
+                  <div
+                    key={`${dup}-${name}`}
+                    title={name}
+                    className="flex h-14 w-56 shrink-0 items-center justify-center border border-[#10231d]/10 bg-white px-5 transition-colors hover:border-[#2f8f6d]/40"
+                  >
+                    <span className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-[#10231d]/75">
+                      {name}
+                    </span>
+                  </div>
+                ))}
               </div>
             ))}
           </div>
-
-          <p className="mt-10 text-center text-[11px] font-medium tracking-wide text-[#10231d]/40">
-            Logos shown for context only. Custodia is not endorsed by, affiliated with, or a contractor of any agency or company listed.
-          </p>
         </div>
+
+        <p className="mx-auto mt-10 max-w-3xl px-6 text-center text-[11px] font-medium tracking-wide text-[#10231d]/40">
+          Logos shown for context only. Custodia is not endorsed by, affiliated with, or a contractor of any agency or company listed.
+        </p>
       </RevealSection>
 
 
