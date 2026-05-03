@@ -9,6 +9,7 @@ import {
   listResponsesForAssessment,
 } from "@/lib/assessment";
 import { getObjectives, playbook, playbookById } from "@/lib/playbook";
+import { getPracticeGuide } from "@/lib/practice-guides";
 import {
   deleteEvidenceAction,
   reReviewEvidenceAction,
@@ -21,6 +22,7 @@ import {
 } from "../../../actions";
 import { ConnectorHint } from "../../../_components/ConnectorHint";
 import { PracticeWizard } from "./PracticeWizard";
+import { GuidedPracticeFlow } from "./GuidedPracticeFlow";
 
 export default async function ControlDetailPage(
   props: PageProps<"/assessments/[id]/controls/[controlId]">,
@@ -81,28 +83,56 @@ export default async function ControlDetailPage(
           organizationId={ctx.organization.id}
         />
       </div>
-      <PracticeWizard
-        assessmentId={id}
-        controlId={controlId}
-        practice={practiceForClient}
-        objectives={getObjectives(controlId)}
-        response={response}
-        evidence={evidenceForClient}
-        remediationPlan={remediationPlan}
-        prevId={prevId}
-        nextId={nextId}
-        currentIdx={currentIdx}
-        total={orderedIds.length}
-        reuseCandidates={reuseForClient}
-        saveResponseAction={saveControlResponseAction}
-        uploadEvidenceAction={uploadEvidenceAction}
-        deleteEvidenceAction={deleteEvidenceAction}
-        reReviewEvidenceAction={reReviewEvidenceAction}
-        tagArtifactPracticeAction={tagArtifactPracticeAction}
-        untagArtifactPracticeAction={untagArtifactPracticeAction}
-        useSuggestedNarrativeAction={useSuggestedNarrativeAction}
-        upsertRemediationPlanAction={upsertRemediationPlanAction}
-      />
+      {(() => {
+        const guide = getPracticeGuide(controlId);
+        if (guide) {
+          return (
+            <GuidedPracticeFlow
+              assessmentId={id}
+              controlId={controlId}
+              practice={practiceForClient}
+              guide={guide}
+              response={response}
+              evidence={evidenceForClient}
+              reuseCandidates={reuseForClient}
+              prevId={prevId}
+              nextId={nextId}
+              currentIdx={currentIdx}
+              total={orderedIds.length}
+              saveResponseAction={saveControlResponseAction}
+              uploadEvidenceAction={uploadEvidenceAction}
+              deleteEvidenceAction={deleteEvidenceAction}
+              reReviewEvidenceAction={reReviewEvidenceAction}
+              tagArtifactPracticeAction={tagArtifactPracticeAction}
+              useSuggestedNarrativeAction={useSuggestedNarrativeAction}
+            />
+          );
+        }
+        return (
+          <PracticeWizard
+            assessmentId={id}
+            controlId={controlId}
+            practice={practiceForClient}
+            objectives={getObjectives(controlId)}
+            response={response}
+            evidence={evidenceForClient}
+            remediationPlan={remediationPlan}
+            prevId={prevId}
+            nextId={nextId}
+            currentIdx={currentIdx}
+            total={orderedIds.length}
+            reuseCandidates={reuseForClient}
+            saveResponseAction={saveControlResponseAction}
+            uploadEvidenceAction={uploadEvidenceAction}
+            deleteEvidenceAction={deleteEvidenceAction}
+            reReviewEvidenceAction={reReviewEvidenceAction}
+            tagArtifactPracticeAction={tagArtifactPracticeAction}
+            untagArtifactPracticeAction={untagArtifactPracticeAction}
+            useSuggestedNarrativeAction={useSuggestedNarrativeAction}
+            upsertRemediationPlanAction={upsertRemediationPlanAction}
+          />
+        );
+      })()}
     </main>
   );
 }
