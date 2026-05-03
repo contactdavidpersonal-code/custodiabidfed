@@ -77,7 +77,7 @@ export default async function AssessmentOverviewPage(
   const justSigned = search?.signed === "1" && attested;
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-10">
       {justSigned && <CelebrationBanner assessmentId={ctx.assessment.id} />}
 
       {attested && (

@@ -56,7 +56,7 @@ export default async function VerifiedOwnerPanel(
 
   if (!trustPage) {
     return (
-      <main className="mx-auto max-w-3xl px-6 py-10">
+      <main className="mx-auto max-w-3xl px-4 py-6 md:px-6 md:py-10">
         <h1 className="font-serif text-3xl text-slate-900">
           Verified page not yet provisioned
         </h1>
@@ -88,7 +88,7 @@ export default async function VerifiedOwnerPanel(
   const embedMarkdown = `[![Custodia Verified](${badgeWide})](${publicUrl})`;
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <main className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-10">
       <div className="mb-6 flex flex-wrap items-baseline justify-between gap-4">
         <div>
           <Link

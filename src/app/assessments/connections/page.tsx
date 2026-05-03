@@ -57,7 +57,7 @@ export default async function ConnectionsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <main className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-10">
       <header className="mb-8">
         <Link
           href="/assessments"

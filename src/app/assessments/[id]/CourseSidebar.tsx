@@ -85,7 +85,7 @@ export function CourseSidebar({ sections }: Props) {
 
   return (
     <aside
-      className="sticky top-[57px] z-10 h-[calc(100vh-57px)] shrink-0 border-r border-[#cfe3d9] bg-[#fbfcf9] transition-[width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] print:hidden"
+      className="hidden lg:block sticky top-[57px] z-10 h-[calc(100vh-57px)] shrink-0 border-r border-[#cfe3d9] bg-[#fbfcf9] transition-[width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] print:hidden"
       style={{ width: open ? 288 : 56 }}
     >
       <div className="flex h-full flex-col">

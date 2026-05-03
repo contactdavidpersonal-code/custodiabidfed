@@ -51,7 +51,7 @@ export default async function ProfilePage(
   ];
 
   return (
-    <main className="mx-auto max-w-4xl px-6 py-10">
+    <main className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-10">
       <header className="mb-8">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
           Step 1 of 7

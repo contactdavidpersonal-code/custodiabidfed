@@ -88,7 +88,7 @@ export default async function ControlDetailPage(
 
   return (
     <main>
-      <div className="mx-auto max-w-4xl px-6 pt-6">
+      <div className="mx-auto max-w-4xl px-4 pt-4 md:px-6 md:pt-6">
         <ConnectorHint
           controlId={controlId}
           organizationId={ctx.organization.id}

@@ -164,7 +164,7 @@ export function PracticeWizard(props: Props) {
     (props.response.narrative ?? "").trim().length >= 20;
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-8">
       <div className="mb-5 flex items-center justify-between gap-4 text-sm">
         <Link
           href={`/assessments/${props.assessmentId}`}
