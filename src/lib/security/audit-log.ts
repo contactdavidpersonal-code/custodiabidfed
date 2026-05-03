@@ -23,7 +23,12 @@ export type AuditAction =
   | "manual_evidence.uploaded"
   | "trust_page.published"
   | "trust_page.unpublished"
-  | "sprs_quiz.submitted";
+  | "trust_page.provisioned"
+  | "trust_page.updated"
+  | "trust_page.rotated"
+  | "sprs_quiz.submitted"
+  | "assessment.sprs_filed"
+  | "email.sprs_filed.failed";
 
 export type AuditEvent = {
   action: AuditAction;

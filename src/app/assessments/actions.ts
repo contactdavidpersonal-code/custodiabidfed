@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { del, put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -40,6 +40,14 @@ import {
 } from "@/lib/ai/artifact-generation";
 import { signAttestation } from "@/lib/security/attestation-signature";
 import { recordAuditEvent } from "@/lib/security/audit-log";
+import { sendSprsFiledEmail } from "@/lib/email/sprs-filed";
+import {
+  provisionTrustPageForFiling,
+  publishTrustPage,
+  unpublishTrustPage,
+  rotateTrustSlug,
+  updateTrustPageContentAction,
+} from "@/lib/trust-page";
 
 async function requireUserId(): Promise<string> {
   const { userId } = await auth();
@@ -786,6 +794,313 @@ export async function submitAffirmationAction(formData: FormData) {
   revalidatePath(`/assessments/${assessmentId}`);
   revalidatePath("/assessments");
   redirect(`/assessments/${assessmentId}?signed=1`);
+}
+
+/**
+ * Record the user's SPRS filing for an attested assessment.
+ *
+ * After the user signs their annual affirmation memo we walk them to
+ * https://piee.eb.mil → SPRS → Cyber Reports → CMMC Affirmations. They
+ * submit, copy the SPRS confirmation number it returns, and paste it back
+ * into the platform. This action persists that filing, fires an audit
+ * event, and emails the user a "you're done" receipt with their next
+ * re-affirmation due date and a link to their Statement of Compliance.
+ *
+ * Guardrails:
+ *   - Assessment must be in `attested` status (i.e. memo signed first).
+ *   - Confirmation number is stored as the user provided — we never
+ *     fabricate or auto-fill it.
+ *   - Email send failures do NOT roll back the DB write; the filing record
+ *     is the legal artifact, the email is just a courtesy receipt.
+ */
+export async function recordSprsFilingAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "").trim();
+  const confirmationNumberRaw = String(
+    formData.get("confirmationNumber") ?? "",
+  ).trim();
+
+  if (!assessmentId) throw new Error("Missing assessment id");
+  if (!confirmationNumberRaw) {
+    throw new Error("Enter the SPRS confirmation number");
+  }
+  // SPRS confirmation numbers are short alphanumeric strings. Cap the length
+  // and strip anything that isn't a-z, 0-9, dash, or underscore so we never
+  // round-trip junk into the email body or PDF.
+  if (confirmationNumberRaw.length > 64) {
+    throw new Error("SPRS confirmation number looks too long");
+  }
+  if (!/^[A-Za-z0-9_-]+$/.test(confirmationNumberRaw)) {
+    throw new Error(
+      "SPRS confirmation number can only contain letters, numbers, dashes, or underscores",
+    );
+  }
+  const confirmationNumber = confirmationNumberRaw.toUpperCase();
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Assessment not found");
+  if (ctx.assessment.status !== "attested") {
+    throw new Error(
+      "Sign your annual affirmation memo before recording the SPRS filing",
+    );
+  }
+  if (ctx.assessment.sprs_filed_at) {
+    // Idempotent: re-submitting with the same number is a no-op; changing
+    // the number after filing is a legal-record edit we don't allow inline.
+    if (
+      ctx.assessment.sprs_confirmation_number?.toUpperCase() ===
+      confirmationNumber
+    ) {
+      revalidatePath(`/assessments/${assessmentId}`);
+      return;
+    }
+    throw new Error(
+      "This filing is already on record. Contact support to amend.",
+    );
+  }
+
+  const filedAt = new Date();
+  const sql = getSql();
+  await sql`
+    UPDATE assessments
+    SET sprs_filed_at = ${filedAt.toISOString()}::timestamptz,
+        sprs_confirmation_number = ${confirmationNumber},
+        updated_at = NOW()
+    WHERE id = ${assessmentId}
+  `;
+
+  // Provision the Custodia Verified page (private until the user opts in
+  // from the offer card on the assessment overview). Failures here must
+  // NOT roll back the SPRS filing — the legal record is what matters.
+  // We compute deterministic public IDs (verification slug + CUST-V-XXXXXX)
+  // from (org, assessment, filed_at) so the SPRS confirmation number is
+  // never mixed into the public artifact.
+  let custodiaVerificationId: string | null = null;
+  try {
+    const provisioned = await provisionTrustPageForFiling({
+      organizationId: ctx.organization.id,
+      assessmentId,
+      sprsFiledAtIso: filedAt.toISOString(),
+      userId,
+    });
+    custodiaVerificationId = provisioned.identifiers.custodiaVerificationId;
+    await sql`
+      UPDATE assessments
+      SET sprs_attestation_hash = ${provisioned.identifiers.attestationHash},
+          custodia_verification_id = ${provisioned.identifiers.custodiaVerificationId},
+          updated_at = NOW()
+      WHERE id = ${assessmentId}
+    `;
+  } catch (err) {
+    await recordAuditEvent({
+      action: "trust_page.provisioned",
+      userId,
+      organizationId: ctx.organization.id,
+      resourceType: "assessment",
+      resourceId: assessmentId,
+      metadata: {
+        error: err instanceof Error ? err.message : String(err),
+        provisioningFailed: true,
+      },
+    });
+  }
+
+  // Refresh the live health snapshot so the offer card reflects current
+  // state immediately. Failure to recompute is non-fatal.
+  try {
+    const { recomputeTrustStatus } = await import("@/lib/trust-status");
+    await recomputeTrustStatus(ctx.organization.id);
+  } catch (err) {
+    console.error("[recordSprsFilingAction] trust-status recompute failed", err);
+  }
+
+  await recordAuditEvent({
+    action: "assessment.sprs_filed",
+    userId,
+    organizationId: ctx.organization.id,
+    resourceType: "assessment",
+    resourceId: assessmentId,
+    metadata: {
+      framework: ctx.assessment.framework,
+      fiscalYear: ctx.assessment.fiscal_year,
+      sprsConfirmationNumber: confirmationNumber,
+      filedAt: filedAt.toISOString(),
+      custodiaVerificationId,
+    },
+  });
+
+  // Best-effort confirmation email. Failures are logged via audit but never
+  // surfaced to the user — the filing itself is what matters legally.
+  try {
+    const client = await clerkClient();
+    const user = await client.users.getUser(userId);
+    const email =
+      user.primaryEmailAddress?.emailAddress ??
+      user.emailAddresses[0]?.emailAddress ??
+      null;
+    if (email) {
+      // Next re-affirmation: Sep 30 of the next federal fiscal year. If the
+      // current cycle is FY2026 (ends Sep 30 2026), we filed late if it's
+      // already past Sep 30 — but in either case the next deadline is the
+      // following FY's Sep 30.
+      const nextFy = (ctx.assessment.fiscal_year ?? new Date().getUTCFullYear()) + 1;
+      const nextDue = new Date(Date.UTC(nextFy, 8, 30));
+      const workspaceUrl =
+        process.env.NEXT_PUBLIC_APP_URL ?? "https://bidfedcmmc.com";
+      await sendSprsFiledEmail({
+        toEmail: email,
+        firstName: user.firstName ?? null,
+        organizationName: ctx.organization.name,
+        confirmationNumber,
+        filedAt,
+        nextReaffirmDueDate: nextDue,
+        workspaceUrl,
+        assessmentId,
+      });
+    }
+  } catch (err) {
+    await recordAuditEvent({
+      action: "email.sprs_filed.failed",
+      userId,
+      organizationId: ctx.organization.id,
+      resourceType: "assessment",
+      resourceId: assessmentId,
+      metadata: {
+        error: err instanceof Error ? err.message : String(err),
+      },
+    });
+  }
+
+  revalidatePath(`/assessments/${assessmentId}`);
+  revalidatePath("/assessments");
+}
+
+/**
+ * Publish the org's Custodia Verified page. Idempotent — a republish on an
+ * already-public page is a no-op (besides bumping `updated_at`). The
+ * trust_page row is auto-provisioned at SPRS filing time, so this action
+ * just flips `is_public = TRUE`.
+ */
+export async function publishVerifiedPageAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "").trim();
+  if (!assessmentId) throw new Error("Missing assessment id");
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Assessment not found");
+  if (!ctx.assessment.sprs_filed_at) {
+    throw new Error("Record your SPRS filing before publishing the Verified page");
+  }
+
+  await publishTrustPage({
+    organizationId: ctx.organization.id,
+    userId,
+  });
+  revalidatePath(`/assessments/${assessmentId}`);
+  revalidatePath(`/assessments/${assessmentId}/verified`);
+}
+
+export async function unpublishVerifiedPageAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "").trim();
+  if (!assessmentId) throw new Error("Missing assessment id");
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Assessment not found");
+
+  await unpublishTrustPage({
+    organizationId: ctx.organization.id,
+    userId,
+  });
+  revalidatePath(`/assessments/${assessmentId}`);
+  revalidatePath(`/assessments/${assessmentId}/verified`);
+}
+
+/**
+ * Owner-controlled content + display toggles for the Verified page. Each
+ * field is optional in the form payload — unsubmitted fields fall through
+ * to COALESCE-on-existing in the SQL.
+ */
+export async function updateVerifiedPageAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "").trim();
+  if (!assessmentId) throw new Error("Missing assessment id");
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Assessment not found");
+
+  const customAboutRaw = formData.get("customAbout");
+  const contactEmailRaw = formData.get("contactEmail");
+  const customAbout =
+    customAboutRaw == null ? undefined : String(customAboutRaw).slice(0, 500);
+  const contactEmail =
+    contactEmailRaw == null ? undefined : String(contactEmailRaw).trim();
+
+  if (contactEmail !== undefined && contactEmail !== "") {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) {
+      throw new Error("Contact email looks invalid");
+    }
+  }
+
+  const toggle = (name: string): boolean | undefined => {
+    // If the form rendered this toggle (marker present), an absent checkbox
+    // means "off"; otherwise (marker missing) we leave the field untouched.
+    const present = formData.get(`${name}__present`);
+    if (present == null) {
+      const v = formData.get(name);
+      if (v == null) return undefined;
+      return v === "on" || v === "true" || v === "1";
+    }
+    const v = formData.get(name);
+    return v === "on" || v === "true" || v === "1";
+  };
+
+  await updateTrustPageContentAction({
+    organizationId: ctx.organization.id,
+    userId,
+    customAbout,
+    contactEmail,
+    showContinuousMonitoring: toggle("showContinuousMonitoring"),
+    showConnectors: toggle("showConnectors"),
+    showSprsLink: toggle("showSprsLink"),
+    showSetAsides: toggle("showSetAsides"),
+  });
+  revalidatePath(`/assessments/${assessmentId}/verified`);
+}
+
+/**
+ * Rotate the slug + Custodia Verification ID. Breaks all existing badges /
+ * embeds — used when a customer suspects compromise or wants a fresh public
+ * identifier. Re-derives from the same SPRS filing but bumps an internal
+ * version counter.
+ */
+export async function rotateVerifiedPageSlugAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "").trim();
+  if (!assessmentId) throw new Error("Missing assessment id");
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Assessment not found");
+  if (!ctx.assessment.sprs_filed_at) {
+    throw new Error("No SPRS filing to derive a Verified page from");
+  }
+
+  const ids = await rotateTrustSlug({
+    organizationId: ctx.organization.id,
+    assessmentId,
+    sprsFiledAtIso: ctx.assessment.sprs_filed_at,
+    userId,
+  });
+  // Also update the assessment row so badge endpoints lookup the new ID.
+  const sql = getSql();
+  await sql`
+    UPDATE assessments
+    SET sprs_attestation_hash = ${ids.attestationHash},
+        custodia_verification_id = ${ids.custodiaVerificationId},
+        updated_at = NOW()
+    WHERE id = ${assessmentId}
+  `;
+  revalidatePath(`/assessments/${assessmentId}/verified`);
 }
 
 export async function upsertRemediationPlanAction(formData: FormData) {

@@ -20,6 +20,10 @@
     {
       "path": "/api/cron/scheduler",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/trust-status-rollup",
+      "schedule": "0 * * * *"
     }
   ]
 }

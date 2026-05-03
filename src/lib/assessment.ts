@@ -40,6 +40,10 @@ export type AssessmentRow = {
   sprs_score: number | null;
   implements_all_17: boolean | null;
   carried_forward_from: string | null;
+  sprs_filed_at: string | null;
+  sprs_confirmation_number: string | null;
+  sprs_attestation_hash: string | null;
+  custodia_verification_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -181,6 +185,8 @@ export async function listAssessmentsForOrg(
     SELECT id, organization_id, cycle_label, status, framework, fiscal_year,
            submitted_at, affirmed_at, affirmed_by_name, affirmed_by_title,
            sprs_score, implements_all_17, carried_forward_from,
+           sprs_filed_at, sprs_confirmation_number,
+           sprs_attestation_hash, custodia_verification_id,
            created_at, updated_at
     FROM assessments
     WHERE organization_id = ${organizationId}
@@ -202,7 +208,9 @@ export async function listAssessmentsWithProgress(
     SELECT a.id, a.organization_id, a.cycle_label, a.status, a.framework,
            a.fiscal_year, a.submitted_at, a.affirmed_at, a.affirmed_by_name,
            a.affirmed_by_title, a.sprs_score, a.implements_all_17,
-           a.carried_forward_from, a.created_at, a.updated_at,
+           a.carried_forward_from, a.sprs_filed_at, a.sprs_confirmation_number,
+           a.sprs_attestation_hash, a.custodia_verification_id,
+           a.created_at, a.updated_at,
            COUNT(cr.*) FILTER (WHERE cr.status != 'unanswered')::int AS answered,
            COUNT(cr.*)::int AS total
     FROM assessments a
@@ -232,6 +240,8 @@ export async function createAssessmentForOrg(
     RETURNING id, organization_id, cycle_label, status, framework, fiscal_year,
               submitted_at, affirmed_at, affirmed_by_name, affirmed_by_title,
               sprs_score, implements_all_17, carried_forward_from,
+              sprs_filed_at, sprs_confirmation_number,
+              sprs_attestation_hash, custodia_verification_id,
               created_at, updated_at
   `) as AssessmentRow[];
   const assessment = inserted[0];
@@ -273,6 +283,8 @@ export async function createAssessmentWithCarryForward(
     RETURNING id, organization_id, cycle_label, status, framework, fiscal_year,
               submitted_at, affirmed_at, affirmed_by_name, affirmed_by_title,
               sprs_score, implements_all_17, carried_forward_from,
+              sprs_filed_at, sprs_confirmation_number,
+              sprs_attestation_hash, custodia_verification_id,
               created_at, updated_at
   `) as AssessmentRow[];
   const assessment = inserted[0];
@@ -350,6 +362,8 @@ export async function getAssessmentForUser(
            a.framework, a.fiscal_year,
            a.submitted_at, a.affirmed_at, a.affirmed_by_name, a.affirmed_by_title,
            a.sprs_score, a.implements_all_17, a.carried_forward_from,
+           a.sprs_filed_at, a.sprs_confirmation_number,
+           a.sprs_attestation_hash, a.custodia_verification_id,
            a.created_at AS a_created_at, a.updated_at AS a_updated_at,
            o.id AS o_id, o.owner_user_id, o.name AS o_name, o.entity_type,
            o.cage_code, o.sam_uei, o.naics_codes, o.tier, o.scoped_systems,
@@ -378,6 +392,10 @@ export async function getAssessmentForUser(
       sprs_score: r.sprs_score as number | null,
       implements_all_17: r.implements_all_17 as boolean | null,
       carried_forward_from: r.carried_forward_from as string | null,
+      sprs_filed_at: r.sprs_filed_at as string | null,
+      sprs_confirmation_number: r.sprs_confirmation_number as string | null,
+      sprs_attestation_hash: r.sprs_attestation_hash as string | null,
+      custodia_verification_id: r.custodia_verification_id as string | null,
       created_at: r.a_created_at as string,
       updated_at: r.a_updated_at as string,
     },

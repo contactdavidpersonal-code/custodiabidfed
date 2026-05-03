@@ -294,6 +294,41 @@ export async function initDb() {
       ADD COLUMN IF NOT EXISTS carried_forward_from UUID REFERENCES assessments(id) ON DELETE SET NULL
   `;
 
+  // SPRS filing confirmation — the user's self-reported moment of truth. After
+  // they sign their affirmation we walk them to https://piee.eb.mil → SPRS,
+  // they paste the resulting SPRS confirmation number back into the platform,
+  // and we record the filing. This is the milestone that flips the org to
+  // "bid-eligible" and triggers the confirmation email + Statement of
+  // Compliance artifact. Never auto-set — must come from the user explicitly.
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS sprs_filed_at TIMESTAMPTZ
+  `;
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS sprs_confirmation_number TEXT
+  `;
+
+  // Custodia Verified — public-facing identifiers. Derived deterministically
+  // from (org, assessment, filing timestamp) by `src/lib/trust-page.ts`.
+  // The `sprs_attestation_hash` is the full HMAC kept as an internal join
+  // key; the `custodia_verification_id` is the human-friendly CUST-V-XXXXXX
+  // shown on badges and emails. The SPRS confirmation number itself is never
+  // mixed into the HMAC seed — these IDs reveal nothing private.
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS sprs_attestation_hash TEXT
+  `;
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS custodia_verification_id TEXT
+  `;
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_assessments_custodia_verification_id
+      ON assessments (custodia_verification_id)
+      WHERE custodia_verification_id IS NOT NULL
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS control_responses (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -933,6 +968,95 @@ export async function initDb() {
     CREATE INDEX IF NOT EXISTS idx_trust_pages_public
       ON trust_pages (slug)
       WHERE is_public = TRUE
+  `;
+
+  // Custodia Verified extensions: public verification identifiers, owner
+  // display toggles, and the customer-curated about blurb. All ALTERs are
+  // idempotent so repeat boots of this init function are safe.
+  await sql`
+    ALTER TABLE trust_pages
+      ADD COLUMN IF NOT EXISTS verification_slug TEXT
+  `;
+  await sql`
+    ALTER TABLE trust_pages
+      ADD COLUMN IF NOT EXISTS custodia_verification_id TEXT
+  `;
+  await sql`
+    ALTER TABLE trust_pages
+      ADD COLUMN IF NOT EXISTS show_continuous_monitoring BOOLEAN NOT NULL DEFAULT TRUE
+  `;
+  await sql`
+    ALTER TABLE trust_pages
+      ADD COLUMN IF NOT EXISTS show_connectors BOOLEAN NOT NULL DEFAULT TRUE
+  `;
+  await sql`
+    ALTER TABLE trust_pages
+      ADD COLUMN IF NOT EXISTS show_sprs_link BOOLEAN NOT NULL DEFAULT TRUE
+  `;
+  await sql`
+    ALTER TABLE trust_pages
+      ADD COLUMN IF NOT EXISTS show_set_asides BOOLEAN NOT NULL DEFAULT TRUE
+  `;
+  await sql`
+    ALTER TABLE trust_pages
+      ADD COLUMN IF NOT EXISTS custom_about TEXT
+  `;
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_trust_pages_verification_slug
+      ON trust_pages (verification_slug)
+      WHERE verification_slug IS NOT NULL
+  `;
+
+  // trust_status — denormalized, recomputed snapshot of the org's compliance
+  // posture. Single source of truth for the public health pill, badge color,
+  // and `/api/verify/<slug>` JSON. Recomputed by recomputeTrustStatus()
+  // whenever connectors sync, evidence changes, drift opens/resolves, or the
+  // hourly safety-net cron fires. Reads on the public path never recompute —
+  // they only SELECT from this table for predictable latency under traffic.
+  await sql`
+    CREATE TABLE IF NOT EXISTS trust_status (
+      organization_id UUID PRIMARY KEY REFERENCES organizations(id) ON DELETE CASCADE,
+      health TEXT NOT NULL DEFAULT 'gray'
+        CHECK (health IN ('green','amber','red','gray')),
+      health_reason TEXT,
+      practices_met INT NOT NULL DEFAULT 0,
+      practices_total INT NOT NULL DEFAULT 17,
+      evidence_count INT NOT NULL DEFAULT 0,
+      oldest_evidence_age_days INT,
+      newest_evidence_age_days INT,
+      m365_connected_at TIMESTAMPTZ,
+      m365_last_sync_at TIMESTAMPTZ,
+      google_connected_at TIMESTAMPTZ,
+      google_last_sync_at TIMESTAMPTZ,
+      open_drift_count INT NOT NULL DEFAULT 0,
+      drift_detected_at TIMESTAMPTZ,
+      drift_resolved_at TIMESTAMPTZ,
+      affirmation_filed_at TIMESTAMPTZ,
+      next_reaffirm_due TIMESTAMPTZ,
+      last_computed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  // drift_events — append-only log of detected control drift. Closed by
+  // setting resolved_at. Powers the public "Open drift: none/X" line and
+  // the amber health state. Sourced from connector polls + freshness cron.
+  await sql`
+    CREATE TABLE IF NOT EXISTS drift_events (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      control_id TEXT NOT NULL,
+      signal TEXT NOT NULL,
+      detected_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      resolved_at TIMESTAMPTZ,
+      severity TEXT NOT NULL DEFAULT 'warn'
+        CHECK (severity IN ('info','warn','critical')),
+      detail JSONB NOT NULL DEFAULT '{}'::jsonb
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_drift_events_org_open
+      ON drift_events (organization_id, detected_at DESC)
+      WHERE resolved_at IS NULL
   `;
 
   // Free public SPRS quiz lead-gen. Captures the quiz answers + computed
