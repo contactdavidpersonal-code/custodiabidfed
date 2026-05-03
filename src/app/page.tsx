@@ -275,6 +275,8 @@ export default function Home() {
               width={1600}
               height={1000}
               priority
+              fetchPriority="high"
+              sizes="(min-width: 1024px) 960px, (min-width: 640px) 90vw, 100vw"
               className="h-auto w-full"
             />
           </div>

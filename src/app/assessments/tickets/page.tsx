@@ -112,18 +112,23 @@ export default async function TicketsIndexPage() {
 
 function EmptyState() {
   return (
-    <div className=" border border-dashed border-[#cfe3d9] bg-white p-10 text-center">
-      <h2 className="font-serif text-xl font-bold text-[#10231d]">
+    <div className="border border-dashed border-[#cfe3d9] bg-white px-6 py-10 text-center md:px-10 md:py-14">
+      <div className="mx-auto flex h-12 w-12 items-center justify-center bg-[#eaf3ee] text-[#2f8f6d]">
+        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeLinejoin="round" />
+        </svg>
+      </div>
+      <h2 className="mt-4 font-serif text-lg font-bold text-[#10231d] md:text-xl">
         No tickets yet
       </h2>
-      <p className="mx-auto mt-2 max-w-md text-sm text-[#5a7d70]">
+      <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[#5a7d70]">
         Stuck on a control? Need a sanity check on your scope? Open a ticket
         and a real Custodia officer will reply by email — and the reply shows
         up right back here.
       </p>
       <Link
         href="/assessments/tickets/new"
-        className="mt-6 inline-block  bg-[#0e2a23] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
+        className="mt-6 inline-block bg-[#0e2a23] px-5 py-3 text-sm font-bold uppercase tracking-[0.18em] text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
       >
         Open your first ticket
       </Link>

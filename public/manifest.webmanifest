@@ -8,6 +8,29 @@
   "orientation": "portrait",
   "background_color": "#0d2e25",
   "theme_color": "#0d2e25",
+  "categories": ["business", "productivity", "government"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "shortcuts": [
+    {
+      "name": "Open workspace",
+      "short_name": "Workspace",
+      "description": "Jump back into your CMMC assessment",
+      "url": "/assessments"
+    },
+    {
+      "name": "Bid pipeline",
+      "short_name": "Bids",
+      "description": "Browse SAM.gov opportunities matched to your NAICS",
+      "url": "/opportunities"
+    },
+    {
+      "name": "Tickets",
+      "short_name": "Tickets",
+      "description": "Talk to a Custodia officer",
+      "url": "/assessments/tickets"
+    }
+  ],
   "icons": [
     {
       "src": "/custodia-logo.png",
@@ -19,7 +42,13 @@
       "src": "/custodia-logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/custodia-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

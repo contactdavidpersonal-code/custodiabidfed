@@ -2,6 +2,7 @@
 
 import { motion } from "motion/react";
 import { useKeyboardOpen } from "@/lib/use-breakpoint";
+import { haptic } from "@/lib/haptic";
 
 type Props = {
   onClick: () => void;
@@ -28,7 +29,10 @@ export function FloatingButton({
   return (
     <motion.button
       type="button"
-      onClick={onClick}
+      onClick={() => {
+        haptic("medium");
+        onClick();
+      }}
       aria-label={label}
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}

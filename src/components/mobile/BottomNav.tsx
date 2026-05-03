@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { useKeyboardOpen } from "@/lib/use-breakpoint";
+import { haptic } from "@/lib/haptic";
 
 export type BottomNavItem = {
   href: string;
@@ -41,6 +42,9 @@ export function BottomNav({ items }: { items: BottomNavItem[] }) {
               <Link
                 href={it.href}
                 aria-current={active ? "page" : undefined}
+                onClick={() => {
+                  if (!active) haptic("light");
+                }}
                 className="relative flex flex-col items-center justify-center gap-0.5 px-2 py-2.5 text-[10px] font-bold uppercase tracking-[0.12em]"
               >
                 <span
