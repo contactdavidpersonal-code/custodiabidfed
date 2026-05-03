@@ -64,15 +64,17 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <main className="min-h-screen bg-[#07101f] text-white">
-      <section className="border-b border-white/10 bg-[#0a0f1e]">
+    <main className="min-h-screen bg-[#0d2e25] text-white">
+      <section className="border-b border-white/10 bg-[#0a2620]">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-6">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-amber-400">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#c4f0b8]">
               Custodia Ops
             </p>
-            <h1 className="mt-2 text-3xl font-black md:text-4xl">Founder dashboard</h1>
-            <p className="mt-2 max-w-2xl text-sm text-gray-300 md:text-base">
+            <h1 className="mt-2 font-serif text-4xl font-normal tracking-tight md:text-5xl">
+              Founder dashboard
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm text-white/70 md:text-base">
               Manage startups through the CMMC Level 1 sprint from lead intake to bid-ready status,
               then transition them into the ongoing managed compliance retainer.
             </p>
@@ -80,7 +82,7 @@ export default async function DashboardPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-gray-200 transition-colors hover:border-white/30 hover:text-white"
+              className="border border-white/20 px-4 py-2 text-sm font-semibold text-white/80 transition-colors hover:border-[#c4f0b8] hover:text-[#c4f0b8]"
             >
               Back to site
             </Link>
@@ -98,11 +100,11 @@ export default async function DashboardPage() {
             <MetricCard label="New waitlist leads" value={String(waitlist.length)} />
           </div>
 
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur">
+          <section className="border border-white/10 bg-[#0a2620] p-6 shadow-2xl">
             <div className="mb-6 flex items-end justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-black">Sprint pipeline</h2>
-                <p className="mt-2 text-sm text-gray-300">
+                <h2 className="font-serif text-3xl font-normal tracking-tight">Sprint pipeline</h2>
+                <p className="mt-2 text-sm text-white/70">
                   Move founders through the exact delivery path: intake, SAM.gov, SSP, controls,
                   evidence, bid readiness, then retainer.
                 </p>
@@ -111,30 +113,30 @@ export default async function DashboardPage() {
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {stageCounts.map(({ stage, count }) => (
-                <div key={stage} className="rounded-2xl border border-white/10 bg-[#0e1730] p-4">
-                  <div className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-400">
+                <div key={stage} className="border border-white/10 bg-[#0f3a2d] p-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c4f0b8]">
                     {stageLabels[stage]}
                   </div>
-                  <div className="mt-3 text-3xl font-black">{count}</div>
+                  <div className="mt-3 font-serif text-4xl font-normal">{count}</div>
                 </div>
               ))}
             </div>
 
-            <div className="mt-8 overflow-hidden rounded-2xl border border-white/10">
+            <div className="mt-8 overflow-hidden border border-white/10">
               <table className="min-w-full divide-y divide-white/10 text-left text-sm">
-                <thead className="bg-white/5 text-gray-300">
+                <thead className="bg-[#0f3a2d] text-white/70">
                   <tr>
-                    <th className="px-4 py-3 font-semibold">Client</th>
-                    <th className="px-4 py-3 font-semibold">Company</th>
-                    <th className="px-4 py-3 font-semibold">Stage</th>
-                    <th className="px-4 py-3 font-semibold">Notes</th>
-                    <th className="px-4 py-3 font-semibold">Updated</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em]">Client</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em]">Company</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em]">Stage</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em]">Notes</th>
+                    <th className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.18em]">Updated</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/10 bg-[#08101f]">
+                <tbody className="divide-y divide-white/10 bg-[#082019]">
                   {clients.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-gray-400">
+                      <td colSpan={5} className="px-4 py-8 text-center text-white/50">
                         No clients yet. Add your first sprint client using the intake form.
                       </td>
                     </tr>
@@ -143,16 +145,16 @@ export default async function DashboardPage() {
                       <tr key={client.id} className="align-top">
                         <td className="px-4 py-4">
                           <div className="font-semibold text-white">{client.name}</div>
-                          <div className="mt-1 text-xs text-gray-400">{client.email ?? "No email added"}</div>
+                          <div className="mt-1 text-xs text-white/50">{client.email ?? "No email added"}</div>
                         </td>
-                        <td className="px-4 py-4 text-gray-200">{client.company}</td>
+                        <td className="px-4 py-4 text-white/80">{client.company}</td>
                         <td className="px-4 py-4">
                           <form action={updateClientStageAction} className="flex items-center gap-2">
                             <input type="hidden" name="clientId" value={client.id} />
                             <select
                               name="sprintStage"
                               defaultValue={client.sprint_stage}
-                              className="min-w-44 rounded-xl border border-white/10 bg-[#13203d] px-3 py-2 text-sm text-white outline-none"
+                              className="min-w-44 border border-white/15 bg-[#103930] px-3 py-2 text-sm text-white outline-none focus:border-[#c4f0b8]"
                             >
                               {sprintStages.map((stage) => (
                                 <option key={stage} value={stage}>
@@ -162,14 +164,14 @@ export default async function DashboardPage() {
                             </select>
                             <button
                               type="submit"
-                              className="rounded-xl bg-amber-400 px-3 py-2 text-xs font-bold text-gray-900 transition-colors hover:bg-amber-300"
+                              className="bg-[#c4f0b8] px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#0a2620] transition-colors hover:bg-white"
                             >
                               Save
                             </button>
                           </form>
                         </td>
-                        <td className="px-4 py-4 text-gray-300">{client.notes || "-"}</td>
-                        <td className="px-4 py-4 text-gray-400">
+                        <td className="px-4 py-4 text-white/70">{client.notes || "-"}</td>
+                        <td className="px-4 py-4 text-white/50">
                           {new Date(client.updated_at).toLocaleDateString()}
                         </td>
                       </tr>
@@ -182,9 +184,9 @@ export default async function DashboardPage() {
         </div>
 
         <div className="space-y-6">
-          <section className="rounded-3xl border border-white/10 bg-white p-6 text-gray-900 shadow-2xl">
-            <h2 className="text-2xl font-black">Add sprint client</h2>
-            <p className="mt-2 text-sm text-gray-600">
+          <section className="border border-[#c4f0b8]/30 bg-[#f7f7f3] p-6 text-[#0a2620] shadow-2xl">
+            <h2 className="font-serif text-3xl font-normal tracking-tight">Add sprint client</h2>
+            <p className="mt-2 text-sm text-[#0a2620]/70">
               Add a startup as soon as they engage. This becomes the operating record for their sprint.
             </p>
             <form action={createClientAction} className="mt-6 space-y-4">
@@ -192,43 +194,45 @@ export default async function DashboardPage() {
               <Field label="Company" name="company" placeholder="Acme Defense AI" required />
               <Field label="Email" name="email" type="email" placeholder="jane@acme.ai" />
               <label className="block">
-                <span className="mb-2 block text-sm font-semibold text-gray-700">Notes</span>
+                <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#0a2620]/70">
+                  Notes
+                </span>
                 <textarea
                   name="notes"
                   rows={4}
                   placeholder="Current contract target, blockers, timelines, or special scope..."
-                  className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-colors focus:border-amber-400"
+                  className="w-full border border-[#0a2620]/20 bg-white px-4 py-3 text-sm text-[#0a2620] outline-none transition-colors focus:border-[#0a2620]"
                 />
               </label>
               <button
                 type="submit"
-                className="w-full rounded-2xl bg-[#0a0f1e] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#101937]"
+                className="w-full bg-[#0a2620] px-5 py-3 text-sm font-bold uppercase tracking-wider text-[#c4f0b8] transition-colors hover:bg-[#0d2e25]"
               >
                 Create client record
               </button>
             </form>
           </section>
 
-          <section className="rounded-3xl border border-white/10 bg-white/5 p-6 backdrop-blur">
-            <h2 className="text-2xl font-black">Latest waitlist leads</h2>
-            <p className="mt-2 text-sm text-gray-300">
+          <section className="border border-white/10 bg-[#0a2620] p-6">
+            <h2 className="font-serif text-3xl font-normal tracking-tight">Latest waitlist leads</h2>
+            <p className="mt-2 text-sm text-white/70">
               Incoming landing-page demand captured from the bootcamp application form.
             </p>
             <div className="mt-6 space-y-3">
               {waitlist.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-gray-400">
+                <div className="border border-dashed border-white/15 px-4 py-6 text-sm text-white/50">
                   No waitlist entries yet.
                 </div>
               ) : (
                 waitlist.map((lead) => (
-                  <div key={lead.id} className="rounded-2xl border border-white/10 bg-[#0e1730] px-4 py-4">
+                  <div key={lead.id} className="border border-white/10 bg-[#0f3a2d] px-4 py-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <div className="font-semibold text-white">{lead.name || "Unnamed lead"}</div>
-                        <div className="mt-1 text-sm text-gray-300">{lead.company || "No company provided"}</div>
-                        <div className="mt-1 text-xs text-gray-400">{lead.email}</div>
+                        <div className="mt-1 text-sm text-white/70">{lead.company || "No company provided"}</div>
+                        <div className="mt-1 text-xs text-white/50">{lead.email}</div>
                       </div>
-                      <div className="text-xs text-gray-400">{new Date(lead.created_at).toLocaleDateString()}</div>
+                      <div className="text-xs text-white/50">{new Date(lead.created_at).toLocaleDateString()}</div>
                     </div>
                   </div>
                 ))
@@ -243,9 +247,9 @@ export default async function DashboardPage() {
 
 function MetricCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-xl backdrop-blur">
-      <div className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-400">{label}</div>
-      <div className="mt-3 text-4xl font-black text-white">{value}</div>
+    <div className="border border-white/10 bg-[#0a2620] p-5 shadow-xl">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#c4f0b8]">{label}</div>
+      <div className="mt-3 font-serif text-5xl font-normal text-white">{value}</div>
     </div>
   );
 }
@@ -265,13 +269,15 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-semibold text-gray-700">{label}</span>
+      <span className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-[#0a2620]/70">
+        {label}
+      </span>
       <input
         type={type}
         name={name}
         placeholder={placeholder}
         required={required}
-        className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm text-gray-900 outline-none transition-colors focus:border-amber-400"
+        className="w-full border border-[#0a2620]/20 bg-white px-4 py-3 text-sm text-[#0a2620] outline-none transition-colors focus:border-[#0a2620]"
       />
     </label>
   );
