@@ -183,6 +183,7 @@ export default function Home() {
             <div className="flex items-center gap-7 text-sm font-medium text-[#cce5da]">
               <a href="#product" className="hidden transition-colors hover:text-white sm:inline">Product</a>
               <a href="#pricing" className="hidden transition-colors hover:text-white sm:inline">Pricing</a>
+              <Link href="/blog" className="hidden transition-colors hover:text-white sm:inline">Blog</Link>
               <a href="#faq" className="hidden transition-colors hover:text-white sm:inline">FAQ</a>
               <Show when="signed-out">
                 <SignInButton mode="modal">
