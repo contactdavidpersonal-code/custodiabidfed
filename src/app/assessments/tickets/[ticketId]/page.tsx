@@ -39,7 +39,7 @@ export default async function TicketThreadPage(
   const messages = await listMessages(ticket.id);
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
+    <main className="mx-auto max-w-3xl px-4 py-6 md:px-6 md:py-10">
       <Link
         href="/assessments/tickets"
         className="text-xs font-bold uppercase tracking-[0.2em] text-[#5a7d70] hover:text-[#10231d]"

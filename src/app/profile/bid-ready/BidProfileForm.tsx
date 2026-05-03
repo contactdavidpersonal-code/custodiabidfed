@@ -580,13 +580,40 @@ function Input({
   type?: string;
   placeholder?: string;
 }) {
+  // Map common input types to the right mobile keyboard / autocomplete hints
+  // so phones stop showing the QWERTY keyboard for emails and phones.
+  const inputMode =
+    type === "email"
+      ? "email"
+      : type === "tel"
+        ? "tel"
+        : type === "url"
+          ? "url"
+          : type === "number"
+            ? "numeric"
+            : undefined;
+  const autoComplete =
+    type === "email"
+      ? "email"
+      : type === "tel"
+        ? "tel"
+        : type === "url"
+          ? "url"
+          : undefined;
+  const enterKeyHint = type === "email" || type === "url" ? "next" : undefined;
   return (
     <input
       type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
-      className="w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none"
+      inputMode={inputMode}
+      autoComplete={autoComplete}
+      enterKeyHint={enterKeyHint}
+      autoCapitalize={type === "email" || type === "url" ? "off" : undefined}
+      autoCorrect={type === "email" || type === "url" ? "off" : undefined}
+      spellCheck={type === "email" || type === "url" ? false : undefined}
+      className="w-full  border border-[#cfe3d9] bg-white px-3 py-2.5 text-base text-[#10231d] focus:border-[#2f8f6d] focus:outline-none md:text-sm md:py-2"
     />
   );
 }

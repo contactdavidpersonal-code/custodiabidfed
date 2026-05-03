@@ -66,7 +66,7 @@ export default async function DashboardPage() {
   return (
     <main className="min-h-screen bg-[#0d2e25] text-white">
       <section className="border-b border-white/10 bg-[#0a2620]">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-4 md:gap-6 md:px-6 md:py-6">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#c4f0b8]">
               Custodia Ops
@@ -91,7 +91,7 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-6 px-6 py-10 lg:grid-cols-[1.4fr_0.9fr]">
+      <section className="mx-auto grid max-w-7xl gap-6 px-4 py-6 md:px-6 md:py-10 lg:grid-cols-[1.4fr_0.9fr]">
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-4">
             <MetricCard label="Active clients" value={String(clients.length)} />

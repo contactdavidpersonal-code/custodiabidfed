@@ -497,7 +497,7 @@ function ChoiceList({
             key={c.value}
             type="button"
             onClick={() => onPick(c)}
-            className="group flex w-full items-start gap-3 border border-[#cfe3d9] bg-white p-3 text-left transition-all hover:border-[#0e2a23] hover:shadow-[0_2px_0_rgba(14,48,37,0.06)]"
+            className="group flex w-full items-start gap-3 border border-[#cfe3d9] bg-white p-3 text-left transition-all hover:border-[#0e2a23] hover:shadow-[0_2px_0_rgba(14,48,37,0.06)] active:scale-[0.99] md:p-3.5 min-h-[56px]"
           >
             <span
               className="mt-0.5 inline-flex h-4 w-4 flex-none items-center justify-center font-mono text-[9px] font-bold transition-colors"

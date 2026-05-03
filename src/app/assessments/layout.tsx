@@ -4,8 +4,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ensureOrgForUser } from "@/lib/assessment";
 import { countUnreadOfficerRepliesForOrg } from "@/lib/escalations";
-import { ComplianceOfficerRail } from "./ComplianceOfficerRail";
 import { WorkspaceBottomNav } from "./_components/WorkspaceBottomNav";
+import { MobileCharlieFAB } from "./_components/MobileCharlieFAB";
+import { DesktopCharlieRail } from "./_components/DesktopCharlieRail";
 
 export default async function AssessmentsLayout({
   children,
@@ -109,12 +110,12 @@ export default async function AssessmentsLayout({
           {children}
         </div>
         {/* Compliance officer rail — desktop only. Below lg the workspace gets a bottom nav instead. */}
-        <div className="hidden lg:block">
-          <ComplianceOfficerRail />
-        </div>
+        <DesktopCharlieRail />
       </div>
       {/* Mobile/tablet bottom tab bar */}
       <WorkspaceBottomNav unreadTickets={unreadOfficerReplies} />
+      {/* Mobile/tablet Charlie FAB → bottom sheet */}
+      <MobileCharlieFAB />
     </div>
   );
 }

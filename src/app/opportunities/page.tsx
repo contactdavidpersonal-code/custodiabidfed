@@ -217,7 +217,7 @@ export default async function OpportunitiesPage() {
   return (
     <main className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
       <header className="border-b border-[#cfe3d9] bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-5">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-4 md:gap-6 md:px-6 md:py-5">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
               Step 7 of 7 · Find &amp; submit bids
@@ -238,7 +238,7 @@ export default async function OpportunitiesPage() {
         </div>
       </header>
 
-      <section className="mx-auto max-w-5xl px-6 py-8">
+      <section className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-8">
         {!isAttested && (
           <div className="mb-6 overflow-hidden  border border-[#a06b1a] bg-[#fff7e8] p-5 shadow-[0_2px_0_rgba(160,107,26,0.08)]">
             <div className="flex flex-wrap items-start justify-between gap-4">

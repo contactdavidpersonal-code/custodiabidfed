@@ -43,12 +43,17 @@ const MAX_WIDTH = 560;
 const DEFAULT_WIDTH = 400;
 const STORAGE_WIDTH_KEY = "custodia.chat.width";
 
+type Props = {
+  /** When true, render as a flush full-height panel for use inside a mobile Sheet. Skips sticky chrome, resize handle, and the closed-state collapsed tab. */
+  mobile?: boolean;
+};
+
 /**
  * Persistent left-rail compliance officer. Mounted in the /assessments
  * layout so it survives page navigation. State (open/closed, width) is
  * persisted to localStorage.
  */
-export function ComplianceOfficerRail() {
+export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
   const [open, setOpen] = useState(true);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -301,7 +306,7 @@ export function ComplianceOfficerRail() {
     }
   }, [draft, streaming, pathname]);
 
-  if (!open) {
+  if (!open && !mobile) {
     return (
       <button
         type="button"
@@ -315,10 +320,15 @@ export function ComplianceOfficerRail() {
     );
   }
 
+  const Container = mobile ? "div" : "aside";
   return (
-    <aside
-      className="sticky top-[57px] z-10 flex h-[calc(100vh-57px)] shrink-0 flex-col border-l border-[#cfe3d9] bg-white print:hidden"
-      style={{ width }}
+    <Container
+      className={
+        mobile
+          ? "flex h-full w-full flex-col bg-white"
+          : "sticky top-[57px] z-10 flex h-[calc(100vh-57px)] shrink-0 flex-col border-l border-[#cfe3d9] bg-white print:hidden"
+      }
+      style={mobile ? undefined : { width }}
     >
       <header className="flex items-center justify-between gap-3 border-b border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
         <div className="flex items-center gap-2.5">
@@ -334,16 +344,18 @@ export function ComplianceOfficerRail() {
             </div>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={toggle}
-          aria-label="Hide Charlie"
-          className=" p-1 text-[#7a9c90] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
-        >
-          <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
-            <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
-          </svg>
-        </button>
+        {mobile ? null : (
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label="Hide Charlie"
+            className=" p-1 text-[#7a9c90] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
+          >
+            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
+              <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+            </svg>
+          </button>
+        )}
       </header>
 
       <div
@@ -426,12 +438,14 @@ export function ComplianceOfficerRail() {
         </Link>
       </form>
 
-      <div
-        onMouseDown={handleResizeMouseDown}
-        className="absolute left-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-[#2f8f6d]/30"
-        aria-hidden
-      />
-    </aside>
+      {mobile ? null : (
+        <div
+          onMouseDown={handleResizeMouseDown}
+          className="absolute left-0 top-0 h-full w-1 cursor-col-resize bg-transparent hover:bg-[#2f8f6d]/30"
+          aria-hidden
+        />
+      )}
+    </Container>
   );
 }
 
