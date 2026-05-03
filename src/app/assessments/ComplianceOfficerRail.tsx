@@ -110,6 +110,83 @@ export function ComplianceOfficerRail() {
     };
   }, []);
 
+  // Refetch chat history (used when an external event — like an evidence
+  // review finishing — appends messages on the server). Keeps the rail's
+  // local state in sync without reloading the page.
+  const refetchMessages = useCallback(async () => {
+    try {
+      const res = await fetch("/api/chat", { method: "GET" });
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        messages: Array<{ id: string; role: string; content: unknown }>;
+        recap?: string | null;
+      };
+      const hydrated: Message[] = data.messages
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .map((m) => ({
+          id: m.id,
+          role: m.role as "user" | "assistant",
+          text: extractText(m.content),
+          tools: extractToolUses(m.content),
+        }))
+        .filter((m) => m.text.length > 0 || m.tools.length > 0);
+      setMessages(hydrated);
+      setRecap(data.recap ?? null);
+    } catch (err) {
+      console.warn("refetchMessages failed", err);
+    }
+  }, []);
+
+  // Listen for evidence-review events fired from PracticeWizard. When a
+  // review starts we open the rail (if closed) and append optimistic
+  // user/assistant placeholders so the user sees the action land in chat.
+  // When the review finishes we refetch from the server, which replaces
+  // the optimistic pair with the persisted (authoritative) messages.
+  useEffect(() => {
+    type StartDetail = { artifactId: string; filename: string; controlId: string };
+    type FinishDetail = { artifactId: string };
+    const onStart = (e: Event) => {
+      const detail = (e as CustomEvent<StartDetail>).detail;
+      if (!detail) return;
+      setOpen(true);
+      window.localStorage.setItem(STORAGE_OPEN_KEY, "1");
+      const userId = `local-rev-u-${detail.artifactId}-${Date.now()}`;
+      const assistantId = `local-rev-a-${detail.artifactId}-${Date.now()}`;
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: userId,
+          role: "user",
+          text: `Charlie, can you review **${detail.filename}** for ${detail.controlId}?`,
+          tools: [],
+        },
+        {
+          id: assistantId,
+          role: "assistant",
+          text: "",
+          tools: [
+            {
+              id: `local-rev-tool-${detail.artifactId}`,
+              name: "describe_evidence",
+              status: "running",
+            },
+          ],
+        },
+      ]);
+      setStreaming(true);
+    };
+    const onFinish = () => {
+      setStreaming(false);
+      void refetchMessages();
+    };
+    window.addEventListener("custodia:review-started", onStart);
+    window.addEventListener("custodia:review-finished", onFinish);
+    return () => {
+      window.removeEventListener("custodia:review-started", onStart);
+      window.removeEventListener("custodia:review-finished", onFinish);
+    };
+  }, [refetchMessages]);
+
   useEffect(() => {
     if (!listRef.current) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;

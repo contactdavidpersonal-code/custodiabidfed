@@ -35,6 +35,10 @@ import {
 import { playbookById } from "@/lib/playbook";
 import { reviewEvidenceArtifact } from "@/lib/ai/evidence-review";
 import {
+  appendMessage,
+  getOrCreateWorkspaceConversation,
+} from "@/lib/ai/conversations";
+import {
   generateArtifactDraft,
   formatProfileFacts,
 } from "@/lib/ai/artifact-generation";
@@ -451,6 +455,60 @@ export async function reReviewEvidenceAction(formData: FormData) {
     filename: row.filename,
     companyContext,
   });
+
+  // Mirror the review into the workspace chat so the user can ask
+  // follow-up questions ("why insufficient?", "what would pass?") in
+  // Charlie's rail. We re-pull the freshly-written verdict to use the
+  // canonical persisted text.
+  try {
+    const verdictRows = (await sql`
+      SELECT ai_review_verdict, ai_review_summary
+      FROM evidence_artifacts
+      WHERE id = ${row.id}
+      LIMIT 1
+    `) as Array<{
+      ai_review_verdict: string | null;
+      ai_review_summary: string | null;
+    }>;
+    const verdict = verdictRows[0]?.ai_review_verdict ?? "unclear";
+    const summary =
+      verdictRows[0]?.ai_review_summary ??
+      "I finished the review but didn't get a written summary back.";
+
+    const practice = playbookById[row.control_id];
+    const practiceLabel = practice
+      ? `${practice.id} — ${practice.shortName}`
+      : row.control_id;
+
+    const conv = await getOrCreateWorkspaceConversation(ctx.organization.id);
+
+    await appendMessage({
+      conversationId: conv.id,
+      role: "user",
+      content: `Charlie, can you review **${row.filename}** for ${practiceLabel}?`,
+    });
+
+    const verdictHeading: Record<string, string> = {
+      sufficient: "✅ Sufficient — this is good evidence, you can move on.",
+      insufficient: "⚠️ Insufficient — close, but it needs a fix.",
+      unclear: "❓ Unclear — I need a bit more context.",
+      not_relevant: "🚫 Not relevant — this doesn't evidence the practice.",
+    };
+    const heading =
+      verdictHeading[verdict] ?? `Verdict: ${verdict}`;
+    const assistantText = `**Reviewing ${row.filename}** against ${practiceLabel}…\n\n${heading}\n\n${summary}\n\n_Want me to explain anything, or suggest what to add?_`;
+
+    await appendMessage({
+      conversationId: conv.id,
+      role: "assistant",
+      content: assistantText,
+      model: "evidence-review",
+    });
+  } catch (err) {
+    // Chat mirroring is best-effort. The verdict is already persisted on
+    // the artifact row, so don't fail the action if chat write fails.
+    console.error("review chat-mirror failed:", err);
+  }
 
   revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
   revalidatePath(`/assessments/${assessmentId}`);

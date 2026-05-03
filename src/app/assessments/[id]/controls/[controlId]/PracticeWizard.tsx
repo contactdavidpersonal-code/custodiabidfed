@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
@@ -639,9 +639,37 @@ function EvidenceRow({
                 label: "Not reviewed",
               };
   const hasVerdict = a.ai_review_verdict !== null;
+  const [isReviewing, startReviewTransition] = useTransition();
 
   const display = parseQ(a.filename).display;
   const crossTagged = a.control_id !== controlId;
+
+  const triggerReview = () => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("custodia:review-started", {
+          detail: { artifactId: a.id, filename: display, controlId },
+        }),
+      );
+    }
+    const fd = new FormData();
+    fd.set("assessmentId", assessmentId);
+    fd.set("controlId", controlId);
+    fd.set("artifactId", a.id);
+    startReviewTransition(async () => {
+      try {
+        await reReviewEvidenceAction(fd);
+      } finally {
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("custodia:review-finished", {
+              detail: { artifactId: a.id },
+            }),
+          );
+        }
+      }
+    });
+  };
 
   return (
     <li className="px-4 py-3">
@@ -688,26 +716,27 @@ function EvidenceRow({
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <form action={reReviewEvidenceAction}>
-            <input type="hidden" name="assessmentId" value={assessmentId} />
-            <input type="hidden" name="controlId" value={controlId} />
-            <input type="hidden" name="artifactId" value={a.id} />
-            <button
-              type="submit"
-              title={
-                hasVerdict
-                  ? "Re-run Charlie's review on this artifact"
-                  : "Have Charlie review this against the practice"
-              }
-              className={
-                hasVerdict
-                  ? " px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#f7fcf9] hover:text-[#10231d]"
-                  : " border border-[#0e2a23] bg-[#0e2a23] px-2.5 py-1 text-xs font-semibold text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
-              }
-            >
-              {hasVerdict ? "Re-review" : "Ask Charlie to review"}
-            </button>
-          </form>
+          <button
+            type="button"
+            onClick={triggerReview}
+            disabled={isReviewing}
+            title={
+              hasVerdict
+                ? "Re-run Charlie's review on this artifact"
+                : "Have Charlie review this against the practice"
+            }
+            className={
+              hasVerdict
+                ? " px-2 py-1 text-xs font-semibold text-[#5a7d70] transition-colors hover:bg-[#f7fcf9] hover:text-[#10231d] disabled:cursor-wait disabled:opacity-60"
+                : " border border-[#0e2a23] bg-[#0e2a23] px-2.5 py-1 text-xs font-semibold text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-wait disabled:opacity-60"
+            }
+          >
+            {isReviewing
+              ? "Reviewing\u2026"
+              : hasVerdict
+                ? "Re-review"
+                : "Ask Charlie to review"}
+          </button>
           {crossTagged ? (
             <form action={untagArtifactPracticeAction}>
               <input type="hidden" name="assessmentId" value={assessmentId} />
