@@ -314,68 +314,6 @@ export default function Home() {
       </RevealSection>
 
 
-      {/* 3.5 — Trust logos: who you'll be working alongside */}
-      <RevealSection className="border-b border-[#e3ecdf] bg-[#f7f7f3] px-6 py-16 md:py-20">
-        <div className="mx-auto max-w-6xl">
-          <p className="text-center text-[11px] font-bold uppercase tracking-[0.24em] text-[#2f8f6d]">
-            CMMC Level&nbsp;1 unlocks contracts with
-          </p>
-          <p className="mx-auto mt-3 max-w-2xl text-center font-serif text-xl italic leading-snug text-[#10231d]/70 md:text-2xl">
-            The agencies and primes below all require Cybersecurity Maturity
-            Model Certification Level&nbsp;1, at minimum, to handle Federal
-            Contract Information.
-          </p>
-        </div>
-
-        {/* Edge-to-edge marquee */}
-        <div
-          className="group relative mt-12 overflow-hidden"
-          style={{
-            maskImage:
-              "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)",
-            WebkitMaskImage:
-              "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)",
-          }}
-        >
-          <div className="flex w-max animate-marquee items-center gap-3 group-hover:[animation-play-state:paused]">
-            {[...Array(2)].map((_, dup) => (
-              <div
-                key={dup}
-                className="flex shrink-0 items-center gap-3"
-                aria-hidden={dup === 1}
-              >
-                {[
-                  "U.S. Department of Defense",
-                  "U.S. Army Corps of Engineers",
-                  "Department of the Air Force",
-                  "Department of the Navy",
-                  "Defense Logistics Agency",
-                  "General Services Administration",
-                  "Lockheed Martin",
-                  "Raytheon Technologies",
-                  "Northrop Grumman",
-                  "Boeing Defense",
-                  "L3Harris",
-                  "BAE Systems",
-                ].map((name) => (
-                  <div
-                    key={`${dup}-${name}`}
-                    title={name}
-                    className="flex h-14 w-56 shrink-0 items-center justify-center border border-[#10231d]/10 bg-white px-5 transition-colors hover:border-[#2f8f6d]/40"
-                  >
-                    <span className="text-center text-[11px] font-bold uppercase tracking-[0.16em] text-[#10231d]/75">
-                      {name}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-
-      </RevealSection>
-
-
       {/* 4 — Opportunity (the deal + the gap) */}
       <RevealSection id="product" className="scroll-mt-16 bg-[#f7f7f3] px-6 py-24">
         <div className="mx-auto max-w-6xl">
