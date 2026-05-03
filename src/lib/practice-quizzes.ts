@@ -137,7 +137,7 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
     controlId: "AC.L1-3.1.1",
     estimatedMinutes: 8,
     oneLiner:
-      "Only people you've approved should be able to sign in to systems that touch FCI.",
+      "Only people you've approved should be able to sign in to systems that touch Federal Contract Information.",
     vaultForms: {
       authorized_users: {
         id: "authorized_users",
@@ -154,7 +154,7 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
             label: "System",
             type: "select",
             required: true,
-            options: ["Microsoft 365", "Google Workspace", "On-prem AD", "File server", "Other"],
+            options: ["Microsoft 365", "Google Workspace", "On-premises Active Directory", "File server", "Other"],
           },
           { key: "authorized_on", label: "Authorized on", type: "date", required: true },
         ],
@@ -204,22 +204,22 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
         id: "intro",
         kind: "intro",
         charlieSays:
-          "Hi — I'm Charlie. Let's walk through **AC.L1-3.1.1: Authorized Access Control** together. About 8 minutes. I'll ask plain-English questions; you pick the answer that fits your business and we'll collect proof as we go. Anything I gather goes into your evidence vault for the assessor.\n\nThe goal of this practice: only people **you've approved** can sign in to systems where FCI lives. That means a current list of users, devices, and automated processes — and the system actually enforcing it.",
+          "Hi — I'm Charlie. Let's walk through **AC.L1-3.1.1: Authorized Access Control** together. About 8 minutes. I'll ask plain-English questions; you pick the answer that fits your business and we'll collect proof as we go. Anything I gather goes into your evidence vault for the assessor.\n\nThe goal of this practice: only people **you've approved** can sign in to systems where Federal Contract Information lives. That means a current list of users, devices, and automated processes — and the system actually enforcing it.",
         ctaLabel: "Let's go \u2192",
       },
       {
         id: "systems",
         kind: "multiple_choice",
         charlieSays:
-          "First, where does your team work with FCI today? (Email, contract docs, drawings, internal threads about the contract.) Pick the closest match.",
+          "First, where does your team work with Federal Contract Information today? (Email, contract documents, drawings, internal threads about the contract.) Pick the closest match.",
         saveKey: "systems",
         choices: [
           {
             value: "m365",
             label: "Microsoft 365 (email, SharePoint, OneDrive, Teams)",
-            hint: "Most common for small DoD primes / subs.",
+            hint: "Most common for small Department of Defense primes and subcontractors.",
             tone: "neutral",
-            charlieReaction: "Nice — M365 makes the next steps easy. I can pull most of this directly if you connect your tenant.",
+            charlieReaction: "Nice — Microsoft 365 makes the next steps easy. I can pull most of this directly if you connect your tenant.",
           },
           {
             value: "google_workspace",
@@ -237,15 +237,15 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
           },
           {
             value: "on_prem",
-            label: "On-prem only — file server / Active Directory",
+            label: "On-premises only — file server or Active Directory",
             hint: "No cloud. We'll generate the documentation.",
             tone: "neutral",
-            charlieReaction: "OK — we can't auto-pull on-prem, but we'll build proper documentation in the Vault.",
+            charlieReaction: "OK — we can't auto-pull on-premises systems, but we'll build proper documentation in the Vault.",
           },
           {
             value: "mix",
-            label: "Mix of cloud and on-prem",
-            hint: "Common for shops with cloud email + a local file server.",
+            label: "Mix of cloud and on-premises",
+            hint: "Common for shops with cloud email plus a local file server.",
             tone: "neutral",
             charlieReaction: "Mix it is. We'll need to cover both surfaces.",
           },
@@ -255,7 +255,7 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
         id: "users_evidence",
         kind: "evidence_picker",
         charlieSays:
-          "Now let's get your **authorized users list**. This is *the* document a 3PAO will look at first. Pick whichever path is fastest for you — they all produce a roster the assessor will accept.",
+          "Now let's get your **authorized users list**. This is the first document a Third-Party Assessment Organization will look at. Pick whichever path is fastest for you — they all produce a roster the assessor will accept.",
         stem: "Authorized users (objective [a] + [d])",
         satisfies: ["a", "d"],
         paths: [
@@ -263,7 +263,7 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
             kind: "connector",
             provider: "m365",
             label: "Pull from Microsoft 365",
-            hint: "Charlie auto-collects every active M365 user. ~30 seconds if your tenant is connected.",
+            hint: "Charlie auto-collects every active Microsoft 365 user. About 30 seconds if your tenant is connected.",
           },
           {
             kind: "connector",
@@ -274,19 +274,19 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
           {
             kind: "vault",
             label: "Fill it in here (Vault)",
-            hint: "Type each user once and we generate a clean, signed CSV stored in your evidence vault.",
+            hint: "Type each user once and we generate a clean, signed spreadsheet stored in your evidence vault.",
             formId: "authorized_users",
           },
           {
             kind: "template",
             filename: "authorized-users-roster.csv",
-            label: "Download CSV template",
-            hint: "Open in Excel / Sheets, fill it in, drop it back here.",
+            label: "Download spreadsheet template",
+            hint: "Open in Excel or Google Sheets, fill it in, drop it back here.",
           },
           {
             kind: "upload",
             label: "I already have a roster — upload it",
-            hint: "PNG / JPG / PDF / CSV / Excel all work.",
+            hint: "Image, PDF, spreadsheet, or Word document — all work.",
           },
         ],
       },
@@ -294,7 +294,7 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
         id: "service_accounts_q",
         kind: "multiple_choice",
         charlieSays:
-          "Do you use any **service accounts or automated processes** that sign in to your systems? (Things like a backup tool, a Power Automate flow, OneDrive sync, or an integration that uses its own credentials.)",
+          "Do you use any **service accounts or automated processes** that sign in to your systems? (Things like a backup tool, a Microsoft Power Automate flow, OneDrive sync, or an integration that uses its own credentials.)",
         saveKey: "service_accounts",
         choices: [
           {
@@ -329,13 +329,13 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
           {
             kind: "vault",
             label: "Fill it in here (Vault)",
-            hint: "Quick form — typical small-business list is 3–5 rows.",
+            hint: "Quick form — typical small-business list is 3 to 5 rows.",
             formId: "service_accounts",
           },
           {
             kind: "upload",
             label: "Upload an existing list",
-            hint: "Spreadsheet, doc, or screenshot is fine.",
+            hint: "Spreadsheet, document, or screenshot is fine.",
           },
         ],
         allowSkip: true,
@@ -345,15 +345,15 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
         id: "devices_evidence",
         kind: "evidence_picker",
         charlieSays:
-          "Now devices. CMMC wants to know which **laptops, phones, and other devices** are allowed to access company systems. Same options as before — pick what's fastest.",
+          "Now devices. The Cybersecurity Maturity Model Certification wants to know which **laptops, phones, and other devices** are allowed to access company systems. Same options as before — pick what's fastest.",
         stem: "Authorized devices (objective [c] + [f])",
         satisfies: ["c", "f"],
         paths: [
           {
             kind: "connector",
             provider: "m365",
-            label: "Pull from Intune / M365",
-            hint: "If you use Intune or Conditional Access, Charlie can pull the device list.",
+            label: "Pull from Microsoft Intune or Microsoft 365",
+            hint: "If you use Microsoft Intune or Conditional Access, Charlie can pull the device list.",
           },
           {
             kind: "vault",
@@ -364,13 +364,13 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
           {
             kind: "template",
             filename: "access-device-register.csv",
-            label: "Download CSV template",
+            label: "Download spreadsheet template",
             hint: "For larger fleets — fill offline and upload.",
           },
           {
             kind: "upload",
             label: "Upload an existing inventory",
-            hint: "Asset list, MDM export, or screenshot.",
+            hint: "Asset list, mobile device management export, or screenshot.",
           },
         ],
       },
@@ -403,7 +403,7 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
             failsObjectives: ["d"],
             charlieReaction: "That's a finding waiting to happen. We'll mark this NOT MET for now and put a fix on your remediation list.",
             remediationHint:
-              "Action: build a 1-page offboarding procedure. Disable account, remove from groups, collect device, sign and date. Charlie can draft this.",
+              "Action: build a one-page offboarding procedure. Disable account, remove from groups, collect device, sign and date. Charlie can draft this.",
           },
         ],
       },
@@ -411,38 +411,38 @@ export const practiceQuizzes: Record<string, PracticeQuiz> = {
         id: "device_enforcement",
         kind: "multiple_choice",
         charlieSays:
-          "Last question. Can someone sign in to your company systems from a **personal / random device** with just username + password? Or do you require a managed device (Conditional Access, MDM, VPN cert)?",
+          "Last question. Can someone sign in to your company systems from a **personal or random device** with just a username and password? Or do you require a managed device (Conditional Access, mobile device management, virtual private network certificate)?",
         saveKey: "device_enforcement",
         choices: [
           {
             value: "managed_only",
-            label: "Managed devices only — Conditional Access / MDM / VPN cert",
+            label: "Managed devices only — Conditional Access, mobile device management, or virtual private network certificate",
             tone: "ok",
             satisfies: ["f"],
-            charlieReaction: "That's the gold standard. A screenshot of your CA policy will lock objective [f] in.",
+            charlieReaction: "That's the gold standard. A screenshot of your Conditional Access policy will lock objective [f] in.",
           },
           {
             value: "mfa_only",
-            label: "MFA on every login, but personal devices are allowed",
+            label: "Multi-factor authentication on every login, but personal devices are allowed",
             tone: "warn",
-            charlieReaction: "MFA is great for [a] but not [f]. We'll note this and add device enforcement to your roadmap.",
+            charlieReaction: "Multi-factor authentication is great for objective [a] but not for [f]. We'll note this and add device enforcement to your roadmap.",
             remediationHint:
-              "Action: turn on Conditional Access (M365) or Context-Aware Access (Workspace) requiring a compliant or hybrid-joined device.",
+              "Action: turn on Conditional Access (Microsoft 365) or Context-Aware Access (Google Workspace) requiring a compliant or hybrid-joined device.",
           },
           {
             value: "open",
-            label: "Just username + password from anywhere",
+            label: "Just username and password from anywhere",
             tone: "danger",
             failsObjectives: ["f"],
-            charlieReaction: "We'll flag this as NOT MET for [f]. Big-impact fix though — turning on MFA + device-required policies takes about an hour.",
+            charlieReaction: "We'll flag this as NOT MET for objective [f]. Big-impact fix though — turning on multi-factor authentication and device-required policies takes about an hour.",
             remediationHint:
-              "Action: enable MFA + Conditional Access / Context-Aware Access this week. Charlie can write the policy and walk through the admin steps.",
+              "Action: enable multi-factor authentication plus Conditional Access (Microsoft 365) or Context-Aware Access (Google Workspace) this week. Charlie can write the policy and walk through the admin steps.",
           },
           {
             value: "not_sure",
             label: "I'm not sure",
             tone: "neutral",
-            charlieReaction: "No problem. Open me in chat (right rail) and I'll check your tenant settings with you.",
+            charlieReaction: "No problem. Open me in the chat panel on the right and I'll check your tenant settings with you.",
           },
         ],
       },

@@ -57,7 +57,7 @@ const PROVIDER_ICON: Record<ConnectorProvider, string> = {
 
 export function PracticeQuiz(props: Props) {
   const router = useRouter();
-  const stepListRef = useRef<HTMLDivElement>(null);
+  const activeStepRef = useRef<HTMLDivElement>(null);
   const totalSteps = props.quiz.steps.length;
   const [stepIdx, setStepIdx] = useState(0);
   const [answers, setAnswers] = useState<AnswerLog>([]);
@@ -84,15 +84,18 @@ export function PracticeQuiz(props: Props) {
     }
   };
 
-  // Auto-scroll the chat history to the bottom on each new entry.
+  // Auto-scroll the page so the active step sits just below the sticky header.
   useEffect(() => {
-    if (stepListRef.current) {
-      stepListRef.current.scrollTo({
-        top: stepListRef.current.scrollHeight,
-        behavior: "smooth",
+    if (activeStepRef.current) {
+      // Defer one frame so the DOM has the new step rendered before measuring.
+      requestAnimationFrame(() => {
+        activeStepRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
       });
     }
-  }, [answers, stepIdx]);
+  }, [stepIdx]);
 
   const recordChoice = (choice: Choice) => {
     setAnswers((prev) => [...prev, { kind: "choice", stepId: step.id, choice }]);
@@ -161,69 +164,73 @@ export function PracticeQuiz(props: Props) {
   // =========================================================================
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-6">
-      <div className="mb-3 flex items-center justify-between gap-4 text-sm">
-        <Link
-          href={`/assessments/${props.assessmentId}`}
-          className="font-medium text-[#5a7d70] transition-colors hover:text-[#10231d]"
-        >
-          &larr; Back to overview
-        </Link>
-        <span className="font-medium text-[#5a7d70]">
-          Practice {props.currentIdx + 1} of {props.total}
-        </span>
-      </div>
-
-      {/* ======== HEADER ======== */}
-      <header className="mb-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="bg-[#0e2a23] px-2 py-0.5 text-[11px] font-bold tracking-wider text-[#bdf2cf]">
-            {props.practice.domain}
-          </span>
-          <span className="font-mono text-xs font-semibold text-[#5a7d70]">
-            {props.practice.id}
-          </span>
-          <span className="text-[#cfe3d9]">&middot;</span>
-          <span className="text-xs font-medium text-[#5a7d70]">
-            ~{props.quiz.estimatedMinutes} min
-          </span>
-        </div>
-        <h1 className="mt-2 text-2xl font-bold tracking-tight text-[#10231d] md:text-[28px]">
-          {props.practice.shortName}
-        </h1>
-        <p className="mt-1 text-sm leading-relaxed text-[#5a7d70]">
-          {props.quiz.oneLiner}
-        </p>
-      </header>
-
-      {/* ======== PROGRESS BAR ======== */}
-      <div className="mb-5">
-        <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-[#5a7d70]">
-          <span>Question {Math.min(stepIdx + 1, totalSteps)} of {totalSteps}</span>
-          <button
-            type="button"
-            onClick={goPrev}
-            disabled={stepIdx === 0}
-            className="font-semibold text-[#2f8f6d] transition-colors hover:text-[#10231d] disabled:cursor-not-allowed disabled:opacity-30"
+    <div className="mx-auto max-w-3xl px-6 pb-10">
+      {/* ======== STICKY HEADER ======== */}
+      <div className="sticky top-0 z-20 -mx-6 border-b border-[#cfe3d9] bg-[#fbfdfb]/95 px-6 pt-5 pb-3 backdrop-blur supports-[backdrop-filter]:bg-[#fbfdfb]/80">
+        <div className="mb-2 flex items-center justify-between gap-4 text-sm">
+          <Link
+            href={`/assessments/${props.assessmentId}`}
+            className="font-medium text-[#5a7d70] transition-colors hover:text-[#10231d]"
           >
-            &larr; Back
-          </button>
+            &larr; Back to overview
+          </Link>
+          <span className="font-medium text-[#5a7d70]">
+            Practice {props.currentIdx + 1} of {props.total}
+          </span>
         </div>
-        <div className="mt-1 h-1 w-full bg-[#e4eee8]">
-          <div
-            className="h-1 bg-[#2f8f6d] transition-all duration-300"
-            style={{
-              width: `${((stepIdx + 1) / totalSteps) * 100}%`,
-            }}
-          />
+
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="bg-[#0e2a23] px-2 py-0.5 text-[11px] font-bold tracking-wider text-[#bdf2cf]">
+                {props.practice.domain}
+              </span>
+              <span className="font-mono text-xs font-semibold text-[#5a7d70]">
+                {props.practice.id}
+              </span>
+              <span className="text-[#cfe3d9]">&middot;</span>
+              <span className="text-xs font-medium text-[#5a7d70]">
+                ~{props.quiz.estimatedMinutes} min
+              </span>
+            </div>
+            <h1 className="mt-1.5 text-xl font-bold tracking-tight text-[#10231d] md:text-2xl">
+              {props.practice.shortName}
+            </h1>
+          </div>
+          <StatusBadge verdict={verdict} locked={showCompleted} />
+        </div>
+
+        <div className="mt-3">
+          <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-[#5a7d70]">
+            <span>
+              Question {Math.min(stepIdx + 1, totalSteps)} of {totalSteps}
+            </span>
+            <button
+              type="button"
+              onClick={goPrev}
+              disabled={stepIdx === 0}
+              className="font-semibold text-[#2f8f6d] transition-colors hover:text-[#10231d] disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              &larr; Back
+            </button>
+          </div>
+          <div className="mt-1 h-1 w-full bg-[#e4eee8]">
+            <div
+              className="h-1 bg-[#2f8f6d] transition-all duration-300"
+              style={{
+                width: `${((stepIdx + 1) / totalSteps) * 100}%`,
+              }}
+            />
+          </div>
         </div>
       </div>
+
+      <p className="mt-5 text-sm leading-relaxed text-[#5a7d70]">
+        {props.quiz.oneLiner}
+      </p>
 
       {/* ======== CHAT HISTORY ======== */}
-      <div
-        ref={stepListRef}
-        className="mb-5 max-h-[42vh] space-y-3 overflow-y-auto pr-1"
-      >
+      <div className="mt-5 space-y-3">
         {props.quiz.steps.slice(0, stepIdx).map((s, i) => {
           const log = answers.find((a) => a.stepId === s.id);
           return (
@@ -245,14 +252,15 @@ export function PracticeQuiz(props: Props) {
       </div>
 
       {/* ======== ACTIVE STEP ======== */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={step.id}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.22 }}
-        >
+      <div ref={activeStepRef} className="mt-3 scroll-mt-44">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={step.id}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.22 }}
+          >
           <CharlieBubble>
             <RichText text={step.charlieSays} />
           </CharlieBubble>
@@ -306,11 +314,43 @@ export function PracticeQuiz(props: Props) {
           </div>
         </motion.div>
       </AnimatePresence>
+      </div>
     </div>
   );
 }
 
 /* =========================== chat primitives =========================== */
+
+function StatusBadge({
+  verdict,
+  locked,
+}: {
+  verdict: "met" | "not_met";
+  locked: boolean;
+}) {
+  // Once locked in, the badge reflects the saved verdict. Until then,
+  // we always show NOT MET so the user has a clear "this is the goal"
+  // target. The badge flips to MET only when the running verdict says so
+  // AND the practice has been finalized.
+  const showMet = locked && verdict === "met";
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider ${
+        showMet
+          ? "bg-[#2f8f6d] text-white"
+          : "border border-[#b03a2e] bg-[#fbf3f2] text-[#b03a2e]"
+      }`}
+      aria-label={showMet ? "Practice status: met" : "Practice status: not met"}
+    >
+      <span
+        className={`inline-block h-1.5 w-1.5 ${
+          showMet ? "bg-white" : "bg-[#b03a2e]"
+        }`}
+      />
+      {showMet ? "Met" : "Not met"}
+    </span>
+  );
+}
 
 function CharlieBubble({
   children,
@@ -803,7 +843,7 @@ function VaultEntryForm({
       <div className="mb-2 flex items-baseline justify-between gap-2">
         <p className="text-sm font-semibold text-[#10231d]">{form.title}</p>
         <p className="font-mono text-[10px] uppercase tracking-wider text-[#5a7d70]">
-          Saves as CSV in your vault
+          Saves as a spreadsheet in your vault
         </p>
       </div>
       <div className="space-y-3">
