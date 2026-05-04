@@ -75,6 +75,11 @@ export async function createAssessmentAction(formData: FormData) {
  * Update the org-level federal registration fields. SAM UEI is 12 alphanumeric;
  * CAGE is 5 alphanumeric; NAICS codes are 6-digit numeric. We sanity-check the
  * length only — full validation against SAM.gov happens out of band.
+ *
+ * If the form posts an `assessmentId` and the save leaves the org with both a
+ * UEI and at least one NAICS code (the bar for unlocking the practices step),
+ * we forward the user straight to the assessment overview so they can start
+ * working through the 17 safeguarding practices without an extra click.
  */
 export async function saveFederalRegistrationAction(formData: FormData) {
   const userId = await requireUserId();
@@ -82,6 +87,7 @@ export async function saveFederalRegistrationAction(formData: FormData) {
   const cageCode = String(formData.get("cageCode") ?? "").trim().toUpperCase();
   const naicsRaw = String(formData.get("naicsCodes") ?? "").trim();
   const entityType = String(formData.get("entityType") ?? "").trim();
+  const assessmentId = String(formData.get("assessmentId") ?? "").trim();
 
   const naicsCodes = naicsRaw
     .split(/[,\s]+/)
@@ -108,6 +114,18 @@ export async function saveFederalRegistrationAction(formData: FormData) {
   `;
 
   revalidatePath("/assessments");
+  if (assessmentId) {
+    revalidatePath(`/assessments/${assessmentId}`);
+    revalidatePath(`/assessments/${assessmentId}/registration`);
+  }
+
+  // Forward to the practices page once the registration step is complete
+  // (UEI + at least one NAICS). Otherwise stay on the registration page so
+  // the user can finish filling things in.
+  const registrationComplete = Boolean(samUei) && naicsCodes.length > 0;
+  if (assessmentId && registrationComplete) {
+    redirect(`/assessments/${assessmentId}`);
+  }
 }
 
 export async function saveControlResponseAction(formData: FormData) {

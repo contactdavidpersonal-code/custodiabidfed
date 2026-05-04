@@ -101,6 +101,7 @@ export default async function RegistrationPage(
         action={saveFederalRegistrationAction}
         className=" border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04)]"
       >
+        <input type="hidden" name="assessmentId" value={ctx.assessment.id} />
         <div className="grid gap-5 md:grid-cols-2">
           <Field
             label="Unique Entity ID"
