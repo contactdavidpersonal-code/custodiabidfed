@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getAssessmentForUser } from "@/lib/assessment";
+import { enforceStepOrder, getAssessmentForUser } from "@/lib/assessment";
 import { PrintButton } from "../PrintButton";
 
 export default async function AffirmationMemoPage(
@@ -13,6 +13,7 @@ export default async function AffirmationMemoPage(
   const { id } = await props.params;
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
+  await enforceStepOrder(ctx, "attested");
 
   const org = ctx.organization;
   const a = ctx.assessment;

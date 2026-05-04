@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getAssessmentForUser } from "@/lib/assessment";
+import { enforceStepOrder, getAssessmentForUser } from "@/lib/assessment";
 
 export default async function DeliverablesPage(
   props: PageProps<"/assessments/[id]/deliverables">,
@@ -12,6 +12,7 @@ export default async function DeliverablesPage(
   const { id } = await props.params;
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
+  await enforceStepOrder(ctx, "attested");
 
   const attested = ctx.assessment.status === "attested";
 

@@ -23,16 +23,31 @@ type StoredContentBlock = {
   id?: string;
 };
 
+type ProfileKey = { key: string; label: string };
+
+const FALLBACK_PROFILE_KEYS: ProfileKey[] = [
+  { key: "experience_level", label: "Experience with federal contracting" },
+  { key: "what_they_do", label: "What the company does" },
+  { key: "customers", label: "Who they sell to" },
+  { key: "team_size", label: "Team size" },
+  { key: "physical_workspace", label: "Where work physically happens" },
+  { key: "data_location", label: "Where contract information lives" },
+  { key: "it_identity", label: "How the team logs in" },
+  { key: "customer_facing_product", label: "Product vs services" },
+  { key: "network", label: "Network shape" },
+  { key: "contract_status", label: "Federal contracting status" },
+];
+
 const TOOL_LABELS: Record<string, string> = {
-  update_business_profile: "Saving your business context",
-  update_organization_fields: "Updating your legal profile",
+  update_business_profile: "Saving what you told me",
+  update_organization_fields: "Saving your company name",
   escalate_to_officer: "Flagging for a human officer",
-  propose_milestone: "Adding a milestone",
+  propose_milestone: "Adding a reminder",
   read_assessment_state: "Checking your workspace",
-  describe_evidence: "Reviewing an artifact",
-  suggest_narrative: "Drafting a narrative",
+  describe_evidence: "Reviewing an upload",
+  suggest_narrative: "Drafting a note",
   check_readiness: "Auditing readiness",
-  cite_regulation: "Looking up the regulation text",
+  cite_regulation: "Looking up the rule text",
 };
 
 /**
@@ -53,6 +68,8 @@ export function OnboardingChat({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [onboarded, setOnboarded] = useState(false);
   const [completeness, setCompleteness] = useState(initialCompleteness);
+  const [profileData, setProfileData] = useState<Record<string, unknown>>({});
+  const [profileKeys, setProfileKeys] = useState<ProfileKey[]>(FALLBACK_PROFILE_KEYS);
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -66,6 +83,8 @@ export function OnboardingChat({
           messages: Array<{ id: string; role: string; content: unknown }>;
           onboarded: boolean;
           completeness_score: number;
+          profile_data?: Record<string, unknown>;
+          profile_keys?: ProfileKey[];
         };
         if (cancelled) return;
         const hydrated: Message[] = data.messages
@@ -80,6 +99,10 @@ export function OnboardingChat({
         setMessages(hydrated);
         setOnboarded(data.onboarded);
         setCompleteness(data.completeness_score);
+        if (data.profile_data) setProfileData(data.profile_data);
+        if (data.profile_keys && data.profile_keys.length > 0) {
+          setProfileKeys(data.profile_keys);
+        }
       } catch (err) {
         if (cancelled) return;
         console.warn("Failed to load onboarding history", err);
@@ -110,9 +133,15 @@ export function OnboardingChat({
       const data = (await res.json()) as {
         onboarded: boolean;
         completeness_score: number;
+        profile_data?: Record<string, unknown>;
+        profile_keys?: ProfileKey[];
       };
       setOnboarded(data.onboarded);
       setCompleteness(data.completeness_score);
+      if (data.profile_data) setProfileData(data.profile_data);
+      if (data.profile_keys && data.profile_keys.length > 0) {
+        setProfileKeys(data.profile_keys);
+      }
     } catch {
       // Non-fatal — the next turn will refresh.
     }
@@ -192,18 +221,19 @@ export function OnboardingChat({
   }, [draft, streaming, refreshStatus]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden  border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
+    <div className="flex min-h-0 flex-1 gap-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden  border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
       <div className="flex flex-none items-center justify-between border-b border-[#cfe3d9] bg-white px-5 py-3">
         <div className="flex items-center gap-2.5">
           <span className="inline-flex items-center justify-center  bg-[#0e2a23] px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]">
-            vCO
+            CO
           </span>
           <div className="leading-tight">
             <div className="font-serif text-sm font-bold text-[#10231d]">
-              Charlie &middot; Your vCO
+              Charlie &middot; Your compliance officer
             </div>
             <div className="text-[11px] text-[#5a7d70]">
-              Virtual Compliance Officer &middot; capturing your business profile
+              Capturing your business profile
             </div>
           </div>
         </div>
@@ -242,14 +272,14 @@ export function OnboardingChat({
         <div className="border-t border-[#cfe3d9] bg-[#eaf3ee] px-5 py-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm font-semibold text-[#0e2a23]">
-              Got what we need — your dashboard is ready.
+              Got what I need &mdash; let&apos;s open your business profile.
             </p>
             <button
               type="button"
               onClick={() => router.push("/assessments")}
               className=" bg-[#0e2a23] px-4 py-2 text-sm font-bold tracking-tight text-white transition-colors hover:bg-[#10231d]"
             >
-              Open my dashboard &rarr;
+              Continue to my business profile &rarr;
             </button>
           </div>
         </div>
@@ -300,8 +330,84 @@ export function OnboardingChat({
           Press Enter to send · Shift + Enter for a new line
         </p>
       </form>
+      </div>
+      <CapturedPanel keys={profileKeys} data={profileData} />
     </div>
   );
+}
+
+function CapturedPanel({
+  keys,
+  data,
+}: {
+  keys: ProfileKey[];
+  data: Record<string, unknown>;
+}) {
+  const filled = keys.filter((k) => hasValue(data[k.key])).length;
+  return (
+    <aside className="hidden w-72 flex-none flex-col overflow-hidden border border-[#cfe3d9] bg-white shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)] lg:flex">
+      <div className="flex-none border-b border-[#cfe3d9] bg-white px-4 py-3">
+        <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+          What I&apos;ve learned
+        </div>
+        <div className="mt-1 flex items-baseline gap-2">
+          <span className="font-serif text-base font-bold text-[#10231d]">
+            {filled}
+          </span>
+          <span className="text-xs text-[#5a7d70]">of {keys.length} captured</span>
+        </div>
+        <p className="mt-1 text-[11px] leading-snug text-[#5a7d70]">
+          Updates as we talk. If anything looks wrong, just tell me &mdash; I&apos;ll fix it.
+        </p>
+      </div>
+      <ul className="flex-1 divide-y divide-[#e3eee8] overflow-y-auto">
+        {keys.map((k) => {
+          const v = data[k.key];
+          const display = formatValue(v);
+          const captured = display !== null;
+          return (
+            <li key={k.key} className="px-4 py-3">
+              <div className="flex items-start gap-2">
+                <span
+                  aria-hidden
+                  className={`mt-1 inline-block h-1.5 w-1.5 flex-none rounded-full ${
+                    captured ? "bg-[#2f8f6d]" : "bg-[#d6e4dd]"
+                  }`}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#5a7d70]">
+                    {k.label}
+                  </div>
+                  <div
+                    className={`mt-0.5 break-words text-[12px] leading-snug ${
+                      captured ? "font-semibold text-[#10231d]" : "italic text-[#9ab8ac]"
+                    }`}
+                  >
+                    {captured ? display : "Still need to ask"}
+                  </div>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </aside>
+  );
+}
+
+function hasValue(v: unknown): boolean {
+  if (v === null || v === undefined) return false;
+  if (typeof v === "string") return v.trim().length > 0;
+  if (Array.isArray(v)) return v.length > 0;
+  return true;
+}
+
+function formatValue(v: unknown): string | null {
+  if (!hasValue(v)) return null;
+  if (typeof v === "string") return v.length > 140 ? `${v.slice(0, 137)}…` : v;
+  if (Array.isArray(v)) return v.join(", ");
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
 }
 
 function CompletenessMeter({ value }: { value: number }) {
@@ -402,19 +508,17 @@ function StarterBubble() {
       <div className="flex gap-2.5">
         <div className="max-w-[88%]  border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3 text-sm leading-relaxed text-[#10231d]">
           <p>
-            Hi, I&apos;m Charlie &mdash; your personal virtual compliance
-            officer (vCO) for your business. I&apos;m going to ask you a few
-            questions so the rest of this platform fits how you actually
-            operate. No forms — just a conversation.
+            Hi, I&apos;m Charlie &mdash; I&apos;ll be your compliance officer
+            here.
           </p>
           <p className="mt-2">
-            To start, tell me in a sentence or two: <strong>what does your
-            company do, and who are your customers (or who do you want them to
-            be)?</strong>
+            Before we start, have you ever bid on a federal contract before, or
+            worked under a company that did? Totally fine either way &mdash; I
+            just want to know what pace to use.
           </p>
         </div>
         <div className="mt-0.5 inline-flex shrink-0 items-center justify-center  bg-[#0e2a23] px-1.5 py-1 text-[8px] font-bold uppercase tracking-[0.16em] text-[#bdf2cf]">
-          vCO
+          CO
         </div>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { notFound, redirect } from "next/navigation";
 import {
+  enforceStepOrder,
   getAssessmentForUser,
   getRemediationPlan,
   getResponse,
@@ -36,6 +37,7 @@ export default async function ControlDetailPage(
   const { id, controlId } = await props.params;
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
+  await enforceStepOrder(ctx, "practices");
 
   const practice = playbookById[controlId];
   if (!practice) notFound();

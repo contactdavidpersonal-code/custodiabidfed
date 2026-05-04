@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
   computeProgress,
+  enforceStepOrder,
   getAssessmentForUser,
   listCarryForwardPending,
   listResponsesForAssessment,
@@ -61,6 +62,7 @@ export default async function AssessmentOverviewPage(
   const { id } = await props.params;
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
+  await enforceStepOrder(ctx, "practices");
 
   const [responses, carryForward, trustPage] = await Promise.all([
     listResponsesForAssessment(id),

@@ -47,7 +47,7 @@ export default async function OnboardPage() {
         </div>
       </header>
       <main className="flex min-h-0 flex-1 justify-center px-6 py-4">
-        <div className="flex min-h-0 w-full max-w-3xl flex-col">
+        <div className="flex min-h-0 w-full max-w-5xl flex-col">
           <OnboardingChat initialCompleteness={profile?.completeness_score ?? 0} />
         </div>
       </main>

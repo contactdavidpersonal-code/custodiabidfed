@@ -271,7 +271,7 @@ export default function Home() {
               <div className="w-[54px]" aria-hidden />
             </div>
             <Image
-              src="/demo_image1.png"
+              src="/demo%20image2.png"
               alt="Custodia platform — Charlie walking a user through CMMC Level 1"
               width={1600}
               height={1000}

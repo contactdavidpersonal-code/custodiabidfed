@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getAssessmentForUser } from "@/lib/assessment";
+import { enforceStepOrder, getAssessmentForUser } from "@/lib/assessment";
 import { loadBidProfile } from "@/lib/bid-profile";
 import { TailorForm } from "./TailorForm";
 import { tailorOpportunityAction } from "./actions";
@@ -17,6 +17,7 @@ export default async function TailorPacketPage(
   const { id } = await props.params;
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
+  await enforceStepOrder(ctx, "attested");
 
   const profile = await loadBidProfile(ctx.organization.id);
 

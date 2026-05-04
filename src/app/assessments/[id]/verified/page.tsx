@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getAssessmentForUser } from "@/lib/assessment";
+import { enforceStepOrder, getAssessmentForUser } from "@/lib/assessment";
 import { loadBidProfile, setAsideLabels } from "@/lib/bid-profile";
 import { loadTrustPageForOrg } from "@/lib/trust-page";
 import { ensureDbReady, getSql } from "@/lib/db";
@@ -47,6 +47,7 @@ export default async function VerifiedOwnerPanel(
   const { id } = await props.params;
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
+  await enforceStepOrder(ctx, "attested");
 
   const [trustPage, bidProfile, status] = await Promise.all([
     loadTrustPageForOrg(ctx.organization.id),

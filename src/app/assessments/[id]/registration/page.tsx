@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getAssessmentForUser } from "@/lib/assessment";
+import { enforceStepOrder, getAssessmentForUser } from "@/lib/assessment";
 import { saveFederalRegistrationAction } from "../../actions";
 
 const entityOptions = [
@@ -23,6 +23,7 @@ export default async function RegistrationPage(
   const { id } = await props.params;
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
+  await enforceStepOrder(ctx, "registration");
 
   const org = ctx.organization;
   const hasUei = Boolean(org.sam_uei);

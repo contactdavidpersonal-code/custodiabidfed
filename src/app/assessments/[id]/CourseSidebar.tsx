@@ -21,6 +21,9 @@ export type CourseSection = {
 type Props = {
   sections: CourseSection[];
   assessmentId: string;
+  /** Locked links navigate here so the user always lands on the next step
+   * they actually owe work on, instead of bouncing through a server redirect. */
+  currentStepHref: string;
 };
 
 /**
@@ -32,7 +35,7 @@ type Props = {
  * Sidebar state (open/collapsed) is persisted in localStorage so the user's
  * preference survives navigation.
  */
-export function CourseSidebar({ sections }: Props) {
+export function CourseSidebar({ sections, currentStepHref }: Props) {
   const pathname = usePathname();
   const [open, setOpen] = useState(true);
   const [hydrated, setHydrated] = useState(false);
@@ -146,9 +149,9 @@ export function CourseSidebar({ sections }: Props) {
                     ref={(el) => {
                       itemRefs.current[s.id] = el;
                     }}
-                    href={s.href}
+                    href={locked ? currentStepHref : s.href}
                     aria-disabled={locked || undefined}
-                    title={locked ? `Available now \u2014 ${s.subtitle}` : undefined}
+                    title={locked ? `Finish your current step first \u2014 ${s.subtitle}` : undefined}
                     className={`relative flex items-center gap-3  px-3 py-2.5 transition-colors ${
                       isActive
                         ? "text-[#0c2219]"

@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { ONBOARDING_SYSTEM_PROMPT } from "@/lib/anthropic";
 import {
   appendMessage,
+  ensureOnboardingOpener,
   getOrCreateOnboardingConversation,
   listMessages,
 } from "@/lib/ai/conversations";
@@ -21,6 +22,29 @@ import {
 const MAX_MESSAGE_LEN = 8_000;
 
 export const runtime = "nodejs";
+
+const CANONICAL_PROFILE_KEYS: ReadonlyArray<{ key: string; label: string }> = [
+  { key: "experience_level", label: "Experience with federal contracting" },
+  { key: "what_they_do", label: "What the company does" },
+  { key: "customers", label: "Who they sell to" },
+  { key: "team_size", label: "Team size" },
+  { key: "physical_workspace", label: "Where work physically happens" },
+  { key: "data_location", label: "Where contract information lives" },
+  { key: "it_identity", label: "How the team logs in" },
+  { key: "customer_facing_product", label: "Product vs services" },
+  { key: "network", label: "Network shape" },
+  { key: "contract_status", label: "Federal contracting status" },
+];
+
+function missingProfileKeys(data: Record<string, unknown> | undefined): string[] {
+  if (!data) return CANONICAL_PROFILE_KEYS.map((k) => k.key);
+  return CANONICAL_PROFILE_KEYS.filter((k) => {
+    const v = data[k.key];
+    if (v === undefined || v === null) return true;
+    if (typeof v === "string" && v.trim().length === 0) return true;
+    return false;
+  }).map((k) => k.key);
+}
 
 type OnboardRequestBody = {
   message?: string;
@@ -56,6 +80,7 @@ export async function POST(req: NextRequest) {
 
   const org = await ensureOrgForUser(userId);
   const conv = await getOrCreateOnboardingConversation(org.id);
+  await ensureOnboardingOpener(conv.id);
 
   await appendMessage({
     conversationId: conv.id,
@@ -64,19 +89,29 @@ export async function POST(req: NextRequest) {
   });
 
   const profile = await getBusinessProfile(org.id);
+  const missing = missingProfileKeys(
+    profile?.data as Record<string, unknown> | undefined,
+  );
+  const stillNeed =
+    missing.length === 0
+      ? "All ten profile keys captured. Confirm legal name + scoped_systems if not yet set, then wrap up."
+      : `STILL NEED TO ASK (these canonical keys are still missing — ask the next one if the user goes off-topic): ${missing.join(", ")}`;
+
   const contextBlock = [
     `## Current user state`,
     `- Current organization name (may be a placeholder): ${org.name}`,
     `- Scoped systems captured: ${org.scoped_systems ? "yes" : "no"}`,
-    `- SAM UEI captured: ${org.sam_uei ? "yes" : "no"}`,
-    `- CAGE code captured: ${org.cage_code ? "yes" : "no"}`,
-    `- NAICS codes captured: ${(org.naics_codes?.length ?? 0) > 0 ? "yes" : "no"}`,
+    `- Federal ID number on file: ${org.sam_uei ? "yes" : "no"}`,
+    `- Contractor location code on file: ${org.cage_code ? "yes" : "no"}`,
+    `- Industry codes on file: ${(org.naics_codes?.length ?? 0) > 0 ? "yes" : "no"}`,
     profile && Object.keys(profile.data).length > 0
-      ? `- Business profile so far (MERGE into this, don't overwrite): ${JSON.stringify(profile.data)}`
+      ? `- Business profile so far (MERGE into this, never overwrite): ${JSON.stringify(profile.data)}`
       : `- Business profile: empty`,
     `- Current completeness_score: ${profile?.completeness_score ?? 0}`,
     ``,
-    `Keep the conversation moving. Ask one question per turn, call the tools as the user shares facts. When onboarding is complete (score ≥ 40, legal name set, scoped_systems set), say so explicitly and tell them they can head to the workspace.`,
+    stillNeed,
+    ``,
+    `Reminder: plain English only. Never use the acronyms SAM, UEI, CAGE, NAICS, SPRS, FAR, NIST, CMMC, FCI, FedRAMP, M365, SSO, vCO in your reply text. One question per turn. Persist every fact via update_business_profile BEFORE you reply.`,
   ].join("\n");
 
   const stream = runOfficerAgentStream({
@@ -104,6 +139,7 @@ export async function GET() {
   }
   const org = await ensureOrgForUser(userId);
   const conv = await getOrCreateOnboardingConversation(org.id);
+  await ensureOnboardingOpener(conv.id);
   const rows = await listMessages(conv.id, 100);
   const profile = await getBusinessProfile(org.id);
 
@@ -117,5 +153,7 @@ export async function GET() {
     })),
     onboarded: isOnboardingComplete(org, profile),
     completeness_score: profile?.completeness_score ?? 0,
+    profile_data: profile?.data ?? {},
+    profile_keys: CANONICAL_PROFILE_KEYS,
   });
 }

@@ -11,6 +11,7 @@ import {
 } from "@/lib/db";
 import { getPlaybookForFramework } from "@/lib/playbook";
 import { fiscalYearOf, seedMilestonesForAssessment } from "@/lib/fiscal";
+import { redirect } from "next/navigation";
 
 export type OrganizationRow = {
   id: string;
@@ -899,4 +900,163 @@ export function computeProgress(responses: ControlResponseRow[]): ProgressBreakd
     unanswered,
     percentAnswered: total === 0 ? 0 : Math.round((answered / total) * 100),
   };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Step ordering — single source of truth for which sections of /assessments/[id]
+// are unlocked. The user must complete each step in order:
+//
+//   1. profile        — business profile captured + scoped_systems paragraph
+//   2. registration   — federal ID number + contractor location code on file
+//   3. practices      — all 17 control responses resolved (no unanswered/partial/notMet)
+//   4. sign           — senior official signs the affirmation
+//   5. attested       — bid packet, deliverables, etc. unlocked
+//
+// Every page under /assessments/[id]/* must call enforceStepOrder() at the top
+// so a user who hand-types a future URL bounces back to their current step.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type AssessmentStep =
+  | "profile"
+  | "registration"
+  | "practices"
+  | "sign"
+  | "attested";
+
+const STEP_ORDER: AssessmentStep[] = [
+  "profile",
+  "registration",
+  "practices",
+  "sign",
+  "attested",
+];
+
+export type StepGate = {
+  profileComplete: boolean;
+  registrationComplete: boolean;
+  practicesComplete: boolean;
+  attested: boolean;
+  /** The earliest step the user has not finished. Where they should go next. */
+  currentStep: AssessmentStep;
+};
+
+/**
+ * Profile is "step 1 complete" when the legal name is set, a scoped_systems
+ * paragraph is on file, and the business profile completeness score is at
+ * least 60 (the same bar the layout's sidebar uses).
+ */
+function isProfileStepComplete(
+  org: OrganizationRow,
+  profile: BusinessProfileRow | null,
+): boolean {
+  return (
+    org.name.trim().length > 0 &&
+    org.name !== "My Organization" &&
+    (org.scoped_systems ?? "").trim().length > 0 &&
+    (profile?.completeness_score ?? 0) >= 60
+  );
+}
+
+function isRegistrationStepComplete(org: OrganizationRow): boolean {
+  return Boolean(
+    (org.sam_uei ?? "").trim().length > 0 &&
+      (org.cage_code ?? "").trim().length > 0,
+  );
+}
+
+export function getStepGate(
+  org: OrganizationRow,
+  profile: BusinessProfileRow | null,
+  responses: ControlResponseRow[],
+  assessment: AssessmentRow,
+): StepGate {
+  const profileComplete = isProfileStepComplete(org, profile);
+  const registrationComplete = isRegistrationStepComplete(org);
+  const progress = computeProgress(responses);
+  const practicesComplete =
+    progress.unanswered === 0 &&
+    progress.notMet === 0 &&
+    progress.partial === 0 &&
+    progress.total > 0;
+  const attested = assessment.status === "attested";
+
+  let currentStep: AssessmentStep = "attested";
+  if (!profileComplete) currentStep = "profile";
+  else if (!registrationComplete) currentStep = "registration";
+  else if (!practicesComplete) currentStep = "practices";
+  else if (!attested) currentStep = "sign";
+
+  return {
+    profileComplete,
+    registrationComplete,
+    practicesComplete,
+    attested,
+    currentStep,
+  };
+}
+
+/**
+ * Map a step to its canonical page path under /assessments/[id]. The
+ * "practices" step lives on the assessment overview page.
+ */
+export function stepHref(assessmentId: string, step: AssessmentStep): string {
+  switch (step) {
+    case "profile":
+      return `/assessments/${assessmentId}/profile`;
+    case "registration":
+      return `/assessments/${assessmentId}/registration`;
+    case "practices":
+      return `/assessments/${assessmentId}`;
+    case "sign":
+      return `/assessments/${assessmentId}/sign`;
+    case "attested":
+      // Anything attested-gated lands on the overview by default.
+      return `/assessments/${assessmentId}`;
+  }
+}
+
+/**
+ * Returns the redirect target if `requestedStep` is past the user's current
+ * unlocked step. Returns null when the requested step is allowed (current or
+ * any earlier completed step — users may revisit prior steps).
+ */
+export function stepGateRedirect(
+  gate: StepGate,
+  assessmentId: string,
+  requestedStep: AssessmentStep,
+): string | null {
+  const requestedIdx = STEP_ORDER.indexOf(requestedStep);
+  const currentIdx = STEP_ORDER.indexOf(gate.currentStep);
+  if (requestedIdx <= currentIdx) return null;
+  return stepHref(assessmentId, gate.currentStep);
+}
+
+/**
+ * Server-side step gate. Call at the top of every page under
+ * /assessments/[id]/* AFTER getAssessmentForUser. Loads the profile +
+ * responses, computes the gate, and redirects the user back to their
+ * current step if they're trying to skip ahead. Always returns the gate
+ * for the caller's own use (e.g. to render different UI when attested).
+ *
+ * Note: pages that are step 1 ("profile") never need to call this since
+ * profile is always reachable. Pages for "registration" and beyond should
+ * always call it.
+ */
+export async function enforceStepOrder(
+  ctx: { assessment: AssessmentRow; organization: OrganizationRow },
+  requestedStep: AssessmentStep,
+): Promise<StepGate> {
+  const [profile, responses] = await Promise.all([
+    getBusinessProfile(ctx.organization.id),
+    listResponsesForAssessment(ctx.assessment.id),
+  ]);
+  const gate = getStepGate(
+    ctx.organization,
+    profile,
+    responses,
+    ctx.assessment,
+  );
+  const target = stepGateRedirect(gate, ctx.assessment.id, requestedStep);
+  if (target) redirect(target);
+  return gate;
 }

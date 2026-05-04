@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import {
   computeProgress,
   controlsMissingEvidence,
+  enforceStepOrder,
   evidenceReviewBlockers,
   getAssessmentForUser,
   listEvidenceForAssessment,
@@ -21,6 +22,7 @@ export default async function SignPage(
   const { id } = await props.params;
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
+  await enforceStepOrder(ctx, "sign");
 
   if (ctx.assessment.status === "attested") {
     redirect(`/assessments/${id}`);

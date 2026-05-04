@@ -159,19 +159,19 @@ export const officerTools = [
   {
     name: "update_business_profile",
     description:
-      "Merge structured business-context facts into the org's business_profile.data JSON. Use during onboarding to capture: what the business does, customers / contract types, team size, existing compliance maturity, tech stack, and risk tolerance. The more specific, the better the officer can tailor future advice. Always re-estimate completeness_score (0-100) based on total facts captured.",
+      "Merge structured business-context facts into the org's business_profile.data JSON. Call this EAGERLY — every time the user reveals a fact during onboarding, write it immediately. Use the EXACT canonical keys listed below; the profile UI reads these literal strings. Always re-estimate completeness_score (0-100) based on total facts captured.\n\nCANONICAL KEYS (use these literal strings — do not invent variants):\n  experience_level: 'first_timer' | 'exploring' | 'subcontractor' | 'experienced'\n  what_they_do: one sentence on the product/service the business delivers\n  customers: one sentence on who they sell to (e.g. 'DoD primes', 'civilian agencies', 'commercial only — trying to break into federal')\n  team_size: number, range, or descriptor (e.g. '1 — solo founder', '4 FTE + 2 contractors', '12')\n  physical_workspace: where work physically happens (e.g. 'home office, no visitors', 'leased 2,000 sqft office', 'shared coworking')\n  it_identity: 'microsoft 365' | 'google workspace' | 'okta' | 'mixed' | 'none' | 'unknown — still deciding'\n  data_location: where FCI actually lives (e.g. 'sole personal laptop', 'SharePoint tenant', 'on-prem file server')\n  customer_facing_product: 'saas' | 'hardware' | 'services-only' | 'none'\n  network: 'remote' | 'single office' | 'mixed'\n  contract_status: 'not_in_sam' | 'sam_no_wins' | 'active_subcontractor' | 'active_prime'\n  prior_compliance: 'none' | 'NIST CSF' | 'ISO 27001' | 'SOC 2' | 'earlier CMMC' | freeform\n\nIf a value is genuinely unknown (e.g. user said 'I'm not sure yet'), write the literal string 'unknown — <short reason>' so the UI shows partial progress instead of leaving the slot empty. NEVER omit a key the user has actually answered, even partially.",
     input_schema: {
       type: "object" as const,
       properties: {
         data: {
           type: "object",
           description:
-            "Key/value facts to MERGE (not replace) into business_profile.data. Use descriptive keys like 'what_we_do', 'primary_customers', 'team_size', 'tech_stack', 'contract_status', 'risk_tolerance'. Values can be strings, arrays, or nested objects.",
+            "Key/value facts to MERGE (not replace) into business_profile.data. Use the canonical keys from the tool description. Extra keys are allowed but the canonical ones are what render on the user's profile page.",
         },
         completeness_score: {
           type: "number",
           description:
-            "Estimated completeness 0-100. 40 is the minimum to leave onboarding; 70+ means the officer can give richly personalized guidance.",
+            "Estimated completeness 0-100. 40 is the minimum to leave onboarding; 70+ means the officer can give richly personalized guidance. Roughly +8 per canonical key captured.",
         },
       },
       required: ["data", "completeness_score"],

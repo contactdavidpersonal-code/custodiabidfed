@@ -31,22 +31,37 @@ export default async function ProfilePage(
       label: "What you do",
       value: stringField(data, "what_they_do") ?? stringField(data, "what_we_do"),
     },
-    { label: "Customers", value: stringField(data, "customers") },
+    {
+      label: "Customers",
+      value:
+        stringField(data, "customers") ??
+        stringField(data, "primary_customers") ??
+        stringField(data, "target_customers"),
+    },
     {
       label: "Team size",
       value: stringField(data, "team_size"),
     },
     {
       label: "Physical workspace",
-      value: stringField(data, "physical_workspace"),
+      value:
+        stringField(data, "physical_workspace") ??
+        stringField(data, "workspace") ??
+        stringField(data, "physical_location"),
     },
     {
       label: "IT identity",
-      value: stringField(data, "it_identity"),
+      value:
+        stringField(data, "it_identity") ??
+        stringField(data, "identity_provider") ??
+        stringField(data, "tech_stack"),
     },
     {
       label: "Where data lives",
-      value: stringField(data, "data_location"),
+      value:
+        stringField(data, "data_location") ??
+        stringField(data, "fci_location") ??
+        stringField(data, "where_data_lives"),
     },
   ];
 

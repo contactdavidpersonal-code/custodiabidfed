@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
+  enforceStepOrder,
   getAssessmentForUser,
   listEvidenceForAssessment,
   listResponsesForAssessment,
@@ -36,6 +37,7 @@ export default async function SystemSecurityPlanPage(
   const { id } = await props.params;
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
+  await enforceStepOrder(ctx, "attested");
 
   const responses = await listResponsesForAssessment(id);
   const responseByControl = new Map(responses.map((r) => [r.control_id, r]));

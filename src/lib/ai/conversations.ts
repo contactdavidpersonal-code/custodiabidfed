@@ -76,6 +76,36 @@ export async function getOrCreateOnboardingConversation(
   return inserted[0];
 }
 
+/**
+ * Deterministic opener for the onboarding conversation. Persists a single
+ * assistant message the very first time so the user always sees the same
+ * calibrated welcome + first question, and the model has stable context to
+ * continue from. No-op if the conversation already has any messages.
+ */
+export const ONBOARDING_OPENER_TEXT = `Hi, I'm Charlie — I'll be your compliance officer here.
+
+Before we start, have you ever bid on a federal contract before, or worked under a company that did? Totally fine either way — I just want to know what pace to use.`;
+
+export async function ensureOnboardingOpener(
+  conversationId: string,
+): Promise<void> {
+  const sql = getSql();
+  const existing = (await sql`
+    SELECT id FROM ai_messages
+    WHERE conversation_id = ${conversationId}
+    LIMIT 1
+  `) as Array<{ id: string }>;
+  if (existing.length > 0) return;
+
+  await appendMessage({
+    conversationId,
+    role: "assistant",
+    content: [{ type: "text", text: ONBOARDING_OPENER_TEXT }],
+    model: "seed",
+    stopReason: "seed",
+  });
+}
+
 type AppendInput = {
   conversationId: string;
   role: MessageRole;

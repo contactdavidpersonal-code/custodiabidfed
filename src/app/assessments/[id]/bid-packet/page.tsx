@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { getAssessmentForUser } from "@/lib/assessment";
+import { enforceStepOrder, getAssessmentForUser } from "@/lib/assessment";
 import { bidProfileCompleteness, loadBidProfile } from "@/lib/bid-profile";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +15,7 @@ export default async function BidPacketPage(
   const { id } = await props.params;
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
+  await enforceStepOrder(ctx, "attested");
 
   const profile = await loadBidProfile(ctx.organization.id);
   const { score, missing } = bidProfileCompleteness(profile);

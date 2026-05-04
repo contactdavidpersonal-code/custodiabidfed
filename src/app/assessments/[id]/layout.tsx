@@ -4,7 +4,9 @@ import {
   computeProgress,
   getAssessmentForUser,
   getBusinessProfile,
+  getStepGate,
   listResponsesForAssessment,
+  stepHref,
 } from "@/lib/assessment";
 import { CourseSidebar, type CourseSection, type SectionStatus } from "./CourseSidebar";
 
@@ -33,19 +35,12 @@ export default async function CourseLayout(
   ]);
 
   const progress = computeProgress(responses);
-  const profileComplete =
-    ctx.organization.name !== "My Organization" &&
-    Boolean(ctx.organization.scoped_systems) &&
-    (profile?.completeness_score ?? 0) >= 60;
-
-  const registrationComplete = Boolean(
-    ctx.organization.sam_uei && ctx.organization.cage_code,
-  );
-
-  const practicesAllResolved =
-    progress.unanswered === 0 && progress.notMet === 0 && progress.partial === 0;
-
-  const attested = ctx.assessment.status === "attested";
+  const gate = getStepGate(ctx.organization, profile, responses, ctx.assessment);
+  const profileComplete = gate.profileComplete;
+  const registrationComplete = gate.registrationComplete;
+  const practicesAllResolved = gate.practicesComplete;
+  const attested = gate.attested;
+  const currentStepHref = stepHref(id, gate.currentStep);
 
   const profileStatus: SectionStatus = profileComplete
     ? "complete"
@@ -161,7 +156,7 @@ export default async function CourseLayout(
 
   return (
     <div className="flex min-h-[calc(100vh-57px)]">
-      <CourseSidebar sections={sections} assessmentId={id} />
+      <CourseSidebar sections={sections} assessmentId={id} currentStepHref={currentStepHref} />
       <div className="min-w-0 flex-1">{props.children}</div>
     </div>
   );
