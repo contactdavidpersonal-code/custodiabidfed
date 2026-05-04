@@ -69,6 +69,7 @@ const BONUSES = [
   { name: "BONUS #1 &mdash; AI-Drafted Federal Capability Statement", desc: "The federal-format one-pager every prime asks for, generated from your inputs.", value: "$497" },
   { name: "BONUS #2 &mdash; Fiscal Compass", desc: "Federal calendar in-app: end-of-year obligation surges, Q4 spend windows, micro-purchase thresholds.", value: "$297" },
   { name: "BONUS #3 &mdash; Milestone Reminder System", desc: "Email nudges before SPRS deadlines, prime audits, and re-affirmation due dates.", value: "$197" },
+  { name: "BONUS #4 &mdash; Daily Discover Feed", desc: "15 fresh, CMMC Level 1-fit SAM.gov opportunities matched to your NAICS, refreshed every day you log in. Plus a Monday digest of the week&rsquo;s newest contracts in your inbox.", value: "$597/yr" },
 ];
 
 // Hormozi-style triple guarantee.
@@ -1566,7 +1567,7 @@ export default function Home() {
               {/* Bonuses */}
               <div className="mt-10">
                 <div className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#a06b1a]">
-                  Plus three free bonuses (this week only)
+                  Plus four free bonuses (this week only)
                 </div>
                 <ul className="divide-y divide-[#e8d4a1] border-y border-[#e8d4a1] bg-[#fff8e8]">
                   {BONUSES.map((item) => (

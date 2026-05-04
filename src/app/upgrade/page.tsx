@@ -112,6 +112,8 @@ export default async function UpgradePage() {
                 "Evidence freshness alerts",
                 "Annual SPRS re-affirmation handled",
                 "Officer-reviewed before you submit",
+                "BONUS: Daily Discover — 15 fresh SAM.gov bids/day matched to your NAICS",
+                "BONUS: Monday Bid Digest emailed weekly",
               ].map((b) => (
                 <li key={b} className="flex items-start gap-2">
                   <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">&#10003;</span>

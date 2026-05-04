@@ -16,7 +16,8 @@ const INCLUDED = [
   "Audit Support — officer prep + same-day evidence pack",
   "Weekly Compliance Pulse email (the dashboard, in your inbox)",
   "Public Trust Page (opt-in) primes can use to verify you",
-  "Bid Radar — 3 curated SAM.gov opportunities per week",
+  "Daily Discover — 15 CMMC Level 1-fit SAM.gov opportunities matched to your NAICS, refreshed every day",
+  "Monday Bid Digest — the week's newest contracts emailed to you (toggle on/off in-app)",
   "Carnegie Mellon-trained human officer escalation when you need it",
 ];
 
