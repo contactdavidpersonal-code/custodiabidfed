@@ -1,4 +1,4 @@
-import { CheckoutButton } from "@clerk/nextjs";
+import { PricingTable } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -124,12 +124,13 @@ export default async function UpgradePage() {
             </ul>
 
             <div className="mt-7">
-              <CheckoutButton planId="cmmc_lv1_full_access" planPeriod="month">
-                <button className="group flex w-full items-center justify-center gap-2 bg-[#0e2a23] px-6 py-4 text-base font-bold text-[#bdf2cf] shadow-[0_10px_30px_-10px_rgba(14,42,35,0.6)] transition-colors hover:bg-[#10342a]">
-                  Start my 14-day free trial
-                  <span aria-hidden className="text-lg transition-transform group-hover:translate-x-0.5">&rarr;</span>
-                </button>
-              </CheckoutButton>
+              <a
+                href="#checkout"
+                className="group flex w-full items-center justify-center gap-2 bg-[#0e2a23] px-6 py-4 text-base font-bold text-[#bdf2cf] shadow-[0_10px_30px_-10px_rgba(14,42,35,0.6)] transition-colors hover:bg-[#10342a]"
+              >
+                Start my 14-day free trial
+                <span aria-hidden className="text-lg transition-transform group-hover:translate-x-0.5">&rarr;</span>
+              </a>
               <p className="mt-3 text-center text-xs text-[#5a7f72]">
                 No charge for 14 days &middot; Cancel anytime &middot; 14-day money-back guarantee from your first payment
               </p>
@@ -176,6 +177,40 @@ export default async function UpgradePage() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <div id="checkout" className="mt-14 scroll-mt-8">
+          <div className="mb-4 text-center">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a06b1a]">
+              Activate your trial
+            </div>
+            <h2 className="mt-1 font-serif text-2xl font-bold text-[#10231d] md:text-3xl">
+              Start your 14-day free trial
+            </h2>
+            <p className="mt-2 text-sm text-[#5a7f72]">
+              You won&apos;t be charged for 14 days. Cancel anytime inside the platform.
+            </p>
+          </div>
+          <div className="border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)] md:p-8">
+            <PricingTable
+              appearance={{
+                elements: {
+                  pricingTableCard: "border border-[#cfe3d9] shadow-none",
+                  pricingTableCardHeader: "bg-white",
+                  pricingTableCardTitle: "font-serif text-[#10231d]",
+                  pricingTableCardFee: "text-[#10231d]",
+                  pricingTableCardFooter: "bg-white",
+                  button: "bg-[#0e2a23] hover:bg-[#10342a] text-[#bdf2cf] font-bold",
+                },
+                variables: {
+                  colorPrimary: "#0e2a23",
+                  colorText: "#10231d",
+                  colorBackground: "#ffffff",
+                  borderRadius: "0",
+                },
+              }}
+            />
           </div>
         </div>
 
