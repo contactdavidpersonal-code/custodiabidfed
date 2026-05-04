@@ -3,10 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { ensureOrgForUser } from "@/lib/assessment";
-import {
-  dismissOpportunity,
-  markOpportunityViewed,
-} from "@/lib/sam-radar";
+import { setRadarEmailsEnabled } from "@/lib/sam-radar";
 
 async function requireOrgId(): Promise<string> {
   const { userId } = await auth();
@@ -15,21 +12,14 @@ async function requireOrgId(): Promise<string> {
   return org.id;
 }
 
-export async function dismissOpportunityAction(formData: FormData) {
+/**
+ * Toggle the Monday weekly digest email for the current org. The toggle
+ * lives on /opportunities so users can opt out of the email without
+ * digging through profile settings.
+ */
+export async function setMondayDigestAction(formData: FormData) {
   const orgId = await requireOrgId();
-  const opportunityId = String(formData.get("opportunityId") ?? "");
-  if (!opportunityId) throw new Error("Missing opportunityId");
-  await dismissOpportunity({
-    organizationId: orgId,
-    opportunityId,
-  });
+  const enabled = formData.get("enabled") === "on";
+  await setRadarEmailsEnabled(orgId, enabled);
   revalidatePath("/opportunities");
-}
-
-export async function markOpportunityViewedAction(opportunityId: string) {
-  const orgId = await requireOrgId();
-  await markOpportunityViewed({
-    organizationId: orgId,
-    opportunityId,
-  });
 }

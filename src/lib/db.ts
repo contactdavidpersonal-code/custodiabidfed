@@ -743,6 +743,28 @@ export async function initDb() {
       WHERE dismissed_at IS NULL
   `;
 
+  // Daily Discover cache — keyed on (naics_code, fetched_for_date) so every
+  // org watching the same NAICS shares the same upstream pull. The /opportunities
+  // bonus page reads from here on every render and only triggers a SAM.gov
+  // call when today's row is missing for one of the user's codes. This lets
+  // a 1k-user platform run on the public 1,000/day api.data.gov key.
+  //   payload: array of CachedOpportunityCard for that NAICS for that day,
+  //            already filtered to CMMC-L1-friendly notices, sorted by
+  //            posted_date desc.
+  await sql`
+    CREATE TABLE IF NOT EXISTS sam_naics_daily (
+      naics_code        TEXT NOT NULL,
+      fetched_for_date  DATE NOT NULL,
+      payload           JSONB NOT NULL,
+      fetched_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (naics_code, fetched_for_date)
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_sam_naics_daily_date
+      ON sam_naics_daily (fetched_for_date DESC)
+  `;
+
   // -------------------------------------------------------------------------
   // Security / CMMC L1 platform controls
   // -------------------------------------------------------------------------
