@@ -74,8 +74,8 @@ export default async function RegistrationPage(
       >
         <div className="grid gap-5 md:grid-cols-2">
           <Field
-            label="Federal ID number"
-            hint="12 letters and numbers, from SAM.gov"
+            label="Federal ID number (UEI)"
+            hint="12 letters and numbers. SAM.gov calls this the Unique Entity ID."
             name="samUei"
             defaultValue={org.sam_uei ?? ""}
             placeholder="ABC123XYZ987"
@@ -83,8 +83,8 @@ export default async function RegistrationPage(
             maxLength={12}
           />
           <Field
-            label="Contractor location code"
-            hint="5 letters and numbers, from the Defense Logistics Agency"
+            label="Contractor location code (CAGE)"
+            hint="5 letters and numbers. The Defense Logistics Agency calls this the CAGE Code."
             name="cageCode"
             defaultValue={org.cage_code ?? ""}
             placeholder="1A2B3"
@@ -109,8 +109,8 @@ export default async function RegistrationPage(
             </select>
           </div>
           <Field
-            label="Industry codes"
-            hint="Comma-separated, six digits each"
+            label="Industry codes (NAICS)"
+            hint="Comma-separated, six digits each. Picked during SAM.gov's Goods & Services step."
             name="naicsCodes"
             defaultValue={org.naics_codes.join(", ")}
             placeholder="541512, 541519"
