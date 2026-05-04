@@ -27,6 +27,11 @@ export default async function RegistrationPage(
   const org = ctx.organization;
   const hasUei = Boolean(org.sam_uei);
   const hasCage = Boolean(org.cage_code);
+  const hasNaics = org.naics_codes.length > 0;
+  // Once the user has saved a UEI but not yet a CAGE, they're in the
+  // "waiting on DLA" window — show a friendly reminder banner instead of
+  // blocking the next step.
+  const cagePending = hasUei && !hasCage;
 
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
@@ -39,20 +44,44 @@ export default async function RegistrationPage(
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#5a7d70]">
           Before you can take a federal contract, the government needs to know
-          who you are. You&apos;ll get a federal ID number from SAM.gov and a
-          contractor location code from the Defense Logistics Agency. Your
-          industry codes describe what kind of work you do. All three appear
-          on the yearly affirmation you sign in step 4.
+          who you are. You&apos;ll get a Unique Entity ID from SAM.gov and a
+          contractor location code (CAGE) from the Defense Logistics Agency.
+          Your industry codes describe what kind of work you do. All three
+          appear on the yearly affirmation you sign in step 4.
+        </p>
+        <p className="mt-2 max-w-2xl text-xs leading-relaxed text-[#7a9c90]">
+          You only need your <strong>Unique Entity ID</strong> and at least
+          one <strong>industry code</strong> to continue. SAM.gov issues the
+          Unique Entity ID immediately; the CAGE code takes a few days &mdash;
+          we&apos;ll remind you to add it when it arrives.
         </p>
       </header>
+
+      {cagePending && (
+        <div className="mb-6 flex items-start gap-3 border border-[#e6d3a8] bg-[#fdf6e3] px-4 py-3 text-xs leading-relaxed text-[#5c4a1d]">
+          <span aria-hidden className="mt-0.5 text-base">⏳</span>
+          <div>
+            <p className="font-bold text-[#3d3210]">
+              Waiting on your CAGE code
+            </p>
+            <p className="mt-1">
+              The Defense Logistics Agency typically issues CAGE codes
+              3&ndash;10 business days after SAM.gov submits your registration.
+              Check your SAM.gov workspace &mdash; once the CAGE chip turns
+              green, paste it here. You can keep working on the next steps in
+              the meantime.
+            </p>
+          </div>
+        </div>
+      )}
 
       <ol className="mb-8 space-y-3">
         <Step
           n={1}
-          title="Register on SAM.gov"
-          body="Free. Takes 7&ndash;10 business days the first time. You&apos;ll receive your federal ID number immediately and your contractor location code within a week."
-          href="https://sam.gov"
-          cta="Open SAM.gov"
+          title="Register on SAM.gov (free)"
+          body="SAM.gov isn&apos;t intuitive the first time. Open our step-by-step walkthrough and we&apos;ll show you exactly what to click on every screen so you finish correctly the first time. Takes 45&ndash;90 minutes; you&apos;ll get your Unique Entity ID immediately and your CAGE code within ~5 business days."
+          href="/sam-guide"
+          cta="Open guided walkthrough"
         />
         <Step
           n={2}
@@ -64,7 +93,7 @@ export default async function RegistrationPage(
         <Step
           n={3}
           title="Enter what you have below"
-          body="You can enter your federal ID number now and add the contractor location code later &mdash; SAM.gov issues the ID immediately, but the location code takes a few days."
+          body="Enter your Unique Entity ID and industry codes to continue &mdash; that&apos;s all we need to unlock the next section. Add your CAGE code whenever SAM.gov issues it; we&apos;ll remind you here until you do."
         />
       </ol>
 
@@ -74,8 +103,8 @@ export default async function RegistrationPage(
       >
         <div className="grid gap-5 md:grid-cols-2">
           <Field
-            label="Federal ID number (UEI)"
-            hint="12 letters and numbers. SAM.gov calls this the Unique Entity ID."
+            label="Unique Entity ID"
+            hint="12 letters and numbers, issued by SAM.gov."
             name="samUei"
             defaultValue={org.sam_uei ?? ""}
             placeholder="ABC123XYZ987"
@@ -83,8 +112,8 @@ export default async function RegistrationPage(
             maxLength={12}
           />
           <Field
-            label="Contractor location code (CAGE)"
-            hint="5 letters and numbers. The Defense Logistics Agency calls this the CAGE Code."
+            label="CAGE code (optional for now)"
+            hint="5 letters and numbers from the Defense Logistics Agency. Add it when SAM.gov shows it as issued."
             name="cageCode"
             defaultValue={org.cage_code ?? ""}
             placeholder="1A2B3"
@@ -114,6 +143,7 @@ export default async function RegistrationPage(
             name="naicsCodes"
             defaultValue={org.naics_codes.join(", ")}
             placeholder="541512, 541519"
+            badge={hasNaics ? "saved" : null}
           />
         </div>
 
@@ -132,8 +162,9 @@ export default async function RegistrationPage(
       </form>
 
       <p className="mt-6 text-center text-xs text-[#7a9c90]">
-        The seventeen safeguarding practices unlock as soon as both your
-        federal ID number and contractor location code are saved above.
+        The seventeen safeguarding practices unlock as soon as your Unique
+        Entity ID and at least one industry code are saved above. You can add
+        your CAGE code later &mdash; we&apos;ll remind you here until you do.
       </p>
     </main>
   );

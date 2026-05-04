@@ -907,7 +907,11 @@ export function computeProgress(responses: ControlResponseRow[]): ProgressBreakd
 // are unlocked. The user must complete each step in order:
 //
 //   1. profile        — business profile captured + scoped_systems paragraph
-//   2. registration   — federal ID number + contractor location code on file
+//   2. registration   — Unique Entity ID + at least one NAICS code on file
+//                       (CAGE is collected here too, but it can arrive later —
+//                       SAM.gov issues UEI instantly while DLA takes a few
+//                       days to assign CAGE. We remind the user to come back
+//                       and paste it once they receive it.)
 //   3. practices      — all 17 control responses resolved (no unanswered/partial/notMet)
 //   4. sign           — senior official signs the affirmation
 //   5. attested       — bid packet, deliverables, etc. unlocked
@@ -958,9 +962,14 @@ function isProfileStepComplete(
 }
 
 function isRegistrationStepComplete(org: OrganizationRow): boolean {
+  // CAGE code is intentionally NOT required to advance: when a contractor
+  // submits an "All Awards" SAM.gov registration for the first time, the UEI
+  // is issued immediately but the CAGE code takes 3–10 business days to come
+  // back from the Defense Logistics Agency. We unlock the next step on UEI +
+  // at least one NAICS code and prompt the user to come back and add the
+  // CAGE when it arrives.
   return Boolean(
-    (org.sam_uei ?? "").trim().length > 0 &&
-      (org.cage_code ?? "").trim().length > 0,
+    (org.sam_uei ?? "").trim().length > 0 && org.naics_codes.length > 0,
   );
 }
 
