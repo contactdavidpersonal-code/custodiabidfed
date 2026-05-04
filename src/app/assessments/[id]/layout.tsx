@@ -42,26 +42,29 @@ export default async function CourseLayout(
   const attested = gate.attested;
   const currentStepHref = stepHref(id, gate.currentStep);
 
-  const profileStatus: SectionStatus = profileComplete
-    ? "complete"
-    : "in_progress";
+  // Strict step-order locking. A step is "locked" until every step before it
+  // is complete. The currently-active step is "in_progress"; completed steps
+  // are "complete"; everything after the active step is "locked". This is the
+  // single source of truth for the sidebar UI and matches the server-side
+  // enforceStepOrder gate exactly.
+  const profileStatus: SectionStatus = profileComplete ? "complete" : "in_progress";
 
-  const registrationStatus: SectionStatus = registrationComplete
-    ? "complete"
-    : profileComplete
-      ? "in_progress"
-      : "available";
+  const registrationStatus: SectionStatus = !profileComplete
+    ? "locked"
+    : registrationComplete
+      ? "complete"
+      : "in_progress";
 
-  const practicesStatus: SectionStatus = practicesAllResolved
-    ? "complete"
-    : progress.met + progress.notApplicable > 0
-      ? "in_progress"
-      : "available";
+  const practicesStatus: SectionStatus = !profileComplete || !registrationComplete
+    ? "locked"
+    : practicesAllResolved
+      ? "complete"
+      : "in_progress";
 
   const signStatus: SectionStatus = attested
     ? "complete"
-    : practicesAllResolved && profileComplete && registrationComplete
-      ? "available"
+    : profileComplete && registrationComplete && practicesAllResolved
+      ? "in_progress"
       : "locked";
 
   const deliverablesStatus: SectionStatus = attested ? "available" : "locked";
@@ -81,7 +84,7 @@ export default async function CourseLayout(
       step: 2,
       href: `/assessments/${id}/registration`,
       title: "Federal registration",
-      subtitle: "SAM.gov UEI, CAGE, NAICS",
+      subtitle: "Your federal ID number and contractor location code",
       status: registrationStatus,
       match: "exact",
     },
@@ -89,7 +92,7 @@ export default async function CourseLayout(
       id: "practices",
       step: 3,
       href: `/assessments/${id}`,
-      title: "CMMC Level 1 practices",
+      title: "The seventeen safeguarding practices",
       subtitle: `${progress.met + progress.notApplicable} of ${
         progress.met +
         progress.partial +
@@ -104,9 +107,9 @@ export default async function CourseLayout(
       id: "sign",
       step: 4,
       href: `/assessments/${id}/sign`,
-      title: "Sign & affirm",
+      title: "Sign and affirm",
       subtitle: attested
-        ? "Affirmation locked"
+        ? "Yearly affirmation on file"
         : signStatus === "locked"
           ? "Finish steps 1\u20133 first"
           : "Senior official signature",
@@ -117,17 +120,11 @@ export default async function CourseLayout(
       id: "bid-ready",
       step: 5,
       href: `/assessments/${id}/bid-packet`,
-      title: "Bid-Ready Packet",
+      title: "Bid-ready packet",
       subtitle: attested
         ? "Capability statement, past performance"
-        : registrationComplete
-          ? "Unlocks after signing"
-          : "Finish steps 1\u20134 first",
-      status: attested
-        ? "available"
-        : registrationComplete
-          ? "locked"
-          : "locked",
+        : "Unlocks after you sign",
+      status: attested ? "available" : "locked",
       match: "prefix",
     },
     {
@@ -136,8 +133,8 @@ export default async function CourseLayout(
       href: `/assessments/${id}/deliverables`,
       title: "Deliverables",
       subtitle: attested
-        ? "Download SSP, affirmation, package"
-        : "Unlocks after signing",
+        ? "Download your security plan and affirmation"
+        : "Unlocks after you sign",
       status: deliverablesStatus,
       match: "prefix",
     },
@@ -145,10 +142,10 @@ export default async function CourseLayout(
       id: "opportunities",
       step: 7,
       href: `/opportunities`,
-      title: "Find & submit bids",
+      title: "Find and submit bids",
       subtitle: attested
-        ? "Charlie-sourced federal opportunities"
-        : "Unlocks after signing",
+        ? "Daily federal opportunities matched to you"
+        : "Unlocks after you sign",
       status: attested ? "available" : "locked",
       match: "prefix",
     },

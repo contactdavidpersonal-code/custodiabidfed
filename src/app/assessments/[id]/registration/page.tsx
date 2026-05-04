@@ -1,5 +1,4 @@
 import { auth } from "@clerk/nextjs/server";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { enforceStepOrder, getAssessmentForUser } from "@/lib/assessment";
 import { saveFederalRegistrationAction } from "../../actions";
@@ -36,13 +35,14 @@ export default async function RegistrationPage(
           Step 2 of 7
         </p>
         <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-4xl">
-          Federal registration
+          Federal contractor registration
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#5a7d70]">
           Before you can take a federal contract, the government needs to know
-          who you are. SAM.gov gives you a UEI; DLA assigns a CAGE code. NAICS
-          codes describe what you do. All three appear on your CMMC
-          affirmation.
+          who you are. You&apos;ll get a federal ID number from SAM.gov and a
+          contractor location code from the Defense Logistics Agency. Your
+          industry codes describe what kind of work you do. All three appear
+          on the yearly affirmation you sign in step 4.
         </p>
       </header>
 
@@ -50,21 +50,21 @@ export default async function RegistrationPage(
         <Step
           n={1}
           title="Register on SAM.gov"
-          body="Free. Takes 7&ndash;10 business days the first time. You'll receive a UEI immediately and a CAGE code within a week."
+          body="Free. Takes 7&ndash;10 business days the first time. You&apos;ll receive your federal ID number immediately and your contractor location code within a week."
           href="https://sam.gov"
           cta="Open SAM.gov"
         />
         <Step
           n={2}
-          title="Pick the NAICS codes that match your work"
-          body="Six-digit codes. Most contractors use 1&ndash;3. The contract solicitation will tell you which ones the buyer expects."
+          title="Pick the industry codes that match your work"
+          body="Six-digit codes. Most contractors use one to three. The contract you bid on will tell you which ones the buyer expects."
           href="https://www.census.gov/naics/"
-          cta="NAICS lookup"
+          cta="Industry code lookup"
         />
         <Step
           n={3}
           title="Enter what you have below"
-          body="You can enter the UEI now and add CAGE later &mdash; SAM issues UEI immediately but CAGE takes a few days."
+          body="You can enter your federal ID number now and add the contractor location code later &mdash; SAM.gov issues the ID immediately, but the location code takes a few days."
         />
       </ol>
 
@@ -74,8 +74,8 @@ export default async function RegistrationPage(
       >
         <div className="grid gap-5 md:grid-cols-2">
           <Field
-            label="SAM.gov UEI"
-            hint="12 letters/numbers"
+            label="Federal ID number"
+            hint="12 letters and numbers, from SAM.gov"
             name="samUei"
             defaultValue={org.sam_uei ?? ""}
             placeholder="ABC123XYZ987"
@@ -83,8 +83,8 @@ export default async function RegistrationPage(
             maxLength={12}
           />
           <Field
-            label="CAGE code"
-            hint="5 letters/numbers"
+            label="Contractor location code"
+            hint="5 letters and numbers, from the Defense Logistics Agency"
             name="cageCode"
             defaultValue={org.cage_code ?? ""}
             placeholder="1A2B3"
@@ -109,8 +109,8 @@ export default async function RegistrationPage(
             </select>
           </div>
           <Field
-            label="NAICS codes"
-            hint="Comma-separated 6-digit codes"
+            label="Industry codes"
+            hint="Comma-separated, six digits each"
             name="naicsCodes"
             defaultValue={org.naics_codes.join(", ")}
             placeholder="541512, 541519"
@@ -119,8 +119,8 @@ export default async function RegistrationPage(
 
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
           <p className="text-xs text-[#5a7d70]">
-            We never share these. They appear in your SSP and SPRS affirmation
-            only.
+            We never share these. They appear only in your security plan and
+            yearly affirmation.
           </p>
           <button
             type="submit"
@@ -131,15 +131,10 @@ export default async function RegistrationPage(
         </div>
       </form>
 
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-3  border border-dashed border-[#cfe3d9] bg-white px-5 py-4 text-sm text-[#5a7d70]">
-        <span>Once saved, head into the 17 CMMC L1 practices.</span>
-        <Link
-          href={`/assessments/${id}`}
-          className=" border border-[#cfe3d9] bg-white px-4 py-2 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
-        >
-          Continue to practices &rarr;
-        </Link>
-      </div>
+      <p className="mt-6 text-center text-xs text-[#7a9c90]">
+        The seventeen safeguarding practices unlock as soon as both your
+        federal ID number and contractor location code are saved above.
+      </p>
     </main>
   );
 }
