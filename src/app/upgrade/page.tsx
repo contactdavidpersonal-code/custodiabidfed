@@ -1,7 +1,9 @@
-import { PricingTable } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { TrialCheckoutButton } from "./TrialCheckoutButton";
+
+const PLAN_SLUG = "cmmc_lv1_full_access";
 
 export default async function UpgradePage() {
   const { userId, has } = await auth();
@@ -20,50 +22,47 @@ export default async function UpgradePage() {
   return (
     <div className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
       <header className="border-b border-[#cfe3d9] bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-2.5">
+          <Link href="/" className="flex items-center gap-2.5">
             <img
               src="/custodia-logo.png"
               alt="Custodia shield"
-              className="h-9 w-auto"
+              className="h-7 w-auto"
             />
             <div className="leading-tight">
-              <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
                 Custodia
               </div>
-              <div className="font-serif text-sm font-bold text-[#10231d]">
+              <div className="font-serif text-xs font-bold text-[#10231d]">
                 CMMC Level 1 workspace
               </div>
             </div>
           </Link>
           <Link
             href="/"
-            className="text-sm font-medium text-[#456c5f] transition-colors hover:text-[#10231d]"
+            className="text-xs font-medium text-[#456c5f] transition-colors hover:text-[#10231d]"
           >
             ← Back to home
           </Link>
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-6 py-12">
-        <div className="mb-10 text-center">
-          <div className="mb-3 inline-flex items-center gap-2 border border-[#bdf2cf] bg-[#eaf7ef] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#1d6a4a]">
+      <main className="mx-auto max-w-6xl px-6 py-5">
+        <div className="mb-4 text-center">
+          <div className="mb-2 inline-flex items-center gap-2 border border-[#bdf2cf] bg-[#eaf7ef] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#1d6a4a]">
             <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[#1d6a4a]" />
             14 days free &middot; No credit card required
           </div>
-          <h1 className="font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-5xl">
-            Start your 14-day free trial.
-            <br className="hidden md:block" /> Get bid-ready without paying a cent.
+          <h1 className="font-serif text-2xl font-bold tracking-tight text-[#10231d] md:text-4xl">
+            Start your 14-day free trial. Get bid-ready without paying a cent.
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[#4a7164] md:text-lg">
-            Spin up the full Custodia workspace today &mdash; CMMC Level&nbsp;1 build,
-            evidence freshness alerts, and your virtual compliance officer on call.
-            We don&apos;t ask for a card until day 14, and only if you stay.
+          <p className="mx-auto mt-2 max-w-2xl text-sm leading-snug text-[#4a7164]">
+            Full Custodia workspace &mdash; CMMC Level&nbsp;1 build, freshness alerts, vCO on call. No card until day 14, only if you stay.
           </p>
         </div>
 
         {/* Stats: why now */}
-        <div className="mb-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-4 grid gap-2 grid-cols-2 lg:grid-cols-4">
           {[
             {
               stat: "$830B+",
@@ -75,146 +74,110 @@ export default async function UpgradePage() {
             },
             {
               stat: "Nov 10, 2025",
-              label: "CMMC clauses now flow down on new DoD solicitations",
+              label: "CMMC clauses flow down on new DoD solicitations",
             },
             {
               stat: "0 bids",
-              label: "If you can't affirm FAR 52.204-21 — no exceptions",
+              label: "Without FAR 52.204-21 affirmation — no exceptions",
             },
           ].map((s) => (
             <div
               key={s.label}
-              className="border border-[#cfe3d9] bg-white p-5"
+              className="border border-[#cfe3d9] bg-white px-3 py-2"
             >
-              <div className="font-serif text-2xl font-bold text-[#10231d]">{s.stat}</div>
-              <div className="mt-1 text-xs leading-relaxed text-[#5a7f72]">{s.label}</div>
+              <div className="font-serif text-lg font-bold leading-tight text-[#10231d]">{s.stat}</div>
+              <div className="mt-0.5 text-[11px] leading-snug text-[#5a7f72]">{s.label}</div>
             </div>
           ))}
         </div>
 
         {/* Pricing card — our design, Clerk button */}
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-          <div className="border border-[#cfe3d9] bg-white p-7 shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
+        <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
+          <div className="border border-[#cfe3d9] bg-white p-5 shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
             <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a06b1a]">
               Summer Federal Cash Incentive &middot; 100 seats
             </div>
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="font-serif text-5xl font-bold text-[#10231d]">$449</span>
-              <span className="text-base text-[#5a7f72]">/mo after trial</span>
-              <span className="text-base text-[#7a9c90] line-through">$749</span>
-            </div>
-            <div className="mt-1 text-sm font-semibold text-[#1d6a4a]">
-              14 days free first &mdash; no card required to start.
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="font-serif text-3xl font-bold text-[#10231d]">$449</span>
+              <span className="text-xs text-[#5a7f72]">/mo after trial</span>
+              <span className="text-xs text-[#7a9c90] line-through">$749</span>
+              <span className="ml-auto text-[11px] font-semibold text-[#1d6a4a]">14 days free, no card</span>
             </div>
 
-            <ul className="mt-6 space-y-2.5 text-sm text-[#2c4940]">
+            <ul className="mt-3 grid grid-cols-1 gap-x-4 gap-y-1 text-[12.5px] text-[#2c4940] sm:grid-cols-2">
               {[
-                "All 17 FAR 52.204-21 practices walked by Charlie, your vCO",
-                "Bid-ready package: SSP, signed affirmation memo, evidence inventory",
-                "Year-round monitoring via Microsoft 365 or Google Workspace",
-                "Evidence freshness alerts so you never bid with stale artifacts",
-                "Annual SPRS re-affirmation handled every October",
-                "Officer-reviewed before you submit &mdash; no DIY guesswork",
+                "All 17 FAR 52.204-21 practices walked by Charlie",
+                "Bid-ready package: SSP, affirmation, evidence",
+                "Year-round M365 / Google Workspace monitoring",
+                "Evidence freshness alerts",
+                "Annual SPRS re-affirmation handled",
+                "Officer-reviewed before you submit",
               ].map((b) => (
-                <li key={b} className="flex items-start gap-2.5">
+                <li key={b} className="flex items-start gap-2">
                   <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">&#10003;</span>
                   <span>{b}</span>
                 </li>
               ))}
             </ul>
 
-            <div className="mt-7">
-              <a
-                href="#checkout"
-                className="group flex w-full items-center justify-center gap-2 bg-[#0e2a23] px-6 py-4 text-base font-bold text-[#bdf2cf] shadow-[0_10px_30px_-10px_rgba(14,42,35,0.6)] transition-colors hover:bg-[#10342a]"
+            <div className="mt-4">
+              <TrialCheckoutButton
+                planId={PLAN_SLUG}
+                className="group flex w-full items-center justify-center gap-2 bg-[#0e2a23] px-5 py-3 text-sm font-bold text-[#bdf2cf] shadow-[0_10px_30px_-10px_rgba(14,42,35,0.6)] transition-colors hover:bg-[#10342a]"
               >
                 Start my 14-day free trial
-                <span aria-hidden className="text-lg transition-transform group-hover:translate-x-0.5">&rarr;</span>
-              </a>
-              <p className="mt-3 text-center text-xs text-[#5a7f72]">
-                No charge for 14 days &middot; Cancel anytime &middot; 14-day money-back guarantee from your first payment
+                <span aria-hidden className="text-base transition-transform group-hover:translate-x-0.5">&rarr;</span>
+              </TrialCheckoutButton>
+              <p className="mt-1.5 text-center text-[11px] text-[#5a7f72]">
+                No charge for 14 days &middot; Cancel anytime &middot; Money-back guarantee from first payment
               </p>
             </div>
           </div>
 
           {/* Why now / proof */}
-          <div className="flex flex-col gap-4">
-            <div className="border border-[#cfe3d9] bg-white p-6">
+          <div className="flex flex-col gap-3">
+            <div className="border border-[#cfe3d9] bg-white p-4">
               <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
                 Why now is the moment
               </div>
-              <ul className="mt-3 space-y-2.5 text-sm leading-relaxed text-[#2c4940]">
+              <ul className="mt-2 space-y-1.5 text-[12.5px] leading-snug text-[#2c4940]">
                 <li className="flex items-start gap-2">
                   <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">&middot;</span>
-                  <span>CMMC clauses are flowing down on new DoD solicitations &mdash; primes are filtering subs without affirmations.</span>
+                  <span>CMMC clauses flow down on new DoD solicitations &mdash; primes filter subs without affirmations.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">&middot;</span>
-                  <span>Set-asides for small business hit a record share of obligations &mdash; the pipeline is real but gated.</span>
+                  <span>Small-business set-asides at a record share &mdash; pipeline is real but gated.</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">&middot;</span>
-                  <span>Locked-in launch pricing ($449 vs $749 list) goes away after the next 100 seats.</span>
+                  <span>Launch pricing ($449 vs $749) ends after the next 100 seats.</span>
                 </li>
               </ul>
             </div>
-            <div className="border border-[#cfe3d9] bg-[#0e2a23] p-6 text-[#cce5da]">
+            <div className="border border-[#cfe3d9] bg-[#0e2a23] p-4 text-[#cce5da]">
               <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
                 vs. doing it yourself
               </div>
-              <div className="mt-3 grid grid-cols-3 gap-2 text-[11px]">
+              <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
                 <div>
                   <div className="font-bold uppercase tracking-[0.12em] text-[#7aab98]">DIY</div>
-                  <div className="mt-1">3&ndash;6 mo &middot; $5k+ &middot; stale fast</div>
+                  <div className="mt-0.5">3&ndash;6 mo &middot; $5k+ &middot; stale fast</div>
                 </div>
                 <div>
                   <div className="font-bold uppercase tracking-[0.12em] text-[#7aab98]">Audit firm</div>
-                  <div className="mt-1">$25k+ &middot; no monitoring</div>
+                  <div className="mt-0.5">$25k+ &middot; no monitoring</div>
                 </div>
                 <div>
                   <div className="font-bold uppercase tracking-[0.12em] text-[#bdf2cf]">Custodia</div>
-                  <div className="mt-1 font-semibold text-white">Days &middot; $449/mo &middot; watched</div>
+                  <div className="mt-0.5 font-semibold text-white">Days &middot; $449/mo &middot; watched</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div id="checkout" className="mt-14 scroll-mt-8">
-          <div className="mb-4 text-center">
-            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a06b1a]">
-              Activate your trial
-            </div>
-            <h2 className="mt-1 font-serif text-2xl font-bold text-[#10231d] md:text-3xl">
-              Start your 14-day free trial
-            </h2>
-            <p className="mt-2 text-sm text-[#5a7f72]">
-              You won&apos;t be charged for 14 days. Cancel anytime inside the platform.
-            </p>
-          </div>
-          <div className="border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)] md:p-8">
-            <PricingTable
-              appearance={{
-                elements: {
-                  pricingTableCard: "border border-[#cfe3d9] shadow-none",
-                  pricingTableCardHeader: "bg-white",
-                  pricingTableCardTitle: "font-serif text-[#10231d]",
-                  pricingTableCardFee: "text-[#10231d]",
-                  pricingTableCardFooter: "bg-white",
-                  button: "bg-[#0e2a23] hover:bg-[#10342a] text-[#bdf2cf] font-bold",
-                },
-                variables: {
-                  colorPrimary: "#0e2a23",
-                  colorText: "#10231d",
-                  colorBackground: "#ffffff",
-                  borderRadius: "0",
-                },
-              }}
-            />
-          </div>
-        </div>
-
-        <p className="mt-10 text-center text-sm text-[#5a7f72]">
+        <p className="mt-3 text-center text-[11px] text-[#5a7f72]">
           Questions before you start?{" "}
           <a
             href="mailto:support@custodia.dev"
@@ -222,7 +185,6 @@ export default async function UpgradePage() {
           >
             support@custodia.dev
           </a>
-          .
         </p>
       </main>
     </div>
