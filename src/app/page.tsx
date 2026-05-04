@@ -1,6 +1,6 @@
 "use client";
 
-import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { Show, SignInButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import Image from "next/image";
 import { useState, type ComponentProps } from "react";
@@ -240,7 +240,7 @@ export default function Home() {
             <span className="block">
               Federally Secure Your Business With CMMC Level&nbsp;1<span className="text-[#8dd2b1]">.</span>
             </span>
-            <span className="block bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text pb-2 text-transparent leading-[1.15]">
               Stay Secure Year Round<span className="text-[#8dd2b1] [-webkit-text-fill-color:#8dd2b1]">.</span>
             </span>
           </h1>
@@ -287,12 +287,14 @@ export default function Home() {
 
           <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center">
             <Show when="signed-out">
-              <SignUpButton mode="modal">
-                <button className="group inline-flex items-center justify-center gap-2 bg-[#bdf2cf] px-6 py-3.5 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.22)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_15px_55px_rgba(189,242,207,0.32)] sm:px-8 sm:py-4 md:text-lg">
-                  Start My 14-Day Free Trial
-                  <span aria-hidden className="text-lg leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
-                </button>
-              </SignUpButton>
+              <Link
+                href="/sign-up"
+                prefetch={false}
+                className="group inline-flex items-center justify-center gap-2 bg-[#bdf2cf] px-6 py-3.5 text-base font-bold text-[#0c2219] shadow-[0_10px_40px_rgba(189,242,207,0.22)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_15px_55px_rgba(189,242,207,0.32)] sm:px-8 sm:py-4 md:text-lg"
+              >
+                Start My 14-Day Free Trial
+                <span aria-hidden className="text-lg leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
+              </Link>
               <a
                 href="#pricing"
                 className="inline-flex items-center justify-center border border-[#2f8f6d]/50 bg-white/[0.02] px-6 py-3 text-base font-semibold text-[#cce5da] backdrop-blur transition-colors hover:border-[#8dd2b1]/70 hover:bg-white/[0.05] hover:text-white sm:px-7 sm:py-3.5"
@@ -454,12 +456,14 @@ export default function Home() {
                 ))}
               </ul>
               <Show when="signed-out">
-                <SignUpButton mode="modal">
-                  <button className="mt-7 inline-flex items-center gap-2 bg-[#bdf2cf] px-6 py-3 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
-                    Start My 14-Day Free Trial
-                    <span aria-hidden className="text-lg leading-none">&rarr;</span>
-                  </button>
-                </SignUpButton>
+                <Link
+                  href="/sign-up"
+                  prefetch={false}
+                  className="mt-7 inline-flex items-center gap-2 bg-[#bdf2cf] px-6 py-3 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]"
+                >
+                  Start My 14-Day Free Trial
+                  <span aria-hidden className="text-lg leading-none">&rarr;</span>
+                </Link>
               </Show>
               <Show when="signed-in">
                 <Link
@@ -1197,12 +1201,14 @@ export default function Home() {
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Show when="signed-out">
-                <SignUpButton mode="modal">
-                  <button className="inline-flex items-center gap-2 bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
-                    Start My 14-Day Free Trial
-                    <span aria-hidden className="text-lg leading-none">&rarr;</span>
-                  </button>
-                </SignUpButton>
+                <Link
+                  href="/sign-up"
+                  prefetch={false}
+                  className="inline-flex items-center gap-2 bg-[#bdf2cf] px-7 py-3.5 text-base font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]"
+                >
+                  Start My 14-Day Free Trial
+                  <span aria-hidden className="text-lg leading-none">&rarr;</span>
+                </Link>
                 <a href="#pricing" className="border border-[#2f8f6d]/40 px-7 py-3.5 text-base font-semibold text-[#cce5da] transition-colors hover:border-[#8dd2b1]/60 hover:text-white">
                   See pricing
                 </a>
@@ -1630,12 +1636,14 @@ export default function Home() {
               {/* CTA */}
               <div className="mt-10 flex flex-col items-center gap-3">
                 <Show when="signed-out">
-                  <SignUpButton mode="modal">
-                    <button className="group inline-flex w-full items-center justify-center gap-2 bg-[#bdf2cf] px-8 py-5 text-base font-black text-[#0c2219] shadow-[0_15px_40px_rgba(189,242,207,0.4)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_20px_55px_rgba(189,242,207,0.55)] md:text-lg">
-                      Start My 14-Day Free Trial
-                      <span aria-hidden className="text-xl leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
-                    </button>
-                  </SignUpButton>
+                  <Link
+                    href="/sign-up"
+                    prefetch={false}
+                    className="group inline-flex w-full items-center justify-center gap-2 bg-[#bdf2cf] px-8 py-5 text-base font-black text-[#0c2219] shadow-[0_15px_40px_rgba(189,242,207,0.4)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_20px_55px_rgba(189,242,207,0.55)] md:text-lg"
+                  >
+                    Start My 14-Day Free Trial
+                    <span aria-hidden className="text-xl leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
+                  </Link>
                 </Show>
                 <Show when="signed-in">
                   <Link
@@ -1858,12 +1866,14 @@ export default function Home() {
 
             <div className="mt-8">
               <Show when="signed-out">
-                <SignUpButton mode="modal">
-                  <button className="group inline-flex items-center justify-center gap-2 bg-[#bdf2cf] px-7 py-4 text-base font-black text-[#0c2219] shadow-[0_15px_40px_rgba(189,242,207,0.35)] transition-all hover:bg-[#a8e6c0] md:text-lg">
-                    Start My 14-Day Free Trial
-                    <span aria-hidden className="text-xl leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
-                  </button>
-                </SignUpButton>
+                <Link
+                  href="/sign-up"
+                  prefetch={false}
+                  className="group inline-flex items-center justify-center gap-2 bg-[#bdf2cf] px-7 py-4 text-base font-black text-[#0c2219] shadow-[0_15px_40px_rgba(189,242,207,0.35)] transition-all hover:bg-[#a8e6c0] md:text-lg"
+                >
+                  Start My 14-Day Free Trial
+                  <span aria-hidden className="text-xl leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
+                </Link>
               </Show>
               <Show when="signed-in">
                 <Link
@@ -2013,12 +2023,14 @@ export default function Home() {
           className="fixed inset-x-0 bottom-0 z-40 border-t border-[#cfe3d9] bg-white/95 px-4 py-3 backdrop-blur sm:hidden"
           style={{ paddingBottom: "calc(0.75rem + var(--safe-bottom))" }}
         >
-          <SignUpButton mode="modal">
-            <button className="flex w-full items-center justify-center gap-2 bg-[#0e2a23] px-6 py-3.5 text-sm font-bold text-[#bdf2cf] shadow-[0_8px_24px_-8px_rgba(14,42,35,0.5)] transition-colors hover:bg-[#10342a]">
-              Start 14-day free trial
-              <span aria-hidden>&rarr;</span>
-            </button>
-          </SignUpButton>
+          <Link
+            href="/sign-up"
+            prefetch={false}
+            className="flex w-full items-center justify-center gap-2 bg-[#0e2a23] px-6 py-3.5 text-sm font-bold text-[#bdf2cf] shadow-[0_8px_24px_-8px_rgba(14,42,35,0.5)] transition-colors hover:bg-[#10342a]"
+          >
+            Start 14-day free trial
+            <span aria-hidden>&rarr;</span>
+          </Link>
         </div>
       </Show>
 
