@@ -799,9 +799,12 @@ async function handleGenerateEvidenceArtifact(
   // Normalize filename + ensure correct extension.
   const ext = ARTIFACT_FORMAT_EXT[format];
   const baseName = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
-  const finalName = baseName.toLowerCase().endsWith(ext)
+  const withExt = baseName.toLowerCase().endsWith(ext)
     ? baseName
     : `${baseName}${ext}`;
+  // Prefix with `[slot:KEY]__` so the practice page can bucket this
+  // artifact into the correct slot card. Mirrors `uploadEvidenceAction`.
+  const finalName = `[slot:${slotKey}]__${withExt}`;
   const mime = ARTIFACT_FORMAT_MIME[format];
 
   const pathname = `evidence/${ctx.activeAssessmentId}/${ctx.activeControlId}/${Date.now()}-charlie-${finalName}`;
