@@ -25,6 +25,9 @@ import {
 import { ConnectorHint } from "../../../_components/ConnectorHint";
 import { PracticeWizard } from "./PracticeWizard";
 import { PracticeQuiz } from "./PracticeQuiz";
+import { PracticeChat } from "./PracticeChat";
+import { getPracticeSpec } from "@/lib/cmmc/practice-spec";
+import { getOrCreatePracticeConversation } from "@/lib/cmmc/practice-chat";
 import { getConnectorTokenStatus } from "@/lib/connectors/storage";
 import type { ConnectorProvider } from "@/lib/connectors/types";
 
@@ -88,6 +91,14 @@ export default async function ControlDetailPage(
     .filter((t) => !t.revoked_at)
     .map((t) => t.provider);
 
+  // Hybrid chat+evidence flow prefetch. If this practice has a spec entry,
+  // load (or seed) the per-practice conversation server-side so the
+  // PracticeChat client component opens fully populated.
+  const chatSpec = getPracticeSpec(controlId);
+  const chatConv = chatSpec
+    ? await getOrCreatePracticeConversation(id, controlId)
+    : null;
+
   return (
     <main>
       <div className="mx-auto max-w-4xl px-4 pt-4 md:px-6 md:pt-6">
@@ -97,6 +108,29 @@ export default async function ControlDetailPage(
         />
       </div>
       {(() => {
+        // Hybrid chat+evidence flow: opt-in per practice via practice-spec.ts.
+        // Today: AC.L1-3.1.1 only. The shape is identical for every other
+        // practice — adding `IA.L1-3.5.1` etc. is a pure data edit in
+        // `src/lib/cmmc/practice-spec.ts` (the chat UI/API auto-picks it up).
+        if (chatSpec && chatConv) {
+          return (
+            <PracticeChat
+              assessmentId={id}
+              controlId={controlId}
+              spec={chatSpec}
+              initialMessages={chatConv.messages}
+              initialVerdicts={chatConv.objective_verdicts}
+              initiallyLocked={!!chatConv.locked_at}
+              evidence={evidenceForClient}
+              uploadEvidenceAction={uploadEvidenceAction}
+              reReviewEvidenceAction={reReviewEvidenceAction}
+              prevId={prevId}
+              nextId={nextId}
+              currentIdx={currentIdx}
+              total={orderedIds.length}
+            />
+          );
+        }
         const quiz = getPracticeQuiz(controlId);
         if (quiz) {
           return (

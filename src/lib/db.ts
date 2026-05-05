@@ -1104,6 +1104,31 @@ export async function initDb() {
     CREATE INDEX IF NOT EXISTS idx_sprs_quiz_email_created
       ON sprs_quiz_submissions (email, created_at DESC)
   `;
+
+  // Hybrid chat+evidence flow: per-(assessment, control) conversation thread
+  // where Charlie acts as a CMMC consultant grounded in NIST 800-171A. Stores
+  // the full transcript as a JSONB array so the SSP can include the
+  // conversation as auditor-grade context. Distinct from the workspace-wide
+  // ai_conversations chat — that one is for general questions; this one is
+  // bound to a single practice and is used to grade objective coverage.
+  await sql`
+    CREATE TABLE IF NOT EXISTS practice_conversations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+      control_id TEXT NOT NULL,
+      messages JSONB NOT NULL DEFAULT '[]'::jsonb,
+      objective_verdicts JSONB NOT NULL DEFAULT '{}'::jsonb,
+      verdict_updated_at TIMESTAMPTZ,
+      locked_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (assessment_id, control_id)
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_practice_conversations_assessment
+      ON practice_conversations (assessment_id, control_id)
+  `;
 }
 
 /**
