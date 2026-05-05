@@ -1,14 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { EvidenceArtifactRow } from "@/lib/assessment";
 import type { PracticeSpec } from "@/lib/cmmc/practice-spec";
-import type {
-  ChatMessage,
-  ObjectiveVerdict,
-} from "@/lib/cmmc/practice-chat";
+import type { ObjectiveVerdict } from "@/lib/cmmc/practice-chat";
 import { EvidenceDropzone } from "./EvidenceDropzone";
 import { lockPracticeAction } from "./practice-chat-actions";
 
@@ -18,7 +15,6 @@ type Props = {
   assessmentId: string;
   controlId: string;
   spec: PracticeSpec;
-  initialMessages: ChatMessage[];
   initialVerdicts: Record<string, ObjectiveVerdict>;
   initiallyLocked: boolean;
   evidence: ClientEvidenceRow[];
@@ -42,81 +38,48 @@ const STATUS_LABEL: Record<ObjectiveVerdict["status"], string> = {
   missing: "MISSING",
 };
 
+/**
+ * Hybrid practice workspace. The middle pane on a /controls/:controlId page
+ * for any practice that has a CMMC spec entry. The CHAT itself lives in the
+ * Charlie rail (right side) — Charlie is grounded in this practice's NIST
+ * 800-171A objectives via the system prompt. After every Charlie turn, the
+ * rail POSTs to /sync and dispatches a 'practice-graded' window event with
+ * the fresh objective verdicts; this component listens and re-renders.
+ */
 export function PracticeChat(props: Props) {
   const router = useRouter();
-  const [messages, setMessages] = useState<ChatMessage[]>(props.initialMessages);
   const [verdicts, setVerdicts] = useState<Record<string, ObjectiveVerdict>>(
     props.initialVerdicts,
   );
   const [locked, setLocked] = useState(props.initiallyLocked);
-  const [draft, setDraft] = useState("");
-  const [sending, setSending] = useState(false);
   const [lockError, setLockError] = useState<string | null>(null);
+  const [reverifying, setReverifying] = useState(false);
   const [, startTransition] = useTransition();
-  const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Listen for practice-graded events from the Charlie rail. The rail emits
+  // one after every turn while the user is on this control's page.
   useEffect(() => {
-    scrollRef.current?.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [messages]);
+    type Detail = {
+      controlId: string;
+      objectiveVerdicts: Record<string, ObjectiveVerdict>;
+    };
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<Detail>).detail;
+      if (!detail || detail.controlId !== props.controlId) return;
+      if (detail.objectiveVerdicts) setVerdicts(detail.objectiveVerdicts);
+    };
+    window.addEventListener("practice-graded", handler as EventListener);
+    return () =>
+      window.removeEventListener("practice-graded", handler as EventListener);
+  }, [props.controlId]);
 
   const allCovered = props.spec.objectives.every(
     (o) => verdicts[o.letter]?.status === "covered",
   );
 
-  const onSend = async () => {
-    const text = draft.trim();
-    if (!text || sending || locked) return;
-    setSending(true);
-    const optimistic: ChatMessage = {
-      role: "user",
-      text,
-      at: new Date().toISOString(),
-    };
-    setMessages((m) => [...m, optimistic]);
-    setDraft("");
-    try {
-      const res = await fetch(
-        `/api/assessments/${props.assessmentId}/practice-chat/${encodeURIComponent(props.controlId)}`,
-        {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ message: text }),
-        },
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as {
-        assistantText: string;
-        objectiveVerdicts: Record<string, ObjectiveVerdict>;
-      };
-      setMessages((m) => [
-        ...m,
-        {
-          role: "assistant",
-          text: data.assistantText,
-          at: new Date().toISOString(),
-        },
-      ]);
-      if (data.objectiveVerdicts) setVerdicts(data.objectiveVerdicts);
-    } catch (err) {
-      setMessages((m) => [
-        ...m,
-        {
-          role: "assistant",
-          text: `Sorry — I hit an error sending that. ${
-            err instanceof Error ? err.message : "Try again in a moment."
-          }`,
-          at: new Date().toISOString(),
-        },
-      ]);
-    } finally {
-      setSending(false);
-    }
-  };
-
   const onReverify = async () => {
+    if (reverifying) return;
+    setReverifying(true);
     try {
       const res = await fetch(
         `/api/assessments/${props.assessmentId}/practice-chat/${encodeURIComponent(props.controlId)}/verify`,
@@ -127,8 +90,8 @@ export function PracticeChat(props: Props) {
         objectiveVerdicts: Record<string, ObjectiveVerdict>;
       };
       setVerdicts(data.objectiveVerdicts ?? {});
-    } catch {
-      // silent — manual button, user can retry
+    } finally {
+      setReverifying(false);
     }
   };
 
@@ -148,7 +111,7 @@ export function PracticeChat(props: Props) {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-4 md:px-6 md:py-6">
+    <div className="mx-auto max-w-4xl px-4 py-4 md:px-6 md:py-6">
       <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link
@@ -182,83 +145,30 @@ export function PracticeChat(props: Props) {
         </div>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
-        {/* Chat pane */}
-        <section className="flex h-[70vh] flex-col rounded-2xl border border-stone-200 bg-white shadow-sm">
-          <div
-            ref={scrollRef}
-            className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5"
-          >
-            <div className="space-y-4">
-              {messages.map((m, i) => (
-                <ChatBubble key={i} message={m} />
-              ))}
-              {sending && (
-                <div className="flex items-center gap-2 text-xs text-stone-500">
-                  <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-stone-400" />
-                  Charlie is typing…
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="border-t border-stone-200 px-3 py-3 md:px-4">
-            {locked ? (
-              <p className="text-sm text-stone-500">
-                This practice is locked. The transcript and evidence above are
-                a frozen snapshot for the assessor.
-              </p>
-            ) : (
-              <div className="flex items-end gap-2">
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      void onSend();
-                    }
-                  }}
-                  placeholder="Tell Charlie about your setup…"
-                  rows={2}
-                  className="min-h-[44px] flex-1 resize-none rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none focus:border-stone-500"
-                  disabled={sending}
-                />
-                <button
-                  type="button"
-                  onClick={() => void onSend()}
-                  disabled={!draft.trim() || sending}
-                  className="rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
-                >
-                  Send
-                </button>
-              </div>
-            )}
-          </div>
-        </section>
+      <CharliePrompt locked={locked} controlId={props.controlId} />
 
-        {/* Evidence + objectives pane */}
-        <aside className="flex h-[70vh] flex-col gap-3 overflow-y-auto pr-1">
-          <ObjectivesPanel
-            spec={props.spec}
-            verdicts={verdicts}
-            onReverify={onReverify}
-          />
-          <EvidencePanel
-            spec={props.spec}
-            evidence={props.evidence}
-            assessmentId={props.assessmentId}
-            controlId={props.controlId}
-            uploadEvidenceAction={props.uploadEvidenceAction}
-            reReviewEvidenceAction={props.reReviewEvidenceAction}
-            disabled={locked}
-          />
-          <LockPanel
-            allCovered={allCovered}
-            locked={locked}
-            lockError={lockError}
-            onLock={onLock}
-          />
-        </aside>
+      <div className="mt-4 space-y-4">
+        <ObjectivesPanel
+          spec={props.spec}
+          verdicts={verdicts}
+          onReverify={onReverify}
+          reverifying={reverifying}
+        />
+        <EvidencePanel
+          spec={props.spec}
+          evidence={props.evidence}
+          assessmentId={props.assessmentId}
+          controlId={props.controlId}
+          uploadEvidenceAction={props.uploadEvidenceAction}
+          reReviewEvidenceAction={props.reReviewEvidenceAction}
+          disabled={locked}
+        />
+        <LockPanel
+          allCovered={allCovered}
+          locked={locked}
+          lockError={lockError}
+          onLock={onLock}
+        />
       </div>
 
       <NavRow
@@ -270,88 +180,59 @@ export function PracticeChat(props: Props) {
   );
 }
 
-function ChatBubble({ message }: { message: ChatMessage }) {
-  const isUser = message.role === "user";
-  return (
-    <div className={isUser ? "flex justify-end" : "flex justify-start"}>
-      <div
-        className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-          isUser
-            ? "bg-stone-900 text-white"
-            : "bg-stone-100 text-stone-900 ring-1 ring-stone-200"
-        }`}
-      >
-        {!isUser && (
-          <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stone-500">
-            Charlie
-          </div>
-        )}
-        <RenderMarkdownLite text={message.text} />
+function CharliePrompt({ locked, controlId }: { locked: boolean; controlId: string }) {
+  if (locked) {
+    return (
+      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        This practice is locked as MET. The conversation transcript and
+        evidence below are a frozen snapshot the assessor can read end-to-end.
       </div>
+    );
+  }
+  return (
+    <div className="rounded-xl border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3 text-sm text-[#10231d]">
+      <div className="mb-1 flex items-center gap-2">
+        <span className="inline-flex items-center justify-center bg-[#0e2a23] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]">
+          vCO
+        </span>
+        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+          Talk to Charlie on the right →
+        </span>
+      </div>
+      <p className="text-stone-700">
+        Charlie is loaded with the official CMMC requirement for{" "}
+        <strong>{controlId}</strong>. As you chat, the assessment objectives
+        below light up green. When all six are covered and your evidence is
+        attached, the lock button unlocks.
+      </p>
     </div>
   );
-}
-
-/** Tiny markdown-ish renderer: paragraphs, **bold**, inline `code`. */
-function RenderMarkdownLite({ text }: { text: string }) {
-  const paragraphs = text.split(/\n{2,}/);
-  return (
-    <>
-      {paragraphs.map((p, i) => (
-        <p key={i} className={i === 0 ? "" : "mt-2"}>
-          {renderInline(p)}
-        </p>
-      ))}
-    </>
-  );
-}
-
-function renderInline(s: string): React.ReactNode {
-  // Replace **bold** segments
-  const parts: React.ReactNode[] = [];
-  const regex = /\*\*([^*]+)\*\*|`([^`]+)`/g;
-  let lastIdx = 0;
-  let m: RegExpExecArray | null;
-  let key = 0;
-  while ((m = regex.exec(s))) {
-    if (m.index > lastIdx) parts.push(s.slice(lastIdx, m.index));
-    if (m[1] != null) parts.push(<strong key={key++}>{m[1]}</strong>);
-    else if (m[2] != null)
-      parts.push(
-        <code
-          key={key++}
-          className="rounded bg-stone-200/70 px-1 py-0.5 font-mono text-xs"
-        >
-          {m[2]}
-        </code>,
-      );
-    lastIdx = m.index + m[0].length;
-  }
-  if (lastIdx < s.length) parts.push(s.slice(lastIdx));
-  return parts;
 }
 
 function ObjectivesPanel({
   spec,
   verdicts,
   onReverify,
+  reverifying,
 }: {
   spec: PracticeSpec;
   verdicts: Record<string, ObjectiveVerdict>;
   onReverify: () => void;
+  reverifying: boolean;
 }) {
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-stone-900">
-          Assessment objectives
+          Assessment objectives — what an auditor checks
         </h2>
         <button
           type="button"
           onClick={onReverify}
-          className="text-xs text-stone-500 underline-offset-2 hover:text-stone-800 hover:underline"
+          disabled={reverifying}
+          className="text-xs text-stone-500 underline-offset-2 hover:text-stone-800 hover:underline disabled:opacity-50"
         >
-          Re-grade
+          {reverifying ? "Re-grading…" : "Re-grade"}
         </button>
       </div>
       <ul className="space-y-2">
@@ -410,10 +291,10 @@ function EvidencePanel({
       <h2 className="mb-1 text-sm font-semibold text-stone-900">Evidence</h2>
       <p className="mb-3 text-xs text-stone-500">
         Drop in the artifacts below. Charlie reviews each upload and re-grades
-        the objectives on the right.
+        the objectives above.
       </p>
 
-      <div className="mb-3 space-y-2">
+      <div className="mb-3 grid gap-2 md:grid-cols-2">
         {spec.evidenceSlots.map((slot) => (
           <div
             key={slot.key}
@@ -537,9 +418,8 @@ function LockPanel({
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
         <div className="font-semibold">Practice locked as MET</div>
         <p className="mt-1 text-emerald-800">
-          The chat transcript and evidence above are a frozen snapshot. The
-          assessor can read this end-to-end as proof of how each objective
-          was satisfied.
+          The chat transcript and evidence are a frozen snapshot. The assessor
+          can read this end-to-end as proof of how each objective was satisfied.
         </p>
       </div>
     );

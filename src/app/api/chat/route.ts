@@ -12,6 +12,7 @@ import {
 } from "@/lib/ai/memory";
 import { runOfficerAgentStream, SSE_HEADERS } from "@/lib/ai/stream";
 import { ensureOrgForUser, getBusinessProfile } from "@/lib/assessment";
+import { getPracticeSpec } from "@/lib/cmmc/practice-spec";
 import {
   checkRateLimit,
   rateLimitKey,
@@ -127,6 +128,43 @@ function buildWorkspaceContextBlock(input: {
     parts.push(
       `- Currently viewing practice: ${input.pageContext.controlId} (anchor answers to this control when relevant)`,
     );
+    // Hybrid practice mode: when the user is on a practice with a published
+    // CMMC L1 spec, embed the verbatim control statement, NIST 800-171A
+    // objectives, and required evidence slots so Charlie acts as a CMMC
+    // consultant for THIS practice — one shaped question at a time, mapping
+    // the user's plain-English answers onto each objective letter.
+    const spec = getPracticeSpec(input.pageContext.controlId);
+    if (spec) {
+      parts.push("");
+      parts.push(`## ACTIVE PRACTICE — guided walkthrough mode`);
+      parts.push(`The user is working **${spec.controlId} — ${spec.shortName}** right now. The middle pane shows live objective coverage as the conversation progresses; you are the chat. Stay focused on filling each objective letter [a]/[b]/[c]/...`);
+      parts.push("");
+      parts.push(`### Verbatim control statement (FAR 52.204-21 / NIST 800-171 §3.1.1)`);
+      parts.push(`"${spec.statement}"`);
+      parts.push("");
+      parts.push(`### NIST 800-171A objectives the assessor will check:`);
+      for (const o of spec.objectives) {
+        parts.push(`  [${o.letter}] ${o.text}`);
+      }
+      parts.push("");
+      parts.push(`### Evidence slots an assessor accepts:`);
+      for (const s of spec.evidenceSlots) {
+        parts.push(
+          `  - ${s.label} (${s.required ? "required" : "optional"}; satisfies [${s.satisfies.join(", ")}]): ${s.hint}`,
+        );
+      }
+      parts.push("");
+      parts.push(
+        `### Behaviour for this practice:
+- ONE question at a time. Plain English. No jargon without defining it.
+- The user is not a security expert. Assume zero prior knowledge.
+- Convert their plain description of their business into a clean mapping of each objective letter onto reality.
+- When you have enough for an objective, briefly note "Got what I need for [letter]" and move on.
+- If the user is missing a required artifact, tell them concretely what to upload AND offer to draft it for them.
+- NEVER mark the practice MET on your own — the platform handles that. You just gather facts.
+- Keep replies short — 2-5 sentences usually. The middle pane is doing the visual tracking; you don't need to summarize what's covered.`,
+      );
+    }
   }
   if (input.pageContext?.assessmentId) {
     parts.push(`- Active assessment: ${input.pageContext.assessmentId}`);

@@ -118,7 +118,6 @@ export default async function ControlDetailPage(
               assessmentId={id}
               controlId={controlId}
               spec={chatSpec}
-              initialMessages={chatConv.messages}
               initialVerdicts={chatConv.objective_verdicts}
               initiallyLocked={!!chatConv.locked_at}
               evidence={evidenceForClient}

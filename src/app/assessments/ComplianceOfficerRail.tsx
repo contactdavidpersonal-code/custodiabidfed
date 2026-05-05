@@ -244,6 +244,11 @@ export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
       { id: assistantId, role: "assistant", text: "", tools: [] },
     ]);
 
+    // Capture the final assistant text as it streams so we can mirror the
+    // turn into the per-practice transcript when this chat is anchored to
+    // a practice page (hybrid flow).
+    let finalAssistantText = "";
+
     const patchAssistant = (patch: (m: Message) => Message) => {
       setMessages((prev) =>
         prev.map((m) => (m.id === assistantId ? patch(m) : m)),
@@ -251,12 +256,13 @@ export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
     };
 
     try {
+      const pageContext = extractPageContext(pathname);
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
-          pageContext: extractPageContext(pathname),
+          pageContext,
         }),
       });
       if (!res.ok || !res.body) {
@@ -267,6 +273,7 @@ export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
         if (event === "delta") {
           const t = typeof data.text === "string" ? data.text : "";
           if (!t) return;
+          finalAssistantText += t;
           patchAssistant((m) => ({ ...m, text: m.text + t }));
         } else if (event === "tool_start") {
           const id = String(data.id ?? "");
@@ -293,6 +300,45 @@ export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
           }));
         }
       });
+
+      // Hybrid practice flow: if the user is on a /controls/:controlId page,
+      // mirror this turn into the practice-scoped transcript and re-grade
+      // the NIST 800-171A objectives. The middle pane listens for the
+      // 'practice-graded' window event and refreshes its panels.
+      if (
+        pageContext.assessmentId &&
+        pageContext.controlId &&
+        finalAssistantText.trim()
+      ) {
+        try {
+          const syncRes = await fetch(
+            `/api/assessments/${pageContext.assessmentId}/practice-chat/${encodeURIComponent(pageContext.controlId)}/sync`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                userMessage: text,
+                assistantText: finalAssistantText,
+              }),
+            },
+          );
+          if (syncRes.ok) {
+            const data = (await syncRes.json()) as {
+              objectiveVerdicts?: Record<string, unknown>;
+            };
+            window.dispatchEvent(
+              new CustomEvent("practice-graded", {
+                detail: {
+                  controlId: pageContext.controlId,
+                  objectiveVerdicts: data.objectiveVerdicts ?? {},
+                },
+              }),
+            );
+          }
+        } catch (err) {
+          console.warn("practice-chat sync failed", err);
+        }
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setErrorMsg(msg);

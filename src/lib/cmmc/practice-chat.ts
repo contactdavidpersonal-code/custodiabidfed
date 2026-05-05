@@ -127,16 +127,16 @@ export async function lockPractice(
 }
 
 function buildOpener(spec: PracticeSpec): string {
+  // This text seeds the per-practice transcript and ends up in the SSP as
+  // the assessor-readable opening of the conversation. The user never sees
+  // it directly — the live chat happens in the Charlie rail. Keep it tight
+  // and assessor-oriented.
   return [
-    `Hi — I'm Charlie, your virtual compliance officer. Let's walk through **${spec.controlId} — ${spec.shortName}** together.`,
+    `[Guided walkthrough — ${spec.controlId} ${spec.shortName}]`,
     ``,
-    `**The official requirement:** ${spec.statement}`,
+    `Control statement: ${spec.statement}`,
     ``,
-    `In plain English: ${spec.oneLiner}`,
-    ``,
-    `I'll ask a few short questions about how your business actually works. As we talk, I'll fill in each of the ${spec.objectives.length} assessment objectives an auditor will check (you can see them on the right). When we're done, we'll attach the evidence that proves it — a roster, a one-paragraph procedure, and a screenshot or two — and lock the practice as MET.`,
-    ``,
-    `To start: **where does Federal Contract Information actually live in your business today?** Email? A shared drive? A laptop? Just describe it the way you'd describe it to a friend — I'll figure out the compliance mapping.`,
+    `Conversation captured below maps the operator's environment onto each NIST 800-171A objective letter [a]–[${spec.objectives[spec.objectives.length - 1]?.letter ?? "z"}]. Evidence artifacts attached to this practice are listed in the SSP after the transcript.`,
   ].join("\n");
 }
 
