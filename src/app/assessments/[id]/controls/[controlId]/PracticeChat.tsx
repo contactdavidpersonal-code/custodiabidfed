@@ -67,11 +67,15 @@ export function PracticeChat(props: Props) {
       const detail = (e as CustomEvent<Detail>).detail;
       if (!detail || detail.controlId !== props.controlId) return;
       if (detail.objectiveVerdicts) setVerdicts(detail.objectiveVerdicts);
+      // Charlie may have generated artifacts via tool calls during the
+      // turn — refresh the server component so newly-created evidence
+      // shows in the panel below.
+      startTransition(() => router.refresh());
     };
     window.addEventListener("practice-graded", handler as EventListener);
     return () =>
       window.removeEventListener("practice-graded", handler as EventListener);
-  }, [props.controlId]);
+  }, [props.controlId, router]);
 
   const allCovered = props.spec.objectives.every(
     (o) => verdicts[o.letter]?.status === "covered",
@@ -367,6 +371,7 @@ function EvidenceRow({
         : verdict === "not_relevant"
           ? "text-rose-700 bg-rose-50 ring-rose-200"
           : "text-stone-700 bg-stone-50 ring-stone-200";
+  const generatedByCharlie = evidence.ai_review_model === "charlie-generated";
   return (
     <div className="rounded-lg border border-stone-200 px-3 py-2 text-xs">
       <div className="flex items-center justify-between gap-2">
@@ -378,16 +383,29 @@ function EvidenceRow({
         >
           {evidence.filename}
         </a>
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ring-1 ${verdictTone}`}
-        >
-          {verdict ?? "pending"}
-        </span>
+        <div className="flex shrink-0 items-center gap-1">
+          {generatedByCharlie && (
+            <span className="rounded-full bg-[#0e2a23] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#bdf2cf]">
+              Charlie
+            </span>
+          )}
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ring-1 ${verdictTone}`}
+          >
+            {verdict ?? "pending"}
+          </span>
+        </div>
       </div>
       {evidence.ai_review_summary && (
         <p className="mt-1 text-stone-600">{evidence.ai_review_summary}</p>
       )}
-      {!disabled && verdict && (
+      {generatedByCharlie && (
+        <p className="mt-1 text-[11px] italic text-stone-500">
+          Charlie drafted this from your conversation. Open it, check the
+          details are correct, and replace with your own version any time.
+        </p>
+      )}
+      {!disabled && verdict && !generatedByCharlie && (
         <form action={reReviewEvidenceAction} className="mt-1">
           <input type="hidden" name="artifactId" value={evidence.id} />
           <button

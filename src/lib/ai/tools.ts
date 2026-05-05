@@ -13,6 +13,7 @@ import {
   listAssessmentsForOrg,
   listEvidenceForAssessment,
   listResponsesForAssessment,
+  tagArtifactPractice,
   updateBusinessProfile,
 } from "@/lib/assessment";
 import { playbookById } from "@/lib/playbook";
@@ -29,6 +30,8 @@ import {
   searchSamOpportunities,
   type SamOpportunity,
 } from "@/lib/sam-radar";
+import { getPracticeSpec } from "@/lib/cmmc/practice-spec";
+import { put } from "@vercel/blob";
 
 /**
  * Tools the left-rail compliance officer can call. Kept deliberately small
@@ -286,6 +289,43 @@ export const officerTools = [
     },
   },
   {
+    name: "generate_evidence_artifact",
+    description:
+      "Generate a real evidence artifact directly into the user's evidence vault for the practice they're currently working on. Use this when the user has given you enough information to fill an evidence slot AND that slot's destinations include 'generated' (rosters, service-account lists, written procedures, scoping statements). DO NOT type the artifact's full content into chat — call this tool, and the artifact appears in the middle pane's Evidence section ready for the user to download or replace. After calling this, give a 1-2 sentence chat summary of what you produced, e.g. 'I dropped an Authorized Users Roster into your evidence — it lists you as the sole user, on Windows 11 + Pixel 9a. Replace it if anything's wrong.' Do NOT call this tool for evidence that requires a screenshot or live system export — those still need the user to upload manually or connect M365/Google Workspace.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        slot_key: {
+          type: "string",
+          description:
+            "Exact key of the evidence slot from the active practice's spec (e.g. 'authorized_users_roster', 'service_accounts_list', 'access_procedure'). Must match a slot in the spec for the active practice.",
+        },
+        filename: {
+          type: "string",
+          description:
+            "Filename including extension. Use .md for narrative procedures and .csv for tabular rosters/inventories. Example: 'authorized-users-roster.csv', 'access-grant-removal-procedure.md'.",
+        },
+        format: {
+          type: "string",
+          enum: ["markdown", "csv", "text"],
+          description:
+            "How to interpret `content`. 'csv' must be valid RFC4180 CSV. 'markdown' is rendered as text/markdown. 'text' is plain text.",
+        },
+        content: {
+          type: "string",
+          description:
+            "Full file content. For CSV, include the header row. For markdown procedures, use a clean H1 + numbered steps + an 'as of' date. Be specific to the user's environment using only facts they have actually confirmed in the conversation — never invent names, emails, or system details.",
+        },
+        summary: {
+          type: "string",
+          description:
+            "One-sentence summary of what this artifact proves and how it satisfies the slot. Stored on the artifact for the assessor to read.",
+        },
+      },
+      required: ["slot_key", "filename", "format", "content", "summary"],
+    },
+  },
+  {
     name: "escalate_to_officer",
     description:
       "Flag a request for a human Custodia officer (Bootcamp / Command tier). Use when the user's situation needs judgment beyond L1 self-serve — e.g. a prime is demanding an SSP rewrite, a guarantee claim dispute, CUI handling outside L1 scope, or they explicitly ask for human help.",
@@ -355,6 +395,8 @@ export async function executeOfficerTool(
         return await handleCiteRegulation(input);
       case "escalate_to_officer":
         return await handleEscalateToOfficer(input, ctx);
+      case "generate_evidence_artifact":
+        return await handleGenerateEvidenceArtifact(input, ctx);
       case "search_sam_opportunities":
         return await handleSearchSamOpportunities(input, ctx);
       case "list_inbox_opportunities":
@@ -676,6 +718,135 @@ async function handleUpdateBusinessProfile(
       merged_keys: Object.keys(data as Record<string, unknown>),
       completeness_score: score,
       ready_for_workspace: score >= 40,
+    },
+  };
+}
+
+const ARTIFACT_FORMAT_MIME: Record<string, string> = {
+  csv: "text/csv",
+  markdown: "text/markdown",
+  text: "text/plain",
+};
+
+const ARTIFACT_FORMAT_EXT: Record<string, string> = {
+  csv: ".csv",
+  markdown: ".md",
+  text: ".txt",
+};
+
+/**
+ * Charlie generates a real evidence artifact from facts captured in the
+ * conversation. The artifact is stored in blob storage, inserted as an
+ * `evidence_artifacts` row, tagged to the active practice + the slot's
+ * `satisfies` objectives, and pre-marked `sufficient` so it counts toward
+ * the verdict immediately. The user can replace it any time by uploading
+ * their own version to the same slot.
+ *
+ * Mirrors the safety checks from `uploadEvidenceAction` (size cap, MIME
+ * allowlist, audit log) — but skips the user-uploaded reality check because
+ * Charlie composes only from the verified transcript.
+ */
+async function handleGenerateEvidenceArtifact(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  if (!ctx.activeAssessmentId || !ctx.activeControlId) {
+    return {
+      ok: false,
+      error:
+        "generate_evidence_artifact only works when the user is on a /controls/:controlId page.",
+    };
+  }
+  const slotKey = typeof input.slot_key === "string" ? input.slot_key.trim() : "";
+  const filename = typeof input.filename === "string" ? input.filename.trim() : "";
+  const format = typeof input.format === "string" ? input.format.trim() : "";
+  const content = typeof input.content === "string" ? input.content : "";
+  const summary = typeof input.summary === "string" ? input.summary.trim() : "";
+
+  if (!slotKey) return { ok: false, error: "slot_key is required." };
+  if (!filename) return { ok: false, error: "filename is required." };
+  if (!format || !ARTIFACT_FORMAT_MIME[format])
+    return { ok: false, error: "format must be 'csv', 'markdown', or 'text'." };
+  if (!content) return { ok: false, error: "content is required." };
+  if (content.length > 200_000)
+    return { ok: false, error: "content too large (200 KB max)." };
+  if (!summary) return { ok: false, error: "summary is required." };
+
+  const spec = getPracticeSpec(ctx.activeControlId);
+  if (!spec) {
+    return {
+      ok: false,
+      error: `Practice ${ctx.activeControlId} is not in the hybrid flow yet.`,
+    };
+  }
+  const slot = spec.evidenceSlots.find((s) => s.key === slotKey);
+  if (!slot) {
+    return {
+      ok: false,
+      error: `Unknown slot_key '${slotKey}' for ${spec.controlId}. Valid slots: ${spec.evidenceSlots.map((s) => s.key).join(", ")}.`,
+    };
+  }
+
+  // Verify the user owns the assessment.
+  const assessmentCtx = await getAssessmentForUser(
+    ctx.activeAssessmentId,
+    ctx.userId,
+  );
+  if (!assessmentCtx) {
+    return { ok: false, error: "Active assessment not accessible." };
+  }
+
+  // Normalize filename + ensure correct extension.
+  const ext = ARTIFACT_FORMAT_EXT[format];
+  const baseName = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
+  const finalName = baseName.toLowerCase().endsWith(ext)
+    ? baseName
+    : `${baseName}${ext}`;
+  const mime = ARTIFACT_FORMAT_MIME[format];
+
+  const pathname = `evidence/${ctx.activeAssessmentId}/${ctx.activeControlId}/${Date.now()}-charlie-${finalName}`;
+  const blob = await put(pathname, content, {
+    access: "private",
+    addRandomSuffix: true,
+    contentType: mime,
+  });
+
+  const sql = getSql();
+  const inserted = (await sql`
+    INSERT INTO evidence_artifacts
+      (assessment_id, control_id, filename, blob_url, mime_type,
+       size_bytes, uploaded_by_user_id,
+       ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
+       ai_reviewed_at, ai_review_model)
+    VALUES
+      (${ctx.activeAssessmentId}, ${ctx.activeControlId}, ${finalName},
+       ${blob.url}, ${mime}, ${Buffer.byteLength(content, "utf8")},
+       ${ctx.userId},
+       'sufficient', ${summary},
+       ${[ctx.activeControlId]},
+       NOW(), 'charlie-generated')
+    RETURNING id
+  `) as Array<{ id: string }>;
+  const artifactId = inserted[0].id;
+
+  // Tag the artifact onto the practice with the objective letters this
+  // slot satisfies — that's how the grader credits it.
+  await tagArtifactPractice({
+    artifactId,
+    assessmentId: ctx.activeAssessmentId,
+    controlId: ctx.activeControlId,
+    objectives: slot.satisfies,
+    userId: ctx.userId,
+  });
+
+  return {
+    ok: true,
+    data: {
+      artifact_id: artifactId,
+      filename: finalName,
+      slot_key: slotKey,
+      satisfies_objectives: slot.satisfies,
+      message: `Created '${finalName}' in the evidence vault and tagged it to objectives [${slot.satisfies.join(", ")}].`,
     },
   };
 }

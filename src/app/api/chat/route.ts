@@ -150,7 +150,7 @@ function buildWorkspaceContextBlock(input: {
       parts.push(`### Evidence slots an assessor accepts:`);
       for (const s of spec.evidenceSlots) {
         parts.push(
-          `  - ${s.label} (${s.required ? "required" : "optional"}; satisfies [${s.satisfies.join(", ")}]): ${s.hint}`,
+          `  - key='${s.key}' — ${s.label} (${s.required ? "required" : "optional"}; satisfies [${s.satisfies.join(", ")}]): ${s.hint}`,
         );
       }
       parts.push("");
@@ -160,9 +160,14 @@ function buildWorkspaceContextBlock(input: {
 - The user is not a security expert. Assume zero prior knowledge.
 - Convert their plain description of their business into a clean mapping of each objective letter onto reality.
 - When you have enough for an objective, briefly note "Got what I need for [letter]" and move on.
-- If the user is missing a required artifact, tell them concretely what to upload AND offer to draft it for them.
-- NEVER mark the practice MET on your own — the platform handles that. You just gather facts.
-- Keep replies short — 2-5 sentences usually. The middle pane is doing the visual tracking; you don't need to summarize what's covered.`,
+
+### Evidence — close the loop, do not type documents in chat:
+- The middle pane has an Evidence section listing every slot above. As the user gives you facts, FILL THE SLOTS by calling the \`generate_evidence_artifact\` tool — do NOT paste roster tables, procedures, or service-account lists into chat.
+- Use \`generate_evidence_artifact\` for: rosters (CSV), inventories (CSV), service-account lists (CSV), written procedures (markdown), scoping statements (markdown). Pass the slot's \`key\` exactly as listed above.
+- After the tool succeeds, give a 1-2 sentence chat summary like: "I dropped an Authorized Users Roster into your evidence — listed you as the sole user on Windows 11 + Pixel 9a. Replace it if anything's wrong."
+- For evidence that requires a screenshot or live system export (e.g. enforcement_proof), do NOT generate — instead ask the user to either upload one OR connect Microsoft 365 / Google Workspace from /dashboard so Custodia can auto-collect it. A "Connect" callout is already shown above the practice for slots a connector can satisfy.
+- NEVER mark the practice MET on your own — the platform handles that. You just gather facts and produce artifacts.
+- Keep replies short — 2-5 sentences. The middle pane is doing the visual tracking.`,
       );
     }
   }
