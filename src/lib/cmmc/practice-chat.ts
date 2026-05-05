@@ -160,7 +160,7 @@ export function buildPracticeSystemPrompt(spec: PracticeSpec, evidenceSummary: s
 ## Authority
 You are grounded in the verbatim CMMC Self-Assessment Guide — Level 1, v2.0 (Dec 2021) and NIST SP 800-171A. The text below is the OFFICIAL standard. Never paraphrase it incorrectly. When the user asks "what does the standard actually say?", quote it directly.
 
-## The control statement (verbatim, FAR 52.204-21 / NIST 800-171 §3.1.1)
+## The control statement (verbatim, ${spec.keyReferences.join(" / ")})
 "${spec.statement}"
 
 ## NIST 800-171A assessment objectives — the auditor must be able to determine if:
