@@ -38,6 +38,27 @@ const statusPillStyles: Record<ControlResponseRow["status"], string> = {
   not_applicable: "bg-[#f1f6f3] text-[#5a7d70] ring-[#cfe3d9]",
 };
 
+// Per-practice progress for the small bar at the bottom of each card.
+// `met` and `not_applicable` are 100% — the practice is resolved either way.
+// `partial` is 50% — user has some evidence but not all six objectives.
+// `no` is 25% — user has acknowledged the practice but hasn't fixed it.
+// `unanswered` is 0%.
+const statusPercent: Record<ControlResponseRow["status"], number> = {
+  unanswered: 0,
+  yes: 100,
+  partial: 50,
+  no: 25,
+  not_applicable: 100,
+};
+
+const statusBarColor: Record<ControlResponseRow["status"], string> = {
+  unanswered: "bg-[#cfe3d9]",
+  yes: "bg-[#2f8f6d]",
+  partial: "bg-[#a06b1a]",
+  no: "bg-[#b03a2e]",
+  not_applicable: "bg-[#5a7d70]",
+};
+
 const domainLabels: Record<(typeof controlDomains)[number], string> = {
   AC: "Access Control",
   IA: "Identification & Authentication",
@@ -185,6 +206,7 @@ export default async function AssessmentOverviewPage(
                   {domainPractices.map((practice) => {
                     const resp = responseByControl.get(practice.id);
                     const status = resp?.status ?? "unanswered";
+                    const percent = statusPercent[status];
                     return (
                       <Link
                         key={practice.id}
@@ -212,6 +234,17 @@ export default async function AssessmentOverviewPage(
                             <p className="mt-1.5 line-clamp-2 text-sm text-[#5a7d70]">
                               {practice.plainEnglish}
                             </p>
+                            <div className="mt-3 flex items-center gap-2">
+                              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#f1f6f3]">
+                                <div
+                                  className={`h-full ${statusBarColor[status]} transition-[width] duration-500 ease-out`}
+                                  style={{ width: `${Math.max(2, percent)}%` }}
+                                />
+                              </div>
+                              <span className="shrink-0 text-[10px] font-bold tabular-nums text-[#5a7d70]">
+                                {percent}%
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </Link>

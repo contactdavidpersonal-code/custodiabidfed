@@ -285,12 +285,31 @@ export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
         } else if (event === "tool_end") {
           const id = String(data.id ?? "");
           const ok = data.ok !== false;
-          patchAssistant((m) => ({
-            ...m,
-            tools: m.tools.map((t) =>
-              t.id === id ? { ...t, status: ok ? "done" : "error" } : t,
-            ),
-          }));
+          patchAssistant((m) => {
+            const tools = m.tools.map((t) =>
+              t.id === id
+                ? { ...t, status: (ok ? "done" : "error") as ToolEvent["status"] }
+                : t,
+            );
+            // If a successful tool call likely changed practice state
+            // (artifact creation, evidence tagging), tell the middle
+            // pane to re-render right away — don't wait for the full
+            // stream + /sync round-trip.
+            if (ok) {
+              const tool = tools.find((t) => t.id === id);
+              if (
+                tool?.name === "generate_evidence_artifact" ||
+                tool?.name === "tag_evidence_to_practice"
+              ) {
+                window.dispatchEvent(
+                  new CustomEvent("evidence-changed", {
+                    detail: { tool: tool.name },
+                  }),
+                );
+              }
+            }
+            return { ...m, tools };
+          });
         } else if (event === "error") {
           const msg = typeof data.message === "string" ? data.message : "unknown error";
           setErrorMsg(msg);

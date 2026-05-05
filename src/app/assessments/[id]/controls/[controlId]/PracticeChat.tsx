@@ -83,8 +83,51 @@ export function PracticeChat(props: Props) {
       window.removeEventListener("practice-graded", handler as EventListener);
   }, [props.controlId, router]);
 
+  // Listen for `evidence-changed` events fired *during* Charlie's stream
+  // (immediately after a successful tool call) so the slot rows fill in
+  // the moment Charlie generates an artifact — no need to wait for the
+  // turn to finish or for /sync to grade objectives.
+  useEffect(() => {
+    const handler = () => {
+      startTransition(() => router.refresh());
+    };
+    window.addEventListener("evidence-changed", handler);
+    return () => window.removeEventListener("evidence-changed", handler);
+  }, [router]);
+
   const allCovered = props.spec.objectives.every(
     (o) => verdicts[o.letter]?.status === "covered",
+  );
+
+  // Live, denormalized progress for this practice. Combines two signals:
+  //   1. Objectives covered (Charlie's grading verdict per 800-171A letter)
+  //   2. Required evidence slots filled (any artifact tagged to the slot
+  //      with a 'sufficient' AI-review verdict)
+  // Both are weighted 50/50 so the bar advances on conversation AND on
+  // file collection — the user sees motion either way.
+  const totalObjectives = props.spec.objectives.length;
+  const coveredObjectives = props.spec.objectives.filter(
+    (o) => verdicts[o.letter]?.status === "covered",
+  ).length;
+  const partialObjectives = props.spec.objectives.filter(
+    (o) => verdicts[o.letter]?.status === "partial",
+  ).length;
+  const requiredSlots = props.spec.evidenceSlots.filter((s) => s.required);
+  const filledSlots = requiredSlots.filter((s) => {
+    const slotKey = s.key;
+    return props.evidence.some((ev) => {
+      if (ev.ai_review_verdict !== "sufficient") return false;
+      return inferSlotKey(ev.filename, props.spec) === slotKey;
+    });
+  }).length;
+  const objectiveScore =
+    totalObjectives === 0
+      ? 1
+      : (coveredObjectives + 0.5 * partialObjectives) / totalObjectives;
+  const evidenceScore =
+    requiredSlots.length === 0 ? 1 : filledSlots / requiredSlots.length;
+  const overallPercent = Math.round(
+    (objectiveScore * 0.5 + evidenceScore * 0.5) * 100,
   );
 
   const onReverify = async () => {
@@ -155,6 +198,15 @@ export function PracticeChat(props: Props) {
         </div>
       </header>
 
+      <PracticeProgressBar
+        percent={locked ? 100 : overallPercent}
+        coveredObjectives={coveredObjectives}
+        totalObjectives={totalObjectives}
+        filledSlots={filledSlots}
+        totalSlots={requiredSlots.length}
+        locked={locked}
+      />
+
       <CharliePrompt locked={locked} controlId={props.controlId} />
 
       <div className="mt-4 space-y-4">
@@ -187,6 +239,67 @@ export function PracticeChat(props: Props) {
         prevId={props.prevId}
         nextId={props.nextId}
       />
+    </div>
+  );
+}
+
+function PracticeProgressBar({
+  percent,
+  coveredObjectives,
+  totalObjectives,
+  filledSlots,
+  totalSlots,
+  locked,
+}: {
+  percent: number;
+  coveredObjectives: number;
+  totalObjectives: number;
+  filledSlots: number;
+  totalSlots: number;
+  locked: boolean;
+}) {
+  const tone = locked
+    ? "bg-emerald-600"
+    : percent >= 80
+      ? "bg-emerald-500"
+      : percent >= 50
+        ? "bg-amber-500"
+        : "bg-stone-400";
+  return (
+    <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
+          This practice
+        </div>
+        <div className="text-sm font-bold tabular-nums text-stone-900">
+          {percent}%
+        </div>
+      </div>
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-stone-100">
+        <div
+          className={`h-full ${tone} transition-[width] duration-500 ease-out`}
+          style={{ width: `${Math.max(2, percent)}%` }}
+        />
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-stone-600">
+        <span>
+          <strong className="text-stone-900">
+            {coveredObjectives} of {totalObjectives}
+          </strong>{" "}
+          objectives covered
+        </span>
+        <span>
+          <strong className="text-stone-900">
+            {filledSlots} of {totalSlots}
+          </strong>{" "}
+          evidence collected
+        </span>
+        {!locked && percent === 100 && (
+          <span className="font-semibold text-emerald-700">
+            Ready to lock as MET ↓
+          </span>
+        )}
+      </div>
     </div>
   );
 }

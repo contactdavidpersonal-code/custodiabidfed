@@ -93,13 +93,32 @@ export default async function CourseLayout(
       step: 3,
       href: `/assessments/${id}`,
       title: "The seventeen safeguarding practices",
-      subtitle: `${progress.met + progress.notApplicable} of ${
-        progress.met +
-        progress.partial +
-        progress.notMet +
-        progress.notApplicable +
-        progress.unanswered
-      } resolved`,
+      subtitle: (() => {
+        const total =
+          progress.met +
+          progress.partial +
+          progress.notMet +
+          progress.notApplicable +
+          progress.unanswered;
+        const resolved = progress.met + progress.notApplicable;
+        // Weighted percent so partial / not-met counts move the bar.
+        // (met + na) = 100%, partial = 50%, notMet = 25% (it's still
+        // an answered cell — assessor asked, user replied "no").
+        const weighted =
+          total === 0
+            ? 0
+            : Math.round(
+                ((progress.met +
+                  progress.notApplicable +
+                  0.5 * progress.partial +
+                  0.25 * progress.notMet) /
+                  total) *
+                  100,
+              );
+        return practicesAllResolved
+          ? `${resolved} of ${total} resolved`
+          : `${weighted}% complete · ${resolved} of ${total} MET`;
+      })(),
       status: practicesStatus,
       match: "exact",
     },
