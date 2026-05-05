@@ -267,16 +267,27 @@ export function getPracticeSpec(controlId: string): PracticeSpec | null {
  */
 export function inferSlotKey(filename: string, spec: PracticeSpec): string | null {
   const lower = filename.toLowerCase();
-  // Explicit prefix from per-slot upload form.
+  // Explicit prefix from per-slot upload form / Charlie's tool handler.
   const prefix = lower.match(/^\[slot:([a-z0-9_]+)\]__/);
   if (prefix) {
     const key = prefix[1];
     if (spec.evidenceSlots.some((s) => s.key === key)) return key;
   }
-  // Charlie-generated filename heuristic.
+  // Charlie-generated filename heuristic — exact hyphenated key.
   for (const slot of spec.evidenceSlots) {
     const slotHyphen = slot.key.replace(/_/g, "-");
     if (lower.includes(slotHyphen)) return slot.key;
   }
-  return null;
+  // Fuzzy fallback: every word of the slot key appears somewhere in the
+  // filename. Catches "access-grant-removal-procedure.md" → access_procedure.
+  // Pick the slot whose words have the highest combined match length.
+  let best: { key: string; score: number } | null = null;
+  for (const slot of spec.evidenceSlots) {
+    const words = slot.key.split("_").filter((w) => w.length >= 4);
+    if (words.length === 0) continue;
+    if (!words.every((w) => lower.includes(w))) continue;
+    const score = words.reduce((acc, w) => acc + w.length, 0);
+    if (!best || score > best.score) best = { key: slot.key, score };
+  }
+  return best?.key ?? null;
 }
