@@ -352,8 +352,25 @@ export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
     }
   }, [draft, streaming, pathname]);
 
-  // Auto-kickoff: when the user lands on a /controls/:controlId page that is
-  // part of the hybrid CMMC flow, have Charlie start (or resume) the
+  // Listen for `charlie-send-message` events fired by other parts of the
+  // assessment workspace (e.g. the per-slot "Charlie generates from chat"
+  // button on the practice page). Treat the supplied text exactly as if the
+  // user had typed it themselves — same /api/chat path, same tool access.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ message?: string }>).detail;
+      const message = detail?.message?.trim();
+      if (!message) return;
+      setOpen(true);
+      window.localStorage.setItem(STORAGE_OPEN_KEY, "1");
+      void send(message);
+    };
+    window.addEventListener("charlie-send-message", handler as EventListener);
+    return () =>
+      window.removeEventListener("charlie-send-message", handler as EventListener);
+  }, [send]);
+
+  // Auto-kickoff: when the user lands on a /controls/:controlId page that is  // part of the hybrid CMMC flow, have Charlie start (or resume) the
   // walkthrough automatically. Without this the user opens the page and
   // stares at MISSING objectives wondering what to do — Charlie should
   // proactively greet, the way a real consultant would.

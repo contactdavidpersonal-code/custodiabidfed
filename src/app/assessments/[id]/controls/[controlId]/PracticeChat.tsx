@@ -4,9 +4,14 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { EvidenceArtifactRow } from "@/lib/assessment";
-import type { PracticeSpec } from "@/lib/cmmc/practice-spec";
+import type {
+  EvidenceDestination,
+  EvidenceSlot,
+  PracticeSpec,
+} from "@/lib/cmmc/practice-spec";
+import { inferSlotKey } from "@/lib/cmmc/practice-spec";
+import type { ConnectorProvider } from "@/lib/connectors/types";
 import type { ObjectiveVerdict } from "@/lib/cmmc/practice-chat";
-import { EvidenceDropzone } from "./EvidenceDropzone";
 import { lockPracticeAction } from "./practice-chat-actions";
 
 type ClientEvidenceRow = Omit<EvidenceArtifactRow, "blob_url">;
@@ -18,6 +23,7 @@ type Props = {
   initialVerdicts: Record<string, ObjectiveVerdict>;
   initiallyLocked: boolean;
   evidence: ClientEvidenceRow[];
+  connectedProviders: ConnectorProvider[];
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
   prevId: string | null;
@@ -163,6 +169,7 @@ export function PracticeChat(props: Props) {
           evidence={props.evidence}
           assessmentId={props.assessmentId}
           controlId={props.controlId}
+          connectedProviders={props.connectedProviders}
           uploadEvidenceAction={props.uploadEvidenceAction}
           reReviewEvidenceAction={props.reReviewEvidenceAction}
           disabled={locked}
@@ -278,6 +285,7 @@ function EvidencePanel({
   evidence,
   assessmentId,
   controlId,
+  connectedProviders,
   uploadEvidenceAction,
   reReviewEvidenceAction,
   disabled,
@@ -286,74 +294,387 @@ function EvidencePanel({
   evidence: ClientEvidenceRow[];
   assessmentId: string;
   controlId: string;
+  connectedProviders: ConnectorProvider[];
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
   disabled: boolean;
 }) {
+  // Bucket every artifact tagged to this practice into the slot it satisfies.
+  // Anything we can't pin to a specific slot (legacy uploads from before the
+  // hybrid flow) lands in `unmatched` and renders as a generic row.
+  const bySlot: Record<string, ClientEvidenceRow[]> = {};
+  const unmatched: ClientEvidenceRow[] = [];
+  for (const ev of evidence) {
+    const slotKey = inferSlotKey(ev.filename, spec);
+    if (slotKey) {
+      (bySlot[slotKey] ??= []).push(ev);
+    } else {
+      unmatched.push(ev);
+    }
+  }
+
+  const filledCount = spec.evidenceSlots.filter((s) => {
+    const items = bySlot[s.key] ?? [];
+    return items.some((it) => it.ai_review_verdict === "sufficient");
+  }).length;
+  const totalRequired = spec.evidenceSlots.filter((s) => s.required).length;
+
   return (
     <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-      <h2 className="mb-1 text-sm font-semibold text-stone-900">Evidence</h2>
-      <p className="mb-3 text-xs text-stone-500">
-        Drop in the artifacts below. Charlie reviews each upload and re-grades
-        the objectives above.
-      </p>
-
-      <div className="mb-3 grid gap-2 md:grid-cols-2">
-        {spec.evidenceSlots.map((slot) => (
-          <div
-            key={slot.key}
-            className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-xs"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="font-medium text-stone-800">{slot.label}</span>
-              <span className="text-[10px] uppercase tracking-wide text-stone-500">
-                {slot.required ? "required" : "optional"} · [{slot.satisfies.join(",")}]
-              </span>
-            </div>
-            <p className="mt-1 text-stone-600">{slot.hint}</p>
-            {slot.templatePath && (
-              <a
-                href={slot.templatePath}
-                className="mt-1 inline-block text-stone-700 underline-offset-2 hover:underline"
-                download
-              >
-                Download template
-              </a>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {!disabled && (
-        <EvidenceDropzone
-          action={uploadEvidenceAction}
-          assessmentId={assessmentId}
-          controlId={controlId}
-          compact
-        />
-      )}
-
-      <div className="mt-3 space-y-2">
-        {evidence.length === 0 ? (
-          <p className="text-xs italic text-stone-500">
-            No evidence attached yet.
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-stone-900">
+            Evidence — {filledCount} of {totalRequired} collected
+          </h2>
+          <p className="mt-0.5 text-xs text-stone-500">
+            Each row is a separate artifact an assessor would ask for. Fill it
+            with Charlie, a connector, or your own upload.
           </p>
-        ) : (
-          evidence.map((e) => (
-            <EvidenceRow
-              key={e.id}
-              evidence={e}
-              reReviewEvidenceAction={reReviewEvidenceAction}
-              disabled={disabled}
-            />
-          ))
-        )}
+        </div>
+        <ProgressDots filled={filledCount} total={totalRequired} />
       </div>
+
+      <ul className="space-y-3">
+        {spec.evidenceSlots.map((slot, idx) => (
+          <SlotRow
+            key={slot.key}
+            index={idx + 1}
+            slot={slot}
+            artifacts={bySlot[slot.key] ?? []}
+            assessmentId={assessmentId}
+            controlId={controlId}
+            connectedProviders={connectedProviders}
+            uploadEvidenceAction={uploadEvidenceAction}
+            reReviewEvidenceAction={reReviewEvidenceAction}
+            disabled={disabled}
+          />
+        ))}
+      </ul>
+
+      {unmatched.length > 0 && (
+        <div className="mt-4 border-t border-stone-200 pt-3">
+          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+            Other artifacts on this practice
+          </h3>
+          <div className="space-y-2">
+            {unmatched.map((ev) => (
+              <ArtifactCard
+                key={ev.id}
+                evidence={ev}
+                reReviewEvidenceAction={reReviewEvidenceAction}
+                disabled={disabled}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function EvidenceRow({
+function ProgressDots({ filled, total }: { filled: number; total: number }) {
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      {Array.from({ length: total }).map((_, i) => (
+        <span
+          key={i}
+          aria-hidden
+          className={`h-2 w-2 rounded-full ${
+            i < filled ? "bg-emerald-500" : "bg-stone-200"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+function SlotRow({
+  index,
+  slot,
+  artifacts,
+  assessmentId,
+  controlId,
+  connectedProviders,
+  uploadEvidenceAction,
+  reReviewEvidenceAction,
+  disabled,
+}: {
+  index: number;
+  slot: EvidenceSlot;
+  artifacts: ClientEvidenceRow[];
+  assessmentId: string;
+  controlId: string;
+  connectedProviders: ConnectorProvider[];
+  uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
+  reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
+  disabled: boolean;
+}) {
+  const sufficient = artifacts.find((a) => a.ai_review_verdict === "sufficient");
+  const status: "filled" | "needs_review" | "empty" = sufficient
+    ? "filled"
+    : artifacts.length > 0
+      ? "needs_review"
+      : "empty";
+
+  const statusBadge =
+    status === "filled"
+      ? { label: "FILLED", tone: "bg-emerald-50 text-emerald-700 ring-emerald-200" }
+      : status === "needs_review"
+        ? { label: "NEEDS REVIEW", tone: "bg-amber-50 text-amber-700 ring-amber-200" }
+        : { label: "EMPTY", tone: "bg-stone-100 text-stone-600 ring-stone-200" };
+
+  return (
+    <li className="rounded-xl border border-stone-200 bg-stone-50/50 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="font-mono text-stone-400">#{index}</span>
+            <span className="font-semibold text-stone-900">{slot.label}</span>
+            <span className="text-[10px] uppercase tracking-wide text-stone-500">
+              {slot.required ? "required" : "optional"} · [{slot.satisfies.join(",")}]
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-stone-600">{slot.hint}</p>
+        </div>
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ring-1 ${statusBadge.tone}`}
+        >
+          {statusBadge.label}
+        </span>
+      </div>
+
+      {/* Filled artifacts for this slot */}
+      {artifacts.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {artifacts.map((ev) => (
+            <ArtifactCard
+              key={ev.id}
+              evidence={ev}
+              reReviewEvidenceAction={reReviewEvidenceAction}
+              disabled={disabled}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Action rail (hidden once locked) */}
+      {!disabled && status !== "filled" && (
+        <SlotActions
+          slot={slot}
+          assessmentId={assessmentId}
+          controlId={controlId}
+          connectedProviders={connectedProviders}
+          uploadEvidenceAction={uploadEvidenceAction}
+        />
+      )}
+
+      {/* "Replace" rail when filled — same actions, different label */}
+      {!disabled && status === "filled" && (
+        <details className="mt-2">
+          <summary className="cursor-pointer text-[11px] text-stone-500 hover:text-stone-800">
+            Replace this artifact
+          </summary>
+          <div className="mt-2">
+            <SlotActions
+              slot={slot}
+              assessmentId={assessmentId}
+              controlId={controlId}
+              connectedProviders={connectedProviders}
+              uploadEvidenceAction={uploadEvidenceAction}
+            />
+          </div>
+        </details>
+      )}
+    </li>
+  );
+}
+
+function SlotActions({
+  slot,
+  assessmentId,
+  controlId,
+  connectedProviders,
+  uploadEvidenceAction,
+}: {
+  slot: EvidenceSlot;
+  assessmentId: string;
+  controlId: string;
+  connectedProviders: ConnectorProvider[];
+  uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
+}) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2">
+      {slot.destinations.map((dest, i) => (
+        <DestinationButton
+          key={`${slot.key}-${dest.type}-${i}`}
+          slot={slot}
+          dest={dest}
+          recommended={i === 0}
+          assessmentId={assessmentId}
+          controlId={controlId}
+          connectedProviders={connectedProviders}
+          uploadEvidenceAction={uploadEvidenceAction}
+        />
+      ))}
+      {slot.templatePath && (
+        <a
+          href={slot.templatePath}
+          download
+          className="text-[11px] text-stone-500 underline-offset-2 hover:text-stone-800 hover:underline"
+        >
+          Download template
+        </a>
+      )}
+    </div>
+  );
+}
+
+function DestinationButton({
+  slot,
+  dest,
+  recommended,
+  assessmentId,
+  controlId,
+  connectedProviders,
+  uploadEvidenceAction,
+}: {
+  slot: EvidenceSlot;
+  dest: EvidenceDestination;
+  recommended: boolean;
+  assessmentId: string;
+  controlId: string;
+  connectedProviders: ConnectorProvider[];
+  uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
+}) {
+  const baseClasses = recommended
+    ? "rounded-lg bg-stone-900 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-stone-800"
+    : "rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 hover:border-stone-400 hover:bg-stone-50";
+
+  if (dest.type === "generate") {
+    return (
+      <button
+        type="button"
+        title={dest.label}
+        onClick={() => askCharlieToGenerate(slot, dest.filename, dest.format)}
+        className={baseClasses}
+      >
+        🤖 {dest.label}
+      </button>
+    );
+  }
+
+  if (dest.type === "connect") {
+    const liveProviders = dest.providers.filter((p) =>
+      connectedProviders.includes(p),
+    );
+    const isConnected = liveProviders.length > 0;
+    if (isConnected) {
+      return (
+        <span
+          title={dest.describes}
+          className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-[11px] font-medium text-emerald-700"
+        >
+          🔌 Connected · auto-collect coming online
+        </span>
+      );
+    }
+    return (
+      <Link
+        href="/dashboard"
+        title={dest.describes}
+        className={baseClasses}
+      >
+        🔌 {dest.label} →
+      </Link>
+    );
+  }
+
+  // dest.type === "upload"
+  return (
+    <SlotUploadButton
+      slot={slot}
+      assessmentId={assessmentId}
+      controlId={controlId}
+      uploadEvidenceAction={uploadEvidenceAction}
+      label={dest.label}
+      describes={dest.describes}
+      accept={dest.accept}
+      recommended={recommended}
+    />
+  );
+}
+
+function SlotUploadButton({
+  slot,
+  assessmentId,
+  controlId,
+  uploadEvidenceAction,
+  label,
+  describes,
+  accept,
+  recommended,
+}: {
+  slot: EvidenceSlot;
+  assessmentId: string;
+  controlId: string;
+  uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
+  label: string;
+  describes: string;
+  accept?: string[];
+  recommended: boolean;
+}) {
+  const baseClasses = recommended
+    ? "inline-flex cursor-pointer items-center rounded-lg bg-stone-900 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-stone-800"
+    : "inline-flex cursor-pointer items-center rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 hover:border-stone-400 hover:bg-stone-50";
+
+  return (
+    <form
+      action={uploadEvidenceAction}
+      title={describes}
+      className="inline"
+    >
+      <input type="hidden" name="assessmentId" value={assessmentId} />
+      <input type="hidden" name="controlId" value={controlId} />
+      <input type="hidden" name="slotKey" value={slot.key} />
+      <label className={baseClasses}>
+        ⬆ {label}
+        <input
+          type="file"
+          name="file"
+          className="hidden"
+          accept={accept?.join(",")}
+          onChange={(e) => {
+            if (e.currentTarget.files?.length) {
+              e.currentTarget.form?.requestSubmit();
+            }
+          }}
+        />
+      </label>
+    </form>
+  );
+}
+
+/**
+ * Asks Charlie (in the right rail) to generate the artifact for this slot.
+ * Drops a focused user message into the rail's input and submits, so the
+ * tool call happens via the normal /api/chat flow — same path as if the
+ * user had typed the request themselves.
+ */
+function askCharlieToGenerate(
+  slot: EvidenceSlot,
+  filename: string,
+  format: "csv" | "markdown" | "text",
+) {
+  const message =
+    `Please generate the **${slot.label}** for me now using everything I've told you so far. ` +
+    `Call \`generate_evidence_artifact\` with slot_key="${slot.key}", filename="${filename}", format="${format}". ` +
+    `Use only facts I've actually confirmed in this conversation — don't invent names, emails, or systems.`;
+  window.dispatchEvent(
+    new CustomEvent("charlie-send-message", { detail: { message } }),
+  );
+}
+
+function ArtifactCard({
   evidence,
   reReviewEvidenceAction,
   disabled,
@@ -372,8 +693,10 @@ function EvidenceRow({
           ? "text-rose-700 bg-rose-50 ring-rose-200"
           : "text-stone-700 bg-stone-50 ring-stone-200";
   const generatedByCharlie = evidence.ai_review_model === "charlie-generated";
+  // Strip the [slot:KEY]__ prefix from the displayed filename if present.
+  const displayName = evidence.filename.replace(/^\[slot:[a-z0-9_]+\]__/i, "");
   return (
-    <div className="rounded-lg border border-stone-200 px-3 py-2 text-xs">
+    <div className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs">
       <div className="flex items-center justify-between gap-2">
         <a
           href={`/api/evidence/${evidence.id}`}
@@ -381,7 +704,7 @@ function EvidenceRow({
           rel="noreferrer"
           className="truncate font-medium text-stone-800 hover:underline"
         >
-          {evidence.filename}
+          {displayName}
         </a>
         <div className="flex shrink-0 items-center gap-1">
           {generatedByCharlie && (
@@ -402,7 +725,7 @@ function EvidenceRow({
       {generatedByCharlie && (
         <p className="mt-1 text-[11px] italic text-stone-500">
           Charlie drafted this from your conversation. Open it, check the
-          details are correct, and replace with your own version any time.
+          details are correct, and replace any time.
         </p>
       )}
       {!disabled && verdict && !generatedByCharlie && (

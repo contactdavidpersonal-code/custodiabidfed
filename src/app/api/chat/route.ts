@@ -149,8 +149,15 @@ function buildWorkspaceContextBlock(input: {
       parts.push("");
       parts.push(`### Evidence slots an assessor accepts:`);
       for (const s of spec.evidenceSlots) {
+        const dests = s.destinations
+          .map((d) => {
+            if (d.type === "generate") return `generate→${d.filename}`;
+            if (d.type === "connect") return `connect→${d.providers.join("|")}`;
+            return "upload";
+          })
+          .join(", ");
         parts.push(
-          `  - key='${s.key}' — ${s.label} (${s.required ? "required" : "optional"}; satisfies [${s.satisfies.join(", ")}]): ${s.hint}`,
+          `  - key='${s.key}' — ${s.label} (${s.required ? "required" : "optional"}; satisfies [${s.satisfies.join(", ")}]; rails: ${dests}): ${s.hint}`,
         );
       }
       parts.push("");

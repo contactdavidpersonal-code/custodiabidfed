@@ -258,7 +258,17 @@ export async function uploadEvidenceAction(formData: FormData) {
   // prefix continue to render correctly because the wizard strips the tag
   // for display.
   void questionId;
-  const taggedName = file.name;
+  // For the hybrid practice flow we DO want to bind an upload to a specific
+  // evidence slot (e.g. `authorized_users_roster`). The PracticeChat per-slot
+  // upload form sends `slotKey` so the EvidencePanel can show "1/5 collected"
+  // and route the artifact to the right card.
+  const slotKey = String(formData.get("slotKey") ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, "");
+  const taggedName = slotKey
+    ? `[slot:${slotKey}]__${file.name}`
+    : file.name;
   const safeName = taggedName.replace(/[^a-zA-Z0-9._\[\]:-]+/g, "_");
   const pathname = `evidence/${assessmentId}/${controlId}/${Date.now()}-${safeName}`;
 

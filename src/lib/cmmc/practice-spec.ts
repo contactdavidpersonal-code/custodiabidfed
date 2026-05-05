@@ -19,6 +19,38 @@ export type EvidenceSlotKind =
   | "policy_doc"
   | "narrative";
 
+/**
+ * Each slot can be satisfied via up to three rails. The order of `destinations`
+ * is the order Charlie + the UI recommend them — first one is the highlighted
+ * "default" action, the rest are alternates.
+ */
+export type EvidenceDestination =
+  | {
+      type: "generate";
+      /** human label for the button */
+      label: string;
+      /** filename Charlie should use when calling generate_evidence_artifact */
+      filename: string;
+      /** format the artifact will be produced in */
+      format: "csv" | "markdown" | "text";
+    }
+  | {
+      type: "connect";
+      label: string;
+      /** which connector providers can satisfy this slot */
+      providers: Array<"m365" | "google_workspace">;
+      /** what the connector will pull, in plain English */
+      describes: string;
+    }
+  | {
+      type: "upload";
+      label: string;
+      /** plain-English description of what the user should drag in */
+      describes: string;
+      /** mime hints for the dropzone accept attribute */
+      accept?: string[];
+    };
+
 export type EvidenceSlot = {
   /** stable key for the slot, used as the evidence tag */
   key: string;
@@ -32,6 +64,8 @@ export type EvidenceSlot = {
   required: boolean;
   /** if a CSV template ships with the platform, the public path */
   templatePath?: string;
+  /** ordered list of how this slot can be filled (default first) */
+  destinations: EvidenceDestination[];
 };
 
 export type PracticeSpec = {
@@ -78,6 +112,28 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
         satisfies: ["a", "d"],
         required: true,
         templatePath: "/templates/authorized-users-roster.csv",
+        destinations: [
+          {
+            type: "generate",
+            label: "Charlie generates from chat",
+            filename: "authorized-users-roster.csv",
+            format: "csv",
+          },
+          {
+            type: "connect",
+            label: "Auto-collect from Microsoft 365 / Google",
+            providers: ["m365", "google_workspace"],
+            describes:
+              "Pulls the live tenant user list with names, roles, and emails — assessor-grade, dated, signed by your IdP.",
+          },
+          {
+            type: "upload",
+            label: "Upload your own",
+            describes:
+              "Drag in a CSV or PDF roster with name, role, account/email, system, date authorized.",
+            accept: ["text/csv", "application/pdf", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+          },
+        ],
       },
       {
         key: "authorized_devices_inventory",
@@ -86,6 +142,28 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
         kind: "roster_csv",
         satisfies: ["c", "f"],
         required: true,
+        destinations: [
+          {
+            type: "generate",
+            label: "Charlie generates from chat",
+            filename: "authorized-devices-inventory.csv",
+            format: "csv",
+          },
+          {
+            type: "connect",
+            label: "Auto-collect from Microsoft Intune / Google Endpoint",
+            providers: ["m365", "google_workspace"],
+            describes:
+              "Pulls the managed-device list directly from your IdP — make/model, owner, last check-in.",
+          },
+          {
+            type: "upload",
+            label: "Upload your own",
+            describes:
+              "Drag in a CSV listing each device that can reach FCI.",
+            accept: ["text/csv", "application/pdf", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"],
+          },
+        ],
       },
       {
         key: "service_accounts_list",
@@ -94,6 +172,28 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
         kind: "roster_csv",
         satisfies: ["b", "e"],
         required: true,
+        destinations: [
+          {
+            type: "generate",
+            label: "Charlie generates from chat",
+            filename: "service-accounts-list.csv",
+            format: "csv",
+          },
+          {
+            type: "connect",
+            label: "Auto-collect service principals from Microsoft 365",
+            providers: ["m365"],
+            describes:
+              "Pulls every Entra ID service principal + automation account that can sign in.",
+          },
+          {
+            type: "upload",
+            label: "Upload your own",
+            describes:
+              "Drag in a CSV/PDF listing each service account or automation that touches FCI.",
+            accept: ["text/csv", "application/pdf"],
+          },
+        ],
       },
       {
         key: "access_procedure",
@@ -102,6 +202,25 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
         kind: "procedure_doc",
         satisfies: ["d", "e", "f"],
         required: true,
+        destinations: [
+          {
+            type: "generate",
+            label: "Charlie writes it from chat",
+            filename: "access-grant-removal-procedure.md",
+            format: "markdown",
+          },
+          {
+            type: "upload",
+            label: "Upload your own procedure",
+            describes:
+              "If you already have a written procedure, drag in the PDF or DOCX.",
+            accept: [
+              "application/pdf",
+              "text/markdown",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ],
+          },
+        ],
       },
       {
         key: "enforcement_proof",
@@ -110,6 +229,22 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
         kind: "screenshot",
         satisfies: ["d", "e", "f"],
         required: true,
+        destinations: [
+          {
+            type: "connect",
+            label: "Auto-collect from Microsoft 365 Conditional Access",
+            providers: ["m365"],
+            describes:
+              "Pulls the active Conditional Access policy export — assessor-grade proof of enforcement.",
+          },
+          {
+            type: "upload",
+            label: "Upload a screenshot",
+            describes:
+              "Drag in a PNG/JPEG of your Windows local-user settings, IdP group membership, or admin console showing the authorized list. PDFs of ACL exports work too.",
+            accept: ["image/png", "image/jpeg", "image/webp", "application/pdf"],
+          },
+        ],
       },
     ],
     keyReferences: ["FAR 52.204-21(b)(1)(i)", "NIST SP 800-171 Rev 2 §3.1.1"],
@@ -118,4 +253,30 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
 
 export function getPracticeSpec(controlId: string): PracticeSpec | null {
   return practiceSpecs[controlId] ?? null;
+}
+
+/**
+ * Best-effort: figure out which evidence slot an artifact belongs to.
+ *
+ * Charlie's `generate_evidence_artifact` tool emits filenames that match
+ * `slot.key` with hyphens (e.g. `authorized-users-roster.csv` for slot
+ * `authorized_users_roster`). User uploads tagged via the per-slot upload
+ * form get an `[slot:KEY]__` prefix injected by the upload action. This
+ * helper handles both, returning null when no slot can be inferred (legacy
+ * pre-hybrid uploads).
+ */
+export function inferSlotKey(filename: string, spec: PracticeSpec): string | null {
+  const lower = filename.toLowerCase();
+  // Explicit prefix from per-slot upload form.
+  const prefix = lower.match(/^\[slot:([a-z0-9_]+)\]__/);
+  if (prefix) {
+    const key = prefix[1];
+    if (spec.evidenceSlots.some((s) => s.key === key)) return key;
+  }
+  // Charlie-generated filename heuristic.
+  for (const slot of spec.evidenceSlots) {
+    const slotHyphen = slot.key.replace(/_/g, "-");
+    if (lower.includes(slotHyphen)) return slot.key;
+  }
+  return null;
 }

@@ -121,6 +121,7 @@ export default async function ControlDetailPage(
               initialVerdicts={chatConv.objective_verdicts}
               initiallyLocked={!!chatConv.locked_at}
               evidence={evidenceForClient}
+              connectedProviders={connectedProviders}
               uploadEvidenceAction={uploadEvidenceAction}
               reReviewEvidenceAction={reReviewEvidenceAction}
               prevId={prevId}
