@@ -230,11 +230,11 @@ export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
     [width],
   );
 
-  const send = useCallback(async () => {
-    const text = draft.trim();
+  const send = useCallback(async (textOverride?: string) => {
+    const text = (textOverride ?? draft).trim();
     if (!text || streaming) return;
     setErrorMsg(null);
-    setDraft("");
+    if (textOverride === undefined) setDraft("");
     setStreaming(true);
     const userId = `local-${Date.now()}`;
     const assistantId = `local-a-${Date.now()}`;
@@ -351,6 +351,60 @@ export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
       setStreaming(false);
     }
   }, [draft, streaming, pathname]);
+
+  // Auto-kickoff: when the user lands on a /controls/:controlId page that is
+  // part of the hybrid CMMC flow, have Charlie start (or resume) the
+  // walkthrough automatically. Without this the user opens the page and
+  // stares at MISSING objectives wondering what to do — Charlie should
+  // proactively greet, the way a real consultant would.
+  //
+  // Dedupe: sessionStorage keyed by control. Auto-fires at most once per
+  // browser tab session per control. If the user navigates away and back,
+  // we don't re-greet — the existing transcript is already in the rail.
+  useEffect(() => {
+    if (!hydrated || streaming) return;
+    const ctx = extractPageContext(pathname);
+    if (!ctx.assessmentId || !ctx.controlId) return;
+
+    const sessionKey = `custodia.practice-kickoff.${ctx.controlId}`;
+    if (window.sessionStorage.getItem(sessionKey)) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        // Determine whether this practice has prior transcript turns. The
+        // GET endpoint 404s on practices without a hybrid spec — those are
+        // not auto-kickoff candidates.
+        const res = await fetch(
+          `/api/assessments/${ctx.assessmentId}/practice-chat/${encodeURIComponent(ctx.controlId!)}`,
+        );
+        if (!res.ok) return;
+        const data = (await res.json()) as {
+          messages: Array<{ role: string; text: string }>;
+          locked?: boolean;
+        };
+        if (cancelled) return;
+        if (data.locked) {
+          window.sessionStorage.setItem(sessionKey, "1");
+          return;
+        }
+        const userTurns = data.messages.filter((m) => m.role === "user").length;
+        const opener =
+          userTurns > 0
+            ? `I'm back on ${ctx.controlId} — pick up where we left off.`
+            : `Let's start ${ctx.controlId}. Walk me through it.`;
+        window.sessionStorage.setItem(sessionKey, "1");
+        setOpen(true);
+        window.localStorage.setItem(STORAGE_OPEN_KEY, "1");
+        await send(opener);
+      } catch (err) {
+        console.warn("practice kickoff failed", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [pathname, hydrated, streaming, send]);
 
   if (!open && !mobile) {
     return (
