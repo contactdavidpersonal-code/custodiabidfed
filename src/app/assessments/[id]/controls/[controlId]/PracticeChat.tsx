@@ -671,7 +671,7 @@ function DestinationButton({
         onClick={() => askCharlieToGenerate(slot, dest.filename, dest.format)}
         className={baseClasses}
       >
-        🤖 {dest.label}
+        {dest.label}
       </button>
     );
   }
@@ -687,7 +687,7 @@ function DestinationButton({
           title={dest.describes}
           className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-[11px] font-medium text-emerald-700"
         >
-          🔌 Connected · auto-collect coming online
+          Connected — auto-collect coming online
         </span>
       );
     }
@@ -697,7 +697,7 @@ function DestinationButton({
         title={dest.describes}
         className={baseClasses}
       >
-        🔌 {dest.label} →
+        {dest.label} →
       </Link>
     );
   }
@@ -750,7 +750,7 @@ function SlotUploadButton({
       <input type="hidden" name="controlId" value={controlId} />
       <input type="hidden" name="slotKey" value={slot.key} />
       <label className={baseClasses}>
-        ⬆ {label}
+        {label}
         <input
           type="file"
           name="file"
