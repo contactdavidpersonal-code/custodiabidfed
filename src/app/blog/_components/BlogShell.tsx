@@ -63,7 +63,7 @@ export function BlogShell({ children }: { children: ReactNode }) {
               Custodia<span className="text-[#2f8f6d]">.</span>
             </div>
             <div className="mt-1 text-xs">
-              TurboTax for CMMC Level 1. Pittsburgh, PA. Veteran-owned.
+              Guided CMMC Level 1 compliance. Pittsburgh, PA. Veteran-owned.
             </div>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">

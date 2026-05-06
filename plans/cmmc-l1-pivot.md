@@ -1,7 +1,7 @@
 # Custodia → CMMC Level 1 Platform Pivot
 
 **Tagline:** Federal bid-ready in 7 days. Compliant for life.
-**Positioning:** TurboTax for CMMC Level 1 — guided by **Charlie**, your AI compliance officer.
+**Positioning:** Guided self-serve CMMC Level 1 — led by **Charlie**, your AI compliance officer.
 **Scope discipline:** CMMC L1 only. BidFed becomes a "Bid Radar" bonus feature, not the headline. L2 / CUI / FedRAMP-for-customers are explicitly out of scope for v1 and become the cyber-firm services upsell.
 
 ---
@@ -12,7 +12,7 @@ Charlie is the AI compliance officer persona. The customer never sees a 17-contr
 
 > *"Hey — I'm Charlie. I'll walk you through the 17 things DoD wants you to confirm. Most take seconds. I'll tell you when something needs fixing and exactly how to fix it. Ready?"*
 
-Every flow below is an **interview**, not a form. TurboTax model:
+Every flow below is an **interview**, not a form. Guided tax-prep model:
 - One question per screen
 - Plain English, never jargon
 - Progress bar with sections (Identity → Access → Devices → Files → People → Incidents)
@@ -29,7 +29,7 @@ Every flow below is an **interview**, not a form. TurboTax model:
 
 **What it is:** A branching, plain-English Q&A that maps to the 17 FAR 52.204-21 / CMMC L1 controls behind the scenes.
 
-**Interview sections (TurboTax-style chapters):**
+**Interview sections (guided chapters):**
 1. **About Your Business** (entity, EIN, NAICS, federal contract status)
 2. **Your Email & Files** (M365 / Google / other) — auto-detects most controls via connectors
 3. **Who Has Access** (employee count, contractors, MFA, password policy)
@@ -289,7 +289,7 @@ These never change the $249/mo platform price.
 - Remove BidFed-first messaging from landing page
 - Keep `assessments/` flow but rebrand internally as "interview"
 - New top-level routes:
-  - `/` — TurboTax-for-CMMC landing page
+  - `/` — Guided CMMC Level 1 landing page
   - `/sprs-check` — free public quiz
   - `/cmmc/interview` — the Charlie interview
   - `/cmmc/evidence` — connectors + uploads

@@ -28,7 +28,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Custodia | TurboTax for CMMC Level 1",
+  title: "Custodia | Guided CMMC Level 1 Compliance",
   description:
     "Federal compliance for small contractors, in plain English. Charlie — your AI compliance officer — walks you through CMMC Level 1 in 7 days. $449/month, flat. 14-day free trial. No credit card required.",
   manifest: "/manifest.webmanifest",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     title: "Custodia",
   },
   openGraph: {
-    title: "Custodia | TurboTax for CMMC Level 1",
+    title: "Custodia | Guided CMMC Level 1 Compliance",
     description:
       "Federal bid-ready in 7 days. $449/month, flat. 14-day free trial. No credit card required. Built by Carnegie Mellon-trained information security engineers.",
     type: "website",

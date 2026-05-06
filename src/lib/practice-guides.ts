@@ -1,6 +1,6 @@
 /**
  * Per-practice guided-flow content. This is the data layer that powers the
- * 4-stage TurboTax-style walkthrough (Orient → Confirm → Prove → Lock in).
+ * 4-stage guided walkthrough (Orient → Confirm → Prove → Lock in).
  *
  * Source of truth: CMMC Level 1 Self-Assessment Guide v2.0 — every objective
  * letter, examine/interview/test method, and the FAR / NIST language is

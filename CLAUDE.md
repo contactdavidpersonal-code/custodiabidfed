@@ -28,7 +28,7 @@ There is no test runner configured.
 
 ## Architecture
 
-The product is a TurboTax-style self-serve platform that walks a small defense-tech startup through a **CMMC Level 1 annual SPRS affirmation cycle** (17 FAR 52.204-21 practices across AC/IA/MP/PE/SC/SI domains) and produces a printable SSP + signed affirmation memo.
+The product is a guided self-serve platform that walks a small defense-tech startup through a **CMMC Level 1 annual SPRS affirmation cycle** (17 FAR 52.204-21 practices across AC/IA/MP/PE/SC/SI domains) and produces a printable SSP + signed affirmation memo.
 
 ### Data flow per cycle
 

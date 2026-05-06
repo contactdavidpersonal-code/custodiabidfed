@@ -312,7 +312,7 @@ export async function createAssessmentForOrg(
  * Annual rollover: create a new cycle that imports the prior cycle's responses
  * and evidence artifacts as drafts pending user review. The user must walk
  * each carried row to "kept" or "needs_replacement" before it counts toward
- * the new cycle's evidence gate. Mirrors TurboTax's "import last year's return"
+ * the new cycle's evidence gate. Mirrors the "import last year's filing"
  * — most fields are stable year-over-year, but the user has to confirm.
  */
 export async function createAssessmentWithCarryForward(

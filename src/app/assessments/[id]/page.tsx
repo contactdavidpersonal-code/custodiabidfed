@@ -295,7 +295,7 @@ function CarryForwardReviewBanner({
                 {pendingArtifactCount === 1 ? "" : "s"} need re-confirmation.
               </>
             )}{" "}
-            Walk each practice to confirm or replace — same as TurboTax
+            Walk each practice to confirm or replace — one step at a time
             importing last year&apos;s return.
           </p>
         </div>
