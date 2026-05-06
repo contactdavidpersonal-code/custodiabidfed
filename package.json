@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.0",
+    "@aws-sdk/client-kms": "^3.1043.0",
     "@clerk/nextjs": "^7.2.3",
     "@neondatabase/serverless": "^1.1.0",
     "@vercel/blob": "^2.3.3",

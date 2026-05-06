@@ -44,6 +44,17 @@
  * NEW writes always emit v2. Decrypt branches on the wire-format prefix
  * so historical data never breaks. To migrate v1 → v2 in bulk, decrypt
  * each row and re-encrypt; the same `aad` shape is used either way.
+ *
+ * Tier 3 zero-trust (KMS-backed KEK): when KMS_KEK_CIPHERTEXT is set, the
+ * KEK plaintext is no longer in env at all. The env holds the *KMS
+ * ciphertext blob* of the same 32-byte KEK; on cold start the code calls
+ * kms:Decrypt to materialize it in memory, where it lives behind the same
+ * wrap/unwrap helpers used by Tier 2. The plaintext value is identical
+ * to what was previously held in FIELD_ENCRYPTION_KEY, so all existing
+ * v1/v2 ciphertext keeps working without a backfill. This collapses the
+ * "two systems must fall" model to "three systems must fall" — KMS,
+ * Vercel project, and the database — because reading the env var alone
+ * is no longer enough.
  */
 
 import {
@@ -53,6 +64,10 @@ import {
   hkdfSync,
   randomBytes,
 } from "node:crypto";
+import {
+  DecryptCommand,
+  KMSClient,
+} from "@aws-sdk/client-kms";
 import { getSql } from "@/lib/db";
 
 const ALGO = "aes-256-gcm";
@@ -74,6 +89,17 @@ let _cachedKek: Buffer | null = null;
 let _cachedKekWrap: Buffer | null = null;
 let _cachedBlindKey: Buffer | null = null;
 let _warnedFallback = false;
+let _inflightKek: Promise<Buffer> | null = null;
+let _kmsClient: KMSClient | null = null;
+
+function getKmsClient(): KMSClient {
+  if (!_kmsClient) {
+    _kmsClient = new KMSClient({
+      region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-2",
+    });
+  }
+  return _kmsClient;
+}
 
 function decodeKeyMaterial(raw: string): Buffer {
   const trimmed = raw.trim();
@@ -83,8 +109,46 @@ function decodeKeyMaterial(raw: string): Buffer {
   return Buffer.from(trimmed, "base64");
 }
 
-function loadKek(): Buffer {
-  if (_cachedKek) return _cachedKek;
+/**
+ * KMS-backed KEK loader. Reads the AWS-KMS-encrypted KEK ciphertext from
+ * `KMS_KEK_CIPHERTEXT` (base64), asks KMS to decrypt it, caches the
+ * plaintext for the process lifetime. The plaintext NEVER leaves this
+ * function's scope and is never persisted anywhere on disk.
+ *
+ * Returns null if KMS mode is not configured (i.e. fall through to env-var KEK).
+ */
+async function loadKekFromKms(): Promise<Buffer | null> {
+  const blobB64 = process.env.KMS_KEK_CIPHERTEXT;
+  if (!blobB64 || blobB64.trim().length === 0) return null;
+  const ciphertext = Buffer.from(blobB64.trim(), "base64");
+  const out = await getKmsClient().send(
+    new DecryptCommand({
+      CiphertextBlob: ciphertext,
+      // Pin the key id if provided so an attacker who swaps KMS_KEK_CIPHERTEXT
+      // can't trick us into decrypting under a different key.
+      KeyId: process.env.KMS_KEK_KEY_ID || undefined,
+      // EncryptionContext must match the one used at Encrypt time
+      // (scripts/bootstrap-kms-kek.ts). KMS includes this context as
+      // additional authenticated data — a mismatch fails decryption.
+      EncryptionContext: {
+        app: "custodia-bidfed",
+        purpose: "kek-wrap",
+      },
+    }),
+  );
+  if (!out.Plaintext) {
+    throw new Error("KMS Decrypt returned no plaintext for KEK");
+  }
+  const buf = Buffer.from(out.Plaintext);
+  if (buf.length !== KEY_LEN) {
+    throw new Error(
+      `KMS-decrypted KEK has wrong length ${buf.length}; expected ${KEY_LEN}`,
+    );
+  }
+  return buf;
+}
+
+function loadKekFromEnv(): Buffer {
   const raw = process.env.FIELD_ENCRYPTION_KEY;
   if (raw && raw.trim().length > 0) {
     const buf = decodeKeyMaterial(raw);
@@ -93,25 +157,21 @@ function loadKek(): Buffer {
         `FIELD_ENCRYPTION_KEY must decode to ${KEY_LEN} bytes (got ${buf.length})`,
       );
     }
-    _cachedKek = buf;
-    return _cachedKek;
+    return buf;
   }
-
   const fallback = process.env.ATTESTATION_SIGNING_KEY;
   if (!fallback) {
     throw new Error(
-      "Neither FIELD_ENCRYPTION_KEY nor ATTESTATION_SIGNING_KEY is set; cannot encrypt sensitive fields.",
+      "No KEK source configured. Set KMS_KEK_CIPHERTEXT (preferred) or FIELD_ENCRYPTION_KEY or ATTESTATION_SIGNING_KEY.",
     );
   }
   if (!_warnedFallback && process.env.NODE_ENV === "production") {
     console.warn(
-      "[field-encryption] FIELD_ENCRYPTION_KEY not set; deriving KEK from ATTESTATION_SIGNING_KEY. Set FIELD_ENCRYPTION_KEY for separation-of-duties.",
+      "[field-encryption] No KMS or FIELD_ENCRYPTION_KEY; deriving KEK from ATTESTATION_SIGNING_KEY. Set KMS_KEK_CIPHERTEXT for separation-of-duties.",
     );
     _warnedFallback = true;
   }
   const ikm = decodeKeyMaterial(fallback);
-  // Same info string Tier 1 used so legacy v1 ciphertext written before this
-  // refactor still decrypts under loadKek() unchanged.
   const derived = hkdfSync(
     "sha256",
     ikm,
@@ -119,8 +179,28 @@ function loadKek(): Buffer {
     Buffer.from("custodia.field.v1", "utf8"),
     KEY_LEN,
   );
-  _cachedKek = Buffer.from(derived);
-  return _cachedKek;
+  return Buffer.from(derived);
+}
+
+/**
+ * Async, single-flight KEK accessor. Resolves either from KMS (Tier 3)
+ * or from the env-var fallback (Tier 2). The returned plaintext is
+ * IDENTICAL across both paths because Tier 3 was bootstrapped by
+ * encrypting the same env-var KEK under the CMK — so v1/v2 ciphertext
+ * keeps decrypting after the migration.
+ */
+async function loadKekAsync(): Promise<Buffer> {
+  if (_cachedKek) return _cachedKek;
+  if (_inflightKek) return _inflightKek;
+  _inflightKek = (async () => {
+    const fromKms = await loadKekFromKms();
+    const kek = fromKms ?? loadKekFromEnv();
+    _cachedKek = kek;
+    return kek;
+  })().finally(() => {
+    _inflightKek = null;
+  });
+  return _inflightKek;
 }
 
 /**
@@ -129,11 +209,12 @@ function loadKek(): Buffer {
  * against the same key material — the two purposes are cryptographically
  * domain-separated even though they share root entropy.
  */
-function loadKekWrapKey(): Buffer {
+async function loadKekWrapKey(): Promise<Buffer> {
   if (_cachedKekWrap) return _cachedKekWrap;
+  const kek = await loadKekAsync();
   const derived = hkdfSync(
     "sha256",
-    loadKek(),
+    kek,
     Buffer.alloc(0),
     Buffer.from("custodia.kek-wrap.v2", "utf8"),
     KEY_LEN,
@@ -142,11 +223,12 @@ function loadKekWrapKey(): Buffer {
   return _cachedKekWrap;
 }
 
-function loadBlindIndexKey(): Buffer {
+async function loadBlindIndexKey(): Promise<Buffer> {
   if (_cachedBlindKey) return _cachedBlindKey;
+  const kek = await loadKekAsync();
   const derived = hkdfSync(
     "sha256",
-    loadKek(),
+    kek,
     Buffer.alloc(0),
     Buffer.from("custodia.blind-index.v1", "utf8"),
     KEY_LEN,
@@ -171,16 +253,16 @@ function dekWrapAad(orgId: string): Buffer {
   return Buffer.from(`custodia.dek-wrap:v1:${orgId}`, "utf8");
 }
 
-function wrapDek(plainDek: Buffer, orgId: string): Buffer {
+async function wrapDek(plainDek: Buffer, orgId: string): Promise<Buffer> {
   const iv = randomBytes(IV_LEN);
-  const cipher = createCipheriv(ALGO, loadKekWrapKey(), iv);
+  const cipher = createCipheriv(ALGO, await loadKekWrapKey(), iv);
   cipher.setAAD(dekWrapAad(orgId));
   const ct = Buffer.concat([cipher.update(plainDek), cipher.final()]);
   const tag = cipher.getAuthTag();
   return Buffer.concat([iv, ct, tag]);
 }
 
-function unwrapDek(wrapped: Buffer, orgId: string): Buffer {
+async function unwrapDek(wrapped: Buffer, orgId: string): Promise<Buffer> {
   if (wrapped.length !== IV_LEN + KEY_LEN + TAG_LEN) {
     throw new Error(
       `wrapped DEK has wrong length ${wrapped.length}; expected ${IV_LEN + KEY_LEN + TAG_LEN}`,
@@ -189,7 +271,7 @@ function unwrapDek(wrapped: Buffer, orgId: string): Buffer {
   const iv = wrapped.subarray(0, IV_LEN);
   const ct = wrapped.subarray(IV_LEN, IV_LEN + KEY_LEN);
   const tag = wrapped.subarray(IV_LEN + KEY_LEN);
-  const decipher = createDecipheriv(ALGO, loadKekWrapKey(), iv);
+  const decipher = createDecipheriv(ALGO, await loadKekWrapKey(), iv);
   decipher.setAAD(dekWrapAad(orgId));
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(ct), decipher.final()]);
@@ -228,7 +310,7 @@ async function loadOrCreateDek(orgId: string): Promise<Buffer> {
   // Lazy provision. Generate, wrap, and persist. The COALESCE guards against
   // a concurrent caller having raced past us between the SELECT and UPDATE.
   const fresh = randomBytes(KEY_LEN);
-  const wrapped = wrapDek(fresh, orgId);
+  const wrapped = await wrapDek(fresh, orgId);
   const updated = (await sql`
     UPDATE organizations
        SET wrapped_dek = COALESCE(wrapped_dek, ${wrapped})
@@ -341,7 +423,7 @@ export async function decryptField(
   // v1 = encrypted directly with the KEK (Tier 1 legacy data).
   // v2 = encrypted with the per-tenant DEK (Tier 2 default).
   const key =
-    version === "fv1" ? loadKek() : await getDek(aad.organizationId);
+    version === "fv1" ? await loadKekAsync() : await getDek(aad.organizationId);
 
   const decipher = createDecipheriv(ALGO, key, iv);
   decipher.setAAD(aadBytes(aad));
@@ -412,7 +494,7 @@ export async function decryptBytes(
   const iv = b.subarray(4, 4 + IV_LEN);
   const tag = b.subarray(b.length - TAG_LEN);
   const ct = b.subarray(4 + IV_LEN, b.length - TAG_LEN);
-  const key = version === "v1" ? loadKek() : await getDek(aad.organizationId);
+  const key = version === "v1" ? await loadKekAsync() : await getDek(aad.organizationId);
   const decipher = createDecipheriv(ALGO, key, iv);
   decipher.setAAD(aadBytes(aad));
   decipher.setAuthTag(tag);
@@ -460,7 +542,7 @@ export async function cryptoShredOrg(orgId: string): Promise<void> {
 export async function rotateOrgDek(orgId: string): Promise<void> {
   const sql = getSql();
   const fresh = randomBytes(KEY_LEN);
-  const wrapped = wrapDek(fresh, orgId);
+  const wrapped = await wrapDek(fresh, orgId);
   const rows = (await sql`
     UPDATE organizations
        SET wrapped_dek = ${wrapped}
@@ -482,8 +564,8 @@ export async function rotateOrgDek(orgId: string): Promise<void> {
 // ciphertext, and so a per-tenant DEK rotation does not invalidate indexes.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function blindIndex(value: string): string {
-  return createHmac("sha256", loadBlindIndexKey())
+export async function blindIndex(value: string): Promise<string> {
+  return createHmac("sha256", await loadBlindIndexKey())
     .update(value.trim().toLowerCase(), "utf8")
     .digest("hex");
 }

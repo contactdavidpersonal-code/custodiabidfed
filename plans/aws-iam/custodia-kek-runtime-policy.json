@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowDataKeyAndDecryptOnCustodiaKeks",
+      "Effect": "Allow",
+      "Action": [
+        "kms:GenerateDataKey",
+        "kms:GenerateDataKeyWithoutPlaintext",
+        "kms:Decrypt",
+        "kms:DescribeKey"
+      ],
+      "Resource": [
+        "arn:aws:kms:us-east-2:704048935526:key/dafcac44-4651-4ad6-9d0b-51990c6c87de",
+        "arn:aws:kms:us-east-2:704048935526:key/5a757db8-aef6-45b5-a965-c2fdc2f7a319"
+      ]
+    }
+  ]
+}
