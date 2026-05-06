@@ -644,7 +644,7 @@ export default function Home() {
                 the custodia shield &middot; zero-trust security
               </div>
               <h3 className="font-serif text-3xl font-bold leading-tight md:text-5xl">
-                Built so even <span className="italic">we</span> can&rsquo;t read your FCI.
+                Built so even <span className="italic">we</span>&nbsp;can&rsquo;t read your FCI.
               </h3>
               <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[#a8cfc0]">
                 Custodia is engineered on AWS with envelope encryption, per-tenant keys, and a zero-AI-training pledge. If our database leaked tomorrow, your Federal Contract Information would still be ciphertext &mdash; useless to attackers, useless to us, useless to any AI. That&rsquo;s the bar. That&rsquo;s the shield.
