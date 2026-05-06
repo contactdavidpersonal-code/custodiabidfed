@@ -29,7 +29,10 @@ export type CanonicalAttestation = {
     status: string;
     notes: string | null;
   }>;
-  /** Evidence fingerprints, ordered by control_id then artifact id. */
+  /** Evidence fingerprints, ordered by control_id then artifact id. Each
+   * artifact records a SHA-256 digest of the blob bytes captured at sign
+   * time so a verifier can later prove the file behind `blobUrl` has not
+   * been swapped or tampered with. */
   evidence: Array<{
     controlId: string;
     artifactId: string;
@@ -37,6 +40,7 @@ export type CanonicalAttestation = {
     mimeType: string | null;
     sizeBytes: number | null;
     blobUrl: string;
+    sha256Hex: string;
   }>;
 };
 

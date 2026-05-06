@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 
 /**
  * Constant-time string comparison for secrets (bearer tokens, HMAC sigs).
@@ -25,4 +25,11 @@ export function verifyHmacSha256Hex(
   signatureHex: string,
 ): boolean {
   return timingSafeStringEqual(hmacSha256Hex(secret, payload), signatureHex);
+}
+
+/** Plain SHA-256 over arbitrary bytes, hex-encoded. Used for evidence-blob
+ * fingerprints inside the canonical attestation payload — keyless so any
+ * downstream verifier can recompute the same digest from the stored bytes. */
+export function sha256HexBytes(bytes: Uint8Array | Buffer): string {
+  return createHash("sha256").update(bytes).digest("hex");
 }

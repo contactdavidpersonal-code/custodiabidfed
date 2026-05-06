@@ -43,6 +43,7 @@ import {
   formatProfileFacts,
 } from "@/lib/ai/artifact-generation";
 import { signAttestation } from "@/lib/security/attestation-signature";
+import { sha256HexBytes } from "@/lib/security/crypto";
 import { recordAuditEvent } from "@/lib/security/audit-log";
 import { sendSprsFiledEmail } from "@/lib/email/sprs-filed";
 import {
@@ -883,6 +884,37 @@ export async function submitAffirmationAction(formData: FormData) {
     ctx.assessment.framework === "cmmc_l1" ? allAccountedFor : null;
 
   const sql = getSql();
+
+  // Per-artifact byte-level fingerprint. Captured at sign time so the
+  // canonical payload is tamper-evident even if a blob is later replaced
+  // or rotated. Failure to fetch any artifact aborts the affirmation —
+  // we will not sign over an incomplete fingerprint set.
+  const liveEvidence = evidence.filter(
+    (e) => e.carry_forward_status !== "removed",
+  );
+  const evidenceFingerprints = await Promise.all(
+    liveEvidence.map(async (e) => {
+      let res: Response;
+      try {
+        res = await fetch(e.blob_url);
+      } catch (err) {
+        throw new Error(
+          `Failed to fetch evidence ${e.filename} for fingerprinting: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+      if (!res.ok) {
+        throw new Error(
+          `Failed to fetch evidence ${e.filename} (HTTP ${res.status})`,
+        );
+      }
+      const buf = Buffer.from(await res.arrayBuffer());
+      return { id: e.id, sha256Hex: sha256HexBytes(buf) };
+    }),
+  );
+  const fingerprintById = new Map(
+    evidenceFingerprints.map((f) => [f.id, f.sha256Hex]),
+  );
+
   // CMMC L1 / FAR 52.204-21 evidentiary integrity: produce an HMAC-SHA-256
   // signature over the canonical attestation payload. Stored alongside the
   // canonical JSON so the legal artifact can be re-verified at any time.
@@ -907,8 +939,7 @@ export async function submitAffirmationAction(formData: FormData) {
         status: r.status,
         notes: r.narrative ?? null,
       })),
-    evidence: [...evidence]
-      .filter((e) => e.carry_forward_status !== "removed")
+    evidence: [...liveEvidence]
       .sort(
         (a, b) =>
           a.control_id.localeCompare(b.control_id) || a.id.localeCompare(b.id),
@@ -920,6 +951,7 @@ export async function submitAffirmationAction(formData: FormData) {
         mimeType: e.mime_type ?? null,
         sizeBytes: e.size_bytes ?? null,
         blobUrl: e.blob_url,
+        sha256Hex: fingerprintById.get(e.id) ?? "",
       })),
   });
 
