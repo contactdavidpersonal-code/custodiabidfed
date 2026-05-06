@@ -3,6 +3,48 @@ import type { Framework } from "@/lib/db";
 export const controlDomains = ["AC", "IA", "MP", "PE", "SC", "SI"] as const;
 export type ControlDomain = (typeof controlDomains)[number];
 
+/**
+ * The canonical CMMC Level 1 requirement identifiers per the September 2024
+ * v2.13 Assessment Guide and 32 CFR § 170.14(c). FAR 52.204-21 defines 15
+ * basic safeguarding requirements (b.1.i … b.1.xv); NIST SP 800-171A breaks
+ * those into 59 assessment objectives [a]…[h] that must each be MET / NOT
+ * APPLICABLE for the requirement to roll up to MET. One NOT MET objective
+ * fails the entire requirement (32 CFR § 170.24).
+ *
+ * Several legacy NIST 800-171 r2 control IDs (PE 3.10.3, 3.10.4, 3.10.5)
+ * collapse into a single CMMC requirement (PE.L1-b.1.ix) under the v2.13
+ * model. The playbook keeps the 17 NIST-r2 entries for backwards data
+ * compatibility, but the user-facing surface and SPRS export are driven
+ * by the 15 requirement IDs below.
+ */
+export const cmmcL1Requirements = [
+  "AC.L1-b.1.i",
+  "AC.L1-b.1.ii",
+  "AC.L1-b.1.iii",
+  "AC.L1-b.1.iv",
+  "IA.L1-b.1.v",
+  "IA.L1-b.1.vi",
+  "MP.L1-b.1.vii",
+  "PE.L1-b.1.viii",
+  "PE.L1-b.1.ix",
+  "SC.L1-b.1.x",
+  "SC.L1-b.1.xi",
+  "SI.L1-b.1.xii",
+  "SI.L1-b.1.xiii",
+  "SI.L1-b.1.xiv",
+  "SI.L1-b.1.xv",
+] as const;
+export type CmmcL1RequirementId = (typeof cmmcL1Requirements)[number];
+
+export const cmmcL1RequirementCount = cmmcL1Requirements.length; // 15
+
+/**
+ * Total assessment objectives across all 15 requirements per NIST SP 800-171A
+ * (CMMC Assessment Guide L1 v2.13). MET on all 59 → MET on the requirement.
+ * One NOT MET objective fails the entire requirement (32 CFR § 170.24).
+ */
+export const cmmcL1ObjectiveCount = 59;
+
 export const evidenceProviders = [
   "m365",
   "google_workspace",
@@ -36,7 +78,18 @@ export type NarrativeContext = {
 };
 
 export type ControlPlaybook = {
+  /**
+   * Legacy NIST 800-171 r2 control identifier (e.g. "AC.L1-3.1.1"). Kept
+   * as the primary key for data continuity with existing assessments,
+   * evidence_artifacts, and remediation_plans rows.
+   */
   id: string;
+  /**
+   * Canonical CMMC L1 v2.13 requirement identifier (e.g. "AC.L1-b.1.i").
+   * Multiple entries can share a requirementId — PE.L1-3.10.3, 3.10.4,
+   * and 3.10.5 all roll up to PE.L1-b.1.ix.
+   */
+  requirementId: CmmcL1RequirementId;
   framework: Framework;
   domain: ControlDomain;
   shortName: string;
@@ -54,6 +107,7 @@ export type ControlPlaybook = {
 export const playbook: ControlPlaybook[] = [
   {
     id: "AC.L1-3.1.1",
+    requirementId: "AC.L1-b.1.i",
     framework: "cmmc_l1",
     domain: "AC",
     shortName: "Authorized Access Control",
@@ -126,6 +180,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "AC.L1-3.1.2",
+    requirementId: "AC.L1-b.1.ii",
     framework: "cmmc_l1",
     domain: "AC",
     shortName: "Transaction & Function Control",
@@ -196,6 +251,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "AC.L1-3.1.20",
+    requirementId: "AC.L1-b.1.iii",
     framework: "cmmc_l1",
     domain: "AC",
     shortName: "External Connections",
@@ -266,6 +322,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "AC.L1-3.1.22",
+    requirementId: "AC.L1-b.1.iv",
     framework: "cmmc_l1",
     domain: "AC",
     shortName: "Control Public Information",
@@ -323,6 +380,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "IA.L1-3.5.1",
+    requirementId: "IA.L1-b.1.v",
     framework: "cmmc_l1",
     domain: "IA",
     shortName: "Identification",
@@ -393,6 +451,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "IA.L1-3.5.2",
+    requirementId: "IA.L1-b.1.vi",
     framework: "cmmc_l1",
     domain: "IA",
     shortName: "Authentication",
@@ -464,6 +523,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "MP.L1-3.8.3",
+    requirementId: "MP.L1-b.1.vii",
     framework: "cmmc_l1",
     domain: "MP",
     shortName: "Media Disposal",
@@ -520,6 +580,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "PE.L1-3.10.1",
+    requirementId: "PE.L1-b.1.viii",
     framework: "cmmc_l1",
     domain: "PE",
     shortName: "Limit Physical Access",
@@ -566,6 +627,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "PE.L1-3.10.3",
+    requirementId: "PE.L1-b.1.ix",
     framework: "cmmc_l1",
     domain: "PE",
     shortName: "Escort Visitors",
@@ -610,6 +672,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "PE.L1-3.10.4",
+    requirementId: "PE.L1-b.1.ix",
     framework: "cmmc_l1",
     domain: "PE",
     shortName: "Physical Access Logs",
@@ -666,6 +729,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "PE.L1-3.10.5",
+    requirementId: "PE.L1-b.1.ix",
     framework: "cmmc_l1",
     domain: "PE",
     shortName: "Manage Physical Access",
@@ -711,6 +775,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "SC.L1-3.13.1",
+    requirementId: "SC.L1-b.1.x",
     framework: "cmmc_l1",
     domain: "SC",
     shortName: "Boundary Protection",
@@ -780,6 +845,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "SC.L1-3.13.5",
+    requirementId: "SC.L1-b.1.xi",
     framework: "cmmc_l1",
     domain: "SC",
     shortName: "Public-Access System Separation",
@@ -836,6 +902,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "SI.L1-3.14.1",
+    requirementId: "SI.L1-b.1.xii",
     framework: "cmmc_l1",
     domain: "SI",
     shortName: "Flaw Remediation",
@@ -905,6 +972,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "SI.L1-3.14.2",
+    requirementId: "SI.L1-b.1.xiii",
     framework: "cmmc_l1",
     domain: "SI",
     shortName: "Malicious Code Protection",
@@ -973,6 +1041,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "SI.L1-3.14.4",
+    requirementId: "SI.L1-b.1.xiv",
     framework: "cmmc_l1",
     domain: "SI",
     shortName: "Update Malicious Code Protection",
@@ -1028,6 +1097,7 @@ export const playbook: ControlPlaybook[] = [
   },
   {
     id: "SI.L1-3.14.5",
+    requirementId: "SI.L1-b.1.xv",
     framework: "cmmc_l1",
     domain: "SI",
     shortName: "System & File Scanning",
@@ -1229,3 +1299,185 @@ export const practiceObjectives: Record<string, AssessmentObjective[]> = {
 export function getObjectives(controlId: string): AssessmentObjective[] {
   return practiceObjectives[controlId] ?? [];
 }
+
+/**
+ * Map every legacy NIST 800-171 r2 control ID under CMMC L1 to its parent
+ * v2.13 requirement. Used by the rollup view, the SPRS export, and any UI
+ * that needs to group by the 15 official requirements.
+ */
+export const legacyToRequirement: Record<string, CmmcL1RequirementId> =
+  Object.fromEntries(
+    playbook
+      .filter((p) => p.framework === "cmmc_l1")
+      .map((p) => [p.id, p.requirementId]),
+  );
+
+/**
+ * Inverse of legacyToRequirement: every CMMC L1 v2.13 requirement to the
+ * NIST 800-171 r2 control IDs that compose it. Most requirements have one
+ * legacy ID; PE.L1-b.1.ix has three (3.10.3, 3.10.4, 3.10.5).
+ */
+export const requirementToLegacy: Record<CmmcL1RequirementId, string[]> = (() => {
+  const out: Partial<Record<CmmcL1RequirementId, string[]>> = {};
+  for (const p of playbook) {
+    if (p.framework !== "cmmc_l1") continue;
+    const list = out[p.requirementId] ?? [];
+    list.push(p.id);
+    out[p.requirementId] = list;
+  }
+  return out as Record<CmmcL1RequirementId, string[]>;
+})();
+
+/**
+ * Total assessment objective count for a given v2.13 requirement, summing
+ * across any legacy NIST controls that map to it. Used by the per-requirement
+ * progress card so the user sees "3 of 6 objectives covered".
+ */
+export function objectiveCountForRequirement(
+  requirementId: CmmcL1RequirementId,
+): number {
+  const legacyIds = requirementToLegacy[requirementId] ?? [];
+  let total = 0;
+  for (const id of legacyIds) {
+    total += (practiceObjectives[id] ?? []).length;
+  }
+  return total;
+}
+
+/**
+ * FAR 52.204-21(b)(1)(roman) clause text, plain title, and authoritative
+ * source for each of the 15 CMMC L1 v2.13 requirements. Drives the new
+ * "15 requirements" rollup view, the SPRS-ready export, and the affirmation
+ * preview. Source: CMMC Assessment Guide – Level 1, Version 2.13 (Sept 2024).
+ */
+export type RequirementMeta = {
+  id: CmmcL1RequirementId;
+  shortName: string;
+  farClause: string;
+  domain: ControlDomain;
+  /** Plain-English statement matching the FAR / Assessment Guide title. */
+  statement: string;
+};
+
+export const requirementMeta: Record<CmmcL1RequirementId, RequirementMeta> = {
+  "AC.L1-b.1.i": {
+    id: "AC.L1-b.1.i",
+    shortName: "Authorized Access Control",
+    farClause: "FAR 52.204-21(b)(1)(i)",
+    domain: "AC",
+    statement:
+      "Limit information system access to authorized users, processes acting on behalf of authorized users, or devices (including other information systems).",
+  },
+  "AC.L1-b.1.ii": {
+    id: "AC.L1-b.1.ii",
+    shortName: "Transaction & Function Control",
+    farClause: "FAR 52.204-21(b)(1)(ii)",
+    domain: "AC",
+    statement:
+      "Limit information system access to the types of transactions and functions that authorized users are permitted to execute.",
+  },
+  "AC.L1-b.1.iii": {
+    id: "AC.L1-b.1.iii",
+    shortName: "External Connections",
+    farClause: "FAR 52.204-21(b)(1)(iii)",
+    domain: "AC",
+    statement:
+      "Verify and control/limit connections to and use of external information systems.",
+  },
+  "AC.L1-b.1.iv": {
+    id: "AC.L1-b.1.iv",
+    shortName: "Control Public Information",
+    farClause: "FAR 52.204-21(b)(1)(iv)",
+    domain: "AC",
+    statement:
+      "Control information posted or processed on publicly accessible information systems.",
+  },
+  "IA.L1-b.1.v": {
+    id: "IA.L1-b.1.v",
+    shortName: "Identification",
+    farClause: "FAR 52.204-21(b)(1)(v)",
+    domain: "IA",
+    statement:
+      "Identify information system users, processes acting on behalf of users, or devices.",
+  },
+  "IA.L1-b.1.vi": {
+    id: "IA.L1-b.1.vi",
+    shortName: "Authentication",
+    farClause: "FAR 52.204-21(b)(1)(vi)",
+    domain: "IA",
+    statement:
+      "Authenticate (or verify) the identities of those users, processes, or devices, as a prerequisite to allowing access to organizational information systems.",
+  },
+  "MP.L1-b.1.vii": {
+    id: "MP.L1-b.1.vii",
+    shortName: "Media Disposal",
+    farClause: "FAR 52.204-21(b)(1)(vii)",
+    domain: "MP",
+    statement:
+      "Sanitize or destroy information system media containing Federal Contract Information before disposal or release for reuse.",
+  },
+  "PE.L1-b.1.viii": {
+    id: "PE.L1-b.1.viii",
+    shortName: "Limit Physical Access",
+    farClause: "FAR 52.204-21(b)(1)(viii)",
+    domain: "PE",
+    statement:
+      "Limit physical access to organizational information systems, equipment, and the respective operating environments to authorized individuals.",
+  },
+  "PE.L1-b.1.ix": {
+    id: "PE.L1-b.1.ix",
+    shortName: "Manage Visitors & Physical Access",
+    farClause: "FAR 52.204-21(b)(1)(ix)",
+    domain: "PE",
+    statement:
+      "Escort visitors and monitor visitor activity; maintain audit logs of physical access; and control and manage physical access devices.",
+  },
+  "SC.L1-b.1.x": {
+    id: "SC.L1-b.1.x",
+    shortName: "Boundary Protection",
+    farClause: "FAR 52.204-21(b)(1)(x)",
+    domain: "SC",
+    statement:
+      "Monitor, control, and protect organizational communications (i.e., information transmitted or received by organizational information systems) at the external boundaries and key internal boundaries of the information systems.",
+  },
+  "SC.L1-b.1.xi": {
+    id: "SC.L1-b.1.xi",
+    shortName: "Public-Access System Separation",
+    farClause: "FAR 52.204-21(b)(1)(xi)",
+    domain: "SC",
+    statement:
+      "Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks.",
+  },
+  "SI.L1-b.1.xii": {
+    id: "SI.L1-b.1.xii",
+    shortName: "Flaw Remediation",
+    farClause: "FAR 52.204-21(b)(1)(xii)",
+    domain: "SI",
+    statement:
+      "Identify, report, and correct information and information system flaws in a timely manner.",
+  },
+  "SI.L1-b.1.xiii": {
+    id: "SI.L1-b.1.xiii",
+    shortName: "Malicious Code Protection",
+    farClause: "FAR 52.204-21(b)(1)(xiii)",
+    domain: "SI",
+    statement:
+      "Provide protection from malicious code at appropriate locations within organizational information systems.",
+  },
+  "SI.L1-b.1.xiv": {
+    id: "SI.L1-b.1.xiv",
+    shortName: "Update Malicious Code Protection",
+    farClause: "FAR 52.204-21(b)(1)(xiv)",
+    domain: "SI",
+    statement:
+      "Update malicious code protection mechanisms when new releases are available.",
+  },
+  "SI.L1-b.1.xv": {
+    id: "SI.L1-b.1.xv",
+    shortName: "System & File Scanning",
+    farClause: "FAR 52.204-21(b)(1)(xv)",
+    domain: "SI",
+    statement:
+      "Perform periodic scans of the information system and real-time scans of files from external sources as files are downloaded, opened, or executed.",
+  },
+};

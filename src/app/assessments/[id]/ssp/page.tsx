@@ -9,6 +9,7 @@ import {
   type ControlResponseRow,
 } from "@/lib/assessment";
 import { controlDomains, playbook } from "@/lib/playbook";
+import { listObjectivesForAssessment } from "@/lib/cmmc/objectives";
 import { PrintButton } from "../PrintButton";
 
 const statusText: Record<ControlResponseRow["status"], string> = {
@@ -47,6 +48,27 @@ export default async function SystemSecurityPlanPage(
     const list = evidenceByControl.get(e.control_id) ?? [];
     list.push(e);
     evidenceByControl.set(e.control_id, list);
+  }
+
+  // Per CMMC AG v2.13, Enduring Exceptions and Temporary Deficiencies must
+  // be documented in the SSP. Pull the EE/TD declared on the objectives
+  // table and surface the first non-null per control alongside the
+  // implementation narrative.
+  const objectives =
+    ctx.assessment.framework === "cmmc_l1"
+      ? await listObjectivesForAssessment(id)
+      : [];
+  const exceptionByControl = new Map<
+    string,
+    { type: "enduring" | "temporary"; notes: string }
+  >();
+  for (const o of objectives) {
+    if (o.exception_type && !exceptionByControl.has(o.control_id)) {
+      exceptionByControl.set(o.control_id, {
+        type: o.exception_type,
+        notes: o.exception_notes ?? "",
+      });
+    }
   }
 
   const org = ctx.organization;
@@ -128,7 +150,7 @@ export default async function SystemSecurityPlanPage(
                   year: "numeric",
                 })}{" "}
                 that the information in this plan is accurate and that{" "}
-                {org.name} implements all 17 CMMC Level 1 security requirements
+                {org.name} implements all 15 CMMC Level 1 basic safeguarding requirements (FAR 52.204-21(b)(1)(i)–(b)(1)(xv); 59 NIST SP 800-171A assessment objectives)
                 as described.
               </p>
             </div>
@@ -141,7 +163,7 @@ export default async function SystemSecurityPlanPage(
 
         <section>
           <h2 className="text-lg font-bold tracking-tight text-slate-900">
-            3. Implementation of the 17 practices
+            3. Implementation of the 15 safeguarding requirements
           </h2>
           <p className="mt-2 text-sm text-slate-600">
             For each requirement, the narrative below describes how{" "}
@@ -161,6 +183,7 @@ export default async function SystemSecurityPlanPage(
                     {practices.map((practice) => {
                       const r = responseByControl.get(practice.id);
                       const arts = evidenceByControl.get(practice.id) ?? [];
+                      const exc = exceptionByControl.get(practice.id);
                       return (
                         <div
                           key={practice.id}
@@ -206,6 +229,21 @@ export default async function SystemSecurityPlanPage(
                                   </li>
                                 ))}
                               </ul>
+                            </div>
+                          )}
+                          {exc && (
+                            <div className="mt-3 border-l-4 border-amber-400 bg-amber-50 px-3 py-2">
+                              <div className="text-xs font-semibold uppercase tracking-wider text-amber-800">
+                                {exc.type === "enduring"
+                                  ? "Enduring Exception"
+                                  : "Temporary Deficiency"}
+                                {" · scores MET per CMMC AG v2.13"}
+                              </div>
+                              {exc.notes && (
+                                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">
+                                  {exc.notes}
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>

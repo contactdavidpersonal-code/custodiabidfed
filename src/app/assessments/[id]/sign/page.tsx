@@ -11,6 +11,7 @@ import {
   listRemediationPlansForAssessment,
   listResponsesForAssessment,
 } from "@/lib/assessment";
+import { computeExceptionCoverage } from "@/lib/cmmc/objectives";
 import { submitAffirmationAction } from "../../actions";
 
 export default async function SignPage(
@@ -34,6 +35,20 @@ export default async function SignPage(
     listRemediationPlansForAssessment(id),
   ]);
   const progress = computeProgress(responses);
+  // v2.13: legacy not-met/partial answers are still affirmation-eligible if
+  // the practice has a documented Enduring Exception or a Temporary Deficiency
+  // with at least one operational POA&M milestone. Mirror the gate the
+  // server action enforces (controlsBlockingAffirmation).
+  const coverage =
+    ctx.assessment.framework === "cmmc_l1"
+      ? await computeExceptionCoverage(id)
+      : new Map<string, { covered: boolean }>();
+  const blockingNotMet = responses.filter(
+    (r) => r.status === "no" && !coverage.get(r.control_id)?.covered,
+  ).length;
+  const blockingPartial = responses.filter(
+    (r) => r.status === "partial" && !coverage.get(r.control_id)?.covered,
+  ).length;
   const profileDone = Boolean(
     ctx.organization.name &&
       ctx.organization.name !== "My Organization" &&
@@ -52,8 +67,8 @@ export default async function SignPage(
   const ready =
     profileDone &&
     progress.unanswered === 0 &&
-    progress.notMet === 0 &&
-    progress.partial === 0 &&
+    blockingNotMet === 0 &&
+    blockingPartial === 0 &&
     evidenceBlockers.length === 0 &&
     missingEvidence.length === 0 &&
     pendingCarryForward.length === 0;
@@ -71,7 +86,7 @@ export default async function SignPage(
 
       <header className="mb-8">
         <div className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-600">
-          Step 4 of 7 · Sign &amp; affirm
+          Step 5 of 8 · Sign &amp; affirm
         </div>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
           Affirm your CMMC Level 1 compliance
@@ -99,16 +114,54 @@ export default async function SignPage(
             )}
             {progress.notMet > 0 && (
               <li>
-                {progress.notMet} practice
-                {progress.notMet === 1 ? " is" : "s are"} marked Not met.
-                Remediate before signing.
+                {blockingNotMet > 0 ? (
+                  <>
+                    {blockingNotMet} practice
+                    {blockingNotMet === 1 ? " is" : "s are"} marked Not met
+                    without a documented Enduring Exception or Temporary
+                    Deficiency. Either remediate, mark N/A, or document an
+                    EE/TD on the{" "}
+                    <Link
+                      href={`/assessments/${id}/exceptions`}
+                      className="underline"
+                    >
+                      exceptions page
+                    </Link>
+                    .
+                  </>
+                ) : (
+                  <>
+                    {progress.notMet} Not met practice
+                    {progress.notMet === 1 ? "" : "s"} covered by an Enduring
+                    Exception or Temporary Deficiency — affirmation-eligible.
+                  </>
+                )}
               </li>
             )}
             {progress.partial > 0 && (
               <li>
-                {progress.partial} practice
-                {progress.partial === 1 ? " is" : "s are"} marked Partial.
-                Fully implement before signing.
+                {blockingPartial > 0 ? (
+                  <>
+                    {blockingPartial} practice
+                    {blockingPartial === 1 ? " is" : "s are"} marked Partial
+                    without a documented Enduring Exception or Temporary
+                    Deficiency. Either fully implement, mark N/A, or document
+                    an EE/TD on the{" "}
+                    <Link
+                      href={`/assessments/${id}/exceptions`}
+                      className="underline"
+                    >
+                      exceptions page
+                    </Link>
+                    .
+                  </>
+                ) : (
+                  <>
+                    {progress.partial} Partial practice
+                    {progress.partial === 1 ? "" : "s"} covered by an Enduring
+                    Exception or Temporary Deficiency — affirmation-eligible.
+                  </>
+                )}
               </li>
             )}
             {pendingCarryForward.length > 0 && (
@@ -216,6 +269,31 @@ export default async function SignPage(
         </dl>
       </section>
 
+      <section className="mb-8  border border-indigo-200 bg-indigo-50 p-6">
+        <h2 className="text-sm font-semibold uppercase tracking-wider text-indigo-900">
+          What you&apos;re actually signing
+        </h2>
+        <p className="mt-2 text-sm leading-relaxed text-indigo-950">
+          By submitting this affirmation, your CMMC Status posts to SPRS as{" "}
+          <span className="font-semibold">Final Level 1 (Self)</span> for the
+          12 months that follow. Per <span className="font-semibold">DFARS
+          252.204-7021</span>, contracting officers must verify that status
+          before award on any solicitation that includes the clause; per{" "}
+          <span className="font-semibold">DFARS 252.204-7025</span>, you
+          represent that status at proposal time. A lapse must be reported to
+          the contracting officer within 72 hours.
+        </p>
+        <p className="mt-2 text-sm leading-relaxed text-indigo-950">
+          The 15 basic safeguarding requirements (FAR 52.204-21(b)(1)(i)–
+          (b)(1)(xv)) decompose into 59 NIST SP 800-171A assessment objectives.
+          Per <span className="font-semibold">32 CFR § 170.24</span>, every
+          objective must be MET or NOT APPLICABLE for the parent requirement
+          to be MET; one NOT MET fails the whole requirement. Documented
+          Enduring Exceptions (in your system security plan) and Temporary
+          Deficiencies (with milestones) score as MET.
+        </p>
+      </section>
+
       <form
         action={submitAffirmationAction}
         className="space-y-6  border border-slate-200 bg-white p-6 shadow-sm"
@@ -224,11 +302,13 @@ export default async function SignPage(
 
         <div>
           <h2 className="text-lg font-bold tracking-tight text-slate-900">
-            Senior official
+            Affirming Official
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Must be an officer, owner, or executive with authority to bind the
-            organization.
+            Per 32 CFR § 170.22, the Affirming Official must be a senior
+            officer of the organization with authority to bind it. Their name,
+            title, email, and the affirmation date are submitted to SPRS and
+            visible to contracting officers under DFARS 252.204-7021.
           </p>
         </div>
 
@@ -257,6 +337,22 @@ export default async function SignPage(
               className="w-full  border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
             />
           </label>
+          <label className="block md:col-span-2">
+            <span className="mb-1.5 block text-sm font-semibold text-slate-900">
+              Work email
+            </span>
+            <input
+              type="email"
+              name="affirmingOfficialEmail"
+              required
+              placeholder="ceo@yourcompany.com"
+              className="w-full  border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+            />
+            <span className="mt-1.5 block text-xs text-slate-500">
+              Used for the SPRS submission record and renewal reminders. Must
+              match the Affirming Official, not a generic inbox.
+            </span>
+          </label>
         </div>
 
         <div className=" border border-slate-200 bg-slate-50 p-5">
@@ -265,7 +361,7 @@ export default async function SignPage(
           </h3>
           <p className="mt-2 text-sm leading-relaxed text-slate-700">
             I affirm that <strong>{ctx.organization.name}</strong> implements
-            all 17 CMMC Level 1 security requirements as described in the
+            all 15 CMMC Level 1 basic safeguarding requirements (FAR 52.204-21(b)(1)(i)–(b)(1)(xv)) as described in the
             accompanying System Security Plan, and that the information
             provided is accurate and complete as of today. I understand that
             this affirmation is a material representation of fact upon which

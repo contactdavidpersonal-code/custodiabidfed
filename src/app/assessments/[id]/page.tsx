@@ -126,7 +126,7 @@ export default async function AssessmentOverviewPage(
             </h1>
             <p className="mt-2 text-sm text-[#5a7d70]">
               {ctx.organization.name !== "My Organization"
-                ? `${ctx.organization.name} — work the 17 practices below to MET, then sign and file with SPRS.`
+                ? `${ctx.organization.name} — work the 15 safeguarding requirements below to MET, then sign and file with SPRS.`
                 : "Business profile not set yet"}
             </p>
           </div>
@@ -171,7 +171,7 @@ export default async function AssessmentOverviewPage(
         <div className="mb-6 flex items-end justify-between gap-4">
           <div>
             <h2 className="font-serif text-2xl font-bold tracking-tight text-[#10231d]">
-              The 17 practices
+              The 15 safeguarding requirements
             </h2>
             <p className="mt-1 text-sm text-[#5a7d70]">
               Every practice must be MET or N/A before you can sign. Click any
@@ -839,7 +839,7 @@ function NextStepBanner({
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-amber-200 bg-amber-50 p-5">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-            Action needed · Step 1 of 7
+            Action needed · Step 1 of 8
           </div>
           <h2 className="mt-1 text-lg font-bold text-slate-900">
             Finish telling the officer about your business
@@ -864,14 +864,25 @@ function NextStepBanner({
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-sky-200 bg-sky-50 p-5">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-sky-700">
-            Step 3 of 7 · You are here
+            Step 4 of 8 · You are here
           </div>
           <h2 className="mt-1 text-lg font-bold text-slate-900">
-            Answer the 17 practices
+            Answer the 15 requirements
           </h2>
           <p className="mt-1 text-sm text-slate-700">
             Click any practice below. We&apos;ll explain it in plain English and
             show exactly what evidence to capture.
+          </p>
+          <p className="mt-2 text-xs text-slate-600">
+            Can&apos;t fully meet a requirement?{" "}
+            <Link
+              href={`/assessments/${assessmentId}/exceptions`}
+              className="font-semibold text-sky-700 underline hover:text-sky-900"
+            >
+              Document an Enduring Exception or Temporary Deficiency
+            </Link>
+            {" "}— per CMMC AG v2.13, both can roll up to MET when properly
+            documented.
           </p>
         </div>
       </div>
@@ -882,7 +893,7 @@ function NextStepBanner({
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-slate-900 bg-slate-900 p-5 text-white">
       <div>
         <div className="text-xs font-semibold uppercase tracking-wider text-amber-400">
-          Ready for step 4 · Sign &amp; affirm
+          Ready for step 5 · Sign &amp; affirm
         </div>
         <h2 className="mt-1 text-lg font-bold">
           {hasBlockers

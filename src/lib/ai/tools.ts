@@ -81,7 +81,7 @@ export const officerTools = [
         control_id: {
           type: "string",
           description:
-            "CMMC L1 control ID, e.g. 'AC.L1-3.1.1'. Must be one of the 17 practices.",
+            "Legacy CMMC L1 practice ID, e.g. 'AC.L1-3.1.1'. Must map to one of the 15 v2.13 safeguarding requirements (FAR 52.204-21(b)(1)(i)–(b)(1)(xv)).",
         },
         assessment_id: {
           type: "string",
@@ -183,14 +183,14 @@ export const officerTools = [
   {
     name: "cite_regulation",
     description:
-      "Look up the authoritative regulatory text for a CMMC L1 practice (by practice id like 'AC.L1-3.1.1') OR a program-level topic (slug like 'fci-definition', 'affirmation-liability', 'sprs-submission', 'sam-registration', 'cmmc-l1-scope', 'annual-cadence'). ALWAYS call this before quoting FAR / NIST / 32 CFR text — never paraphrase the regs from memory. Include the returned 'source' field verbatim when you quote in your answer so the user sees the citation.",
+      "Look up the authoritative regulatory text for a CMMC L1 requirement (by legacy NIST 800-171 r2 control id like 'AC.L1-3.1.1' OR by v2.13 requirement id like 'AC.L1-b.1.i') OR a program-level topic (slug). ALWAYS call this before quoting FAR / NIST / 32 CFR / DFARS text — never paraphrase the regs from memory. Include the returned 'source' field verbatim when you quote in your answer so the user sees the citation. Valid framework slugs: 'cmmc-l1-scope', 'cmmc-l1-scoping', 'cmmc-l1-findings', 'fci-definition', 'affirmation-liability', 'sprs-submission', 'sam-registration', 'annual-cadence', 'dfars-7021', 'dfars-7025', 'enduring-exception', 'temporary-deficiency', 'assessment-objective', 'external-service-provider'.",
     input_schema: {
       type: "object" as const,
       properties: {
         key: {
           type: "string",
           description:
-            "A control id (e.g. 'AC.L1-3.1.1', 'SI.L1-3.14.5') OR a framework slug ('cmmc-l1-scope', 'fci-definition', 'affirmation-liability', 'sprs-submission', 'sam-registration', 'annual-cadence').",
+            "A legacy control id (e.g. 'AC.L1-3.1.1', 'SI.L1-3.14.5'), a v2.13 requirement id (e.g. 'AC.L1-b.1.i', 'SI.L1-b.1.xv'), OR a framework slug (e.g. 'cmmc-l1-scope', 'dfars-7021', 'enduring-exception', 'temporary-deficiency').",
         },
       },
       required: ["key"],

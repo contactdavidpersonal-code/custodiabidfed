@@ -20,7 +20,7 @@ export default async function DeliverablesPage(
     return (
       <main className="mx-auto max-w-3xl px-4 py-12 text-center md:px-6 md:py-16">
         <div className="inline-flex items-center justify-center  bg-[#0e2a23] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#bdf2cf]">
-          Step 6 of 7 &bull; Locked
+          Step 7 of 8 &bull; Locked
         </div>
         <h1 className="mt-6 font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-4xl">
           Deliverables unlock the moment you sign
@@ -53,7 +53,7 @@ export default async function DeliverablesPage(
     <main className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-10">
       <header className="mb-8">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-          Step 6 of 7
+          Step 7 of 8
         </p>
         <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-4xl">
           You&apos;re officially CMMC Level 1 compliant.
@@ -130,7 +130,7 @@ export default async function DeliverablesPage(
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#bdf2cf]">
-              Step 7 of 7 · Final step
+              Step 8 of 8 · Final step
             </p>
             <h2 className="mt-1 font-serif text-xl font-bold leading-tight md:text-2xl">
               You&apos;re bid-ready. Now go win the contract.

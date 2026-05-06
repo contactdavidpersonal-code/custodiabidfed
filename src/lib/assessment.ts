@@ -10,6 +10,7 @@ import {
   type RemediationStatus,
 } from "@/lib/db";
 import { getPlaybookForFramework } from "@/lib/playbook";
+import { seedObjectiveRows } from "@/lib/cmmc/objectives";
 import { fiscalYearOf, seedMilestonesForAssessment } from "@/lib/fiscal";
 import { redirect } from "next/navigation";
 import { tryDecryptField } from "@/lib/security/field-encryption";
@@ -303,6 +304,13 @@ export async function createAssessmentForOrg(
     FROM UNNEST(${controlIds}::text[]) AS t(cid)
   `;
 
+  // CMMC L1 v2.13 — also seed the per-objective response table so the user
+  // can be evaluated against the 59 NIST 800-171A objectives that roll up
+  // to the 15 v2.13 requirements (32 CFR § 170.24).
+  if (framework === "cmmc_l1") {
+    await seedObjectiveRows(assessment.id);
+  }
+
   await seedMilestonesForAssessment(organizationId, assessment.id, fiscalYear);
 
   return assessment;
@@ -373,6 +381,15 @@ export async function createAssessmentWithCarryForward(
     FROM UNNEST(${controlIds}::text[]) AS t(cid)
     ON CONFLICT (assessment_id, control_id) DO NOTHING
   `;
+
+  // CMMC L1 v2.13: per-objective seed for the new cycle. Carried-forward
+  // status is intentionally NOT copied — every objective starts from
+  // 'unanswered' so the user must re-confirm currency annually per
+  // 32 CFR § 170.15(c)(2). The legacy `control_responses` carry-forward
+  // gives Charlie context to pre-fill suggested answers.
+  if (framework === "cmmc_l1") {
+    await seedObjectiveRows(assessment.id);
+  }
 
   // Carry forward evidence artifacts pointing to the same blob URLs. Each new
   // row gets prior_artifact_id set and carry_forward_status='pending_review'.
@@ -972,7 +989,9 @@ export function computeProgress(responses: ControlResponseRow[]): ProgressBreakd
 //                       SAM.gov issues UEI instantly while DLA takes a few
 //                       days to assign CAGE. We remind the user to come back
 //                       and paste it once they receive it.)
-//   3. practices      — all 17 control responses resolved (no unanswered/partial/notMet)
+//   3. practices      — all 15 v2.13 requirement rollups MET (every NIST
+//                       800-171A objective MET or NOT APPLICABLE; 32 CFR
+//                       § 170.24)
 //   4. sign           — senior official signs the affirmation
 //   5. attested       — bid packet, deliverables, etc. unlocked
 //
@@ -1038,14 +1057,25 @@ export function getStepGate(
   profile: BusinessProfileRow | null,
   responses: ControlResponseRow[],
   assessment: AssessmentRow,
+  /**
+   * Optional set of control IDs that are NOT MET / Partial in the legacy
+   * `responses` view but are covered by a valid Enduring Exception or
+   * Temporary Deficiency in the v2.13 objectives table. When present, those
+   * controls are treated as MET-equivalent for the practicesComplete gate.
+   */
+  exceptionCoveredControlIds?: ReadonlySet<string>,
 ): StepGate {
   const profileComplete = isProfileStepComplete(org, profile);
   const registrationComplete = isRegistrationStepComplete(org);
   const progress = computeProgress(responses);
+  const blockingPartial = responses.filter(
+    (r) =>
+      (r.status === "no" || r.status === "partial") &&
+      !(exceptionCoveredControlIds?.has(r.control_id) ?? false),
+  ).length;
   const practicesComplete =
     progress.unanswered === 0 &&
-    progress.notMet === 0 &&
-    progress.partial === 0 &&
+    blockingPartial === 0 &&
     progress.total > 0;
   const attested = assessment.status === "attested";
 
@@ -1119,11 +1149,25 @@ export async function enforceStepOrder(
     getBusinessProfile(ctx.organization.id),
     listResponsesForAssessment(ctx.assessment.id),
   ]);
+  // Load v2.13 EE/TD coverage so practices marked Not Met / Partial in the
+  // legacy table can still pass the practices-complete gate when properly
+  // documented. CMMC L1 only — other frameworks use the legacy gate as-is.
+  let coverage: ReadonlySet<string> | undefined;
+  if (ctx.assessment.framework === "cmmc_l1") {
+    const { computeExceptionCoverage } = await import("@/lib/cmmc/objectives");
+    const map = await computeExceptionCoverage(ctx.assessment.id);
+    const covered = new Set<string>();
+    for (const [controlId, info] of map) {
+      if (info.covered) covered.add(controlId);
+    }
+    coverage = covered;
+  }
   const gate = getStepGate(
     ctx.organization,
     profile,
     responses,
     ctx.assessment,
+    coverage,
   );
   const target = stepGateRedirect(gate, ctx.assessment.id, requestedStep);
   if (target) redirect(target);

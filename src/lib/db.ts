@@ -103,6 +103,45 @@ export const carryForwardStatuses = [
 ] as const;
 export type CarryForwardStatus = (typeof carryForwardStatuses)[number];
 
+// CMMC L1 v2.13 — per-assessment-objective findings.
+// Source: 32 CFR § 170.24 + CMMC Assessment Guide L1 v2.13.
+// One NOT_MET fails the parent requirement; N_A is equivalent to MET when
+// justified. EE / TD evidence (system security plan or operational plan of
+// action with milestones) lets the rollup mark MET despite an open gap.
+export const objectiveStatuses = [
+  "unanswered",
+  "met",
+  "not_met",
+  "not_applicable",
+] as const;
+export type ObjectiveStatus = (typeof objectiveStatuses)[number];
+
+export const objectiveExceptionTypes = ["enduring", "temporary"] as const;
+export type ObjectiveExceptionType = (typeof objectiveExceptionTypes)[number];
+
+// Per NIST SP 800-171A: Examine, Interview, Test. Captured per objective
+// so the artifact pack records HOW the requirement was satisfied (e.g.
+// "examine the access control list" vs. "test that disabled accounts
+// cannot log in").
+export const assessmentMethods = ["examine", "interview", "test"] as const;
+export type AssessmentMethod = (typeof assessmentMethods)[number];
+
+// 32 CFR § 170.19(b)(3) scope-inventory categories.
+export const scopeKinds = ["people", "technology", "facility", "esp"] as const;
+export type ScopeKind = (typeof scopeKinds)[number];
+
+// 32 CFR § 170.19(b)(2)(ii) Specialized Asset categories. Documented but
+// NOT assessed against L1 requirements.
+export const specializedAssetTypes = [
+  "iot",
+  "iiot",
+  "ot",
+  "gfe",
+  "restricted",
+  "test_equipment",
+] as const;
+export type SpecializedAssetType = (typeof specializedAssetTypes)[number];
+
 function getDatabaseUrl() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
@@ -1176,6 +1215,186 @@ export async function initDb() {
   await sql`
     CREATE INDEX IF NOT EXISTS idx_practice_conversations_assessment
       ON practice_conversations (assessment_id, control_id)
+  `;
+
+  // ─────────────────────────────────────────────────────────────────────
+  // CMMC L1 v2.13 (Sept 2024) + DFARS final rule (Sept 2025) additions.
+  // The previous single-status `control_responses` row continues to work
+  // for legacy data; these new tables let the platform record findings at
+  // the assessment-objective level (NIST 800-171A [a]…[h]), capture the
+  // formal scope inventory required by 32 CFR § 170.19(b)(3), track
+  // External Service Provider inheritance, document Specialized Assets,
+  // and flag Enduring Exceptions / Temporary Deficiencies.
+  // ─────────────────────────────────────────────────────────────────────
+
+  // Per-objective findings. CMMC L1 v2.13 requires MET / NOT_MET / N/A on
+  // each NIST 800-171A objective letter; one NOT_MET fails the parent
+  // requirement (32 CFR § 170.24). Legacy `control_responses` keeps its
+  // requirement-level rollup; this table is the source of truth for the
+  // 59-objective view, the EE/TD picker, and the SPRS-ready export.
+  //
+  // Status values map to 32 CFR § 170.24:
+  //   met            — all evidence in place
+  //   not_met        — one or more determination statements unsatisfied
+  //   not_applicable — objective does not apply (must include a justification)
+  //   unanswered     — the user hasn't worked this objective yet
+  //
+  // exception_type lets the user flag an Enduring Exception or a Temporary
+  // Deficiency. Per the Assessment Guide, both can roll up to MET when
+  // properly documented (EE in the system security plan, TD in an
+  // operational plan of action with milestones).
+  await sql`
+    CREATE TABLE IF NOT EXISTS control_objective_responses (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+      control_id TEXT NOT NULL,
+      requirement_id TEXT NOT NULL,
+      objective_letter TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'unanswered'
+        CHECK (status IN ('unanswered','met','not_met','not_applicable')),
+      narrative TEXT,
+      na_justification TEXT,
+      exception_type TEXT
+        CHECK (exception_type IN ('enduring','temporary')),
+      exception_notes TEXT,
+      esp_inherited_from UUID,
+      method TEXT
+        CHECK (method IN ('examine','interview','test')),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (assessment_id, control_id, objective_letter)
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_obj_resp_requirement
+      ON control_objective_responses (assessment_id, requirement_id)
+  `;
+
+  // Operational plan of action milestones for Temporary Deficiencies. CMMC
+  // Assessment Guide L1 v2.13 §"Assessment Findings" allows TDs to score MET
+  // when tracked in an operational plan of action with deficiency reviews,
+  // milestones, and progress toward correction. One row per milestone.
+  await sql`
+    CREATE TABLE IF NOT EXISTS objective_milestones (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      objective_response_id UUID NOT NULL
+        REFERENCES control_objective_responses(id) ON DELETE CASCADE,
+      label TEXT NOT NULL,
+      target_date DATE NOT NULL,
+      completed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_obj_milestones_response
+      ON objective_milestones (objective_response_id)
+  `;
+
+  // Formal scope inventory per 32 CFR § 170.19(b)(3): People, Technology,
+  // Facilities, External Service Providers (ESPs) handling FCI. The user
+  // walks Charlie through this once and signs the resulting register; it
+  // doubles as the "scope diagram" rendered into the artifact pack.
+  await sql`
+    CREATE TABLE IF NOT EXISTS scope_inventory (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL
+        CHECK (kind IN ('people','technology','facility','esp')),
+      label TEXT NOT NULL,
+      role TEXT,
+      handles_fci BOOLEAN NOT NULL DEFAULT TRUE,
+      notes TEXT,
+      retired_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_scope_inventory_org
+      ON scope_inventory (organization_id, kind)
+      WHERE retired_at IS NULL
+  `;
+
+  // ESP registry. Cloud / Managed Services / Cyber-as-a-Service providers
+  // that satisfy CMMC L1 objectives on behalf of the OSA. The ESP entry
+  // can be linked from a control_objective_responses row via
+  // esp_inherited_from to mark inheritance — i.e. "Microsoft 365 covers
+  // IA.L1-b.1.vi[a]". Doc that holds the inheritance evidence is the
+  // ESP's CMMC status / SOC report attached to this row.
+  await sql`
+    CREATE TABLE IF NOT EXISTS esp_registry (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      vendor TEXT,
+      services TEXT,
+      cmmc_status TEXT,
+      attestation_doc_url TEXT,
+      contact_email TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_esp_registry_org
+      ON esp_registry (organization_id)
+  `;
+
+  // Specialized Assets per 32 CFR § 170.19(b)(2)(ii): IoT, IIoT, OT, GFE,
+  // Restricted Information Systems, Test Equipment. These can process FCI
+  // but are NOT part of the L1 self-assessment scope (they're documented
+  // separately, never assessed against requirements). We capture them here
+  // so the artifact pack and the SPRS submission narrative can list them
+  // — assessors expect to see this list, even though the items themselves
+  // aren't graded.
+  await sql`
+    CREATE TABLE IF NOT EXISTS specialized_assets (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      label TEXT NOT NULL,
+      asset_type TEXT NOT NULL
+        CHECK (asset_type IN ('iot','iiot','ot','gfe','restricted','test_equipment')),
+      description TEXT,
+      handles_fci BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_specialized_assets_org
+      ON specialized_assets (organization_id)
+  `;
+
+  // CMMC v2.13 + DFARS 7021/7025 affirmation extras on the assessments row.
+  // - cmmc_status: the SPRS-tracked outcome ("Final Level 1 (Self)" when
+  //   all 15 requirements roll up to MET).
+  // - cmmc_model_version / assessment_guide_version: snapshot of the model
+  //   version this assessment was scored against, so any reproducibility
+  //   request can replay against the exact same control set.
+  // - affirming_official_email: legally-binding contact for the Senior
+  //   Official affirmation under 32 CFR § 170.22 + DFARS 252.204-7021.
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS cmmc_status TEXT
+  `;
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS cmmc_model_version TEXT NOT NULL DEFAULT '2.13'
+  `;
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS assessment_guide_version TEXT NOT NULL DEFAULT '2.13'
+  `;
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS affirming_official_email TEXT
+  `;
+  // Backfill cmmc_status for legacy attested rows.
+  await sql`
+    UPDATE assessments
+    SET cmmc_status = 'Final Level 1 (Self)'
+    WHERE framework = 'cmmc_l1'
+      AND status = 'attested'
+      AND implements_all_17 = TRUE
+      AND cmmc_status IS NULL
   `;
 }
 

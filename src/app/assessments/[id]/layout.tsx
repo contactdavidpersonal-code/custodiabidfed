@@ -8,6 +8,7 @@ import {
   listResponsesForAssessment,
   stepHref,
 } from "@/lib/assessment";
+import { computeExceptionCoverage } from "@/lib/cmmc/objectives";
 import { CourseSidebar, type CourseSection, type SectionStatus } from "./CourseSidebar";
 
 /**
@@ -34,8 +35,21 @@ export default async function CourseLayout(
     getBusinessProfile(ctx.organization.id),
   ]);
 
+  // EE/TD coverage so practices marked Not Met / Partial in the legacy table
+  // but documented as Enduring Exceptions or Temporary Deficiencies (with
+  // milestones) don't trap the user on the practices step. CMMC L1 only.
+  let coverage: ReadonlySet<string> | undefined;
+  if (ctx.assessment.framework === "cmmc_l1") {
+    const map = await computeExceptionCoverage(id);
+    const covered = new Set<string>();
+    for (const [controlId, info] of map) {
+      if (info.covered) covered.add(controlId);
+    }
+    coverage = covered;
+  }
+
   const progress = computeProgress(responses);
-  const gate = getStepGate(ctx.organization, profile, responses, ctx.assessment);
+  const gate = getStepGate(ctx.organization, profile, responses, ctx.assessment, coverage);
   const profileComplete = gate.profileComplete;
   const registrationComplete = gate.registrationComplete;
   const practicesAllResolved = gate.practicesComplete;
@@ -89,10 +103,21 @@ export default async function CourseLayout(
       match: "exact",
     },
     {
-      id: "practices",
+      id: "scope",
       step: 3,
+      href: `/assessments/${id}/scope`,
+      title: "Scope inventory",
+      subtitle: registrationComplete
+        ? "People, technology, facilities, ESPs"
+        : "Unlocks after registration",
+      status: registrationComplete ? "available" : "locked",
+      match: "prefix",
+    },
+    {
+      id: "practices",
+      step: 4,
       href: `/assessments/${id}`,
-      title: "The seventeen safeguarding practices",
+      title: "The 15 safeguarding requirements",
       subtitle: (() => {
         const total =
           progress.met +
@@ -124,7 +149,7 @@ export default async function CourseLayout(
     },
     {
       id: "sign",
-      step: 4,
+      step: 5,
       href: `/assessments/${id}/sign`,
       title: "Sign and affirm",
       subtitle: attested
@@ -137,7 +162,7 @@ export default async function CourseLayout(
     },
     {
       id: "bid-ready",
-      step: 5,
+      step: 6,
       href: `/assessments/${id}/bid-packet`,
       title: "Bid-ready packet",
       subtitle: attested
@@ -148,7 +173,7 @@ export default async function CourseLayout(
     },
     {
       id: "deliverables",
-      step: 6,
+      step: 7,
       href: `/assessments/${id}/deliverables`,
       title: "Deliverables",
       subtitle: attested
@@ -159,7 +184,7 @@ export default async function CourseLayout(
     },
     {
       id: "opportunities",
-      step: 7,
+      step: 8,
       href: `/opportunities`,
       title: "Find and submit bids",
       subtitle: attested

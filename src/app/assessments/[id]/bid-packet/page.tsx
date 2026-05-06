@@ -40,7 +40,7 @@ export default async function BidPacketPage(
     <main className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-10">
       <header className="mb-8">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-          Step 5 of 7 · Bid-Ready Packet
+          Step 6 of 8 · Bid-Ready Packet
         </p>
         <h1 className="mt-3 font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-4xl">
           Review &amp; download

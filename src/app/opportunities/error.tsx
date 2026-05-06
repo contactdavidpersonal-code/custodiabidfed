@@ -25,7 +25,7 @@ export default function OpportunitiesError({
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-5">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
-              Step 7 of 7 &middot; Find &amp; submit bids
+              Step 8 of 8 &middot; Find &amp; submit bids
             </p>
             <h1 className="mt-1 font-serif text-2xl font-bold">
               We hit a snag loading your pipeline.

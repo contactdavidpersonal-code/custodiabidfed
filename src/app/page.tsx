@@ -51,7 +51,7 @@ const PRACTICES = [
 // What you get the moment you start the 14-day free trial. No credit card required.
 // Stacked Hormozi-style: each line shows the standalone value, then anchored to the bundle.
 const VALUE_STACK = [
-  { name: "Charlie-guided CMMC Level 1 Build", desc: "Your vCO walks all 17 FAR 52.204-21 practices in plain English &mdash; no jargon, no blank pages.", value: "$2,400" },
+  { name: "Charlie-guided CMMC Level 1 Build", desc: "Your vCO walks all 15 FAR 52.204-21 safeguarding requirements (59 NIST 800-171A objectives) in plain English &mdash; no jargon, no blank pages.", value: "$2,400" },
   { name: "Auto-Drafted SSP &amp; Affirmation Memo", desc: "Your System Security Plan and signed affirmation, pre-written from your inputs.", value: "$1,800" },
   { name: "Bid-Ready Package Generator", desc: "One-click ZIP: SSP, affirmation, full evidence inventory &mdash; ready to attach to any RFP.", value: "$3,500" },
   { name: "AI Evidence Auto-Review", desc: "Every artifact you upload runs through gap detection instantly. No waiting on humans.", value: "$1,200/mo" },
@@ -107,7 +107,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is CMMC Level 1 mandatory for all federal contractors?",
-    a: "CMMC Level 1 is required for any contractor that handles Federal Contract Information (FCI). If you work on DoD contracts that involve FCI, you must self-attest annual compliance in SPRS and meet all 17 FAR 52.204-21 practices. L1 affirmation is binary &mdash; you either implement all 17 practices or you do not. Custodia handles CMMC Level 1 only; we do not handle CUI / Level 2 work.",
+    a: "CMMC Level 1 is required for any contractor that handles Federal Contract Information (FCI). If you work on DoD contracts that involve FCI, you must self-attest annual compliance in SPRS and meet all 15 FAR 52.204-21 safeguarding requirements (59 NIST 800-171A assessment objectives). L1 affirmation is binary &mdash; every requirement must roll up to MET (32 CFR § 170.24) or you do not. Custodia handles CMMC Level 1 only; we do not handle CUI / Level 2 work.",
   },
   {
     q: "How long does the build take?",
@@ -130,12 +130,12 @@ const FAQ_ITEMS = [
     a: "Annual re-affirmation is included with every active membership. We flag changed controls, update your SSP, and prepare your SPRS re-submission every October at no additional charge. Your next cycle is ready before your fiscal year deadline.",
   },
   {
-    q: "Why pay for this when I could DIY the 17 practices?",
+    q: "Why pay for this when I could DIY the 15 requirements?",
     a: "You can. People do. They also burn 80&ndash;120 hours of founder time, hire a $200/hr consultant, and still file an SPRS affirmation that won&apos;t hold up under prime scrutiny &mdash; which is False Claims Act exposure under 18 USC 1001. Custodia compresses that into a week-1 platform-led build with officer backing, then keeps your posture watched all year. The price is the cheapest part of the equation.",
   },
   {
     q: "What is the EMEC Protocol?",
-    a: "EMEC stands for Engage, Map, Execute, Confirm &mdash; the four phases of the Custodia compliance workflow. Engage captures your business scope and tech stack. Map walks the 17 practices with evidence guidance. Execute produces your signed SSP and SPRS submission. Confirm maintains and re-affirms your package each year.",
+    a: "EMEC stands for Engage, Map, Execute, Confirm &mdash; the four phases of the Custodia compliance workflow. Engage captures your business scope and tech stack. Map walks the 15 safeguarding requirements with evidence guidance for every assessment objective. Execute produces your signed SSP and SPRS submission. Confirm maintains and re-affirms your package each year.",
   },
 ];
 
@@ -425,7 +425,7 @@ export default function Home() {
           </div>
 
           <p className="mt-8 text-sm leading-relaxed text-[#5a7d70]">
-            Federal Contract Information (FCI) work &mdash; the contracts CMMC Level 1 unlocks &mdash; is the largest pool of DoD opportunity flowing to small businesses. Subcontracts from primes. Set-aside primes for SDVOSBs and SDBs. SBIR Phase II awards. Agency direct buys. The barrier is the 17 practices, the SSP, and a defensible SPRS affirmation. We remove that barrier in days.
+            Federal Contract Information (FCI) work &mdash; the contracts CMMC Level 1 unlocks &mdash; is the largest pool of DoD opportunity flowing to small businesses. Subcontracts from primes. Set-aside primes for SDVOSBs and SDBs. SBIR Phase II awards. Agency direct buys. The barrier is the 15 safeguarding requirements, the SSP, and a defensible SPRS affirmation. We remove that barrier in days.
           </p>
 
           {/* Barrier vs Fix split */}
@@ -439,7 +439,7 @@ export default function Home() {
               </h3>
               <ul className="mt-5 space-y-3 text-sm text-[#5d4f30]">
                 {[
-                  "17 CMMC practices written in cybersecurity jargon, not plain English",
+                  "15 CMMC practices written in cybersecurity jargon, not plain English",
                   "No template for SSP narratives, evidence inventories, or affirmation memos",
                   "No expert on call &mdash; nowhere to turn when a CMMC question comes up mid-bid",
                   "SPRS affirmation carries 18 USC 1001 and False Claims Act liability if you sign and you're wrong",
@@ -462,7 +462,7 @@ export default function Home() {
               </h3>
               <ul className="mt-5 space-y-3 text-sm text-[#cce5da]">
                 {[
-                  "All 17 practices walked in plain English, tailored to your tech stack",
+                  "All 15 requirements walked in plain English, tailored to your tech stack",
                   "SSP narratives drafted for you &mdash; accept or edit in one click",
                   "AI evidence auto-review &mdash; instant feedback on every artifact you upload",
                   "Custodia officer on-call via in-app tickets &mdash; ask any CMMC question",
@@ -810,7 +810,7 @@ export default function Home() {
               <ul className="mt-5 space-y-3 text-sm text-[#31594d]">
                 {[
                   "Onboarding chat &mdash; capture business identity, FCI scope, and tech stack",
-                  "Walk all 17 FAR 52.204-21 practices in plain English",
+                  "Walk all 15 FAR 52.204-21 safeguarding requirements in plain English",
                   "Upload evidence per control (screenshots, exports, signed rosters, policies)",
                   "Auto-drafted SSP narratives &mdash; accept or edit in one click",
                   "Generate your first bid-ready package: signed affirmation, SSP, evidence ZIP",
@@ -1064,7 +1064,7 @@ export default function Home() {
                 Get CMMC Level 1 secure
               </h4>
               <p className="mt-2 text-sm leading-relaxed text-[#496f61]">
-                You complete the 17 practices, capture evidence, and file your SPRS affirmation. You&apos;re now legally eligible to handle Federal Contract Information &mdash; the gate is open.
+                You complete the 15 safeguarding requirements, capture evidence, and file your SPRS affirmation. You&apos;re now legally eligible to handle Federal Contract Information &mdash; the gate is open.
               </p>
             </div>
             <div className="border-2 border-[#2f8f6d] bg-[#f7fcf9] p-7 shadow-sm">
@@ -1121,7 +1121,7 @@ export default function Home() {
               },
               {
                 title: "CMMC Level 1 specialists",
-                body: "We do one thing &mdash; CMMC L1 for FCI handlers &mdash; and we do it all the way. No scope drift into L2 or L3. The seventeen practices are our entire focus.",
+                body: "We do one thing &mdash; CMMC L1 for FCI handlers &mdash; and we do it all the way. No scope drift into L2 or L3. The 15 safeguarding requirements are our entire focus.",
               },
               {
                 title: "Officers on-call via in-app tickets",
@@ -1200,7 +1200,7 @@ export default function Home() {
                 n: "03",
                 tag: "DAY 2\u20133",
                 paid: false,
-                title: "Walk the 17 CMMC practices",
+                title: "Walk the 15 CMMC requirements",
                 time: "30&ndash;60 minutes per session",
                 desc: "Each FAR 52.204-21 requirement is explained in plain English with capture steps tailored to your stack &mdash; M365, Google Workspace, Okta, AWS, on-prem, or no IT at all.",
               },
@@ -1344,11 +1344,11 @@ export default function Home() {
                 </div>
                 <span className="rounded-full bg-[#e8f7ef] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[#1f5c47]">included in trial</span>
               </div>
-              <p className="mt-3 text-sm text-[#496f61]">Walk the 17 practices, capture evidence, draft your SSP &mdash; without writing it from scratch.</p>
+              <p className="mt-3 text-sm text-[#496f61]">Walk the 15 safeguarding requirements, capture evidence, draft your SSP &mdash; without writing it from scratch.</p>
               <ul className="mt-6 space-y-3">
                 {[
                   { t: "Charlie-guided onboarding", d: "Your vCO captures your business, FCI scope, and tech stack in conversation &mdash; no 40-field forms." },
-                  { t: "All 17 practices, plain English", d: "Each FAR 52.204-21 control walked with capture steps tailored to M365, Google, Okta, AWS, on-prem, or no IT at all." },
+                  { t: "All 15 requirements, plain English", d: "Each FAR 52.204-21 safeguarding requirement walked with capture steps tailored to M365, Google, Okta, AWS, on-prem, or no IT at all." },
                   { t: "Evidence vault per control", d: "Tag screenshots, exports, signed rosters, and policy PDFs to the controls they prove." },
                   { t: "Auto-drafted SSP narratives", d: "Every control&apos;s SSP section pre-written from your inputs. Accept or edit in one click." },
                   { t: "Live readiness score", d: "Real-time domain-by-domain progress so you always know what&apos;s left." },
@@ -1825,7 +1825,7 @@ export default function Home() {
               </span>
             </div>
             <p className="mx-auto mt-5 max-w-xl text-base text-[#a8cfc0] md:text-lg">
-              of users who complete all 17 FAR 52.204-21 practices on Custodia <span className="font-bold text-white">file a defensible SPRS Level 1 affirmation</span> &mdash; the legal prerequisite to handle Federal Contract Information and bid on FCI-scoped contracts.
+              of users who complete all 15 FAR 52.204-21 safeguarding requirements on Custodia <span className="font-bold text-white">file a defensible SPRS Level 1 affirmation</span> &mdash; the legal prerequisite to handle Federal Contract Information and bid on FCI-scoped contracts.
             </p>
             <p className="mx-auto mt-3 max-w-xl text-xs italic text-[#7fa89a]">
               Custodia handles CMMC Level 1 only. Awards depend on your bid quality, agency selection, and competition &mdash; not the platform. We secure your eligibility; you secure the business.
@@ -1853,7 +1853,7 @@ export default function Home() {
                 {
                   day: "Day 4",
                   stat: "Bid-ready",
-                  label: "Completes all 17 FAR 52.204-21 practices. Signs SSP.",
+                  label: "Completes all 15 FAR 52.204-21 safeguarding requirements. Signs SSP.",
                 },
                 {
                   day: "Day 5",

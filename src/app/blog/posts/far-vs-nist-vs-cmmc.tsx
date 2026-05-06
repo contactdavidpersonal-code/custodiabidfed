@@ -40,7 +40,7 @@ const meta = {
 
 const TOC_ITEMS = [
   { id: "data-types", label: "Start here: FCI vs CUI" },
-  { id: "far", label: "FAR 52.204-21 — the original 17 practices" },
+  { id: "far", label: "FAR 52.204-21 — the 15 basic safeguarding requirements" },
   { id: "nist", label: "NIST SP 800-171 — the 110-control standard" },
   { id: "cmmc-l1", label: "CMMC Level 1 — self-attestation against the 17" },
   { id: "cmmc-l2", label: "CMMC Level 2 — assessed against the 110" },
@@ -91,7 +91,7 @@ function Body() {
         the CMMC Level 1 / FAR 52.204-21 lane &mdash; not Level 2.
       </Callout>
 
-      <H2 id="far">FAR 52.204-21 — the original 17 practices</H2>
+      <H2 id="far">FAR 52.204-21 — the 15 basic safeguarding requirements</H2>
       <P>
         <strong>FAR 52.204-21</strong> &mdash; &ldquo;Basic Safeguarding of
         Covered Contractor Information Systems&rdquo; &mdash; is the
@@ -138,7 +138,7 @@ function Body() {
         effective Dec 16, 2024) requires:
       </P>
       <UL>
-        <li>Annual self-assessment against all 17 practices</li>
+        <li>Annual self-assessment against all 15 basic safeguarding requirements (FAR 52.204-21(b)(1)(i)–(b)(1)(xv))</li>
         <li>
           Annual affirmation in SPRS, signed by a senior official of the
           contractor (i.e., your CEO/COO &mdash; their name on a federal

@@ -82,7 +82,7 @@ Filed on:            ${fmtDate(input.filedAt)}
 Next re-affirmation: ${fmtDate(input.nextReaffirmDueDate)}
 
 What you should keep on file (in case of a contracting officer audit):
-  1. Your System Security Plan (SSP) — covers all 17 practices
+  1. Your System Security Plan (SSP) — covers all 15 safeguarding requirements
   2. Your signed annual affirmation memo
   3. This SPRS confirmation number
 
@@ -136,7 +136,7 @@ function renderHtml(input: SprsFiledEmailInput & { greeting: string }): string {
         <tr><td style="padding:20px 32px 8px 32px;font-size:14px;line-height:1.55;color:#2c3e36;">
           <p style="margin:0 0 8px 0;font-weight:600;">Keep these three artifacts on file in case of a contracting officer audit:</p>
           <ol style="margin:0 0 0 18px;padding:0;">
-            <li>Your System Security Plan (SSP) — covers all 17 practices</li>
+            <li>Your System Security Plan (SSP) — covers all 15 safeguarding requirements</li>
             <li>Your signed annual affirmation memo</li>
             <li>This SPRS confirmation number</li>
           </ol>

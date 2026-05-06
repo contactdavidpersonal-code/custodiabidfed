@@ -148,8 +148,8 @@ function buildReadme(input: {
   const implementsAll = assessment.implements_all_17 === true;
   const outcomeLine = assessment.affirmed_at
     ? implementsAll
-      ? "**Affirmation outcome:** Implements all 17 CMMC Level 1 security requirements (FAR 52.204-21(b)(1)). Eligible to file a positive affirmation in SPRS."
-      : "**Affirmation outcome:** Does NOT implement all 17 CMMC Level 1 security requirements. Do not file a positive affirmation until remediation closes the gap."
+      ? "**Affirmation outcome:** Implements all 15 CMMC Level 1 basic safeguarding requirements (FAR 52.204-21(b)(1)(i)–(b)(1)(xv); 59 NIST SP 800-171A assessment objectives per Assessment Guide v2.13 / 32 CFR § 170.24). CMMC Status: Final Level 1 (Self). Eligible to file a positive affirmation in SPRS and to represent compliance under DFARS 252.204-7025."
+      : "**Affirmation outcome:** Does NOT implement all 15 CMMC Level 1 basic safeguarding requirements. Do not file a positive affirmation until remediation closes the gap."
     : "**Affirmation outcome:** Pending — not yet signed.";
 
   return `# ${org.name} — CMMC Level 1 Bid-Ready Package
@@ -160,7 +160,7 @@ function buildReadme(input: {
 ${draft ? "**⚠  DRAFT — not signed. Do not submit to SPRS.**\n" : ""}${signedLine}
 ${outcomeLine}
 
-> CMMC Level 1 affirmation is **binary**: you either implement all 17 practices in FAR 52.204-21(b)(1) or you don't. There is no partial-credit score for L1. The 110-point NIST SP 800-171 scoring methodology applies to **CMMC Level 2 / DFARS 252.204-7012**, not L1.
+> CMMC Level 1 affirmation is **binary**: every one of the 15 basic safeguarding requirements at FAR 52.204-21(b)(1)(i)–(b)(1)(xv) must roll up to MET (32 CFR § 170.24 — each of the 59 NIST SP 800-171A assessment objectives MET or NOT APPLICABLE) or you don't. There is no partial-credit score for L1. The 110-point NIST SP 800-171 scoring methodology applies to **CMMC Level 2 / DFARS 252.204-7012**, not L1.
 
 ---
 
@@ -184,7 +184,7 @@ CMMC Level 1 affirmations are filed in the **Supplier Performance Risk System (S
 3. Start a new **CMMC Level 1 (Self) Affirmation** entry.
 4. Enter the affirmation date from this package: ${assessment.affirmed_at ? new Date(assessment.affirmed_at).toISOString().slice(0, 10) : "[pending affirmation]"}.
 5. Enter the affirming official's name and title: ${assessment.affirmed_by_name ?? "[pending]"} / ${assessment.affirmed_by_title ?? "[pending]"}.
-6. Affirm: ${implementsAll ? "**YES** — implements all 17 CMMC Level 1 security requirements at FAR 52.204-21(b)(1)" : "[Do NOT affirm yes until all 17 practices are implemented]"}.
+6. Affirm: ${implementsAll ? "**YES** — implements all 15 CMMC Level 1 basic safeguarding requirements at FAR 52.204-21(b)(1)(i)–(b)(1)(xv); CMMC Status: Final Level 1 (Self)" : "[Do NOT affirm yes until all 15 requirements are MET]"}.
 7. Submit. SPRS will generate a posting date that primes can look up.
 
 Your affirmation is valid for **one year** from the posting date (32 CFR § 170.15(c)(2)). Custodia will remind you when FY${assessment.fiscal_year + 1} re-affirmation is due.

@@ -17,7 +17,7 @@ import { defaultCycleLabel, fiscalYearOf } from "@/lib/fiscal";
  * /assessments is the workspace root. There is exactly one active CMMC L1
  * affirmation per org — we auto-create it on first visit and forward straight
  * to whichever step the user still owes work on (business profile, federal
- * registration, the 17 practices, or signing the affirmation). The step gate
+ * registration, the 15 safeguarding requirements, or signing the affirmation). The step gate
  * keeps the order strict: nobody can jump ahead.
  */
 export default async function AssessmentsIndexPage() {

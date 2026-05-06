@@ -87,7 +87,7 @@ export default function MeetCharliePage() {
               <strong className="block text-slate-900">
                 Sign off on weak evidence.
               </strong>
-              Charlie blocks attestation when any of the 17 practices are
+              Charlie blocks attestation when any of the 15 safeguarding requirements are
               still partial or unclear. No exceptions.
             </li>
             <li className=" border border-slate-200 bg-white p-4 text-sm text-slate-700 shadow-sm">

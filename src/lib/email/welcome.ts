@@ -63,7 +63,7 @@ baseline every company that handles Federal Contract Information (FCI) has to
 meet to keep bidding on (and performing under) federal contracts.
 
 What you get inside:
-- A plain-English walkthrough of all 17 CMMC L1 practices (FAR 52.204-21)
+- A plain-English walkthrough of all 15 CMMC L1 safeguarding requirements (FAR 52.204-21)
 - The Platform drafts narratives, reviews your evidence, and
   flags anything that won't pass a prime's questionnaire
 - Quarterly check-ins to keep your evidence current — not just one big scramble

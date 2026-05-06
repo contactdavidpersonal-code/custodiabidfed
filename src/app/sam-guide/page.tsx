@@ -346,7 +346,7 @@ export default function SamGuidePage() {
   // an inline .ics so the user can add it to whichever calendar they use.
   const reminderTitle = "Add CAGE code to BidFed (SAM.gov should have issued it by now)";
   const reminderDetails =
-    "Open your SAM.gov Workspace, copy your CAGE code from your active entity, and paste it into BidFed's Federal contractor registration page so the 17 CMMC Level 1 practices stay unlocked.";
+    "Open your SAM.gov Workspace, copy your CAGE code from your active entity, and paste it into BidFed's Federal contractor registration page so the 15 CMMC Level 1 safeguarding requirements stay unlocked.";
   const reminderLocation = "https://sam.gov/workspace";
 
   // Pick a date 5 business days out (skip weekends).
@@ -501,7 +501,7 @@ export default function SamGuidePage() {
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-[#264a3d]">
           Open the BidFed <strong>Federal contractor registration</strong> page
-          (Step 2 of 7 in your assessment) and fill it in:
+          (Step 2 of 8 in your assessment) and fill it in:
         </p>
         <ol className="mt-4 space-y-3 text-sm leading-relaxed text-[#264a3d]">
           <li>
@@ -567,7 +567,7 @@ export default function SamGuidePage() {
 
         <p className="mt-6 text-xs leading-relaxed text-[#5a7d70]">
           Once your UEI and at least one NAICS code are saved in BidFed, the
-          third section &mdash; the 17 CMMC Level 1 practices &mdash; unlocks.
+          third section &mdash; the 15 CMMC Level 1 safeguarding requirements &mdash; unlocks.
           You can start working through them while DLA finishes issuing your
           CAGE code in the background.
         </p>

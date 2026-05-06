@@ -436,7 +436,7 @@ export default async function VerifiedPublicPage(
           <p className="mb-2 text-sm text-slate-700">
             This page is published by {page.organization_name} via Custodia, a
             cybersecurity firm based in Pittsburgh, PA. Custodia attests that
-            this organization has implemented all 17 FAR 52.204-21 practices
+            this organization has implemented all 15 FAR 52.204-21 basic safeguarding requirements
             on the Custodia platform and that the SPRS confirmation
             referenced was filed by an authenticated user of the platform on
             the date shown.

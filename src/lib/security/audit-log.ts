@@ -29,7 +29,15 @@ export type AuditAction =
   | "trust_page.rotated"
   | "sprs_quiz.submitted"
   | "assessment.sprs_filed"
-  | "email.sprs_filed.failed";
+  | "email.sprs_filed.failed"
+  | "scope_inventory.added"
+  | "scope_inventory.retired"
+  | "esp_registry.added"
+  | "specialized_asset.added"
+  | "exception.declared"
+  | "exception.cleared"
+  | "milestone.added"
+  | "milestone.deleted";
 
 export type AuditEvent = {
   action: AuditAction;

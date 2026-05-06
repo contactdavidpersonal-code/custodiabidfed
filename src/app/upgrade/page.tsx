@@ -106,7 +106,7 @@ export default async function UpgradePage() {
 
             <ul className="mt-3 grid grid-cols-1 gap-x-4 gap-y-1 text-[12.5px] text-[#2c4940] sm:grid-cols-2">
               {[
-                "All 17 FAR 52.204-21 practices walked by Charlie",
+                "All 15 FAR 52.204-21 safeguarding requirements walked by Charlie",
                 "Bid-ready package: SSP, affirmation, evidence",
                 "Year-round M365 / Google Workspace monitoring",
                 "Evidence freshness alerts",

@@ -33,6 +33,10 @@ import {
   type RemediationStatus,
 } from "@/lib/db";
 import { playbookById } from "@/lib/playbook";
+import {
+  controlsBlockingAffirmation,
+  syncLegacyStatusToObjectives,
+} from "@/lib/cmmc/objectives";
 import { reviewEvidenceArtifact } from "@/lib/ai/evidence-review";
 import {
   appendMessage,
@@ -163,6 +167,17 @@ export async function saveControlResponseAction(formData: FormData) {
         updated_at = NOW()
     WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
   `;
+
+  // Mirror the legacy single-status into the v2.13 per-objective table so
+  // the 15-requirement rollup stays in sync. Untouched objectives (those
+  // the user has not explicitly edited via the per-objective UI) follow.
+  if (ctx.assessment.framework === "cmmc_l1") {
+    await syncLegacyStatusToObjectives({
+      assessmentId,
+      controlId,
+      legacyStatus: status,
+    });
+  }
 
   revalidatePath(`/assessments/${assessmentId}`);
   revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
@@ -854,10 +869,21 @@ export async function submitAffirmationAction(formData: FormData) {
   const assessmentId = String(formData.get("assessmentId") ?? "");
   const signerName = String(formData.get("signerName") ?? "").trim();
   const signerTitle = String(formData.get("signerTitle") ?? "").trim();
+  const affirmingOfficialEmail = String(
+    formData.get("affirmingOfficialEmail") ?? "",
+  )
+    .trim()
+    .toLowerCase();
   const acknowledged = formData.get("acknowledged") === "on";
 
   if (!signerName) throw new Error("Signer name is required");
   if (!signerTitle) throw new Error("Signer title is required");
+  if (
+    affirmingOfficialEmail &&
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(affirmingOfficialEmail)
+  ) {
+    throw new Error("Affirming Official email is not a valid address");
+  }
   if (!acknowledged) {
     throw new Error("You must acknowledge the affirmation statement");
   }
@@ -882,7 +908,25 @@ export async function submitAffirmationAction(formData: FormData) {
   if (unanswered > 0) {
     throw new Error("Answer every practice before signing");
   }
-  if (notMet > 0 || partial > 0) {
+
+  // CMMC AG v2.13: Not Met / Partial practices are acceptable when covered
+  // by an Enduring Exception (documented in the SSP) or a Temporary
+  // Deficiency (with at least one operational POA&M milestone). Anything
+  // else blocks affirmation. See 32 CFR § 170.24 + AG v2.13 Findings.
+  if (ctx.assessment.framework === "cmmc_l1") {
+    const blockers = await controlsBlockingAffirmation(assessmentId, responses);
+    if (blockers.length > 0) {
+      const sample = blockers
+        .slice(0, 3)
+        .map((b) => `${b.controlId} — ${b.reason}`)
+        .join("; ");
+      const more =
+        blockers.length > 3 ? ` (+${blockers.length - 3} more)` : "";
+      throw new Error(
+        `Cannot sign: ${blockers.length} practice${blockers.length === 1 ? "" : "s"} still block the affirmation. ${sample}${more}`,
+      );
+    }
+  } else if (notMet > 0 || partial > 0) {
     throw new Error(
       "All practices must be Met or N/A before signing. Fix any Not met or Partial answers first.",
     );
@@ -931,13 +975,22 @@ export async function submitAffirmationAction(formData: FormData) {
     );
   }
 
-  // CMMC L1 affirmation is binary: implements all 17, yes/no. We track the
-  // outcome on `implements_all_17`. The legacy `sprs_score` column is only
-  // populated for L2/DFARS-7012 cycles which use NIST 800-171 110-point
-  // scoring; for L1 it stays NULL.
+  // CMMC L1 affirmation is binary: all 15 v2.13 requirements MET, yes/no.
+  // Under the hood the 15 requirements roll up from 59 NIST 800-171A
+  // objectives across the 17 legacy NIST 800-171 r2 controls; we track the
+  // outcome on `implements_all_17`. We reach this point only if the
+  // affirmation gate above passed — meaning every practice is either MET,
+  // N/A, or covered by a documented Enduring Exception / Temporary
+  // Deficiency-with-milestones (32 CFR § 170.24, AG v2.13 Findings).
+  // The legacy `sprs_score` column is only populated for L2/DFARS-7012
+  // cycles which use NIST 800-171 110-point scoring; for L1 it stays NULL.
   const allAccountedFor = met + notApplicable === total;
   const implementsAll17 =
-    ctx.assessment.framework === "cmmc_l1" ? allAccountedFor : null;
+    ctx.assessment.framework === "cmmc_l1"
+      ? true // gate above guarantees v2.13 MET-equivalent for every practice
+      : allAccountedFor
+        ? true
+        : null;
 
   const sql = getSql();
 
@@ -1047,6 +1100,8 @@ export async function submitAffirmationAction(formData: FormData) {
         affirmed_at = NOW(),
         affirmed_by_name = ${encSignerName},
         affirmed_by_title = ${encSignerTitle},
+        affirming_official_email = ${affirmingOfficialEmail || null},
+        cmmc_status = ${ctx.assessment.framework === "cmmc_l1" && implementsAll17 ? "Final Level 1 (Self)" : null},
         sprs_score = NULL,
         implements_all_17 = ${implementsAll17},
         attestation_canonical = ${encCanonical},

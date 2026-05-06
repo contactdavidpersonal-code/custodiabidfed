@@ -75,7 +75,7 @@ Pittsburgh, PA · Veteran-owned · CMU built`,
         ...c,
         kicker: "Day 1 of 14",
         title: "The fastest path to bid-ready starts with five minutes.",
-        intro: `Open the workspace and let Charlie run the onboarding interview. It tailors the rest of the 17 practices to your business, your stack, and the federal work you're chasing.`,
+        intro: `Open the workspace and let Charlie run the onboarding interview. It tailors the rest of the 15 safeguarding requirements to your business, your stack, and the federal work you're chasing.`,
         bullets: [
           "Five-minute interview — no prep required.",
           "Charlie surfaces the easiest practices first so you bank wins early.",
@@ -112,7 +112,7 @@ Charlie can draft the narrative for any of them — open the chat panel and ask.
         ...c,
         kicker: "Day 3 of 14",
         title: "Five fastest wins. Knock them out tonight.",
-        intro: `Most users have 4–5 of the 17 practices cleared by day 3. These five are the fastest path there — every one of them is mostly templated or already true at your business; you just have to document it.`,
+        intro: `Most users have 4–5 of the 15 requirements cleared by day 3. These five are the fastest path there — every one of them is mostly templated or already true at your business; you just have to document it.`,
         bullets: [
           "<b>AC.L1-3.1.1</b> — Authorized users roster (M365/Google export).",
           "<b>AC.L1-3.1.20</b> — External system connections (one-page diagram).",
@@ -137,7 +137,7 @@ Day 5. A third of the way through.
 
 What "on track" looks like right now:
   • Onboarding interview done
-  • 6–9 of the 17 practices marked yes/partial/no
+  • 6–9 of the 15 requirements marked yes/partial/no
   • Two pieces of evidence uploaded
   • Charlie has answered at least one question for you
 
@@ -156,7 +156,7 @@ Your assigned Custodia Compliance Officer is reading every officer ticket. If yo
         intro: `If you are behind the checklist below, the cause is almost always the same: a practice opened, the wording felt heavy, and the tab got closed. The fix is small — open it, ask Charlie what it means in plain English, decide yes / partial / no in sixty seconds.`,
         bullets: [
           "Onboarding interview done.",
-          "6–9 of the 17 practices have a status marked.",
+          "6–9 of the 15 requirements have a status marked.",
           "At least two pieces of evidence uploaded.",
           "Charlie has answered at least one of your questions.",
         ],

@@ -200,12 +200,12 @@ function renderPacket(input: RenderInput): string {
   const affirmationBlock = attested
     ? `<div class="callout success">
         <div class="callout-title">CMMC Level 1 — Self-Affirmed</div>
-        <p>${esc(org.name)} has self-affirmed implementation of all 17 security requirements at FAR 52.204-21(b)(1) for fiscal year ${assessment.fiscal_year}.</p>
+        <p>${esc(org.name)} has self-affirmed implementation of all 15 basic safeguarding requirements at FAR 52.204-21(b)(1)(i)–(b)(1)(xv), evaluated against all 59 NIST SP 800-171A assessment objectives per CMMC Assessment Guide – Level 1, Version 2.13 (Sept 2024) and 32 CFR § 170.24, for fiscal year ${assessment.fiscal_year}.</p>
         <dl class="kv">
           <div><dt>Affirming official</dt><dd>${esc(assessment.affirmed_by_name ?? "—")}${assessment.affirmed_by_title ? `, ${esc(assessment.affirmed_by_title)}` : ""}</dd></div>
           <div><dt>Date of affirmation</dt><dd>${esc(affirmDate ?? "—")}</dd></div>
           <div><dt>Cycle</dt><dd>${esc(assessment.cycle_label)}</dd></div>
-          <div><dt>Status</dt><dd>${assessment.implements_all_17 ? "Implements all 17" : "Pending review"}</dd></div>
+          <div><dt>Status</dt><dd>${assessment.implements_all_17 ? "Final Level 1 (Self) — implements all 15 requirements" : "Pending review"}</dd></div>
         </dl>
         <p class="small muted">Filed in the DoD Supplier Performance Risk System (SPRS) per 32 CFR § 170.22. Full System Security Plan and per-practice evidence available on request.</p>
       </div>`
