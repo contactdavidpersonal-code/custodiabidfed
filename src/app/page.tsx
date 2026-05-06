@@ -103,7 +103,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Does Charlie or any AI train on my FCI?",
-    a: "No. Custodia uses Anthropic&apos;s Claude API under a zero-retention, no-training agreement &mdash; your prompts and uploaded evidence are not used to train Anthropic&apos;s models, period. Charlie only reads your data in-context to answer the question you asked, then the context is discarded. We do not sell, share, or feed your FCI to any third-party AI, analytics tool, or marketing pipeline. No training. No retention. No exceptions.",
+    a: "No. Custodia only uses enterprise AI providers under a zero-retention, no-training contract &mdash; your prompts and uploaded evidence are never used to train any model. Charlie reads your data in-context to answer the question you asked, then the context is discarded. We do not sell, share, or feed your FCI to any third-party AI, analytics tool, or marketing pipeline. No training. No retention. No exceptions.",
   },
   {
     q: "Is CMMC Level 1 mandatory for all federal contractors?",
@@ -667,7 +667,7 @@ export default function Home() {
                 {
                   tag: "Zero AI Training",
                   title: "Charlie reads. Charlie forgets.",
-                  body: "Charlie runs on Anthropic&rsquo;s Claude under a no-training, zero-retention contract. Your FCI is never used to train any model &mdash; ours, Anthropic&rsquo;s, or anyone&rsquo;s. He answers your question in-context, then the context is gone.",
+                  body: "Charlie only runs on enterprise AI providers under a no-training, zero-retention contract. Your FCI is never used to train any model &mdash; ours or anyone else&rsquo;s. He answers your question in-context, then the context is gone.",
                 },
                 {
                   tag: "U.S. Only",
@@ -741,7 +741,7 @@ export default function Home() {
               <span aria-hidden className="text-[#2a5a49]">|</span>
               <span>AWS KMS Envelope Encryption</span>
               <span aria-hidden className="text-[#2a5a49]">|</span>
-              <span>Anthropic Zero-Retention</span>
+              <span>Zero-Retention AI</span>
               <span aria-hidden className="text-[#2a5a49]">|</span>
               <span>FAR 52.204-21 Aligned</span>
               <span aria-hidden className="text-[#2a5a49]">|</span>
