@@ -724,8 +724,8 @@ export default function Home() {
                       src="/aws_security.png"
                       alt="Built on AWS — the cloud trusted by U.S. federal agencies"
                       fill
-                      sizes="(max-width: 768px) 70vw, 14rem"
-                      className="object-cover"
+                      sizes="(max-width: 768px) 50vw, 12rem"
+                      className="object-contain p-3"
                     />
                   </div>
                   <div className="border-t border-[#2a5a49] px-3 py-2.5 text-center text-[9px] font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
