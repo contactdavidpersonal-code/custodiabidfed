@@ -24,6 +24,10 @@
     {
       "path": "/api/cron/trust-status-rollup",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/encryption-backfill",
+      "schedule": "30 4 * * *"
     }
   ]
 }

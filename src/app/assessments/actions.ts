@@ -46,6 +46,10 @@ import { signAttestation } from "@/lib/security/attestation-signature";
 import { sha256HexBytes } from "@/lib/security/crypto";
 import { recordAuditEvent } from "@/lib/security/audit-log";
 import {
+  checkRateLimit,
+  rateLimitKey,
+} from "@/lib/security/rate-limit";
+import {
   encryptBytes,
   encryptField,
   tryDecryptBytes,
@@ -201,6 +205,27 @@ export async function useSuggestedNarrativeAction(formData: FormData) {
 
 export async function uploadEvidenceAction(formData: FormData) {
   const userId = await requireUserId();
+
+  // Per-user upload throttle. 60/hr is generous for legitimate evidence
+  // collection (a thorough CMMC L1 cycle is ~30 artifacts) but blunts a
+  // compromised session being used for abuse, blob-storage cost attacks,
+  // or rapid AI review cost amplification.
+  const rl = await checkRateLimit(
+    rateLimitKey({ scope: "evidence-upload", userId }),
+    { max: 60, windowSec: 3600 },
+  );
+  if (!rl.allowed) {
+    await recordAuditEvent({
+      action: "rate_limit.exceeded",
+      userId,
+      resourceType: "upload",
+      metadata: { scope: "evidence-upload", retryAfterSec: rl.retryAfterSec },
+    });
+    throw new Error(
+      `Too many uploads. Please wait ${rl.retryAfterSec}s and try again.`,
+    );
+  }
+
   const assessmentId = String(formData.get("assessmentId") ?? "");
   const controlId = String(formData.get("controlId") ?? "");
   const file = formData.get("file");

@@ -403,6 +403,17 @@ export async function initDb() {
   await sql`ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS ai_reviewed_at TIMESTAMPTZ`;
   await sql`ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS ai_review_model TEXT`;
 
+  // Tier 1 → Tier 2 backfill marker. 'v1' = blob bytes still encrypted
+  // under the raw KEK; 'v2' = re-wrapped under the per-tenant DEK. The
+  // /api/cron/encryption-backfill job migrates rows forward and stamps
+  // this column so subsequent runs skip them.
+  await sql`
+    ALTER TABLE evidence_artifacts
+      ADD COLUMN IF NOT EXISTS encryption_version TEXT
+        DEFAULT 'v1'
+        CHECK (encryption_version IN ('v1', 'v2'))
+  `;
+
   // Carry-forward bookkeeping for artifacts imported from a prior cycle.
   // prior_artifact_id points back to the source row; carry_forward_status
   // begins as 'pending_review' and the user must explicitly keep/replace/remove

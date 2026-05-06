@@ -7,6 +7,11 @@ import {
   auditContextFromRequest,
   recordAuditEvent,
 } from "@/lib/security/audit-log";
+import {
+  checkRateLimit,
+  rateLimitKey,
+  rateLimitResponse,
+} from "@/lib/security/rate-limit";
 import { tryDecryptBytes } from "@/lib/security/field-encryption";
 
 export const runtime = "nodejs";
@@ -36,6 +41,25 @@ export async function GET(
   const { userId } = await auth();
   if (!userId) {
     return new NextResponse("Unauthorized", { status: 401 });
+  }
+
+  // Per-user mass-exfil throttle. 300 reads/hr accommodates a thorough
+  // assessor flipping through every artifact in a cycle (CMMC L1 ships
+  // ~30 artifacts × inspection passes) while denying an attacker who has
+  // taken over a session the ability to scrape every evidence file in
+  // bulk before alerting trips. Counts every byte read at this proxy.
+  const evidenceRl = await checkRateLimit(
+    rateLimitKey({ scope: "evidence-read", userId }),
+    { max: 300, windowSec: 3600 },
+  );
+  if (!evidenceRl.allowed) {
+    await recordAuditEvent({
+      action: "rate_limit.exceeded",
+      userId,
+      resourceType: "evidence_artifact",
+      metadata: { scope: "evidence-read", retryAfterSec: evidenceRl.retryAfterSec },
+    });
+    return rateLimitResponse(evidenceRl) as NextResponse;
   }
 
   const { artifactId } = await context.params;
