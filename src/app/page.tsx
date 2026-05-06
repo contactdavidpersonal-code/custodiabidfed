@@ -1984,6 +1984,117 @@ export default function Home() {
       </RevealSection>
 
 
+      {/* 13.5 — The Custodia Guarantee: your assigned Compliance Officer */}
+      <RevealSection className="relative overflow-hidden bg-[#f5efe3] px-4 py-20 sm:px-6 sm:py-28">
+        {/* subtle parchment texture via layered gradients */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.35]"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 15% 20%, rgba(16,35,29,0.08), transparent 55%), radial-gradient(circle at 85% 75%, rgba(47,143,109,0.10), transparent 60%)",
+          }}
+        />
+        <div className="relative mx-auto max-w-6xl">
+          <div className="mb-10 text-center sm:mb-14">
+            <div className="text-[10px] font-black uppercase tracking-[0.28em] text-[#2f8f6d]">
+              The Custodia Guarantee
+            </div>
+            <h2 className="mx-auto mt-4 max-w-3xl font-serif text-3xl font-bold leading-[1.1] text-[#10231d] sm:text-4xl md:text-5xl">
+              A human officer on call. Year&#8209;round. <span className="italic text-[#2f8f6d]">Personally.</span>
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#3d5a4f] sm:text-lg">
+              We&apos;re a cybersecurity firm first &mdash; not just a web app. The platform automates the paperwork, but a credentialed Custodia Compliance Officer guarantees you get this done to standard. If anything comes up, anytime, we help you ourselves.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-5">
+            {/* Officer card */}
+            <div className="md:col-span-2 border-2 border-[#10231d]/15 bg-white p-7 shadow-[0_25px_60px_-30px_rgba(16,35,29,0.45)] sm:p-8">
+              <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[#2f8f6d]">
+                Assigned at enrollment
+              </div>
+              <div className="mt-4 flex items-center gap-4">
+                <div
+                  aria-hidden
+                  className="flex h-16 w-16 flex-none items-center justify-center bg-gradient-to-br from-[#10231d] to-[#1d4a3d] font-serif text-2xl font-bold text-[#bdf2cf]"
+                >
+                  vCO
+                </div>
+                <div className="min-w-0">
+                  <div className="font-serif text-xl font-bold text-[#10231d]">
+                    Your Compliance Officer
+                  </div>
+                  <div className="mt-1 text-sm text-[#3d5a4f]">
+                    Master&apos;s educated &middot; Highly credentialed
+                  </div>
+                </div>
+              </div>
+              <ul className="mt-6 space-y-3 text-sm leading-relaxed text-[#10231d]">
+                {[
+                  "MS in cybersecurity, information assurance, or related field",
+                  "CMMC&#8209;aligned credentials (CISSP, CCP, CCA, or equivalent)",
+                  "Years of federal compliance experience &mdash; not a chatbot, not a ticket queue",
+                  "Knows your package, your tenant, and your bid posture by name",
+                ].map((line, i) => (
+                  <li key={i} className="flex gap-3">
+                    <span aria-hidden className="mt-[7px] h-1.5 w-1.5 flex-none bg-[#2f8f6d]" />
+                    <span dangerouslySetInnerHTML={{ __html: line }} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* What they do */}
+            <div className="md:col-span-3 grid gap-4 sm:grid-cols-2">
+              {[
+                {
+                  title: "Anytime, year&#8209;round",
+                  body: "Stuck on a control? Prime asking for evidence? Sub&#8209;contract clause you don&apos;t recognize? Your officer is a message away &mdash; not a tier&#8209;1 agent reading a script.",
+                },
+                {
+                  title: "Personal, not pooled",
+                  body: "You get assigned. Same officer. They learn your environment, your contracts, your risk profile &mdash; and defend your package if it&apos;s ever challenged.",
+                },
+                {
+                  title: "CMMC success guarantee",
+                  body: "If your Level 1 package isn&apos;t defensible to standard, that&apos;s on us. We rebuild it with you, on our time, until it is. The posture is ours.",
+                },
+                {
+                  title: "Cybersecurity firm first",
+                  body: "Custodia is staffed by security professionals, not SaaS support. The web app is the leverage. The officer is the guarantee.",
+                },
+              ].map((card, i) => (
+                <div
+                  key={i}
+                  className="border border-[#10231d]/15 bg-white p-6 transition-shadow hover:shadow-[0_18px_40px_-20px_rgba(16,35,29,0.35)]"
+                >
+                  <div
+                    className="font-serif text-lg font-bold text-[#10231d]"
+                    dangerouslySetInnerHTML={{ __html: card.title }}
+                  />
+                  <p
+                    className="mt-3 text-sm leading-relaxed text-[#3d5a4f]"
+                    dangerouslySetInnerHTML={{ __html: card.body }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Pull quote */}
+          <div className="mx-auto mt-12 max-w-3xl border-l-4 border-[#2f8f6d] bg-white/60 px-7 py-6 sm:mt-16">
+            <p className="font-serif text-lg italic leading-[1.55] text-[#10231d] sm:text-xl">
+              &ldquo;The bidding is yours. The posture is ours. And if anything ever goes sideways &mdash; a prime challenge, a missing artifact, a control you don&apos;t understand &mdash; you get a credentialed human, not a help center.&rdquo;
+            </p>
+            <div className="mt-4 text-[11px] font-black uppercase tracking-[0.22em] text-[#2f8f6d]">
+              &mdash; The Custodia Guarantee
+            </div>
+          </div>
+        </div>
+      </RevealSection>
+
+
       {/* 14 — FAQ */}
       <RevealSection id="faq" className="scroll-mt-16 bg-white px-4 py-16 sm:px-6 sm:py-24">
         <div className="mx-auto max-w-3xl">
