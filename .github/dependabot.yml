@@ -1,0 +1,51 @@
+version: 2
+updates:
+  # npm dependencies — the largest attack surface for supply-chain risk.
+  # Group lockstep upgrades (e.g. all @clerk/* together) to reduce churn.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 10
+    versioning-strategy: "increase"
+    groups:
+      clerk:
+        patterns:
+          - "@clerk/*"
+      anthropic:
+        patterns:
+          - "@anthropic-ai/*"
+      vercel:
+        patterns:
+          - "@vercel/*"
+      next-react:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "eslint-config-next"
+      types:
+        patterns:
+          - "@types/*"
+      eslint:
+        patterns:
+          - "eslint*"
+    labels:
+      - "dependencies"
+      - "security"
+
+  # GitHub Actions versions (pin via SHA enforced manually; bot bumps tags).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"

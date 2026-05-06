@@ -1,0 +1,35 @@
+name: npm audit
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    # Daily 13:00 UTC catches advisories announced after a PR merge.
+    - cron: "0 13 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: npm audit (high+)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies (lockfile)
+        run: npm ci --ignore-scripts
+
+      # Fails the job on high or critical advisories. Moderate is left as a
+      # warning so dependabot can keep working through them without blocking.
+      - name: Audit production dependencies
+        run: npm audit --audit-level=high --omit=dev

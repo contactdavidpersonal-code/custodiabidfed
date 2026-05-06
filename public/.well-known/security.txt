@@ -1,0 +1,8 @@
+Contact: mailto:security@custodia.us
+Expires: 2027-05-06T23:59:59.000Z
+Preferred-Languages: en
+Canonical: https://custodia.us/.well-known/security.txt
+Policy: https://custodia.us/trust
+# Custodia BidFed secures small defense-tech contractors. Coordinated disclosure
+# is appreciated. Please do not test against tenants you do not own — the
+# platform is multi-tenant and a single org's data is FCI-adjacent.

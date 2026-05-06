@@ -1,11 +1,64 @@
 import type { NextConfig } from "next";
 
 /**
- * Baseline security headers applied to every response. CSP is intentionally
- * omitted here because Clerk + Anthropic streaming + Vercel Blob require a
- * nuanced allowlist that must be verified end-to-end before enforcing.
- * Tracked separately.
+ * Baseline security headers applied to every response.
+ *
+ * CSP is shipped in Report-Only mode for now. Clerk + Vercel + Next.js all
+ * inject inline scripts (telemetry, hydration), so we deliberately allow
+ * 'unsafe-inline' on script-src and style-src — this matches Vercel's own
+ * documented secure-by-default posture and is acceptable when paired with
+ * strict X-Frame-Options DENY + frame-ancestors 'none' against clickjacking.
+ *
+ * Once we have ~2 weeks of clean CSP reports we'll flip the header name from
+ * Content-Security-Policy-Report-Only to Content-Security-Policy.
+ *
+ * Connect-src must enumerate every host the browser is allowed to call
+ * directly. Anthropic is intentionally NOT here — all model calls go
+ * server-to-server through our /api routes.
  */
+const cspDirectives: Record<string, string[]> = {
+  "default-src": ["'self'"],
+  "script-src": [
+    "'self'",
+    "'unsafe-inline'",
+    "https://*.clerk.accounts.dev",
+    "https://*.clerk.com",
+    "https://challenges.cloudflare.com",
+    "https://va.vercel-scripts.com",
+  ],
+  "style-src": ["'self'", "'unsafe-inline'"],
+  "img-src": [
+    "'self'",
+    "data:",
+    "blob:",
+    "https://img.clerk.com",
+    "https://images.clerk.dev",
+    "https://*.public.blob.vercel-storage.com",
+  ],
+  "font-src": ["'self'", "data:"],
+  "connect-src": [
+    "'self'",
+    "https://*.clerk.accounts.dev",
+    "https://*.clerk.com",
+    "https://clerk-telemetry.com",
+  ],
+  "frame-src": [
+    "'self'",
+    "https://*.clerk.accounts.dev",
+    "https://challenges.cloudflare.com",
+  ],
+  "worker-src": ["'self'", "blob:"],
+  "object-src": ["'none'"],
+  "base-uri": ["'self'"],
+  "form-action": ["'self'"],
+  "frame-ancestors": ["'none'"],
+  "upgrade-insecure-requests": [],
+};
+
+const cspValue = Object.entries(cspDirectives)
+  .map(([k, v]) => (v.length ? `${k} ${v.join(" ")}` : k))
+  .join("; ");
+
 const securityHeaders = [
   {
     key: "Strict-Transport-Security",
@@ -19,6 +72,13 @@ const securityHeaders = [
     value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
   },
   { key: "X-DNS-Prefetch-Control", value: "off" },
+  // Cross-origin isolation: defends against Spectre-class side-channels and
+  // window-target confusion. COOP same-origin makes window.opener relationships
+  // safe; CORP same-site keeps our blob/asset responses from being embedded
+  // in arbitrary cross-origin contexts.
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  { key: "Cross-Origin-Resource-Policy", value: "same-site" },
+  { key: "Content-Security-Policy-Report-Only", value: cspValue },
 ];
 
 const nextConfig: NextConfig = {

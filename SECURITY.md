@@ -1,6 +1,6 @@
 # Security Posture — Custodia BidFed
 
-Last reviewed: 2026-04-30. Reviewer: platform engineering.
+Last reviewed: 2026-05-06. Reviewer: platform engineering.
 Audience: founders, prospective primes, auditors, internal engineering.
 
 ## Scope
@@ -44,8 +44,8 @@ platform.
 | A02 | Cryptographic Failures | **PASS** | TLS end-to-end. AES-256 at rest on both Neon and Vercel Blob. Attestations signed with HMAC-SHA-256 over canonical-JSON payloads (`src/lib/security/attestation-signature.ts`). `keyVersion` field present on every signed payload to support future key rotation. |
 | A03 | Injection | **PASS** | All SQL via Neon tagged templates (parameterized). All HTML rendered server-side passes through `esc()` which escapes `& < > " '`. Status enums are validated against allowlists before reaching SQL. No `eval`, no `new Function`, no `dangerouslySetInnerHTML` on user-supplied content (only on landing-page constants). |
 | A04 | Insecure Design | **PASS w/ note** | Threat-modeled: prompt injection in user-uploaded evidence is hardened in `src/lib/ai/evidence-review.ts` (explicit untrusted-input boundary in the prompt; injection attempts are themselves grounds for `not_relevant`). LLM tool schemas are structured (`report_review`), not free-form. Attestation gating prevents premature signing on partial/no/unreviewed evidence. |
-| A05 | Security Misconfiguration | **PASS w/ TODO** | HSTS preload, X-Content-Type-Options, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy on every response (`next.config.ts`). **TODO:** add Content-Security-Policy after Clerk + Anthropic streaming + Vercel Blob compatibility verification. |
-| A06 | Vulnerable & Outdated Components | **PASS** | `npm audit` run 2026-04-30: 5 moderate transitives, all inert in our usage (postcss in Next build, uuid in svix→resend with `buf` parameter we do not use). Anthropic SDK upgraded this commit to clear GHSA-p7fg-763f-g4gf. Recommend: enable Dependabot + GitHub code scanning. |
+| A05 | Security Misconfiguration | **PASS** | HSTS preload, X-Content-Type-Options, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy `same-origin`, Cross-Origin-Resource-Policy `same-site`, and Content-Security-Policy (Report-Only) on every response (`next.config.ts`). CSP enumerates Clerk + Vercel Blob hosts; Anthropic is server-to-server only. CSP enforcement (drop the `-Report-Only`) is gated on two clean weeks of telemetry. |
+| A06 | Vulnerable & Outdated Components | **PASS** | Dependabot enabled (`.github/dependabot.yml`) for npm + GitHub Actions, weekly grouped updates. Daily `npm audit` GitHub Action fails CI on high/critical. Weekly CodeQL `security-extended` + `security-and-quality` SAST against every push and PR. |
 | A07 | Identification & Auth Failures | **PASS** | Clerk handles all credential storage, MFA, session management. App never sees plaintext passwords. Session cookies are HttpOnly, Secure, SameSite=Lax (Clerk defaults). |
 | A08 | Software & Data Integrity Failures | **PASS** | `package-lock.json` committed. Attestations are HMAC-signed and the canonical payload is preserved in-row, so tampering is detectable years after sign-off. |
 | A09 | Security Logging & Monitoring | **PASS** | `audit_log` table covers: attestation, signing, evidence upload/view/delete/MIME-rejection, bid-package & bid-packet export, cron unauthorized + executed, auth unauthorized, rate-limit exceeded. Every audit row carries IP + user agent. |
@@ -74,10 +74,10 @@ practices anyway so primes evaluating Custodia have a clean answer.
 | 11 | PE.L1-3.10.5 — Control physical access devices | N/A platform | Inherited. |
 | 12 | SC.L1-3.13.1 — Monitor/control comms at boundary | ✓ | Vercel edge enforces TLS; HSTS preload; rate limiting on chat/onboard/waitlist. |
 | 13 | SC.L1-3.13.5 — Public-access subnetworks | ✓ | Application-layer separation — public landing vs. authenticated workspace. |
-| 14 | SI.L1-3.14.1 — Identify/correct flaws timely | ✓ + TODO | `npm audit` clean of high/critical at this commit. **TODO:** enable Dependabot. |
+| 14 | SI.L1-3.14.1 — Identify/correct flaws timely | ✓ | Dependabot weekly + daily `npm audit` GitHub Action (`.github/workflows/npm-audit.yml`) fails CI on high/critical. Weekly CodeQL SAST. |
 | 15 | SI.L1-3.14.2 — Provide protection against malicious code | ✓ | MIME allowlist on uploads (executables, archives, scripts blocked); rejected uploads are audit-logged. |
-| 16 | SI.L1-3.14.4 — Update protection mechanisms | ✓ | Vercel platform auto-patches; npm advisories monitored. |
-| 17 | SI.L1-3.14.5 — Monitor security alerts/advisories | ✓ + TODO | npm audit run on each release. **TODO:** enable Dependabot + GitHub code scanning for continuous coverage. |
+| 16 | SI.L1-3.14.4 — Update protection mechanisms | ✓ | Vercel platform auto-patches; Dependabot keeps app deps current. |
+| 17 | SI.L1-3.14.5 — Monitor security alerts/advisories | ✓ | Daily `npm audit` + weekly CodeQL feed GitHub Security tab; advisories surface as PRs via Dependabot. |
 
 **12 of 17 directly implemented**, **5 inherited** from SOC 2 Type II
 infrastructure (Vercel, Neon). A prime can be told: "we satisfy 12/17
@@ -182,7 +182,7 @@ Any of the following starts the IR clock:
 - Anomalous SQL errors suggesting injection probing
 - Provider security advisory (Clerk, Vercel, Neon, Anthropic, Resend)
 - Public disclosure of a vulnerability in a dependency we use
-- User report of a security issue at `security@custodia.us` (TODO: stand up this address)
+- User report of a security issue at `security@custodia.us`. RFC 9116 disclosure pointer published at `/.well-known/security.txt`.
 
 ### 5.2 Containment (T+0 to T+1h)
 
