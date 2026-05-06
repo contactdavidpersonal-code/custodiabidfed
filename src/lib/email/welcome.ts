@@ -1,6 +1,6 @@
 import { clerkClient } from "@clerk/nextjs/server";
 import { getSql } from "@/lib/db";
-import { getFromAddress, getReplyToAddress, getResend } from "./client";
+import { getAppBaseUrl, getFromAddress, getReplyToAddress, getResend } from "./client";
 
 export type WelcomeEmailInput = {
   toEmail: string;
@@ -172,13 +172,7 @@ function escapeAttr(s: string): string {
 }
 
 function appBaseUrl(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  }
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL.replace(/\/$/, "")}`;
-  }
-  return "http://localhost:3000";
+  return getAppBaseUrl();
 }
 
 /**

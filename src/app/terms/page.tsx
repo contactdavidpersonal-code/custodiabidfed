@@ -82,7 +82,7 @@ export default function TermsPage() {
             <li>New customers receive a fourteen (14) day free trial. No charge is made until the trial ends.</li>
             <li>Subscriptions auto-renew on a monthly basis until cancelled. Cancellation takes effect at the end of the then-current billing period.</li>
             <li>
-              <strong>Money-back assurance:</strong> within the first thirty (30) days of a paid subscription, a Customer who is not satisfied may request and receive a refund of that month&apos;s subscription fee. After thirty (30) days, fees are non-refundable.
+              <strong>CMMC Level 1 Success Guarantee:</strong> upon enrollment Custodia assigns the Customer a credentialed Compliance Officer who is available year-round through the in-platform officer ticket. If, while the Customer&apos;s subscription remains active, the CMMC Level 1 package built within the Service is determined not to be defensible to FAR 52.204-21 standard, Custodia&apos;s assigned Compliance Officer will rebuild the package with the Customer at no additional charge until it is defensible. The Customer&apos;s sole remedy under this guarantee is the continued service and officer support described in this paragraph. <strong>Subscription fees are non-refundable.</strong> The Customer may cancel at any time through the in-platform billing settings; cancellation takes effect at the end of the then-current billing period and the Customer retains access through that period.
             </li>
           </ul>
         </section>

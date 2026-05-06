@@ -28,6 +28,10 @@
     {
       "path": "/api/cron/encryption-backfill",
       "schedule": "30 4 * * *"
+    },
+    {
+      "path": "/api/cron/trial-drip",
+      "schedule": "30 15 * * *"
     }
   ]
 }

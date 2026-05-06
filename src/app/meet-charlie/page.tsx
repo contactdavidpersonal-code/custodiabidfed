@@ -63,7 +63,7 @@ export default function MeetCharliePage() {
             ))}
           </ul>
           <p className="mt-6 text-sm text-slate-600">
-            Custodia&apos;s human compliance officers — trained at Carnegie
+            Custodia Compliance Officers &mdash; credentialed humans trained at Carnegie
             Mellon&apos;s Information Networking Institute — sit behind every
             Charlie answer. When a question crosses into legal-advice
             territory or your scope outgrows Level 1, a human picks it up.

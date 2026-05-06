@@ -54,7 +54,7 @@ export default async function TicketsIndexPage() {
           href="/assessments/tickets/new"
           className=" bg-[#0e2a23] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-[#bdf2cf] transition-colors hover:bg-[#10231d]"
         >
-          + Ask a human officer
+          + Ask a Custodia Compliance Officer
         </Link>
       </header>
 

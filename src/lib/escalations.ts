@@ -88,7 +88,7 @@ export async function setEscalationStatus(
 }
 
 /**
- * Open a new ticket. Used by the platform "Ask a human officer" form. The
+ * Open a new ticket. Used by the platform "Ask a Custodia Compliance Officer" form. The
  * initial message body is inserted as the first row of the thread (kind
  * `user`) so the thread view always reflects what the user actually wrote,
  * not the AI's summary.

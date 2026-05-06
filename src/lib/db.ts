@@ -214,6 +214,27 @@ export async function initDb() {
       ADD COLUMN IF NOT EXISTS welcome_email_sent_at TIMESTAMPTZ
   `;
 
+  // 14-day trial drip dedupe. One row per (organization_id, step_key) the
+  // first time that step's email is successfully sent. Lookup is the only
+  // gate against re-sends, so the unique index is mandatory. `step_key`
+  // values are defined in src/lib/email/trial-drip.ts (e.g. 'day_3_wins').
+  await sql`
+    CREATE TABLE IF NOT EXISTS trial_drip_sends (
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      step_key TEXT NOT NULL,
+      sent_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      message_id TEXT,
+      PRIMARY KEY (organization_id, step_key)
+    )
+  `;
+  // Org-level kill-switch. Set TRUE to stop all future drip sends for this
+  // org (e.g. customer unsubscribed, complained, or upgraded to paid before
+  // the drip completed and we don't want to keep nudging them).
+  await sql`
+    ALTER TABLE organizations
+      ADD COLUMN IF NOT EXISTS trial_drip_disabled BOOLEAN NOT NULL DEFAULT FALSE
+  `;
+
   // SAM.gov radar weekly email opt-out. Default TRUE so every org is opted in
   // by default (we promise this on the landing page); the bid-ready profile
   // page exposes a toggle to flip to FALSE.

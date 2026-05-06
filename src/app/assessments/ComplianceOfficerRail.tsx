@@ -34,7 +34,7 @@ const TOOL_LABELS: Record<string, string> = {
   update_organization_fields: "Updating your business profile",
   update_business_profile: "Updating your business profile",
   cite_regulation: "Looking up the regulation text",
-  escalate_to_officer: "Flagging for a human officer",
+  escalate_to_officer: "Flagging for a Custodia Compliance Officer",
 };
 
 const STORAGE_OPEN_KEY = "custodia.chat.open";
@@ -562,15 +562,14 @@ export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
           </button>
         </div>
         <p className="mt-1.5 px-1 text-[10px] leading-tight text-[#7a9c90]">
-          The officer cites FAR / NIST when it makes a claim. Evidence uploads
-          are reviewed automatically before they count toward attestation.
+AI virtual Compliance Officer grounded in FAR 52.204-21 / NIST SP 800-171 r2 — informational, not legal advice. For binding decisions, prime-audit defense, or anything materially changing your posture, talk to your assigned Custodia Compliance Officer below.
         </p>
         <Link
           href="/assessments/tickets/new"
           className="mt-2 inline-flex w-full items-center justify-center gap-1.5  border border-[#cfe3d9] bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
         >
           <span className="h-1.5 w-1.5 rounded-full bg-[#2f8f6d]" />
-          Talk to a human officer
+          Talk to a Custodia Compliance Officer
         </Link>
       </form>
 

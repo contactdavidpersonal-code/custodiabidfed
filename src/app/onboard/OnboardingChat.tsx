@@ -41,7 +41,7 @@ const FALLBACK_PROFILE_KEYS: ProfileKey[] = [
 const TOOL_LABELS: Record<string, string> = {
   update_business_profile: "Saving what you told me",
   update_organization_fields: "Saving your company name",
-  escalate_to_officer: "Flagging for a human officer",
+  escalate_to_officer: "Flagging for a Custodia Compliance Officer",
   propose_milestone: "Adding a reminder",
   read_assessment_state: "Checking your workspace",
   describe_evidence: "Reviewing an upload",

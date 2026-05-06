@@ -131,7 +131,7 @@ export default async function UpgradePage() {
                 <span aria-hidden className="text-base transition-transform group-hover:translate-x-0.5">&rarr;</span>
               </TrialCheckoutButton>
               <p className="mt-1.5 text-center text-[11px] text-[#5a7f72]">
-                No charge for 14 days &middot; Cancel anytime &middot; Money-back guarantee from first payment
+                No charge for 14 days &middot; Cancel anytime &middot; CMMC L1 Success Guarantee
               </p>
             </div>
           </div>

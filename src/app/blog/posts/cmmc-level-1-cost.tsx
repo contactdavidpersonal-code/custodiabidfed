@@ -212,7 +212,7 @@ function Body() {
       <Callout tone="ok" title="What's actually in the bundle">
         Charlie (AI vCO), guided 17-practice build, evidence auto-review,
         signed SPRS-ready artifact pack, year-round posture monitoring,
-        weekly SAM.gov opportunity radar, in-app human officer
+        weekly SAM.gov opportunity radar, in-app Custodia Compliance Officer
         escalation, annual re-affirmation, public Trust Page primes can
         verify. <Link href="/pricing" className="font-semibold underline underline-offset-2">Full breakdown on the pricing page.</Link>
       </Callout>
@@ -247,7 +247,7 @@ function Body() {
           ["Year-round posture monitoring", "No", "Sometimes", "No", "<strong>Yes</strong>"],
           ["SAM.gov opportunity radar", "No", "No", "No", "<strong>Yes</strong>"],
           ["Annual re-affirmation included", "Self", "Extra fee", "Self", "<strong>Yes</strong>"],
-          ["Human officer on call", "No", "Hourly", "No", "<strong>Included</strong>"],
+          ["Custodia Compliance Officer on call", "No", "Hourly", "No", "<strong>Included</strong>"],
           ["Officer-led prime challenge resolution", "No", "Hourly", "No", "<strong>Included</strong>"],
         ]}
       />

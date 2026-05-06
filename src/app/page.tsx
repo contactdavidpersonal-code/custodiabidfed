@@ -75,8 +75,8 @@ const BONUSES = [
 // Hormozi-style triple guarantee.
 const GUARANTEES = [
   {
-    title: "Guarantee #1 &mdash; Bid-Ready in 7 Days, or Money Back",
-    body: "Try Custodia free for 14 days &mdash; no credit card required to start. Most users complete their CMMC Level 1 package in 3&ndash;5 business days inside The Platform. If you decide to stay, you&apos;re also covered by our 14-day money-back guarantee from the date of your first payment. Federal bid-ready, or you don&apos;t pay a cent.",
+    title: "Guarantee #1 &mdash; CMMC Level 1 Success, or We Stay With You",
+    body: "Try Custodia free for 14 days &mdash; no credit card required to start. Most users complete their CMMC Level 1 package in 3&ndash;5 business days inside The Platform. If you stay and your package isn&apos;t defensible to FAR 52.204-21 standard, your assigned compliance officer rebuilds it with you, on our time, until it is. The platform is the leverage. The officer is the guarantee.",
   },
   {
     title: "Guarantee #2 &mdash; Officer-Backed Challenge Resolution",
@@ -91,7 +91,7 @@ const GUARANTEES = [
 const FAQ_ITEMS = [
   {
     q: "How does the 14-day free trial work?",
-    a: "Sign up with just an email &mdash; no credit card required. You get the full platform free for 14 days: Charlie (your vCO) walks you through CMMC Level 1, generates your bid-ready package, sources opportunities from SAM.gov on demand, and runs the officer chat. Most users complete their initial CMMC L1 package in 3&ndash;5 business days, well inside the trial. If you stay past day 14, you add your card and start at $449/mo (locked-in Summer Federal Cash Incentive pricing for the next 100 clients; list price is $749). 14-day money-back guarantee from your first payment.",
+    a: "Sign up with just an email &mdash; no credit card required. You get the full platform free for 14 days: Charlie (your vCO) walks you through CMMC Level 1, generates your bid-ready package, sources opportunities from SAM.gov on demand, and runs the officer chat. Most users complete their initial CMMC L1 package in 3&ndash;5 business days, well inside the trial. If you stay past day 14, you add your card and start at $449/mo (locked-in Summer Federal Cash Incentive pricing for the next 100 clients; list price is $749). The Custodia Success Guarantee continues for the life of your membership: if your package isn&apos;t defensible to standard, your assigned officer rebuilds it with you until it is.",
   },
   {
     q: "Why $449 instead of $749? What's the catch?",
@@ -1603,7 +1603,7 @@ export default function Home() {
               <span className="text-[#2f8f6d]">$0 today. $449/mo if you stay.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-[#44695c]">
-              Try the entire platform &mdash; build, bid, monitor, maintain &mdash; free for 14 days. No credit card required. Cancel any time inside the platform. If you stay, the 14-day money-back guarantee kicks in from your first payment.
+              Try the entire platform &mdash; build, bid, monitor, maintain &mdash; free for 14 days. No credit card required. Cancel any time inside the platform. If you stay, your assigned compliance officer is on call year-round &mdash; that is the Custodia Success Guarantee.
             </p>
           </div>
 
@@ -1746,7 +1746,7 @@ export default function Home() {
                   </Link>
                 </Show>
                 <p className="text-center text-xs font-medium tracking-wide text-[#5a7d70]">
-                  14-day free trial &middot; No credit card required &middot; Cancel anytime &middot; 14-day money back
+                  14-day free trial &middot; No credit card required &middot; Cancel anytime &middot; CMMC L1 Success Guarantee
                 </p>
                 <p className="text-center text-[11px] italic text-[#a06b1a]">
                   After 100 clients lock in, summer pricing is gone. New sign-ups will pay $749/mo.
@@ -1976,7 +1976,7 @@ export default function Home() {
                 </Link>
               </Show>
               <p className="mt-3 text-xs text-[#7fa89a]">
-                14-day free trial &middot; No credit card required &middot; Cancel any time &middot; 14-day money back from first payment
+                14-day free trial &middot; No credit card required &middot; Cancel any time &middot; CMMC L1 Success Guarantee
               </p>
             </div>
           </div>
@@ -2001,7 +2001,7 @@ export default function Home() {
               The Custodia Guarantee
             </div>
             <h2 className="mx-auto mt-4 max-w-3xl font-serif text-3xl font-bold leading-[1.1] text-[#10231d] sm:text-4xl md:text-5xl">
-              A human officer on call. Year&#8209;round. <span className="italic text-[#2f8f6d]">Personally.</span>
+              A Custodia Compliance Officer on call. Year&#8209;round. <span className="italic text-[#2f8f6d]">Personally.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#3d5a4f] sm:text-lg">
               We&apos;re a cybersecurity firm first &mdash; not just a web app. The platform automates the paperwork, but a credentialed Custodia Compliance Officer guarantees you get this done to standard. If anything comes up, anytime, we help you ourselves.

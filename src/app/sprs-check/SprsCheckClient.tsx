@@ -675,8 +675,9 @@ function ResultView({
         <p className="mt-3 max-w-lg text-sm text-[#0a2620]/75">
           Custodia is the TurboTax-style platform for Cybersecurity Maturity
           Model Certification (CMMC) Level&nbsp;1. Flat $449 per month.
-          14-day free trial. Federal bid-ready in seven days &mdash; or your
-          money back.
+          14-day free trial. Federal bid-ready in seven days &mdash; backed
+          by the Custodia CMMC L1 Success Guarantee with a credentialed
+          officer on call year-round.
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Link

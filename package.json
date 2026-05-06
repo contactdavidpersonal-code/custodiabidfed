@@ -21,7 +21,8 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "resend": "^6.12.2",
-    "svix": "^1.92.2"
+    "svix": "^1.92.2",
+    "uuid": "^14.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

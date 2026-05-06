@@ -11,7 +11,7 @@ export default function NewTicketPage() {
         ← All tickets
       </Link>
       <h1 className="mt-4 font-serif text-3xl font-bold tracking-tight text-[#10231d]">
-        Ask a human officer
+        Ask a Custodia Compliance Officer
       </h1>
       <p className="mt-2 text-sm text-[#5a7d70]">
         A Custodia compliance officer answers in writing. Replies thread back

@@ -18,7 +18,7 @@ const INCLUDED = [
   "Public Trust Page (opt-in) primes can use to verify you",
   "Daily Discover — 15 CMMC Level 1-fit SAM.gov opportunities matched to your NAICS, refreshed every day",
   "Monday Bid Digest — the week's newest contracts emailed to you (toggle on/off in-app)",
-  "Carnegie Mellon-trained human officer escalation when you need it",
+  "Carnegie Mellon-trained Custodia Compliance Officer escalation when you need it",
 ];
 
 const EXCLUDED = [
@@ -94,7 +94,7 @@ export default function PricingPage() {
             <ul className="space-y-2 text-xs text-slate-300">
               <li>&middot; No credit card required to start</li>
               <li>&middot; Federal bid-ready in 7 days, typical</li>
-              <li>&middot; 14-day money-back guarantee</li>
+              <li>&middot; CMMC L1 Success Guarantee</li>
               <li>&middot; One price for the life of your subscription</li>
             </ul>
           </aside>
@@ -120,14 +120,15 @@ export default function PricingPage() {
 
         <div className=" border border-slate-200 bg-emerald-50 p-6 text-slate-800 shadow-sm">
           <h3 className="mb-2 font-serif text-lg text-slate-900">
-            The 14-day money-back guarantee
+            The Custodia CMMC Level 1 Success Guarantee
           </h3>
           <p className="text-sm">
-            If, within the first 14 days of a paid subscription, you decide
-            Custodia isn&apos;t the right fit — for any reason — write us at
-            support@custodia.security and we&apos;ll refund the full month.
-            No interrogation, no &ldquo;cancellation specialist&rdquo; on the
-            phone.
+            We are a cybersecurity firm first &mdash; not just a web app.
+            Upon enrollment you are assigned a credentialed Custodia
+            Compliance Officer who is on call year-round. If your CMMC
+            Level 1 package isn&apos;t defensible to FAR 52.204-21
+            standard, your officer rebuilds it with you, on our time,
+            until it is. The bidding is yours. The posture is ours.
           </p>
         </div>
       </div>
