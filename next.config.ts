@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from "@sentry/nextjs";
 
 /**
  * Baseline security headers applied to every response.
@@ -41,6 +42,10 @@ const cspDirectives: Record<string, string[]> = {
     "https://*.clerk.accounts.dev",
     "https://*.clerk.com",
     "https://clerk-telemetry.com",
+    // Sentry ingest — required for browser-side error reporting.
+    "https://*.sentry.io",
+    "https://*.ingest.sentry.io",
+    "https://*.ingest.us.sentry.io",
   ],
   "frame-src": [
     "'self'",
@@ -92,4 +97,18 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Wrap with Sentry. The Vercel integration injects SENTRY_AUTH_TOKEN /
+// SENTRY_ORG / SENTRY_PROJECT during build so source maps upload
+// automatically. `silent` suppresses non-error build chatter; `widenClientFileUpload`
+// gives us readable stacks for code-split chunks. `disableLogger` strips
+// Sentry's own console output from prod bundles to keep the marketing
+// pages clean.
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  widenClientFileUpload: true,
+  disableLogger: true,
+  // Tunnel browser ingest through our own /monitoring path so ad blockers
+  // don't drop client error reports. Sentry rewrites the requests at the
+  // proxy level — no app code needed.
+  tunnelRoute: "/monitoring",
+});
