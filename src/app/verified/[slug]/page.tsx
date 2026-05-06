@@ -107,7 +107,7 @@ async function loadVerifiedPage(slug: string): Promise<VerifiedPageRow | null> {
   // page; legacy plaintext rows pass through unchanged.
   return {
     ...row,
-    affirmed_by_title: tryDecryptField(row.affirmed_by_title, {
+    affirmed_by_title: await tryDecryptField(row.affirmed_by_title, {
       organizationId: row.organization_id,
       field: "assessments.affirmed_by_title",
     }),

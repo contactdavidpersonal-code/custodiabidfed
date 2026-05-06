@@ -140,7 +140,7 @@ export async function GET(
       chunks.push(value);
     }
     const cipherBuf = Buffer.concat(chunks.map((c) => Buffer.from(c)), total);
-    plainBytes = tryDecryptBytes(cipherBuf, {
+    plainBytes = await tryDecryptBytes(cipherBuf, {
       organizationId: ctx.organization.id,
       field: `evidence:${artifact.assessment_id}:${artifact.control_id}`,
     });

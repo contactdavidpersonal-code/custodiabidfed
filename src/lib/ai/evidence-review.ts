@@ -124,7 +124,7 @@ export async function reviewEvidenceArtifact(input: {
     }
     // Tier 1: bytes on disk are AES-256-GCM-encrypted. Decrypt to plaintext
     // for review; legacy plaintext blobs pass through unchanged.
-    const decrypted = tryDecryptBytes(Buffer.from(bytes), {
+    const decrypted = await tryDecryptBytes(Buffer.from(bytes), {
       organizationId: input.organizationId,
       field: `evidence:${input.assessmentId}:${input.claimedControlId}`,
     });

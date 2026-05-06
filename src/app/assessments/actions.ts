@@ -289,7 +289,7 @@ export async function uploadEvidenceAction(formData: FormData) {
   // still records the original mime/size for downstream UX; the bytes on
   // disk are AES-256-GCM with a per-upload IV.
   const plaintextBytes = Buffer.from(await file.arrayBuffer());
-  const encryptedBytes = encryptBytes(plaintextBytes, {
+  const encryptedBytes = await encryptBytes(plaintextBytes, {
     organizationId: ctx.organization.id,
     field: `evidence:${assessmentId}:${controlId}`,
   });
@@ -403,10 +403,13 @@ export async function generateArtifactAction(formData: FormData) {
   const safeName = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
   const pathname = `evidence/${assessmentId}/${controlId}/${safeName}`;
   // Encrypt bytes at rest — same envelope/AAD scheme as user uploads.
-  const encryptedDraftBytes = encryptBytes(Buffer.from(markdown, "utf8"), {
-    organizationId: ctx.organization.id,
-    field: `evidence:${assessmentId}:${controlId}`,
-  });
+  const encryptedDraftBytes = await encryptBytes(
+    Buffer.from(markdown, "utf8"),
+    {
+      organizationId: ctx.organization.id,
+      field: `evidence:${assessmentId}:${controlId}`,
+    },
+  );
   const blob = await put(pathname, encryptedDraftBytes, {
     access: "private",
     addRandomSuffix: true,
@@ -522,7 +525,7 @@ export async function submitVaultEntryAction(formData: FormData) {
   const safeName = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
   const pathname = `evidence/${assessmentId}/${controlId}/${safeName}`;
   // Encrypt bytes at rest — same envelope/AAD scheme as user uploads.
-  const encryptedCsvBytes = encryptBytes(Buffer.from(csv, "utf8"), {
+  const encryptedCsvBytes = await encryptBytes(Buffer.from(csv, "utf8"), {
     organizationId: ctx.organization.id,
     field: `evidence:${assessmentId}:${controlId}`,
   });
@@ -940,7 +943,7 @@ export async function submitAffirmationAction(formData: FormData) {
       // hashing so the canonical attestation continues to fingerprint the
       // PLAINTEXT content the user attested to. Legacy plaintext-on-disk
       // artifacts pass through unchanged via tryDecryptBytes().
-      const plainBuf = tryDecryptBytes(rawBuf, {
+      const plainBuf = await tryDecryptBytes(rawBuf, {
         organizationId: ctx.organization.id,
         field: `evidence:${assessmentId}:${e.control_id}`,
       });
@@ -997,18 +1000,20 @@ export async function submitAffirmationAction(formData: FormData) {
   // canonical (which we decrypt on read). AAD binds each value to
   // (orgId, column) so a row-swap across tenants fails decryption.
   const orgId = ctx.organization.id;
-  const encSignerName = encryptField(signerName, {
-    organizationId: orgId,
-    field: "assessments.affirmed_by_name",
-  });
-  const encSignerTitle = encryptField(signerTitle, {
-    organizationId: orgId,
-    field: "assessments.affirmed_by_title",
-  });
-  const encCanonical = encryptField(signed.canonical, {
-    organizationId: orgId,
-    field: "assessments.attestation_canonical",
-  });
+  const [encSignerName, encSignerTitle, encCanonical] = await Promise.all([
+    encryptField(signerName, {
+      organizationId: orgId,
+      field: "assessments.affirmed_by_name",
+    }),
+    encryptField(signerTitle, {
+      organizationId: orgId,
+      field: "assessments.affirmed_by_title",
+    }),
+    encryptField(signed.canonical, {
+      organizationId: orgId,
+      field: "assessments.attestation_canonical",
+    }),
+  ]);
 
   await sql`
     UPDATE assessments

@@ -58,32 +58,39 @@ export type AssessmentRow = {
  * under per-tenant AAD. Apply to ANY raw SELECT from `assessments` that
  * exposes signer fields or the canonical attestation packet.
  */
-export function decryptAssessmentSensitiveFields<
+export async function decryptAssessmentSensitiveFields<
   T extends {
     organization_id: string;
     affirmed_by_name?: string | null;
     affirmed_by_title?: string | null;
     attestation_canonical?: string | null;
   },
->(row: T): T {
-  return {
-    ...row,
-    affirmed_by_name: tryDecryptField(row.affirmed_by_name ?? null, {
-      organizationId: row.organization_id,
+>(row: T): Promise<T> {
+  const orgId = row.organization_id;
+  const [name, title, canonical] = await Promise.all([
+    tryDecryptField(row.affirmed_by_name ?? null, {
+      organizationId: orgId,
       field: "assessments.affirmed_by_name",
     }),
-    affirmed_by_title: tryDecryptField(row.affirmed_by_title ?? null, {
-      organizationId: row.organization_id,
+    tryDecryptField(row.affirmed_by_title ?? null, {
+      organizationId: orgId,
       field: "assessments.affirmed_by_title",
     }),
-    attestation_canonical:
-      row.attestation_canonical === undefined
-        ? row.attestation_canonical
-        : tryDecryptField(row.attestation_canonical ?? null, {
-            organizationId: row.organization_id,
-            field: "assessments.attestation_canonical",
-          }),
-  };
+    row.attestation_canonical === undefined
+      ? Promise.resolve(undefined)
+      : tryDecryptField(row.attestation_canonical ?? null, {
+          organizationId: orgId,
+          field: "assessments.attestation_canonical",
+        }),
+  ]);
+  return {
+    ...row,
+    affirmed_by_name: name,
+    affirmed_by_title: title,
+    ...(row.attestation_canonical === undefined
+      ? {}
+      : { attestation_canonical: canonical ?? null }),
+  } as T;
 }
 
 export type ControlResponseRow = {
@@ -230,7 +237,7 @@ export async function listAssessmentsForOrg(
     WHERE organization_id = ${organizationId}
     ORDER BY created_at DESC
   `) as AssessmentRow[];
-  return rows.map(decryptAssessmentSensitiveFields);
+  return Promise.all(rows.map(decryptAssessmentSensitiveFields));
 }
 
 export type AssessmentWithProgress = AssessmentRow & {
@@ -259,12 +266,14 @@ export async function listAssessmentsWithProgress(
     ORDER BY a.created_at DESC
   `) as Array<AssessmentRow & { answered: number; total: number }>;
 
-  return rows.map((r) => ({
-    ...decryptAssessmentSensitiveFields(r),
-    answered: r.answered,
-    total: r.total,
-    percentAnswered: r.total === 0 ? 0 : Math.round((r.answered / r.total) * 100),
-  }));
+  return Promise.all(
+    rows.map(async (r) => ({
+      ...(await decryptAssessmentSensitiveFields(r)),
+      answered: r.answered,
+      total: r.total,
+      percentAnswered: r.total === 0 ? 0 : Math.round((r.answered / r.total) * 100),
+    })),
+  );
 }
 
 export async function createAssessmentForOrg(
@@ -419,6 +428,16 @@ export async function getAssessmentForUser(
   const r = rows[0];
 
   const orgIdValue = r.organization_id as string;
+  const [decAffirmedName, decAffirmedTitle] = await Promise.all([
+    tryDecryptField(
+      (r.affirmed_by_name as string | null) ?? null,
+      { organizationId: orgIdValue, field: "assessments.affirmed_by_name" },
+    ),
+    tryDecryptField(
+      (r.affirmed_by_title as string | null) ?? null,
+      { organizationId: orgIdValue, field: "assessments.affirmed_by_title" },
+    ),
+  ]);
   return {
     assessment: {
       id: r.a_id as string,
@@ -429,14 +448,8 @@ export async function getAssessmentForUser(
       fiscal_year: r.fiscal_year as number,
       submitted_at: r.submitted_at as string | null,
       affirmed_at: r.affirmed_at as string | null,
-      affirmed_by_name: tryDecryptField(
-        (r.affirmed_by_name as string | null) ?? null,
-        { organizationId: orgIdValue, field: "assessments.affirmed_by_name" },
-      ),
-      affirmed_by_title: tryDecryptField(
-        (r.affirmed_by_title as string | null) ?? null,
-        { organizationId: orgIdValue, field: "assessments.affirmed_by_title" },
-      ),
+      affirmed_by_name: decAffirmedName,
+      affirmed_by_title: decAffirmedTitle,
       sprs_score: r.sprs_score as number | null,
       implements_all_17: r.implements_all_17 as boolean | null,
       carried_forward_from: r.carried_forward_from as string | null,

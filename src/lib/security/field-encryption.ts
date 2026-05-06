@@ -1,31 +1,49 @@
 /**
- * Field-level envelope encryption — AES-256-GCM with per-record IV and
- * Additional Authenticated Data (AAD) bound to tenant + field name.
+ * Field-level envelope encryption — AES-256-GCM with per-tenant Data
+ * Encryption Keys (DEKs) wrapped under a platform Key Encryption Key (KEK).
  *
- * Threat model (zero-trust by default):
- *   • DB compromise alone yields ciphertext only.
- *   • Vercel Blob token compromise alone yields ciphertext only.
- *   • Cross-tenant ciphertext swap fails verification because AAD includes
- *     the owning organization id.
- *   • An attacker who steals one tenant's DEK does not get the others (when
- *     per-tenant DEKs are layered on top — Tier 2; this file ships the
- *     single-KEK envelope that those DEKs slot into).
+ * Architecture (Tier 2 zero-trust):
  *
- * Key source (priority order):
- *   1. FIELD_ENCRYPTION_KEY  (preferred — dedicated 32-byte key, hex/base64)
- *   2. ATTESTATION_SIGNING_KEY-derived via HKDF-SHA256, info="custodia.field.v1"
+ *   ┌──────────────────────────────────────────────────────────────────┐
+ *   │ KEK   (FIELD_ENCRYPTION_KEY env, 32 bytes; never touches data)   │
+ *   │   │                                                              │
+ *   │   ├── HKDF info="custodia.kek-wrap.v2" → kekWrapKey              │
+ *   │   │       AES-256-GCM wraps every per-tenant DEK at rest         │
+ *   │   │                                                              │
+ *   │   ├── HKDF info="custodia.blind-index.v1" → blind-index key     │
+ *   │   │                                                              │
+ *   │   └── (legacy v1) raw KEK was used directly to encrypt fields.   │
+ *   │       Tier 1 ciphertext (`fv1.*` / `cfb1`) still decrypts under  │
+ *   │       this path so historical rows keep working post-rollout.    │
+ *   │                                                                  │
+ *   │ DEK   (organizations.wrapped_dek, 32 bytes per org, AES-256)     │
+ *   │       Wrapped form on disk. Unwrapped in-memory (60 s cache).    │
+ *   │       Encrypts ALL Tier 2 ciphertext (`fv2.*` / `cfb2`) for one  │
+ *   │       and only one tenant.                                       │
+ *   └──────────────────────────────────────────────────────────────────┘
+ *
+ * Threat model upgrades over Tier 1:
+ *   • KEK leak alone now reveals nothing — the wrapped DEKs are still
+ *     encrypted under the KEK, and you also need the database row that
+ *     holds them. Two systems must fall.
+ *   • DB leak alone reveals nothing — wrapped DEKs are ciphertext, and
+ *     decrypting them needs the KEK in the secret manager.
+ *   • Per-tenant key separation: deleting a single
+ *     `organizations.wrapped_dek` row "crypto-shreds" all of that
+ *     tenant's v2 ciphertext, instantly and irreversibly.
+ *   • Per-record AAD still binds (organizationId, field) so a column
+ *     swap inside one tenant fails decryption.
  *
  * Wire formats:
- *   String values:  fv1.<iv_b64url>.<ct+tag_b64url>
- *   Byte values  :  raw bytes prefixed with magic `cfb1` (4 bytes) +
- *                   IV (12 bytes) + ciphertext + GCM tag (16 bytes)
+ *   String values:  fv2.<iv_b64url>.<ct+tag_b64url>     (uses tenant DEK)
+ *                   fv1.<iv_b64url>.<ct+tag_b64url>     (legacy: uses KEK)
+ *   Byte values  :  magic("cfb2")(4) | iv(12) | ct | tag(16)   (DEK)
+ *                   magic("cfb1")(4) | iv(12) | ct | tag(16)   (legacy KEK)
+ *   Wrapped DEK :   iv(12) | wrapped_ct(32) | tag(16)          (60 bytes)
  *
- * Versioning lives in the wire format itself ("fv1" / "cfb1") so the key
- * material can be rotated by adding a new version while old records still
- * decrypt under the previous one.
- *
- * Migration discipline: every decrypt helper accepts legacy plaintext and
- * returns it untouched. Writes always produce ciphertext going forward.
+ * NEW writes always emit v2. Decrypt branches on the wire-format prefix
+ * so historical data never breaks. To migrate v1 → v2 in bulk, decrypt
+ * each row and re-encrypt; the same `aad` shape is used either way.
  */
 
 import {
@@ -35,15 +53,25 @@ import {
   hkdfSync,
   randomBytes,
 } from "node:crypto";
+import { getSql } from "@/lib/db";
 
 const ALGO = "aes-256-gcm";
 const KEY_LEN = 32;
 const IV_LEN = 12;
 const TAG_LEN = 16;
-const STRING_PREFIX = "fv1.";
-const BYTES_MAGIC = Buffer.from("cfb1", "ascii"); // 4 bytes
 
-let _cachedKey: Buffer | null = null;
+const STRING_PREFIX_V1 = "fv1.";
+const STRING_PREFIX_V2 = "fv2.";
+const BYTES_MAGIC_V1 = Buffer.from("cfb1", "ascii");
+const BYTES_MAGIC_V2 = Buffer.from("cfb2", "ascii");
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KEK loading (the platform-wide key that wraps tenant DEKs).
+// Same resolution chain as Tier 1 so existing deployments keep working.
+// ─────────────────────────────────────────────────────────────────────────────
+
+let _cachedKek: Buffer | null = null;
+let _cachedKekWrap: Buffer | null = null;
 let _cachedBlindKey: Buffer | null = null;
 let _warnedFallback = false;
 
@@ -55,8 +83,8 @@ function decodeKeyMaterial(raw: string): Buffer {
   return Buffer.from(trimmed, "base64");
 }
 
-function loadFieldKey(): Buffer {
-  if (_cachedKey) return _cachedKey;
+function loadKek(): Buffer {
+  if (_cachedKek) return _cachedKek;
   const raw = process.env.FIELD_ENCRYPTION_KEY;
   if (raw && raw.trim().length > 0) {
     const buf = decodeKeyMaterial(raw);
@@ -65,8 +93,8 @@ function loadFieldKey(): Buffer {
         `FIELD_ENCRYPTION_KEY must decode to ${KEY_LEN} bytes (got ${buf.length})`,
       );
     }
-    _cachedKey = buf;
-    return _cachedKey;
+    _cachedKek = buf;
+    return _cachedKek;
   }
 
   const fallback = process.env.ATTESTATION_SIGNING_KEY;
@@ -77,11 +105,13 @@ function loadFieldKey(): Buffer {
   }
   if (!_warnedFallback && process.env.NODE_ENV === "production") {
     console.warn(
-      "[field-encryption] FIELD_ENCRYPTION_KEY not set; deriving from ATTESTATION_SIGNING_KEY. Set FIELD_ENCRYPTION_KEY for separation-of-duties.",
+      "[field-encryption] FIELD_ENCRYPTION_KEY not set; deriving KEK from ATTESTATION_SIGNING_KEY. Set FIELD_ENCRYPTION_KEY for separation-of-duties.",
     );
     _warnedFallback = true;
   }
   const ikm = decodeKeyMaterial(fallback);
+  // Same info string Tier 1 used so legacy v1 ciphertext written before this
+  // refactor still decrypts under loadKek() unchanged.
   const derived = hkdfSync(
     "sha256",
     ikm,
@@ -89,20 +119,34 @@ function loadFieldKey(): Buffer {
     Buffer.from("custodia.field.v1", "utf8"),
     KEY_LEN,
   );
-  _cachedKey = Buffer.from(derived);
-  return _cachedKey;
+  _cachedKek = Buffer.from(derived);
+  return _cachedKek;
 }
 
 /**
- * Separate keyed input for blind indexes so an attacker who exfiltrates the
- * blind-index column cannot replay it as field ciphertext (different keys).
- * Derived once from the field key via HKDF info="blind-index.v1".
+ * The actual key used to wrap DEKs. Derived from the KEK with a distinct
+ * HKDF info so it cannot be replayed as a v1 field-encryption operation
+ * against the same key material — the two purposes are cryptographically
+ * domain-separated even though they share root entropy.
  */
+function loadKekWrapKey(): Buffer {
+  if (_cachedKekWrap) return _cachedKekWrap;
+  const derived = hkdfSync(
+    "sha256",
+    loadKek(),
+    Buffer.alloc(0),
+    Buffer.from("custodia.kek-wrap.v2", "utf8"),
+    KEY_LEN,
+  );
+  _cachedKekWrap = Buffer.from(derived);
+  return _cachedKekWrap;
+}
+
 function loadBlindIndexKey(): Buffer {
   if (_cachedBlindKey) return _cachedBlindKey;
   const derived = hkdfSync(
     "sha256",
-    loadFieldKey(),
+    loadKek(),
     Buffer.alloc(0),
     Buffer.from("custodia.blind-index.v1", "utf8"),
     KEY_LEN,
@@ -111,16 +155,140 @@ function loadBlindIndexKey(): Buffer {
   return _cachedBlindKey;
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-tenant DEK provisioning, caching, and wrap/unwrap.
+// ─────────────────────────────────────────────────────────────────────────────
+
+type CachedDek = { dek: Buffer; expires: number };
+const DEK_CACHE_TTL_MS = 60_000;
+const dekCache = new Map<string, CachedDek>();
+const inflightDek = new Map<string, Promise<Buffer>>();
+
+function dekWrapAad(orgId: string): Buffer {
+  // Bind the wrapped DEK to its owning org so a wrapped-DEK row could not be
+  // copy-pasted into another org's `wrapped_dek` column to make this org's
+  // ciphertext suddenly readable as that org.
+  return Buffer.from(`custodia.dek-wrap:v1:${orgId}`, "utf8");
+}
+
+function wrapDek(plainDek: Buffer, orgId: string): Buffer {
+  const iv = randomBytes(IV_LEN);
+  const cipher = createCipheriv(ALGO, loadKekWrapKey(), iv);
+  cipher.setAAD(dekWrapAad(orgId));
+  const ct = Buffer.concat([cipher.update(plainDek), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return Buffer.concat([iv, ct, tag]);
+}
+
+function unwrapDek(wrapped: Buffer, orgId: string): Buffer {
+  if (wrapped.length !== IV_LEN + KEY_LEN + TAG_LEN) {
+    throw new Error(
+      `wrapped DEK has wrong length ${wrapped.length}; expected ${IV_LEN + KEY_LEN + TAG_LEN}`,
+    );
+  }
+  const iv = wrapped.subarray(0, IV_LEN);
+  const ct = wrapped.subarray(IV_LEN, IV_LEN + KEY_LEN);
+  const tag = wrapped.subarray(IV_LEN + KEY_LEN);
+  const decipher = createDecipheriv(ALGO, loadKekWrapKey(), iv);
+  decipher.setAAD(dekWrapAad(orgId));
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(ct), decipher.final()]);
+}
+
 /**
- * AAD (additional authenticated data) is mixed into the GCM tag so a
- * ciphertext written for one (tenant, field) tuple cannot be decrypted under
- * a different (tenant, field) tuple. Defends against cross-tenant ciphertext
- * swap inside a compromised DB.
+ * Atomically read-or-create the per-tenant DEK. Two simultaneous first-uses
+ * race-resolve via the COALESCE: only one INSERT-style write wins; either
+ * way both callers decrypt the same canonical persisted value.
  */
+async function loadOrCreateDek(orgId: string): Promise<Buffer> {
+  const sql = getSql();
+  const existing = (await sql`
+    SELECT wrapped_dek, dek_shredded_at
+    FROM organizations
+    WHERE id = ${orgId}
+    LIMIT 1
+  `) as Array<{
+    wrapped_dek: Buffer | Uint8Array | null;
+    dek_shredded_at: string | null;
+  }>;
+  if (existing.length === 0) {
+    throw new Error(`field-encryption: org ${orgId} not found`);
+  }
+  if (existing[0].dek_shredded_at) {
+    throw new Error(
+      `field-encryption: org ${orgId} has been crypto-shredded; data is permanently unreadable.`,
+    );
+  }
+
+  const current = existing[0].wrapped_dek;
+  if (current && current.length > 0) {
+    return unwrapDek(Buffer.from(current), orgId);
+  }
+
+  // Lazy provision. Generate, wrap, and persist. The COALESCE guards against
+  // a concurrent caller having raced past us between the SELECT and UPDATE.
+  const fresh = randomBytes(KEY_LEN);
+  const wrapped = wrapDek(fresh, orgId);
+  const updated = (await sql`
+    UPDATE organizations
+       SET wrapped_dek = COALESCE(wrapped_dek, ${wrapped})
+     WHERE id = ${orgId}
+       AND dek_shredded_at IS NULL
+    RETURNING wrapped_dek
+  `) as Array<{ wrapped_dek: Buffer | Uint8Array | null }>;
+  const final = updated[0]?.wrapped_dek;
+  if (!final) {
+    throw new Error(
+      `field-encryption: failed to provision DEK for org ${orgId}`,
+    );
+  }
+  return unwrapDek(Buffer.from(final), orgId);
+}
+
+/**
+ * Public DEK accessor. In-memory cache + single-flight so a burst of
+ * encrypt calls during one request only does one DB round-trip + one
+ * unwrap. After the TTL expires we re-fetch — useful if the DEK is
+ * later rotated by an admin operation in another process.
+ */
+export async function getDek(orgId: string): Promise<Buffer> {
+  const now = Date.now();
+  const cached = dekCache.get(orgId);
+  if (cached && cached.expires > now) return cached.dek;
+
+  let p = inflightDek.get(orgId);
+  if (!p) {
+    p = loadOrCreateDek(orgId)
+      .then((dek) => {
+        dekCache.set(orgId, { dek, expires: Date.now() + DEK_CACHE_TTL_MS });
+        inflightDek.delete(orgId);
+        return dek;
+      })
+      .catch((err) => {
+        inflightDek.delete(orgId);
+        throw err;
+      });
+    inflightDek.set(orgId, p);
+  }
+  return p;
+}
+
+/** Drop a tenant's DEK from the in-memory cache. Call after rotation/shred. */
+export function evictDekFromCache(orgId: string): void {
+  dekCache.delete(orgId);
+  inflightDek.delete(orgId);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AAD shape for the data-encryption layer (unchanged from Tier 1).
+// Even though v2 already gets per-tenant isolation from the per-tenant DEK,
+// AAD-binding the (orgId, field) tuple still defends against column-swap
+// inside a single tenant's row and keeps the wire format identical for v1
+// legacy decrypts.
+// ─────────────────────────────────────────────────────────────────────────────
+
 export type FieldAad = {
-  /** The owning organization's id. Required — this is the isolation boundary. */
   organizationId: string;
-  /** A short, stable label naming the column / use-site (e.g. "signer_name"). */
   field: string;
 };
 
@@ -129,55 +297,64 @@ function aadBytes(aad: FieldAad): Buffer {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// String-valued fields (most DB columns)
+// String-valued field encryption.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function encryptField(plaintext: string, aad: FieldAad): string {
-  const key = loadFieldKey();
+export async function encryptField(
+  plaintext: string,
+  aad: FieldAad,
+): Promise<string> {
+  const dek = await getDek(aad.organizationId);
   const iv = randomBytes(IV_LEN);
-  const cipher = createCipheriv(ALGO, key, iv);
+  const cipher = createCipheriv(ALGO, dek, iv);
   cipher.setAAD(aadBytes(aad));
   const ct = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   const combined = Buffer.concat([ct, tag]);
-  return `${STRING_PREFIX}${iv.toString("base64url")}.${combined.toString("base64url")}`;
+  return `${STRING_PREFIX_V2}${iv.toString("base64url")}.${combined.toString("base64url")}`;
 }
 
-/** True iff `value` looks like one of our ciphertext envelopes. */
 export function isEncryptedField(value: string | null | undefined): boolean {
-  return typeof value === "string" && value.startsWith(STRING_PREFIX);
+  return (
+    typeof value === "string" &&
+    (value.startsWith(STRING_PREFIX_V1) || value.startsWith(STRING_PREFIX_V2))
+  );
 }
 
-export function decryptField(value: string, aad: FieldAad): string {
+export async function decryptField(
+  value: string,
+  aad: FieldAad,
+): Promise<string> {
   if (!isEncryptedField(value)) {
     throw new Error("decryptField called on plaintext value");
   }
   const parts = value.split(".");
-  // "fv1" "<iv>" "<ct+tag>"
   if (parts.length !== 3) {
     throw new Error("malformed field ciphertext");
   }
+  const version = parts[0];
   const iv = Buffer.from(parts[1], "base64url");
   const combined = Buffer.from(parts[2], "base64url");
   const tag = combined.subarray(combined.length - TAG_LEN);
   const ct = combined.subarray(0, combined.length - TAG_LEN);
-  const decipher = createDecipheriv(ALGO, loadFieldKey(), iv);
+
+  // v1 = encrypted directly with the KEK (Tier 1 legacy data).
+  // v2 = encrypted with the per-tenant DEK (Tier 2 default).
+  const key =
+    version === "fv1" ? loadKek() : await getDek(aad.organizationId);
+
+  const decipher = createDecipheriv(ALGO, key, iv);
   decipher.setAAD(aadBytes(aad));
   decipher.setAuthTag(tag);
   const pt = Buffer.concat([decipher.update(ct), decipher.final()]);
   return pt.toString("utf8");
 }
 
-/**
- * Decrypt-or-passthrough. Use on every read site so legacy plaintext rows
- * keep working while new writes produce ciphertext. Logs a one-line warning
- * the first time legacy data is observed (best-effort migration hint).
- */
 let _warnedLegacy = false;
-export function tryDecryptField(
+export async function tryDecryptField(
   value: string | null | undefined,
   aad: FieldAad,
-): string | null {
+): Promise<string | null> {
   if (value === null || value === undefined) return null;
   if (!isEncryptedField(value)) {
     if (!_warnedLegacy && process.env.NODE_ENV === "production") {
@@ -192,72 +369,117 @@ export function tryDecryptField(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Byte-valued payloads (evidence blobs)
+// Byte-valued payload encryption (evidence blobs).
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Encrypt a raw byte payload. Returns the wire-format buffer:
- *   magic(4) | iv(12) | ciphertext | tag(16)
- * AAD binds the artifact to (organizationId, artifactId) so a swap of one
- * org's blob for another's fails decryption.
- */
-export function encryptBytes(bytes: Uint8Array | Buffer, aad: FieldAad): Buffer {
-  const key = loadFieldKey();
+export async function encryptBytes(
+  bytes: Uint8Array | Buffer,
+  aad: FieldAad,
+): Promise<Buffer> {
+  const dek = await getDek(aad.organizationId);
   const iv = randomBytes(IV_LEN);
-  const cipher = createCipheriv(ALGO, key, iv);
+  const cipher = createCipheriv(ALGO, dek, iv);
   cipher.setAAD(aadBytes(aad));
   const ct = Buffer.concat([
     cipher.update(Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes)),
     cipher.final(),
   ]);
   const tag = cipher.getAuthTag();
-  return Buffer.concat([BYTES_MAGIC, iv, ct, tag]);
+  return Buffer.concat([BYTES_MAGIC_V2, iv, ct, tag]);
+}
+
+function bytesVersion(buf: Buffer): "v1" | "v2" | null {
+  if (buf.length < BYTES_MAGIC_V1.length) return null;
+  if (buf.subarray(0, 4).equals(BYTES_MAGIC_V2)) return "v2";
+  if (buf.subarray(0, 4).equals(BYTES_MAGIC_V1)) return "v1";
+  return null;
 }
 
 export function isEncryptedBytes(buf: Uint8Array | Buffer): boolean {
-  if (buf.length < BYTES_MAGIC.length) return false;
-  for (let i = 0; i < BYTES_MAGIC.length; i++) {
-    if (buf[i] !== BYTES_MAGIC[i]) return false;
-  }
-  return true;
+  const b = Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
+  return bytesVersion(b) !== null;
 }
 
-export function decryptBytes(
+export async function decryptBytes(
   buf: Uint8Array | Buffer,
   aad: FieldAad,
-): Buffer {
+): Promise<Buffer> {
   const b = Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
-  if (!isEncryptedBytes(b)) {
+  const version = bytesVersion(b);
+  if (!version) {
     throw new Error("decryptBytes called on non-encrypted payload");
   }
-  const iv = b.subarray(BYTES_MAGIC.length, BYTES_MAGIC.length + IV_LEN);
+  const iv = b.subarray(4, 4 + IV_LEN);
   const tag = b.subarray(b.length - TAG_LEN);
-  const ct = b.subarray(BYTES_MAGIC.length + IV_LEN, b.length - TAG_LEN);
-  const decipher = createDecipheriv(ALGO, loadFieldKey(), iv);
+  const ct = b.subarray(4 + IV_LEN, b.length - TAG_LEN);
+  const key = version === "v1" ? loadKek() : await getDek(aad.organizationId);
+  const decipher = createDecipheriv(ALGO, key, iv);
   decipher.setAAD(aadBytes(aad));
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(ct), decipher.final()]);
 }
 
-/**
- * Decrypt-or-passthrough for byte payloads. Lets `/api/evidence/[id]` and
- * the AI review pipeline serve both newly-encrypted and legacy-plaintext
- * blobs during the migration window.
- */
-export function tryDecryptBytes(
+export async function tryDecryptBytes(
   buf: Uint8Array | Buffer,
   aad: FieldAad,
-): Buffer {
+): Promise<Buffer> {
   const b = Buffer.isBuffer(buf) ? buf : Buffer.from(buf);
   if (!isEncryptedBytes(b)) return b;
   return decryptBytes(b, aad);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Blind index — query-friendly HMAC fingerprint of a value.
-// Use for columns we need to look up by exact value (email, UEI) but never
-// want to store in plaintext. Index the blind-index column, query on
-// blindIndex(value); the plaintext column stays encrypted.
+// Crypto-shred: destroy a tenant's wrapped DEK, rendering all of their v2
+// ciphertext permanently unreadable. Stamps `dek_shredded_at` so this module
+// refuses any further encrypt/decrypt for that org. Useful for account
+// closure and right-to-be-forgotten requests — orders of magnitude cheaper
+// than re-encrypting or zeroing every blob.
+//
+// Caller is responsible for downstream cleanup (deleting `audit_log` rows,
+// removing blobs, etc.). This is the cryptographic half only.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function cryptoShredOrg(orgId: string): Promise<void> {
+  const sql = getSql();
+  await sql`
+    UPDATE organizations
+       SET wrapped_dek = NULL,
+           dek_shredded_at = NOW()
+     WHERE id = ${orgId}
+  `;
+  evictDekFromCache(orgId);
+}
+
+/**
+ * Forward-only DEK rotation. Generates a fresh DEK and wraps it under the
+ * KEK; subsequent writes use the new DEK. Existing ciphertext is NOT
+ * re-encrypted automatically — that requires a backfill that reads each
+ * row, decrypts under the OLD DEK, and re-writes under the new one.
+ * Recommended pattern: rotate → backfill → optionally rotate again.
+ */
+export async function rotateOrgDek(orgId: string): Promise<void> {
+  const sql = getSql();
+  const fresh = randomBytes(KEY_LEN);
+  const wrapped = wrapDek(fresh, orgId);
+  const rows = (await sql`
+    UPDATE organizations
+       SET wrapped_dek = ${wrapped}
+     WHERE id = ${orgId}
+       AND dek_shredded_at IS NULL
+    RETURNING id
+  `) as Array<{ id: string }>;
+  if (rows.length === 0) {
+    throw new Error(
+      `rotateOrgDek: org ${orgId} not found or has been crypto-shredded.`,
+    );
+  }
+  evictDekFromCache(orgId);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Blind index — query-friendly HMAC fingerprint. Independent key material
+// from both the KEK and any DEK so the index column cannot be replayed as
+// ciphertext, and so a per-tenant DEK rotation does not invalidate indexes.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function blindIndex(value: string): string {
@@ -267,31 +489,19 @@ export function blindIndex(value: string): string {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PII redaction for AI prompts.
-//
-// We must let Charlie review evidence content (rosters, narratives) to grade
-// CMMC objectives — but we do not need to leak literal employee names, email
-// addresses, phone numbers, or SSNs to the model provider. Run user-supplied
-// text through `redactPiiForAi()` before it lands in a prompt. Structural
-// signals (column headers, row counts, dates, control IDs) survive intact;
-// individual identities become tokens like `[email]`, `[phone]`, `[ssn]`.
+// PII redaction for AI prompts (unchanged from Tier 1).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PII_PATTERNS: Array<{ name: string; re: RegExp }> = [
-  // Order matters — match longer/specific patterns first so an SSN that looks
-  // like a phone number doesn't get bucketed as the wrong type.
   { name: "ssn", re: /\b\d{3}-\d{2}-\d{4}\b/g },
-  // E.164-ish phone numbers and (xxx) xxx-xxxx forms.
   {
     name: "phone",
     re: /(?:\+?1[\s.-]?)?\(?\b\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g,
   },
-  // Plausible RFC 5322-lite email matcher. Good enough for the redaction use.
   {
     name: "email",
     re: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,
   },
-  // 16-digit credit-card-like sequences (with optional separators).
   {
     name: "ccn",
     re: /\b(?:\d[ -]?){13,19}\b/g,

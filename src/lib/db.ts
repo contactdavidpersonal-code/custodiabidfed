@@ -222,6 +222,22 @@ export async function initDb() {
       ADD COLUMN IF NOT EXISTS sam_radar_emails_enabled BOOLEAN NOT NULL DEFAULT TRUE
   `;
 
+  // Tier 2 zero-trust: per-tenant Data Encryption Key (DEK), wrapped under
+  // the platform Key Encryption Key (KEK). NULL = not yet provisioned (lazy
+  // create on first encrypt). `dek_shredded_at` set non-null means the
+  // tenant has been crypto-shredded — the wrapped DEK is destroyed and any
+  // remaining v2 ciphertext for this org is permanently unreadable, no
+  // matter who later compromises the KEK or the database. See
+  // src/lib/security/field-encryption.ts.
+  await sql`
+    ALTER TABLE organizations
+      ADD COLUMN IF NOT EXISTS wrapped_dek BYTEA
+  `;
+  await sql`
+    ALTER TABLE organizations
+      ADD COLUMN IF NOT EXISTS dek_shredded_at TIMESTAMPTZ
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS officer_assignments (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

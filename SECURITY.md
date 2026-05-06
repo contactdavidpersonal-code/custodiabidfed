@@ -1,6 +1,6 @@
 # Security Posture — Custodia BidFed
 
-Last reviewed: 2026-05-07. Reviewer: platform engineering.
+Last reviewed: 2026-05-07 (Tier 2 zero-trust). Reviewer: platform engineering.
 Audience: founders, prospective primes, auditors, internal engineering.
 
 ## Scope
@@ -41,7 +41,7 @@ platform.
 | # | Risk | Status | Notes |
 | --- | --- | --- | --- |
 | A01 | Broken Access Control | **PASS** | Every API/server-action call invokes Clerk `auth()` and then a tenant-scoped query. Evidence reads route through `/api/evidence/[id]` which re-checks tenant on every byte. AI tools are bound to `ctx.organizationId` derived server-side from `userId` — the LLM cannot pivot to another tenant. Cron routes use bearer-token auth with constant-time compare. |
-| A02 | Cryptographic Failures | **PASS** | TLS end-to-end. AES-256 at rest on both Neon and Vercel Blob. **Tier 1 zero-trust (2026-05-07):** application-layer AES-256-GCM envelope encryption on all evidence blob bytes (`src/lib/security/field-encryption.ts`) with per-record IV and AAD bound to `(organizationId, evidence:assessmentId:controlId)` so cross-tenant ciphertext swap fails decryption. The same envelope encrypts signer name/title and the canonical attestation packet at rest in Postgres. PII (SSN, phone, email, CCN) is regex-scrubbed in user-supplied text **before** it leaves the perimeter for Anthropic. Attestations signed with HMAC-SHA-256 over canonical-JSON payloads (`src/lib/security/attestation-signature.ts`); signature verification operates on plaintext after decrypt. `keyVersion` field present on every signed payload to support future key rotation. Field-key derivation: `FIELD_ENCRYPTION_KEY` env preferred; HKDF-SHA256 from `ATTESTATION_SIGNING_KEY` (info=`custodia.field.v1`) as fallback. Blind-index HMAC key is derived independently (`custodia.blind-index.v1`) so the index column cannot be replayed as ciphertext. |
+| A02 | Cryptographic Failures | **PASS** | TLS end-to-end. AES-256 at rest on both Neon and Vercel Blob. **Tier 2 zero-trust (2026-05-07):** application-layer envelope encryption with **per-tenant Data Encryption Keys (DEKs)** wrapped under a platform Key Encryption Key (KEK). Each `organizations` row carries a `wrapped_dek` BYTEA; the KEK only ever wraps/unwraps DEKs and never touches user data. Wire formats are versioned (`fv2`/`cfb2` use the tenant DEK; `fv1`/`cfb1` legacy still decrypt under the KEK so historical data keeps working). Per-record IV; AAD binds `(organizationId, field)` so a column-swap inside one tenant fails decryption. Every evidence blob, the signer name/title, and the canonical attestation packet are encrypted with the tenant DEK before they hit storage. PII (SSN, phone, email, CCN) is regex-scrubbed in user-supplied text **before** it leaves the perimeter for Anthropic. Attestations signed with HMAC-SHA-256 over canonical-JSON payloads (`src/lib/security/attestation-signature.ts`); signature verification operates on plaintext after decrypt. `keyVersion` field present on every signed payload to support future key rotation. KEK source: `FIELD_ENCRYPTION_KEY` env preferred; HKDF-SHA256 from `ATTESTATION_SIGNING_KEY` (info=`custodia.field.v1`) as fallback. Domain-separated subkeys: `custodia.kek-wrap.v2` (wraps DEKs), `custodia.blind-index.v1` (HMAC fingerprints). DEK rotation and **crypto-shred** (delete `wrapped_dek` → all that tenant's v2 ciphertext is permanently unreadable) are first-class operations. |
 | A03 | Injection | **PASS** | All SQL via Neon tagged templates (parameterized). All HTML rendered server-side passes through `esc()` which escapes `& < > " '`. Status enums are validated against allowlists before reaching SQL. No `eval`, no `new Function`, no `dangerouslySetInnerHTML` on user-supplied content (only on landing-page constants). |
 | A04 | Insecure Design | **PASS w/ note** | Threat-modeled: prompt injection in user-uploaded evidence is hardened in `src/lib/ai/evidence-review.ts` (explicit untrusted-input boundary in the prompt; injection attempts are themselves grounds for `not_relevant`). LLM tool schemas are structured (`report_review`), not free-form. Attestation gating prevents premature signing on partial/no/unreviewed evidence. |
 | A05 | Security Misconfiguration | **PASS** | HSTS preload, X-Content-Type-Options, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy `same-origin`, Cross-Origin-Resource-Policy `same-site`, and Content-Security-Policy (Report-Only) on every response (`next.config.ts`). CSP enumerates Clerk + Vercel Blob hosts; Anthropic is server-to-server only. CSP enforcement (drop the `-Report-Only`) is gated on two clean weeks of telemetry. |
@@ -115,15 +115,20 @@ AES-256 at rest with provider-managed keys; data in transit is TLS-only.
 A breach that exposed only ciphertext without the key would not trigger
 notification.
 
-**Tier 1 application-layer envelope (2026-05-07):** in addition to provider
+**Tier 2 application-layer envelope (2026-05-07):** in addition to provider
 at-rest encryption, Custodia now applies a second AES-256-GCM layer at the
-application boundary. Evidence blob bytes are encrypted under a Custodia-held
-key before being handed to Vercel Blob, and three sensitive Postgres columns
-(`assessments.affirmed_by_name`, `assessments.affirmed_by_title`,
-`assessments.attestation_canonical`) are encrypted before INSERT/UPDATE.
-This means a compromise limited to the Vercel Blob token, or a SQL-level
-read of the `assessments` table, yields ciphertext only — the safe-harbor
-exemption applies under either of those isolated scenarios.
+application boundary using **per-tenant Data Encryption Keys** wrapped
+under a platform Key Encryption Key. Evidence blob bytes are encrypted
+under the tenant's DEK before being handed to Vercel Blob, and three
+sensitive Postgres columns (`assessments.affirmed_by_name`,
+`assessments.affirmed_by_title`, `assessments.attestation_canonical`)
+are encrypted before INSERT/UPDATE. Two systems must fall to read user
+data: the secret manager (KEK) **and** the database (wrapped DEKs). A
+compromise limited to either one yields ciphertext only — the BPINA
+encryption safe-harbor exemption applies. Account closure or
+right-to-be-forgotten requests can crypto-shred a tenant by deleting
+their wrapped DEK, which renders all of that tenant's v2 ciphertext
+permanently unreadable in O(1) time.
 
 **Notification timing:** "Most expedient time possible and without
 unreasonable delay," not exceeding **60 days** from discovery (absent
