@@ -217,8 +217,17 @@ export async function runPracticeTurn(args: {
   const client = getAnthropic();
   const completion = await client.messages.create({
     model: CHAT_MODEL,
-    max_tokens: 1024,
-    system: systemPrompt,
+    max_tokens: 600,
+    // Cache the practice system prompt — it embeds the full spec (objectives,
+    // examples, guardrails) and is stable across every turn for this control,
+    // so caching saves ~2K input tokens per follow-up turn.
+    system: [
+      {
+        type: "text",
+        text: systemPrompt,
+        cache_control: { type: "ephemeral" as const },
+      },
+    ],
     messages: history,
   });
   const block = completion.content.find((c) => c.type === "text");
@@ -275,19 +284,16 @@ export async function verifyPracticeObjectives(args: {
     .map((m) => `${m.role === "user" ? "USER" : "CHARLIE"}: ${m.text}`)
     .join("\n\n");
 
-  const prompt = `You are a CMMC Level 1 third-party assessor (CCA) grading whether each NIST 800-171A assessment objective for **${spec.controlId} — ${spec.shortName}** is covered by the conversation + evidence below.
+  // The static prefix is identical across every grading run for a given
+  // control — split it out so we can cache it. Only the transcript +
+  // evidence summary actually vary turn-to-turn.
+  const stablePrefix = `You are a CMMC Level 1 third-party assessor (CCA) grading whether each NIST 800-171A assessment objective for **${spec.controlId} — ${spec.shortName}** is covered by the conversation + evidence below.
 
 ## Control statement
 ${spec.statement}
 
 ## Objectives to grade
 ${spec.objectives.map((o) => `  [${o.letter}] ${o.text}`).join("\n")}
-
-## Conversation transcript
-${transcript}
-
-## Attached evidence
-${evidenceSummary || "(no evidence attached)"}
 
 ## Your task
 For EACH objective letter, return one of:
@@ -307,13 +313,39 @@ Return JSON only, exactly this shape:
 }
 The "missing" field is required only for "partial" status; for "covered"/"missing" omit it or set to "".`;
 
+  const dynamicPart = `## Conversation transcript
+${transcript}
+
+## Attached evidence
+${evidenceSummary || "(no evidence attached)"}`;
+
   const client = getAnthropic();
   const completion = await client.messages.create({
-    model: CHAT_MODEL,
-    max_tokens: 1500,
-    system:
-      "You are a strict CMMC L1 assessor. You output VALID JSON only — no prose, no markdown fences. Your verdicts are conservative: 'covered' requires concrete evidence, not just user assertions for list-shaped objectives.",
-    messages: [{ role: "user", content: prompt }],
+    // Grading is a deterministic JSON-classification task — Haiku 4.5 handles
+    // it at ~1/5 the cost of Sonnet with no measurable quality drop. The
+    // assessor system prompt + spec prefix are cached for repeat grading.
+    model: "claude-haiku-4-5",
+    max_tokens: 1200,
+    system: [
+      {
+        type: "text",
+        text: "You are a strict CMMC L1 assessor. You output VALID JSON only — no prose, no markdown fences. Your verdicts are conservative: 'covered' requires concrete evidence, not just user assertions for list-shaped objectives.",
+        cache_control: { type: "ephemeral" as const },
+      },
+    ],
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: stablePrefix,
+            cache_control: { type: "ephemeral" as const },
+          },
+          { type: "text", text: dynamicPart },
+        ],
+      },
+    ],
   });
   const block = completion.content.find((c) => c.type === "text");
   const text = block && block.type === "text" ? block.text : "{}";

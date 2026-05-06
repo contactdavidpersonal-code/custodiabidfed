@@ -8,11 +8,7 @@ import {
 } from "@/lib/cmmc/practice-chat";
 import { getPracticeSpec } from "@/lib/cmmc/practice-spec";
 import { ensureDbReady } from "@/lib/db";
-import {
-  checkRateLimit,
-  rateLimitKey,
-  rateLimitResponse,
-} from "@/lib/security/rate-limit";
+import { enforceCharlieBudget } from "@/lib/security/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -53,11 +49,8 @@ export async function POST(req: Request, context: Params) {
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) return new NextResponse("Not found", { status: 404 });
 
-  const rl = await checkRateLimit(
-    rateLimitKey({ scope: "practice-chat", userId }),
-    { max: 60, windowSec: 60 * 60 },
-  );
-  if (!rl.allowed) return rateLimitResponse(rl);
+  const blocked = await enforceCharlieBudget({ scope: "practice-chat", userId });
+  if (blocked) return blocked;
 
   const body = (await req.json().catch(() => ({}))) as { message?: string };
   const message = (body.message ?? "").trim();

@@ -81,7 +81,7 @@ Now produce the Markdown document.`;
 
   const response = await client.messages.create({
     model: CHAT_MODEL,
-    max_tokens: 2000,
+    max_tokens: 1500,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: userPrompt }],
   });

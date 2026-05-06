@@ -14,9 +14,7 @@ import { runOfficerAgentStream, SSE_HEADERS } from "@/lib/ai/stream";
 import { ensureOrgForUser, getBusinessProfile } from "@/lib/assessment";
 import { getPracticeSpec } from "@/lib/cmmc/practice-spec";
 import {
-  checkRateLimit,
-  rateLimitKey,
-  rateLimitResponse,
+  enforceCharlieBudget,
 } from "@/lib/security/rate-limit";
 
 const MAX_MESSAGE_LEN = 8_000;
@@ -47,14 +45,11 @@ export async function POST(req: NextRequest) {
     return new Response("Message too long", { status: 413 });
   }
 
-  // Cap LLM cost per user. 60 msgs/hour ≈ several dollars worst case at
-  // current Anthropic prices — well above legitimate use, well below an
-  // abuser draining credits with a single account.
-  const rl = await checkRateLimit(
-    rateLimitKey({ scope: "chat", userId }),
-    { max: 60, windowSec: 60 * 60 },
-  );
-  if (!rl.allowed) return rateLimitResponse(rl);
+  // Cap LLM cost per user. Two windows: hourly catches accidental loops or
+  // pasted-prompt floods; daily caps runaway spend at a ceiling no legit
+  // compliance workflow ever hits. Tunable via CHARLIE_DAILY_CAP_CHAT.
+  const blocked = await enforceCharlieBudget({ scope: "chat", userId });
+  if (blocked) return blocked;
 
   const org = await ensureOrgForUser(userId);
   const conv = await getOrCreateWorkspaceConversation(org.id);

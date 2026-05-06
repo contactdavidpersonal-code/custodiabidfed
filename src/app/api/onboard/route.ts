@@ -13,11 +13,7 @@ import {
   getBusinessProfile,
   isOnboardingComplete,
 } from "@/lib/assessment";
-import {
-  checkRateLimit,
-  rateLimitKey,
-  rateLimitResponse,
-} from "@/lib/security/rate-limit";
+import { enforceCharlieBudget } from "@/lib/security/rate-limit";
 
 const MAX_MESSAGE_LEN = 8_000;
 
@@ -72,11 +68,8 @@ export async function POST(req: NextRequest) {
     return new Response("Message too long", { status: 413 });
   }
 
-  const rl = await checkRateLimit(
-    rateLimitKey({ scope: "onboard", userId }),
-    { max: 60, windowSec: 60 * 60 },
-  );
-  if (!rl.allowed) return rateLimitResponse(rl);
+  const blocked = await enforceCharlieBudget({ scope: "onboard", userId });
+  if (blocked) return blocked;
 
   const org = await ensureOrgForUser(userId);
   const conv = await getOrCreateOnboardingConversation(org.id);

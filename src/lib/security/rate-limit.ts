@@ -103,3 +103,82 @@ export function rateLimitKey(opts: {
   }
   return `${opts.scope}:anon`;
 }
+
+/**
+ * Charlie cost guard. Every Anthropic-billing route (chat, onboarding,
+ * per-practice chat) calls this before invoking the model. Two windows are
+ * checked in series: a short burst window (per-hour) catches accidental loops
+ * and pasted-prompt floods, and a long daily window caps runaway spend per
+ * user-day at a hard ceiling that no legitimate workflow hits.
+ *
+ * Returns `null` if both checks pass, or a 429 `Response` to return directly.
+ *
+ * Defaults are tuned for Anthropic claude-sonnet pricing as of 2026-Q2 and
+ * deliberately err on the generous side — false-blocking a real user mid-
+ * compliance is far more expensive (in churn) than a few extra dollars of
+ * spend. Override per-route via `opts`. Daily ceilings can be tightened
+ * platform-wide via `CHARLIE_DAILY_CAP_*` env vars without a code change.
+ */
+export type CharlieBudgetOptions = {
+  /** Logical scope. Used to namespace the rate-limit buckets. */
+  scope: "chat" | "onboard" | "practice-chat";
+  userId: string;
+  /** Per-hour ceiling. Default 60. */
+  hourMax?: number;
+  /** Per-day ceiling. Default 200 for chat, 50 for onboard, 100 for practice-chat. */
+  dayMax?: number;
+};
+
+export async function enforceCharlieBudget(
+  opts: CharlieBudgetOptions,
+): Promise<Response | null> {
+  const hourMax = opts.hourMax ?? 60;
+  const dayMax =
+    opts.dayMax ??
+    defaultDailyCapFromEnv(opts.scope) ??
+    defaultDailyCap(opts.scope);
+
+  const hourly = await checkRateLimit(
+    rateLimitKey({ scope: opts.scope, userId: opts.userId }),
+    { max: hourMax, windowSec: 60 * 60 },
+  );
+  if (!hourly.allowed) return rateLimitResponse(hourly);
+
+  const daily = await checkRateLimit(
+    rateLimitKey({
+      scope: `${opts.scope}:day`,
+      userId: opts.userId,
+    }),
+    { max: dayMax, windowSec: 24 * 60 * 60 },
+  );
+  if (!daily.allowed) return rateLimitResponse(daily);
+
+  return null;
+}
+
+function defaultDailyCap(scope: CharlieBudgetOptions["scope"]): number {
+  switch (scope) {
+    case "chat":
+      return 200;
+    case "practice-chat":
+      return 100;
+    case "onboard":
+      return 50;
+  }
+}
+
+function defaultDailyCapFromEnv(
+  scope: CharlieBudgetOptions["scope"],
+): number | null {
+  const envName =
+    scope === "practice-chat"
+      ? "CHARLIE_DAILY_CAP_PRACTICE_CHAT"
+      : scope === "onboard"
+        ? "CHARLIE_DAILY_CAP_ONBOARD"
+        : "CHARLIE_DAILY_CAP_CHAT";
+  const raw = process.env[envName];
+  if (!raw) return null;
+  const n = Number.parseInt(raw, 10);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}

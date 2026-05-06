@@ -112,8 +112,11 @@ ${input.current.differentiators || "(empty)"}
 Write 4-6 short, concrete differentiator bullets — one per line, no leading dash or bullet character. Each bullet must reference an actual capability or attribute the company has (per the facts). Do NOT invent customer names, certifications, awards, or revenue. Return ONLY the bullets, one per line, no preamble.`;
 
   const response = await client.messages.create({
-    model: CHAT_MODEL,
-    max_tokens: 600,
+    // Differentiators are short, factual bullets — Haiku 4.5 handles this
+    // well at ~1/5 the Sonnet cost. The capability statement and tailoring
+    // (creative + high-stakes) stay on Sonnet.
+    model: "claude-haiku-4-5",
+    max_tokens: 400,
     system: SYSTEM_DRAFT,
     messages: [{ role: "user", content: userPrompt }],
   });

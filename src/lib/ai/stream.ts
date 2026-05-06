@@ -152,10 +152,28 @@ export function runOfficerAgentStream(
 
     const anthropicStream = client.messages.stream({
       model: CHAT_MODEL,
-      max_tokens: 1024,
-      tools: officerTools,
+      max_tokens: 700,
+      // Tools and system prompt are stable across every turn for an org.
+      // Marking the LAST tool with `cache_control: ephemeral` tells Anthropic
+      // to cache the full tools array (~2K tokens). Marking the system
+      // prompt block with `cache_control: ephemeral` caches the ~3K-token
+      // officer persona. Cache reads cost ~10% of normal input — measured in
+      // `usage.cache_read_input_tokens` and persisted via appendMessage so
+      // we can track hit rate. Anthropic 5-min ephemeral TTL is enough to
+      // span a typical chat session.
+      tools: officerTools.map((t, i) =>
+        i === officerTools.length - 1
+          ? { ...t, cache_control: { type: "ephemeral" as const } }
+          : t,
+      ),
       system: [
-        { type: "text", text: systemText },
+        {
+          type: "text",
+          text: systemText,
+          cache_control: { type: "ephemeral" as const },
+        },
+        // contextText is per-request (page route, profile snapshot, memory) —
+        // do NOT cache it; it would just churn cache slots.
         { type: "text", text: contextText },
       ],
       messages: priorMessages as Parameters<typeof client.messages.stream>[0]["messages"],

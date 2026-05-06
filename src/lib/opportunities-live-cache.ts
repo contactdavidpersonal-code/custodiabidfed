@@ -194,7 +194,7 @@ async function aiSummarize(
     const resp = await client.messages.create(
       {
         model: "claude-haiku-4-5",
-        max_tokens: 120,
+        max_tokens: 70,
         system:
           "You summarize U.S. federal contracting opportunity notices for a small business owner deciding whether to bid. Output ONE sentence (max 220 characters) describing what the agency is actually asking a contractor to do or supply. Start with an action verb (Provide, Supply, Maintain, Operate, Furnish, etc.). No preamble, no quotes, no markdown, no agency name, no contract numbers, no dates. Plain prose only.",
         messages: [

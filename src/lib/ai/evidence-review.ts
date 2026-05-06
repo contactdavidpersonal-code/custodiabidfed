@@ -227,9 +227,13 @@ export async function reviewEvidenceArtifact(input: {
   }
 
   let result: EvidenceReviewResult;
+  // Text-only artifacts (CSVs, plain text, markdown drafts) don't need
+  // vision — Haiku 4.5 grades them at ~1/5 the cost with the same tool
+  // contract. Images and PDFs still use the Sonnet vision pipeline.
+  const reviewModel = isText ? "claude-haiku-4-5" : VISION_MODEL;
   try {
     const response = await client.messages.create({
-      model: VISION_MODEL,
+      model: reviewModel,
       max_tokens: 512,
       tools: [REPORT_REVIEW_TOOL],
       tool_choice: { type: "tool", name: "report_review" },
@@ -259,7 +263,7 @@ export async function reviewEvidenceArtifact(input: {
     };
   }
 
-  await persistReview(input.artifactId, result, VISION_MODEL);
+  await persistReview(input.artifactId, result, reviewModel);
   return result;
 }
 
