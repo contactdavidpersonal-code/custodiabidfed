@@ -637,49 +637,50 @@ export default function Home() {
             </div>
           </div>
 
-          {/* The Custodia Shield */}
+          {/* The Custodia Shield — security flex */}
           <div className="border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_45px_rgba(14,48,37,0.2)] md:p-12">
             <div className="mb-10 text-center">
               <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
-                the custodia shield
+                the custodia shield &middot; zero-trust security
               </div>
               <h3 className="font-serif text-3xl font-bold leading-tight md:text-5xl">
-                We secure you. Then we keep you secure.
+                Built so even <span className="italic">we</span> can&rsquo;t read your FCI.
               </h3>
               <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[#a8cfc0]">
-                You don&apos;t need to become a security expert. You need a shield that works while you focus on contract work. That&apos;s what we build &mdash; and what we maintain, every day, year-round.
+                Custodia is engineered on AWS with envelope encryption, per-tenant keys, and a zero-AI-training pledge. If our database leaked tomorrow, your Federal Contract Information would still be ciphertext &mdash; useless to attackers, useless to us, useless to any AI. That&rsquo;s the bar. That&rsquo;s the shield.
               </p>
             </div>
 
+            {/* Trust pillars */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {[
                 {
-                  n: "01",
-                  title: "Build a real defense",
-                  body: "Not just paperwork. An actual security posture: who can see what, how data leaves your systems, who walks through your door. Plain English, your tech stack.",
+                  tag: "AWS KMS",
+                  title: "Keys live inside AWS. Always.",
+                  body: "Your data is protected by AWS KMS-backed envelope encryption. The master key never leaves AWS &mdash; not into our servers, not into our env vars, not into a backup. Every key use is logged in AWS CloudTrail. To decrypt, an attacker would need to compromise AWS itself.",
                 },
                 {
-                  n: "02",
-                  title: "AI-automated, officer-supported",
-                  body: "Every artifact you upload runs through Charlie (your vCO) for instant gap detection. When you hit a question only a human can answer, open a ticket and a Custodia compliance officer responds &mdash; the cybersec expertise is on-call, not in the way.",
+                  tag: "Per-Tenant Keys",
+                  title: "Your tenant. Your key.",
+                  body: "Every customer gets its own Data Encryption Key. Your ciphertext is mathematically useless to any other tenant &mdash; even if the entire database leaked. No shared keys, no shared encryption surface, no blast radius across customers.",
                 },
                 {
-                  n: "03",
-                  title: "Year-round monitoring",
-                  body: "Threats don&apos;t take holidays. Neither do we. We watch for changed controls, expiring evidence, and new requirements &mdash; and tell you exactly what to fix.",
+                  tag: "Zero AI Training",
+                  title: "Charlie reads. Charlie forgets.",
+                  body: "Charlie runs on Anthropic&rsquo;s Claude under a no-training, zero-retention contract. Your FCI is never used to train any model &mdash; ours, Anthropic&rsquo;s, or anyone&rsquo;s. He answers your question in-context, then the context is gone.",
                 },
                 {
-                  n: "04",
-                  title: "Annual re-certification",
-                  body: "Every Oct 1, your SPRS re-affirmation is ready to go. No fire drill. No scrambling. Your shield stays up while you grow the business.",
+                  tag: "U.S. Only",
+                  title: "Your FCI never leaves the U.S.",
+                  body: "Application, database, and AWS KMS keys are all hosted in U.S. regions. No foreign hops, no foreign sub-processors touching your evidence. Aligned with FAR 52.204-21 and NIST SP 800-171 r2 &mdash; the same standard your SPRS affirmation attests to.",
                 },
               ].map((s) => (
                 <div
-                  key={s.n}
+                  key={s.title}
                   className="border border-[#2a5a49] bg-[#193d31] p-6"
                 >
-                  <div className="text-[10px] font-bold tracking-[0.22em] text-[#8dd2b1]">
-                    {s.n}
+                  <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">
+                    {s.tag}
                   </div>
                   <h4 className="mt-3 font-serif text-xl font-bold text-white">{s.title}</h4>
                   <p
@@ -690,102 +691,56 @@ export default function Home() {
               ))}
             </div>
 
-            <p className="mx-auto mt-12 max-w-2xl text-center font-serif text-2xl leading-snug text-[#bdf2cf] md:text-3xl">
+            {/* The pledge — what we will never do */}
+            <div className="mt-10 border border-[#2a5a49] bg-[#10322a] p-8 md:p-10">
+              <div className="grid gap-8 md:grid-cols-[1fr_2fr] md:items-center">
+                <div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">
+                    the custodia pledge
+                  </div>
+                  <h4 className="mt-2 font-serif text-2xl font-bold leading-tight text-white md:text-3xl">
+                    What we will <span className="italic">never</span> do with your data.
+                  </h4>
+                </div>
+                <ul className="space-y-3 text-sm leading-relaxed text-[#cce5da] md:text-base">
+                  {[
+                    "<b>Never</b> use your FCI to train AI &mdash; ours or anyone else&rsquo;s.",
+                    "<b>Never</b> sell, share, or syndicate your data to brokers or marketers.",
+                    "<b>Never</b> store encryption keys in plaintext or outside AWS KMS.",
+                    "<b>Never</b> let Charlie act on your data without your in-app request.",
+                    "<b>Never</b> host your FCI outside the United States.",
+                  ].map((line) => (
+                    <li key={line} className="flex items-start gap-3">
+                      <span aria-hidden className="mt-1 flex-none text-[#8dd2b1]">&#10005;</span>
+                      <span dangerouslySetInnerHTML={{ __html: line }} />
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            {/* Stack badges */}
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 border-t border-[#2a5a49] pt-8 text-[10px] font-bold uppercase tracking-[0.18em] text-[#8dd2b1]">
+              <span>Built on AWS</span>
+              <span aria-hidden className="text-[#2a5a49]">|</span>
+              <span>AWS KMS Envelope Encryption</span>
+              <span aria-hidden className="text-[#2a5a49]">|</span>
+              <span>Anthropic Zero-Retention</span>
+              <span aria-hidden className="text-[#2a5a49]">|</span>
+              <span>FAR 52.204-21 Aligned</span>
+              <span aria-hidden className="text-[#2a5a49]">|</span>
+              <span>U.S. Region Only</span>
+            </div>
+
+            <p className="mx-auto mt-10 max-w-3xl text-center font-serif text-2xl leading-snug text-[#bdf2cf] md:text-3xl">
               You stay safe. You keep bidding. You keep winning. Custodia stands watch.
             </p>
-          </div>
-        </div>
-      </RevealSection>
 
-      {/* 6.4 — Your FCI stays yours (data trust) */}
-      <RevealSection className="bg-white px-6 py-24">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-12 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-              your fci stays yours
-            </div>
-            <h2 className="font-serif text-4xl font-bold leading-[1.05] tracking-tight text-[#10231d] md:text-6xl">
-              Your data is not training food. Not for Charlie.<br className="hidden md:inline" /> Not for AWS. Not for anyone.
-            </h2>
-            <p className="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-[#44695c]">
-              Federal Contract Information is the contract you sign with the government. We treat it that way. Every architectural decision below is in production today &mdash; not on a roadmap.
+            {/* Honesty footnote */}
+            <p className="mx-auto mt-6 max-w-3xl text-center text-[11px] leading-relaxed text-[#7aab98]">
+              Custodia BidFed handles CMMC Level 1 / FCI only. We are not FedRAMP Authorized and do not store Controlled Unclassified Information (CUI). The architecture above is aligned with FAR 52.204-21 safeguarding and the FCI scoping principles in NIST SP 800-171 r2.
             </p>
           </div>
-
-          {/* Four-pillar trust grid */}
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                tag: "Encryption",
-                title: "AWS KMS-backed envelope encryption",
-                body: "Sensitive fields are encrypted with a per-tenant Data Encryption Key (DEK), wrapped by a master Key Encryption Key (KEK) that lives inside AWS KMS. The KEK bytes never leave AWS &mdash; not for us, not for an attacker with our database, not for anyone. Every key use is logged in AWS CloudTrail.",
-              },
-              {
-                tag: "AI Access",
-                title: "Zero AI training. Zero retention.",
-                body: "Custodia uses Anthropic&rsquo;s Claude API under a no-training, zero-retention agreement. Your prompts and uploaded evidence are never used to train Anthropic&rsquo;s models. Charlie reads your context to answer your question, then the context is gone. No third-party AI sees your FCI. Period.",
-              },
-              {
-                tag: "Tenant Isolation",
-                title: "Your data is yours alone",
-                body: "Every tenant gets its own DEK. One client&rsquo;s ciphertext is mathematically useless to another client &mdash; even if the database leaked tomorrow. We do not share, sell, or pool your FCI with anyone, including for analytics, marketing, or product training.",
-              },
-              {
-                tag: "U.S. Hosting",
-                title: "U.S.-region only",
-                body: "Application: Vercel U.S. edge. Database: U.S. region. KMS: AWS us-east-2. Your FCI does not transit foreign infrastructure. Aligned with FAR 52.204-21 safeguarding requirements and the FCI scoping principles in NIST SP 800-171 r2.",
-              },
-            ].map((p) => (
-              <div
-                key={p.title}
-                className="border border-[#cfe3d9] bg-[#f7fcf9] p-6 shadow-[0_8px_28px_rgba(14,48,37,0.04)]"
-              >
-                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
-                  {p.tag}
-                </div>
-                <h4 className="mt-3 font-serif text-lg font-bold leading-snug text-[#10231d]">
-                  {p.title}
-                </h4>
-                <p
-                  className="mt-3 text-sm leading-relaxed text-[#496f61]"
-                  dangerouslySetInnerHTML={{ __html: p.body }}
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* The pledge bar */}
-          <div className="mt-10 border-2 border-[#0e2a23] bg-[#0e2a23] p-8 text-white md:p-10">
-            <div className="grid gap-8 md:grid-cols-[1fr_2fr] md:items-center">
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">
-                  the custodia fci pledge
-                </div>
-                <h3 className="mt-2 font-serif text-2xl font-bold leading-tight md:text-3xl">
-                  What we will never do with your FCI.
-                </h3>
-              </div>
-              <ul className="space-y-3 text-sm leading-relaxed text-[#cce5da] md:text-base">
-                {[
-                  "We will <b>never</b> use your FCI to train AI models &mdash; ours or anyone&rsquo;s.",
-                  "We will <b>never</b> sell, share, or syndicate your FCI to data brokers, marketers, or third parties.",
-                  "We will <b>never</b> store your KEK in plaintext, in an env var, or anywhere outside AWS KMS.",
-                  "We will <b>never</b> let Charlie act on your data without your in-app request &mdash; he cannot exfiltrate, email, or post your FCI on his own.",
-                  "We will <b>never</b> host your FCI outside the United States.",
-                ].map((line) => (
-                  <li key={line} className="flex items-start gap-3">
-                    <span aria-hidden className="mt-1 flex-none text-[#8dd2b1]">&#10005;</span>
-                    <span dangerouslySetInnerHTML={{ __html: line }} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-
-          {/* Honesty footnote */}
-          <p className="mx-auto mt-8 max-w-3xl text-center text-xs leading-relaxed text-[#7a9c90]">
-            Custodia BidFed is <b>not</b> FedRAMP Authorized and does not store or process Controlled Unclassified Information (CUI). We handle CMMC Level 1 / FCI only. The architecture above is aligned with FAR 52.204-21 and the FCI safeguarding principles in NIST SP 800-171 r2 &mdash; the same standard your SPRS affirmation attests to.
-          </p>
         </div>
       </RevealSection>
 
