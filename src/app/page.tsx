@@ -717,17 +717,23 @@ export default function Home() {
                   ))}
                 </ul>
 
-                {/* AWS credibility — "Powered by AWS" placeholder.
-                    Drop the official badge PNG at public/powered-by-aws.png
-                    (download from https://aws.amazon.com/architecture/icons/
-                    "AWS Co-Marketing Tools" → "Powered by AWS"). */}
+                {/* Official "Powered by AWS" badge — hotlinked per AWS
+                    co-marketing guidelines. Dark-background variant.
+                    https://aws.amazon.com/co-marketing/ */}
                 <div className="flex flex-col items-center justify-center border border-[#2a5a49] bg-[#0e2a23] p-6 text-center shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
-                  <div className="font-serif text-xl font-bold leading-tight text-white">
-                    Powered by
-                  </div>
-                  <div className="mt-1 font-mono text-3xl font-bold tracking-tight text-[#FF9900]">
-                    aws
-                  </div>
+                  <a
+                    href="https://aws.amazon.com/what-is-cloud-computing"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src="https://d0.awsstatic.com/logos/powered-by-aws-white.png"
+                      alt="Powered by AWS Cloud Computing"
+                      className="mx-auto h-auto w-full max-w-[180px]"
+                    />
+                  </a>
                   <div className="mt-4 border-t border-[#2a5a49] pt-3 text-[9px] font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
                     KMS &middot; CloudTrail &middot; U.S. Region
                   </div>
