@@ -649,22 +649,6 @@ export default function Home() {
               <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[#a8cfc0]">
                 Custodia is engineered on AWS with envelope encryption, per-tenant keys, and a zero-AI-training pledge. If our database leaked tomorrow, your Federal Contract Information would still be ciphertext &mdash; useless to attackers, useless to us, useless to any AI. That&rsquo;s the bar. That&rsquo;s the shield.
               </p>
-
-              {/* AWS credibility band */}
-              <div className="mx-auto mt-8 max-w-md overflow-hidden border border-[#2a5a49] bg-[#10322a] shadow-[0_10px_30px_rgba(0,0,0,0.25)]">
-                <div className="relative aspect-[16/9] w-full">
-                  <Image
-                    src="/aws_security.png"
-                    alt="AWS Security — the same cloud platform trusted by U.S. federal agencies"
-                    fill
-                    sizes="(max-width: 768px) 90vw, 28rem"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="border-t border-[#2a5a49] px-4 py-3 text-center text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">
-                  Built on AWS &middot; the cloud trusted by U.S. federal agencies
-                </div>
-              </div>
             </div>
 
             {/* Trust pillars */}
@@ -709,7 +693,7 @@ export default function Home() {
 
             {/* The pledge — what we will never do */}
             <div className="mt-10 border border-[#2a5a49] bg-[#10322a] p-8 md:p-10">
-              <div className="grid gap-8 md:grid-cols-[1fr_2fr] md:items-center">
+              <div className="grid gap-8 md:grid-cols-[1fr_1.4fr_0.9fr] md:items-center">
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">
                     the custodia pledge
@@ -732,6 +716,22 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
+
+                {/* AWS credibility — small, on the right */}
+                <div className="overflow-hidden border border-[#2a5a49] bg-[#0e2a23] shadow-[0_8px_24px_rgba(0,0,0,0.25)]">
+                  <div className="relative aspect-square w-full">
+                    <Image
+                      src="/aws_security.png"
+                      alt="Built on AWS — the cloud trusted by U.S. federal agencies"
+                      fill
+                      sizes="(max-width: 768px) 70vw, 14rem"
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="border-t border-[#2a5a49] px-3 py-2.5 text-center text-[9px] font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
+                    Built on AWS
+                  </div>
+                </div>
               </div>
             </div>
 
