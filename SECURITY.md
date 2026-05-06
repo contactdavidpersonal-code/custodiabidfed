@@ -1,6 +1,6 @@
 # Security Posture — Custodia BidFed
 
-Last reviewed: 2026-05-06. Reviewer: platform engineering.
+Last reviewed: 2026-05-07. Reviewer: platform engineering.
 Audience: founders, prospective primes, auditors, internal engineering.
 
 ## Scope
@@ -41,7 +41,7 @@ platform.
 | # | Risk | Status | Notes |
 | --- | --- | --- | --- |
 | A01 | Broken Access Control | **PASS** | Every API/server-action call invokes Clerk `auth()` and then a tenant-scoped query. Evidence reads route through `/api/evidence/[id]` which re-checks tenant on every byte. AI tools are bound to `ctx.organizationId` derived server-side from `userId` — the LLM cannot pivot to another tenant. Cron routes use bearer-token auth with constant-time compare. |
-| A02 | Cryptographic Failures | **PASS** | TLS end-to-end. AES-256 at rest on both Neon and Vercel Blob. Attestations signed with HMAC-SHA-256 over canonical-JSON payloads (`src/lib/security/attestation-signature.ts`). `keyVersion` field present on every signed payload to support future key rotation. |
+| A02 | Cryptographic Failures | **PASS** | TLS end-to-end. AES-256 at rest on both Neon and Vercel Blob. **Tier 1 zero-trust (2026-05-07):** application-layer AES-256-GCM envelope encryption on all evidence blob bytes (`src/lib/security/field-encryption.ts`) with per-record IV and AAD bound to `(organizationId, evidence:assessmentId:controlId)` so cross-tenant ciphertext swap fails decryption. The same envelope encrypts signer name/title and the canonical attestation packet at rest in Postgres. PII (SSN, phone, email, CCN) is regex-scrubbed in user-supplied text **before** it leaves the perimeter for Anthropic. Attestations signed with HMAC-SHA-256 over canonical-JSON payloads (`src/lib/security/attestation-signature.ts`); signature verification operates on plaintext after decrypt. `keyVersion` field present on every signed payload to support future key rotation. Field-key derivation: `FIELD_ENCRYPTION_KEY` env preferred; HKDF-SHA256 from `ATTESTATION_SIGNING_KEY` (info=`custodia.field.v1`) as fallback. Blind-index HMAC key is derived independently (`custodia.blind-index.v1`) so the index column cannot be replayed as ciphertext. |
 | A03 | Injection | **PASS** | All SQL via Neon tagged templates (parameterized). All HTML rendered server-side passes through `esc()` which escapes `& < > " '`. Status enums are validated against allowlists before reaching SQL. No `eval`, no `new Function`, no `dangerouslySetInnerHTML` on user-supplied content (only on landing-page constants). |
 | A04 | Insecure Design | **PASS w/ note** | Threat-modeled: prompt injection in user-uploaded evidence is hardened in `src/lib/ai/evidence-review.ts` (explicit untrusted-input boundary in the prompt; injection attempts are themselves grounds for `not_relevant`). LLM tool schemas are structured (`report_review`), not free-form. Attestation gating prevents premature signing on partial/no/unreviewed evidence. |
 | A05 | Security Misconfiguration | **PASS** | HSTS preload, X-Content-Type-Options, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy, Cross-Origin-Opener-Policy `same-origin`, Cross-Origin-Resource-Policy `same-site`, and Content-Security-Policy (Report-Only) on every response (`next.config.ts`). CSP enumerates Clerk + Vercel Blob hosts; Anthropic is server-to-server only. CSP enforcement (drop the `-Report-Only`) is gated on two clean weeks of telemetry. |
@@ -114,6 +114,16 @@ encryption key is also accessed. Both Vercel Blob and Neon Postgres use
 AES-256 at rest with provider-managed keys; data in transit is TLS-only.
 A breach that exposed only ciphertext without the key would not trigger
 notification.
+
+**Tier 1 application-layer envelope (2026-05-07):** in addition to provider
+at-rest encryption, Custodia now applies a second AES-256-GCM layer at the
+application boundary. Evidence blob bytes are encrypted under a Custodia-held
+key before being handed to Vercel Blob, and three sensitive Postgres columns
+(`assessments.affirmed_by_name`, `assessments.affirmed_by_title`,
+`assessments.attestation_canonical`) are encrypted before INSERT/UPDATE.
+This means a compromise limited to the Vercel Blob token, or a SQL-level
+read of the `assessments` table, yields ciphertext only — the safe-harbor
+exemption applies under either of those isolated scenarios.
 
 **Notification timing:** "Most expedient time possible and without
 unreasonable delay," not exceeding **60 days** from discovery (absent

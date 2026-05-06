@@ -45,6 +45,11 @@ import {
 import { signAttestation } from "@/lib/security/attestation-signature";
 import { sha256HexBytes } from "@/lib/security/crypto";
 import { recordAuditEvent } from "@/lib/security/audit-log";
+import {
+  encryptBytes,
+  encryptField,
+  tryDecryptBytes,
+} from "@/lib/security/field-encryption";
 import { sendSprsFiledEmail } from "@/lib/email/sprs-filed";
 import {
   provisionTrustPageForFiling,
@@ -277,10 +282,21 @@ export async function uploadEvidenceAction(formData: FormData) {
   // returned URL so it can't be enumerated even if an attacker knows the
   // org/assessment/control structure. The URL itself is still treated as
   // server-side secret — clients only ever see /api/evidence/{id}.
-  const blob = await put(pathname, file, {
+  //
+  // Tier 1 zero-trust: encrypt the bytes BEFORE handing them to the blob
+  // store. AAD binds the ciphertext to (orgId, assessmentId, controlId) so a
+  // ciphertext swap across tenants or practices fails decryption. The DB
+  // still records the original mime/size for downstream UX; the bytes on
+  // disk are AES-256-GCM with a per-upload IV.
+  const plaintextBytes = Buffer.from(await file.arrayBuffer());
+  const encryptedBytes = encryptBytes(plaintextBytes, {
+    organizationId: ctx.organization.id,
+    field: `evidence:${assessmentId}:${controlId}`,
+  });
+  const blob = await put(pathname, encryptedBytes, {
     access: "private",
     addRandomSuffix: true,
-    contentType: file.type || "application/octet-stream",
+    contentType: "application/octet-stream",
   });
 
   const sql = getSql();
@@ -386,10 +402,15 @@ export async function generateArtifactAction(formData: FormData) {
   const filename = `${controlId}-charlie-draft-${Date.now()}.md`;
   const safeName = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
   const pathname = `evidence/${assessmentId}/${controlId}/${safeName}`;
-  const blob = await put(pathname, markdown, {
+  // Encrypt bytes at rest — same envelope/AAD scheme as user uploads.
+  const encryptedDraftBytes = encryptBytes(Buffer.from(markdown, "utf8"), {
+    organizationId: ctx.organization.id,
+    field: `evidence:${assessmentId}:${controlId}`,
+  });
+  const blob = await put(pathname, encryptedDraftBytes, {
     access: "private",
     addRandomSuffix: true,
-    contentType: "text/markdown",
+    contentType: "application/octet-stream",
   });
 
   const sql = getSql();
@@ -500,10 +521,15 @@ export async function submitVaultEntryAction(formData: FormData) {
   const filename = `${filenameStem}-${Date.now()}.csv`;
   const safeName = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
   const pathname = `evidence/${assessmentId}/${controlId}/${safeName}`;
-  const blob = await put(pathname, csv, {
+  // Encrypt bytes at rest — same envelope/AAD scheme as user uploads.
+  const encryptedCsvBytes = encryptBytes(Buffer.from(csv, "utf8"), {
+    organizationId: ctx.organization.id,
+    field: `evidence:${assessmentId}:${controlId}`,
+  });
+  const blob = await put(pathname, encryptedCsvBytes, {
     access: "private",
     addRandomSuffix: true,
-    contentType: "text/csv",
+    contentType: "application/octet-stream",
   });
 
   const sql = getSql();
@@ -595,6 +621,8 @@ export async function reReviewEvidenceAction(formData: FormData) {
     mimeType: row.mime_type,
     filename: row.filename,
     companyContext,
+    organizationId: ctx.organization.id,
+    assessmentId,
   });
 
   // Mirror the review into the workspace chat so the user can ask
@@ -907,8 +935,16 @@ export async function submitAffirmationAction(formData: FormData) {
           `Failed to fetch evidence ${e.filename} (HTTP ${res.status})`,
         );
       }
-      const buf = Buffer.from(await res.arrayBuffer());
-      return { id: e.id, sha256Hex: sha256HexBytes(buf) };
+      const rawBuf = Buffer.from(await res.arrayBuffer());
+      // Bytes on disk are AES-256-GCM-encrypted (Tier 1). Decrypt before
+      // hashing so the canonical attestation continues to fingerprint the
+      // PLAINTEXT content the user attested to. Legacy plaintext-on-disk
+      // artifacts pass through unchanged via tryDecryptBytes().
+      const plainBuf = tryDecryptBytes(rawBuf, {
+        organizationId: ctx.organization.id,
+        field: `evidence:${assessmentId}:${e.control_id}`,
+      });
+      return { id: e.id, sha256Hex: sha256HexBytes(plainBuf) };
     }),
   );
   const fingerprintById = new Map(
@@ -955,16 +991,35 @@ export async function submitAffirmationAction(formData: FormData) {
       })),
   });
 
+  // Tier 1 zero-trust: encrypt the signer identity + the canonical
+  // attestation packet at rest. The HMAC signature, payload SHA-256, and
+  // key version stay plaintext so re-verification only needs the signed
+  // canonical (which we decrypt on read). AAD binds each value to
+  // (orgId, column) so a row-swap across tenants fails decryption.
+  const orgId = ctx.organization.id;
+  const encSignerName = encryptField(signerName, {
+    organizationId: orgId,
+    field: "assessments.affirmed_by_name",
+  });
+  const encSignerTitle = encryptField(signerTitle, {
+    organizationId: orgId,
+    field: "assessments.affirmed_by_title",
+  });
+  const encCanonical = encryptField(signed.canonical, {
+    organizationId: orgId,
+    field: "assessments.attestation_canonical",
+  });
+
   await sql`
     UPDATE assessments
     SET status = 'attested',
         submitted_at = NOW(),
         affirmed_at = NOW(),
-        affirmed_by_name = ${signerName},
-        affirmed_by_title = ${signerTitle},
+        affirmed_by_name = ${encSignerName},
+        affirmed_by_title = ${encSignerTitle},
         sprs_score = NULL,
         implements_all_17 = ${implementsAll17},
-        attestation_canonical = ${signed.canonical},
+        attestation_canonical = ${encCanonical},
         attestation_payload_sha256 = ${signed.payloadSha256Hex},
         attestation_signature = ${signed.signatureHex},
         attestation_signature_key_version = ${signed.keyVersion},

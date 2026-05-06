@@ -12,6 +12,7 @@ import {
 import { getPlaybookForFramework } from "@/lib/playbook";
 import { fiscalYearOf, seedMilestonesForAssessment } from "@/lib/fiscal";
 import { redirect } from "next/navigation";
+import { tryDecryptField } from "@/lib/security/field-encryption";
 
 export type OrganizationRow = {
   id: string;
@@ -48,6 +49,42 @@ export type AssessmentRow = {
   created_at: string;
   updated_at: string;
 };
+
+/**
+ * Tier 1 zero-trust read helper. Every place that loads an assessment row
+ * for display / export / API serialization passes the row through this
+ * before returning. Legacy plaintext values pass through unchanged
+ * (tryDecryptField is permissive); new ciphertext values are decrypted
+ * under per-tenant AAD. Apply to ANY raw SELECT from `assessments` that
+ * exposes signer fields or the canonical attestation packet.
+ */
+export function decryptAssessmentSensitiveFields<
+  T extends {
+    organization_id: string;
+    affirmed_by_name?: string | null;
+    affirmed_by_title?: string | null;
+    attestation_canonical?: string | null;
+  },
+>(row: T): T {
+  return {
+    ...row,
+    affirmed_by_name: tryDecryptField(row.affirmed_by_name ?? null, {
+      organizationId: row.organization_id,
+      field: "assessments.affirmed_by_name",
+    }),
+    affirmed_by_title: tryDecryptField(row.affirmed_by_title ?? null, {
+      organizationId: row.organization_id,
+      field: "assessments.affirmed_by_title",
+    }),
+    attestation_canonical:
+      row.attestation_canonical === undefined
+        ? row.attestation_canonical
+        : tryDecryptField(row.attestation_canonical ?? null, {
+            organizationId: row.organization_id,
+            field: "assessments.attestation_canonical",
+          }),
+  };
+}
 
 export type ControlResponseRow = {
   id: string;
@@ -182,7 +219,7 @@ export async function listAssessmentsForOrg(
   organizationId: string,
 ): Promise<AssessmentRow[]> {
   const sql = getSql();
-  return (await sql`
+  const rows = (await sql`
     SELECT id, organization_id, cycle_label, status, framework, fiscal_year,
            submitted_at, affirmed_at, affirmed_by_name, affirmed_by_title,
            sprs_score, implements_all_17, carried_forward_from,
@@ -193,6 +230,7 @@ export async function listAssessmentsForOrg(
     WHERE organization_id = ${organizationId}
     ORDER BY created_at DESC
   `) as AssessmentRow[];
+  return rows.map(decryptAssessmentSensitiveFields);
 }
 
 export type AssessmentWithProgress = AssessmentRow & {
@@ -222,7 +260,9 @@ export async function listAssessmentsWithProgress(
   `) as Array<AssessmentRow & { answered: number; total: number }>;
 
   return rows.map((r) => ({
-    ...r,
+    ...decryptAssessmentSensitiveFields(r),
+    answered: r.answered,
+    total: r.total,
     percentAnswered: r.total === 0 ? 0 : Math.round((r.answered / r.total) * 100),
   }));
 }
@@ -378,18 +418,25 @@ export async function getAssessmentForUser(
   if (rows.length === 0) return null;
   const r = rows[0];
 
+  const orgIdValue = r.organization_id as string;
   return {
     assessment: {
       id: r.a_id as string,
-      organization_id: r.organization_id as string,
+      organization_id: orgIdValue,
       cycle_label: r.cycle_label as string,
       status: r.a_status as AssessmentStatus,
       framework: r.framework as Framework,
       fiscal_year: r.fiscal_year as number,
       submitted_at: r.submitted_at as string | null,
       affirmed_at: r.affirmed_at as string | null,
-      affirmed_by_name: r.affirmed_by_name as string | null,
-      affirmed_by_title: r.affirmed_by_title as string | null,
+      affirmed_by_name: tryDecryptField(
+        (r.affirmed_by_name as string | null) ?? null,
+        { organizationId: orgIdValue, field: "assessments.affirmed_by_name" },
+      ),
+      affirmed_by_title: tryDecryptField(
+        (r.affirmed_by_title as string | null) ?? null,
+        { organizationId: orgIdValue, field: "assessments.affirmed_by_title" },
+      ),
       sprs_score: r.sprs_score as number | null,
       implements_all_17: r.implements_all_17 as boolean | null,
       carried_forward_from: r.carried_forward_from as string | null,

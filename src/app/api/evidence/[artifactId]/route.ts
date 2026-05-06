@@ -7,6 +7,7 @@ import {
   auditContextFromRequest,
   recordAuditEvent,
 } from "@/lib/security/audit-log";
+import { tryDecryptBytes } from "@/lib/security/field-encryption";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -117,6 +118,37 @@ export async function GET(
     },
   });
 
+  // Tier 1 zero-trust: bytes on disk are AES-256-GCM-encrypted with AAD
+  // bound to (orgId, evidence:assessmentId:controlId). Buffer the upstream
+  // body and decrypt before returning. Streaming pass-through is sacrificed
+  // here, but evidence files are bounded to ~25MB by upload limits which
+  // fits comfortably in lambda memory. Legacy plaintext blobs (uploaded
+  // before this rollout) pass through unchanged via tryDecryptBytes().
+  let plainBytes: Buffer;
+  try {
+    const reader = upstream.stream.getReader();
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    const HARD_CAP = 32 * 1024 * 1024;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > HARD_CAP) {
+        return new NextResponse("Evidence too large", { status: 502 });
+      }
+      chunks.push(value);
+    }
+    const cipherBuf = Buffer.concat(chunks.map((c) => Buffer.from(c)), total);
+    plainBytes = tryDecryptBytes(cipherBuf, {
+      organizationId: ctx.organization.id,
+      field: `evidence:${artifact.assessment_id}:${artifact.control_id}`,
+    });
+  } catch (err) {
+    console.error(`[evidence-proxy] decrypt failed for ${artifactId}`, err);
+    return new NextResponse("Evidence unavailable", { status: 502 });
+  }
+
   // Sanitize the filename for the Content-Disposition header — RFC 6266
   // disallows raw quotes/CR/LF and we already constrain on upload, but
   // belt-and-suspenders here.
@@ -136,8 +168,7 @@ export async function GET(
   headers.set("Referrer-Policy", "no-referrer");
   // Belt: prevent the proxied response from being framed.
   headers.set("X-Frame-Options", "DENY");
-  const upstreamLength = upstream.headers.get("content-length");
-  if (upstreamLength) headers.set("Content-Length", upstreamLength);
+  headers.set("Content-Length", String(plainBytes.length));
 
-  return new NextResponse(upstream.stream, { status: 200, headers });
+  return new NextResponse(new Uint8Array(plainBytes), { status: 200, headers });
 }

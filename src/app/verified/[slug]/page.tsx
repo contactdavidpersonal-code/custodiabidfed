@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ensureDbReady, getSql } from "@/lib/db";
 import { setAsideLabels, type SetAside, loadBidProfile } from "@/lib/bid-profile";
+import { tryDecryptField } from "@/lib/security/field-encryption";
 
 export const revalidate = 300; // 5min ISR — short enough to feel live
 
@@ -100,7 +101,17 @@ async function loadVerifiedPage(slug: string): Promise<VerifiedPageRow | null> {
       AND t.is_public = TRUE
     LIMIT 1
   `) as VerifiedPageRow[];
-  return rows[0] ?? null;
+  const row = rows[0] ?? null;
+  if (!row) return null;
+  // Tier 1: signer title is encrypted at rest. Decrypt for the public trust
+  // page; legacy plaintext rows pass through unchanged.
+  return {
+    ...row,
+    affirmed_by_title: tryDecryptField(row.affirmed_by_title, {
+      organizationId: row.organization_id,
+      field: "assessments.affirmed_by_title",
+    }),
+  };
 }
 
 export async function generateMetadata(
