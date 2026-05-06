@@ -329,6 +329,22 @@ export default function Home() {
             14-day free trial &middot; No credit card required &middot; $449/mo <span className="line-through opacity-60">$749</span> Summer Sale &middot; Cancel anytime
           </p>
 
+          {/* Powered by AWS — credibility under CTA */}
+          <a
+            href="https://aws.amazon.com/what-is-cloud-computing"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-6 inline-block opacity-80 transition-opacity hover:opacity-100"
+            aria-label="Powered by AWS Cloud Computing"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://d0.awsstatic.com/logos/powered-by-aws-white.png"
+              alt="Powered by AWS Cloud Computing"
+              className="h-auto w-[160px]"
+            />
+          </a>
+
           {/* Below-headline outcome line — sets expectation for what's next */}
           <p className="mx-auto mt-10 max-w-2xl border-t border-white/[0.08] pt-8 font-serif text-base italic leading-snug text-[#bdf2cf] md:text-lg">
             &ldquo;The DoD spends $80B/year with small businesses. The only thing standing between you and bidding on a slice of it is one piece of paperwork. Get Started Now.&rdquo;
