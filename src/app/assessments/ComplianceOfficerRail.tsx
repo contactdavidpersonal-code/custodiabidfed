@@ -35,6 +35,10 @@ const TOOL_LABELS: Record<string, string> = {
   update_business_profile: "Updating your business profile",
   cite_regulation: "Looking up the regulation text",
   escalate_to_officer: "Flagging for a Custodia Compliance Officer",
+  add_scope_item: "Adding to your scope inventory",
+  add_esp: "Registering an external service provider",
+  add_specialized_asset: "Documenting a specialized asset",
+  read_scope_inventory_state: "Reading your scope inventory",
 };
 
 const STORAGE_OPEN_KEY = "custodia.chat.open";
@@ -303,6 +307,17 @@ export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
               ) {
                 window.dispatchEvent(
                   new CustomEvent("evidence-changed", {
+                    detail: { tool: tool.name },
+                  }),
+                );
+              }
+              if (
+                tool?.name === "add_scope_item" ||
+                tool?.name === "add_esp" ||
+                tool?.name === "add_specialized_asset"
+              ) {
+                window.dispatchEvent(
+                  new CustomEvent("custodia:scope-changed", {
                     detail: { tool: tool.name },
                   }),
                 );

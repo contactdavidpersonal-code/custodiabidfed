@@ -2,8 +2,12 @@ import {
   escalationUrgencies,
   getSql,
   milestoneKinds,
+  scopeKinds,
+  specializedAssetTypes,
   type EscalationUrgency,
   type MilestoneKind,
+  type ScopeKind,
+  type SpecializedAssetType,
 } from "@/lib/db";
 import {
   computeProgress,
@@ -30,6 +34,14 @@ import {
   searchSamOpportunities,
   type SamOpportunity,
 } from "@/lib/sam-radar";
+import {
+  addEsp,
+  addScopeItem,
+  addSpecializedAsset,
+  listEsps,
+  listScopeItems,
+  listSpecializedAssets,
+} from "@/lib/cmmc/scope";
 import { getPracticeSpec } from "@/lib/cmmc/practice-spec";
 import { put } from "@vercel/blob";
 
@@ -326,6 +338,108 @@ export const officerTools = [
     },
   },
   {
+    name: "add_scope_item",
+    description:
+      "Add a People / Technology / Facility row to the org's CMMC L1 scope inventory (32 CFR § 170.19(b)(3)). Use during the scope-inventory step when the user lists who or what handles FCI. Each call writes ONE item — call multiple times for a list. Read scope_inventory_state first if you need to avoid duplicates. Do NOT call this for ESPs (use add_esp) or for IoT/OT/GFE (use add_specialized_asset).",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        kind: {
+          type: "string",
+          enum: ["people", "technology", "facility"],
+          description:
+            "'people' = employees, contractors, roles. 'technology' = laptops, servers, SaaS, cloud accounts, network gear. 'facility' = offices, labs, warehouses, home offices.",
+        },
+        label: {
+          type: "string",
+          description:
+            "Short identifying name. People: full name or role. Technology: hostname/app name. Facility: address or building name.",
+        },
+        role: {
+          type: "string",
+          description:
+            "What this item does in the FCI flow. People: job title (e.g. 'Founder/CEO'). Technology: function (e.g. 'primary laptop', 'M365 email'). Facility: building purpose (e.g. 'home office, no visitors').",
+        },
+        handles_fci: {
+          type: "boolean",
+          description:
+            "True if this item processes, stores, or transmits FCI. Defaults to true.",
+        },
+        notes: { type: "string", description: "Optional extra context." },
+      },
+      required: ["kind", "label"],
+    },
+  },
+  {
+    name: "add_esp",
+    description:
+      "Register an External Service Provider (ESP) in the user's scope inventory. Vendors and managed services that process, store, or transmit FCI on the OSA's behalf — Microsoft 365, Google Workspace, AWS, MSPs, contracted helpdesks. Per CMMC Scoping Guide L1 v2.13 ESPs are in scope and may share/inherit objectives when supporting evidence (SOC 2, attestation, contract responsibility matrix) is on file.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        name: {
+          type: "string",
+          description:
+            "Service name as the user refers to it. e.g. 'Microsoft 365 Business Standard', 'AWS production account', 'Acme MSP'.",
+        },
+        vendor: { type: "string", description: "Provider company, e.g. 'Microsoft'." },
+        services: {
+          type: "string",
+          description:
+            "What the provider does for the org. e.g. 'Email, document storage, identity, conditional access'.",
+        },
+        cmmc_status: {
+          type: "string",
+          description:
+            "If known, the provider's CMMC posture: 'Final Level 2 (C3PAO)', 'GCC High', 'FedRAMP Moderate', 'Self-attested L1', or 'Unknown'.",
+        },
+        contact_email: { type: "string" },
+        attestation_doc_url: {
+          type: "string",
+          description: "URL to SOC 2, ISO 27001, or CMMC attestation evidence.",
+        },
+      },
+      required: ["name"],
+    },
+  },
+  {
+    name: "add_specialized_asset",
+    description:
+      "Document a Specialized Asset per 32 CFR § 170.19(b)(2)(ii). Specialized Assets — IoT, IIoT, Operational Technology, Government-Furnished Equipment, Restricted Information Systems, Test Equipment — are listed for completeness but NOT graded against the 15 requirements. Use this when the user mentions a connected sensor, lab fixture, GFE laptop, air-gapped test bench, etc.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        label: {
+          type: "string",
+          description: "Short identifying name, e.g. 'Test bench RT-2', 'Smart printer (lobby)'.",
+        },
+        asset_type: {
+          type: "string",
+          enum: specializedAssetTypes as unknown as string[],
+          description:
+            "iot = consumer IoT. iiot = industrial IoT. ot = operational technology. gfe = Government-Furnished Equipment. restricted = Restricted Information System. test_equipment = test/lab equipment.",
+        },
+        description: { type: "string" },
+        handles_fci: {
+          type: "boolean",
+          description:
+            "True if the asset processes, stores, or transmits FCI. Defaults to true.",
+        },
+      },
+      required: ["label", "asset_type"],
+    },
+  },
+  {
+    name: "read_scope_inventory_state",
+    description:
+      "Read the org's current scope inventory: People, Technology, Facilities, ESPs, and Specialized Assets. Call this before adding scope items so you don't duplicate, and at the start of the scope step to summarize what's already captured.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
     name: "escalate_to_officer",
     description:
       "Flag a request for a human Custodia officer (Bootcamp / Command tier). Use when the user's situation needs judgment beyond L1 self-serve — e.g. a prime is demanding an SSP rewrite, a guarantee claim dispute, CUI handling outside L1 scope, or they explicitly ask for human help.",
@@ -405,6 +519,14 @@ export async function executeOfficerTool(
         return await handleAnalyzeOpportunityFit(input, ctx);
       case "dismiss_opportunity":
         return await handleDismissOpportunity(input, ctx);
+      case "add_scope_item":
+        return await handleAddScopeItem(input, ctx);
+      case "add_esp":
+        return await handleAddEsp(input, ctx);
+      case "add_specialized_asset":
+        return await handleAddSpecializedAsset(input, ctx);
+      case "read_scope_inventory_state":
+        return await handleReadScopeInventoryState(ctx);
       default:
         return { ok: false, error: `Unknown tool: ${name}` };
     }
@@ -1159,3 +1281,172 @@ async function handleDismissOpportunity(
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Scope inventory tools (32 CFR § 170.19) — used during the scope step so
+// Charlie can drop People / Technology / Facility / ESP / Specialized Asset
+// rows directly into the org's inventory while interviewing the user. The
+// scope page listens for `custodia:scope-changed` window events fired from
+// the rail's `tool_end` dispatch and refreshes itself.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ALLOWED_SCOPE_KIND_LABELS: Record<"people" | "technology" | "facility", string> = {
+  people: "People",
+  technology: "Technology",
+  facility: "Facility",
+};
+
+async function handleAddScopeItem(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const kind = typeof input.kind === "string" ? input.kind.trim() : "";
+  const label = typeof input.label === "string" ? input.label.trim() : "";
+  if (!label) return { ok: false, error: "label is required." };
+  if (kind !== "people" && kind !== "technology" && kind !== "facility") {
+    return {
+      ok: false,
+      error:
+        "kind must be one of: people, technology, facility. Use add_esp for ESPs and add_specialized_asset for IoT/OT/GFE.",
+    };
+  }
+  // Belt-and-suspenders: scope_inventory accepts 'esp' too, but we want the
+  // dedicated add_esp tool to own that path so contact / attestation fields
+  // get captured properly.
+  if (!(scopeKinds as readonly string[]).includes(kind)) {
+    return { ok: false, error: `Invalid scope kind: ${kind}.` };
+  }
+
+  const role = typeof input.role === "string" ? input.role.trim() : null;
+  const notes = typeof input.notes === "string" ? input.notes.trim() : null;
+  const handlesFci =
+    typeof input.handles_fci === "boolean" ? input.handles_fci : true;
+
+  const row = await addScopeItem({
+    organizationId: ctx.organizationId,
+    kind: kind as ScopeKind,
+    label,
+    role: role || null,
+    handlesFci,
+    notes: notes || null,
+  });
+
+  return {
+    ok: true,
+    data: {
+      id: row.id,
+      kind: row.kind,
+      kind_label: ALLOWED_SCOPE_KIND_LABELS[kind as keyof typeof ALLOWED_SCOPE_KIND_LABELS],
+      label: row.label,
+      handles_fci: row.handles_fci,
+    },
+  };
+}
+
+async function handleAddEsp(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const name = typeof input.name === "string" ? input.name.trim() : "";
+  if (!name) return { ok: false, error: "name is required." };
+
+  const str = (k: string): string | null => {
+    const v = input[k];
+    if (typeof v !== "string") return null;
+    const t = v.trim();
+    return t ? t : null;
+  };
+
+  const row = await addEsp({
+    organizationId: ctx.organizationId,
+    name,
+    vendor: str("vendor"),
+    services: str("services"),
+    cmmcStatus: str("cmmc_status"),
+    contactEmail: str("contact_email"),
+    attestationDocUrl: str("attestation_doc_url"),
+  });
+
+  return {
+    ok: true,
+    data: {
+      id: row.id,
+      name: row.name,
+      vendor: row.vendor,
+      cmmc_status: row.cmmc_status,
+    },
+  };
+}
+
+async function handleAddSpecializedAsset(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const label = typeof input.label === "string" ? input.label.trim() : "";
+  const assetType =
+    typeof input.asset_type === "string" ? input.asset_type.trim() : "";
+  if (!label) return { ok: false, error: "label is required." };
+  if (!(specializedAssetTypes as readonly string[]).includes(assetType)) {
+    return {
+      ok: false,
+      error: `asset_type must be one of: ${specializedAssetTypes.join(", ")}.`,
+    };
+  }
+
+  const description =
+    typeof input.description === "string" ? input.description.trim() : null;
+  const handlesFci =
+    typeof input.handles_fci === "boolean" ? input.handles_fci : true;
+
+  const row = await addSpecializedAsset({
+    organizationId: ctx.organizationId,
+    label,
+    assetType: assetType as SpecializedAssetType,
+    description: description || null,
+    handlesFci,
+  });
+
+  return {
+    ok: true,
+    data: {
+      id: row.id,
+      label: row.label,
+      asset_type: row.asset_type,
+      handles_fci: row.handles_fci,
+    },
+  };
+}
+
+async function handleReadScopeInventoryState(
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const [scope, esps, specialized] = await Promise.all([
+    listScopeItems(ctx.organizationId),
+    listEsps(ctx.organizationId),
+    listSpecializedAssets(ctx.organizationId),
+  ]);
+  return {
+    ok: true,
+    data: {
+      people: scope
+        .filter((s) => s.kind === "people")
+        .map((s) => ({ label: s.label, role: s.role, handles_fci: s.handles_fci })),
+      technology: scope
+        .filter((s) => s.kind === "technology")
+        .map((s) => ({ label: s.label, role: s.role, handles_fci: s.handles_fci })),
+      facility: scope
+        .filter((s) => s.kind === "facility")
+        .map((s) => ({ label: s.label, role: s.role, handles_fci: s.handles_fci })),
+      esps: esps.map((e) => ({
+        name: e.name,
+        vendor: e.vendor,
+        cmmc_status: e.cmmc_status,
+        services: e.services,
+      })),
+      specialized_assets: specialized.map((a) => ({
+        label: a.label,
+        asset_type: a.asset_type,
+        handles_fci: a.handles_fci,
+      })),
+    },
+  };
+}

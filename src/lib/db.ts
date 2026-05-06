@@ -154,7 +154,11 @@ export function getSql() {
   return neon(getDatabaseUrl());
 }
 
-export async function initDb() {
+export async function initDb(): Promise<void> {
+  return ensureDbReady();
+}
+
+async function runInitDdl() {
   validateEnvOnce();
   const sql = getSql();
 
@@ -1402,14 +1406,51 @@ export async function initDb() {
  * Cache the init promise so concurrent callers share one migration run per
  * cold start. Without this, every API route calling `initDb()` would issue
  * the full DDL set in parallel.
+ *
+ * Cross-instance race: when two serverless cold-starts run `initDb()` at the
+ * same time, `CREATE TABLE IF NOT EXISTS` is NOT atomic with respect to the
+ * implicit row-type creation — both processes see "table doesn't exist",
+ * both try to insert into `pg_type`, and one fails with 23505 on
+ * `pg_type_typname_nsp_index`. The error is benign (the table now exists),
+ * so we retry once. The retry's IF NOT EXISTS guards short-circuit because
+ * the racing instance has finished creating everything.
  */
 let _initPromise: Promise<void> | null = null;
 export function ensureDbReady(): Promise<void> {
   if (!_initPromise) {
-    _initPromise = initDb().catch((err) => {
+    _initPromise = runInitWithRaceRetry().catch((err) => {
       _initPromise = null;
       throw err;
     });
   }
   return _initPromise;
+}
+
+async function runInitWithRaceRetry(): Promise<void> {
+  try {
+    await runInitDdl();
+  } catch (err) {
+    if (isPgCatalogRaceError(err)) {
+      // Another instance won the race and finished creating the schema.
+      // Re-run; every IF NOT EXISTS / IF EXISTS guard now no-ops.
+      await runInitDdl();
+      return;
+    }
+    throw err;
+  }
+}
+
+function isPgCatalogRaceError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const e = err as { code?: string; constraint?: string; table?: string };
+  if (e.code !== "23505") return false;
+  // pg_type / pg_class / pg_namespace duplicate-key races during DDL.
+  if (e.table === "pg_type" || e.table === "pg_class") return true;
+  if (
+    e.constraint === "pg_type_typname_nsp_index" ||
+    e.constraint === "pg_class_relname_nsp_index"
+  ) {
+    return true;
+  }
+  return false;
 }

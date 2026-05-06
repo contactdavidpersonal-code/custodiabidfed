@@ -14,6 +14,10 @@ import {
   addSpecializedAssetAction,
   retireScopeItemAction,
 } from "./actions";
+import {
+  ScopeCharlieButton,
+  ScopeRefreshOnCharlie,
+} from "./ScopeCharlieButton";
 
 /**
  * CMMC L1 v2.13 scope inventory wizard. The user MUST identify People,
@@ -50,6 +54,7 @@ export default async function ScopePage(
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
+      <ScopeRefreshOnCharlie />
       <header className="mb-8">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
           Step 3 of 8 · Scope inventory · 32 CFR § 170.19
@@ -68,6 +73,31 @@ export default async function ScopePage(
         </p>
       </header>
 
+      <section className="mb-10 border border-[#0e2a23] bg-[#0e2a23] p-6 text-white">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-2xl">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#bdf2cf]">
+              Pro tip · Charlie can do this for you
+            </p>
+            <h2 className="mt-2 font-serif text-xl font-bold">
+              Don&apos;t want to fill out forms? Let your vCO interview you.
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-[#cfe3d9]">
+              Charlie will ask a few plain-English questions and write the
+              People, Technology, Facilities, ESPs, and Specialized Assets
+              into your inventory automatically. Pros can still use the forms
+              below. Either way works — pick whichever&apos;s faster.
+            </p>
+          </div>
+          <ScopeCharlieButton
+            variant="primary"
+            label="Do this with Charlie"
+            helper="Walks you through the whole scope inventory in chat."
+            prompt="Let's build my scope inventory together. Walk me through People, Technology, Facilities, ESPs, and any Specialized Assets one section at a time. Read my current scope first so we don't duplicate, ask focused questions for whatever's missing, and use add_scope_item / add_esp / add_specialized_asset to save each item as we go. When you finish a section, summarize what you wrote and move on."
+          />
+        </div>
+      </section>
+
       <ScopeSection
         kind="people"
         title="People"
@@ -75,6 +105,7 @@ export default async function ScopePage(
         items={grouped.people}
         assessmentId={id}
         roleLabel="Role / job title"
+        charliePrompt="Help me list the People in my CMMC scope. Read my scope inventory first to see who's already listed, then ask me about employees, contractors, and any external roles who handle Federal Contract Information. Save each one with add_scope_item (kind: 'people'). When you've covered everyone, give me a short summary."
       />
       <ScopeSection
         kind="technology"
@@ -83,6 +114,7 @@ export default async function ScopePage(
         items={grouped.technology}
         assessmentId={id}
         roleLabel="What it does (e.g. file server, email)"
+        charliePrompt="Help me list the Technology in my CMMC scope — laptops, servers, SaaS apps, cloud accounts, network gear that processes, stores, or transmits FCI. Read my current scope first, then ask me what I use for email, file storage, identity, devices, and network. Save each with add_scope_item (kind: 'technology')."
       />
       <ScopeSection
         kind="facility"
@@ -91,19 +123,29 @@ export default async function ScopePage(
         items={grouped.facility}
         assessmentId={id}
         roleLabel="Address or building"
+        charliePrompt="Help me list the Facilities in my CMMC scope — offices, labs, home offices, warehouses where FCI is handled. Read my scope first, then ask about each location. Save each with add_scope_item (kind: 'facility')."
       />
 
       <section className="mb-12 border border-[#cfe3d9] bg-white p-6">
-        <h2 className="font-serif text-xl font-bold text-[#10231d]">
-          External Service Providers (ESPs)
-        </h2>
-        <p className="mt-1 max-w-3xl text-sm text-[#5a7d70]">
-          Vendors and managed services that process, store, or transmit your
-          FCI on your behalf — Microsoft 365 / Google Workspace, AWS, your MSP,
-          a contracted helpdesk. ESPs are in scope. You can inherit assessment
-          objectives from an ESP when responsibilities are documented and the
-          provider&apos;s posture is sufficient.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-serif text-xl font-bold text-[#10231d]">
+              External Service Providers (ESPs)
+            </h2>
+            <p className="mt-1 max-w-3xl text-sm text-[#5a7d70]">
+              Vendors and managed services that process, store, or transmit your
+              FCI on your behalf — Microsoft 365 / Google Workspace, AWS, your MSP,
+              a contracted helpdesk. ESPs are in scope. You can inherit assessment
+              objectives from an ESP when responsibilities are documented and the
+              provider&apos;s posture is sufficient.
+            </p>
+          </div>
+          <ScopeCharlieButton
+            label="Ask Charlie"
+            helper="Charlie will register your ESPs after a few questions."
+            prompt="Help me register my External Service Providers (ESPs). Read my current ESPs first, then ask me about email/document tooling (M365 vs Google Workspace), identity provider, cloud accounts (AWS/Azure/GCP), MSP/IT support, and any contracted helpdesk or compliance vendor. For each, capture vendor, services, CMMC status if known, contact email, and attestation URL if I have it. Save each with add_esp."
+          />
+        </div>
 
         {esps.length > 0 && (
           <ul className="mt-4 divide-y divide-[#e6efe9]">
@@ -189,16 +231,25 @@ export default async function ScopePage(
       </section>
 
       <section className="mb-12 border border-[#e6d3a8] bg-[#fdf6e3] p-6">
-        <h2 className="font-serif text-xl font-bold text-[#10231d]">
-          Specialized Assets
-        </h2>
-        <p className="mt-1 max-w-3xl text-sm text-[#5a7d70]">
-          IoT, Industrial IoT, Operational Technology, Government-Furnished
-          Equipment, Restricted Information Systems, and Test Equipment.
-          Per 32 CFR § 170.19(b)(2)(ii), these are <strong>documented but not
-          assessed</strong> against the 15 requirements. Listing them keeps
-          your assessment complete and makes Enduring Exceptions defensible.
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-serif text-xl font-bold text-[#10231d]">
+              Specialized Assets
+            </h2>
+            <p className="mt-1 max-w-3xl text-sm text-[#5a7d70]">
+              IoT, Industrial IoT, Operational Technology, Government-Furnished
+              Equipment, Restricted Information Systems, and Test Equipment.
+              Per 32 CFR § 170.19(b)(2)(ii), these are <strong>documented but not
+              assessed</strong> against the 15 requirements. Listing them keeps
+              your assessment complete and makes Enduring Exceptions defensible.
+            </p>
+          </div>
+          <ScopeCharlieButton
+            label="Ask Charlie"
+            helper="Charlie will document any IoT/OT/GFE you mention."
+            prompt="Help me document any Specialized Assets — IoT, Industrial IoT, Operational Technology, Government-Furnished Equipment, Restricted Information Systems, or Test Equipment. Read what's already documented, then ask me whether I have any of those categories and capture each one. Save with add_specialized_asset. If I have none, just confirm that and we'll move on."
+          />
+        </div>
 
         {specialized.length > 0 && (
           <ul className="mt-4 divide-y divide-[#e6d3a8]">
@@ -277,6 +328,7 @@ export default async function ScopePage(
     items,
     assessmentId,
     roleLabel,
+    charliePrompt,
   }: {
     kind: "people" | "technology" | "facility";
     title: string;
@@ -290,6 +342,7 @@ export default async function ScopePage(
     }>;
     assessmentId: string;
     roleLabel: string;
+    charliePrompt: string;
   }) {
     return (
       <section className="mb-10 border border-[#cfe3d9] bg-white p-6">
@@ -303,9 +356,16 @@ export default async function ScopePage(
             </h2>
             <p className="mt-1 text-sm text-[#5a7d70]">{helper}</p>
           </div>
-          <span className="text-xs text-[#5a7d70]">
-            {items.length} item{items.length === 1 ? "" : "s"}
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <ScopeCharlieButton
+              label="Ask Charlie"
+              helper={`Charlie will interview you and fill in your ${title.toLowerCase()}.`}
+              prompt={charliePrompt}
+            />
+            <span className="text-xs text-[#5a7d70]">
+              {items.length} item{items.length === 1 ? "" : "s"}
+            </span>
+          </div>
         </header>
 
         {items.length > 0 && (
