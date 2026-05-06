@@ -9,7 +9,7 @@ import {
   type Framework,
   type RemediationStatus,
 } from "@/lib/db";
-import { getPlaybookForFramework } from "@/lib/playbook";
+import { getPlaybookForFramework, playbookById } from "@/lib/playbook";
 import { seedObjectiveRows } from "@/lib/cmmc/objectives";
 import { fiscalYearOf, seedMilestonesForAssessment } from "@/lib/fiscal";
 import { redirect } from "next/navigation";
@@ -943,29 +943,32 @@ export type ProgressBreakdown = {
 };
 
 export function computeProgress(responses: ControlResponseRow[]): ProgressBreakdown {
-  const total = responses.length;
+  // Roll up legacy NIST 800-171 r2 control rows to the 15 CMMC L1 v2.13
+  // requirement IDs (FAR 52.204-21(b)(1)(i)–(b)(1)(xv)). Several legacy
+  // practices (PE 3.10.3, 3.10.4, 3.10.5) collapse into a single requirement
+  // (PE.L1-b.1.ix), so the user-facing count is 15, not 17. Per 32 CFR
+  // § 170.24, a requirement is MET only when every constituent practice is
+  // MET or N/A; one NOT MET fails the requirement.
+  const groups = new Map<string, ControlResponseRow["status"][]>();
+  for (const r of responses) {
+    const groupKey = playbookById[r.control_id]?.requirementId ?? r.control_id;
+    const list = groups.get(groupKey);
+    if (list) list.push(r.status);
+    else groups.set(groupKey, [r.status]);
+  }
+
+  const total = groups.size;
   let met = 0,
     partial = 0,
     notMet = 0,
     notApplicable = 0,
     unanswered = 0;
-  for (const r of responses) {
-    switch (r.status) {
-      case "yes":
-        met++;
-        break;
-      case "partial":
-        partial++;
-        break;
-      case "no":
-        notMet++;
-        break;
-      case "not_applicable":
-        notApplicable++;
-        break;
-      default:
-        unanswered++;
-    }
+  for (const statuses of groups.values()) {
+    if (statuses.includes("no")) notMet++;
+    else if (statuses.includes("partial")) partial++;
+    else if (statuses.includes("unanswered")) unanswered++;
+    else if (statuses.includes("yes")) met++;
+    else notApplicable++;
   }
   const answered = total - unanswered;
   return {
