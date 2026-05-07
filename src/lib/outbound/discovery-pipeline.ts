@@ -186,6 +186,59 @@ async function updateProspectDomain(prospectId: string, domain: string) {
 }
 
 /**
+ * Persist the source-of-truth contract intel for outbound copy.
+ *
+ * **Accuracy contract:**
+ *   • Every column mirrors a literal field on the USAspending response
+ *     stored on the AwardRow. No derived/inferred values.
+ *   • Idempotent on (prospect_id, piid, action_date). On repeat runs we
+ *     touch `last_seen_at` + refresh `raw_payload`, but never rewrite
+ *     PIID, amounts, dates, or agency names — those are write-once.
+ *   • If a USAspending field came back null, we store null. Never a guess.
+ *
+ * Outbound templating reads from this table; if no row exists for a
+ * prospect, the email falls back to generic copy (no fabricated PIIDs).
+ */
+async function persistAward(prospectId: string, award: AwardRow): Promise<void> {
+  if (!award.piid) return; // No contract number → nothing reliable to cite.
+  const sql = getSql();
+  await sql`
+    INSERT INTO prospect_awards (
+      prospect_id, piid, internal_id,
+      award_amount_cents, action_date,
+      period_of_performance_start_date, period_of_performance_end_date,
+      awarding_agency_name, awarding_sub_agency_name,
+      naics_code, naics_description,
+      contract_award_type, description,
+      place_of_performance_state, place_of_performance_city,
+      source, raw_payload
+    ) VALUES (
+      ${prospectId},
+      ${award.piid},
+      ${award.internalId || null},
+      ${Math.round(award.awardAmount * 100)},
+      ${award.actionDate},
+      ${award.periodOfPerformanceStartDate},
+      ${award.periodOfPerformanceEndDate},
+      ${award.awardingAgencyName},
+      ${award.awardingSubAgencyName},
+      ${award.naicsCode},
+      ${award.naicsDescription},
+      ${award.contractAwardType},
+      ${award.description},
+      ${award.recipientStateCode},
+      ${award.recipientCity},
+      'usaspending',
+      ${JSON.stringify(award)}
+    )
+    ON CONFLICT (prospect_id, piid)
+    DO UPDATE SET
+      last_seen_at = NOW(),
+      raw_payload = EXCLUDED.raw_payload
+  `;
+}
+
+/**
  * Persist a Hunter contact for a prospect. Idempotent on email.
  */
 async function persistContact(
@@ -517,6 +570,13 @@ export async function runDiscovery(
       const r = await persistApproved(c.award, c.ruleScore, v, domainGuess, params.apply);
       if (r.written) written += 1;
       if (r.updated) updated += 1;
+
+      // Persist the contract intel — source-of-truth for outbound copy.
+      // Only kept (AI-approved) prospects get awards stored; bench rows
+      // not converted into prospects don't get a row here either.
+      if (r.id) {
+        await persistAward(r.id, c.award);
+      }
 
       if (params.enrichWithHunter && r.id && process.env.HUNTER_API_KEY) {
         enrichmentAttempted += 1;

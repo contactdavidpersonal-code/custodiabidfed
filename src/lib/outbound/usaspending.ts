@@ -119,6 +119,15 @@ export type AwardSearchInput = {
 /**
  * Single award row as projected by `spending_by_award`. We pick the
  * fields we actually need; USAspending returns many more we don't.
+ *
+ * **Source-of-truth fields** (used in outbound copy, must be accurate):
+ *   piid, recipientName, recipientUei, awardAmount, actionDate,
+ *   awardingAgencyName, awardingSubAgencyName, naicsCode, naicsDescription,
+ *   periodOfPerformanceEndDate, description, contractAwardType.
+ *
+ * Every value here comes directly from a USAspending API response field —
+ * we never derive, infer, or fabricate. If a field is missing in the API
+ * response we store `null`, not a guess.
  */
 export type AwardRow = {
   /** USAspending internal ID. */
@@ -137,12 +146,26 @@ export type AwardRow = {
   awardingSubAgencyName: string | null;
   /** Total obligated dollars on this award. */
   awardAmount: number;
-  /** When the contract was signed / action date. ISO timestamp. */
+  /** When the contract was signed / action date. ISO date. */
   actionDate: string | null;
+  /** Period of performance start (ISO date) — when work began. */
+  periodOfPerformanceStartDate: string | null;
+  /**
+   * Period of performance end (ISO date) — when contract closes.
+   * This is the CMMC compliance deadline anchor: small primes must
+   * self-attest L1 before this date for any FCI handling.
+   */
+  periodOfPerformanceEndDate: string | null;
+  /** Free-text contract description (what the work actually is). */
+  description: string | null;
+  /** "DELIVERY ORDER" | "DEFINITIVE CONTRACT" | "BPA CALL" | "PURCHASE ORDER" | ... */
+  contractAwardType: string | null;
   /** NAICS code attached to this award. */
   naicsCode: string | null;
   naicsDescription: string | null;
 };
+
+type NaicsField = string | { code?: string | null; description?: string | null } | null;
 
 type RawAwardRow = {
   internal_id?: number | string;
@@ -157,8 +180,12 @@ type RawAwardRow = {
   "Awarding Sub Agency"?: string | null;
   "Award Amount"?: number | string | null;
   "Action Date"?: string | null;
+  "Period of Performance Start Date"?: string | null;
+  "Period of Performance Current End Date"?: string | null;
+  Description?: string | null;
+  "Contract Award Type"?: string | null;
   "NAICS Code"?: string | null;
-  NAICS?: string | null;
+  NAICS?: NaicsField;
   naics_code?: string | null;
   naics_description?: string | null;
 };
@@ -243,11 +270,15 @@ export async function searchAwards(input: AwardSearchInput): Promise<{
     "Recipient DUNS Number",
     "Award Amount",
     "Action Date",
+    "Period of Performance Start Date",
+    "Period of Performance Current End Date",
     "Awarding Agency",
     "Awarding Sub Agency",
     "Place of Performance State Code",
     "Place of Performance City Code",
     "NAICS",
+    "Description",
+    "Contract Award Type",
   ];
 
   const body = {
@@ -296,8 +327,12 @@ export async function searchAwards(input: AwardSearchInput): Promise<{
     awardingSubAgencyName: r["Awarding Sub Agency"] ?? null,
     awardAmount: Number(r["Award Amount"] ?? 0),
     actionDate: r["Action Date"] ?? null,
+    periodOfPerformanceStartDate: r["Period of Performance Start Date"] ?? null,
+    periodOfPerformanceEndDate: r["Period of Performance Current End Date"] ?? null,
+    description: typeof r.Description === "string" ? r.Description : null,
+    contractAwardType: r["Contract Award Type"] ?? null,
     naicsCode: extractNaicsCode(r),
-    naicsDescription: r.naics_description ?? null,
+    naicsDescription: extractNaicsDescription(r),
   }));
 
   return {
@@ -308,17 +343,47 @@ export async function searchAwards(input: AwardSearchInput): Promise<{
 }
 
 /**
- * USAspending sometimes returns NAICS as "541512: Computer Systems Design"
- * in the "NAICS" field, sometimes as a plain code in `naics_code`. Extract
- * just the numeric code.
+ * USAspending returns NAICS in several shapes depending on field projection:
+ *   • { code, description }   (current API shape when projecting "NAICS")
+ *   • "541512: Computer Systems Design"   (legacy string form)
+ *   • plain code in `naics_code`
+ * Extract just the numeric code.
  */
 function extractNaicsCode(r: RawAwardRow): string | null {
-  const candidates = [r["NAICS Code"], r.NAICS, r.naics_code].filter(
-    (v): v is string => typeof v === "string" && v.length > 0,
-  );
+  const naics = r.NAICS;
+  if (naics && typeof naics === "object" && typeof naics.code === "string") {
+    const m = naics.code.match(/^\d{4,6}/);
+    if (m) return m[0];
+  }
+  const candidates = [
+    r["NAICS Code"],
+    typeof naics === "string" ? naics : null,
+    r.naics_code,
+  ].filter((v): v is string => typeof v === "string" && v.length > 0);
   for (const c of candidates) {
     const m = c.match(/^\d{4,6}/);
     if (m) return m[0];
+  }
+  return null;
+}
+
+/**
+ * Extract the human-readable NAICS description. Prefers the object form
+ * ({ code, description }) returned by current USAspending; falls back to
+ * the legacy `naics_description` field if present.
+ */
+function extractNaicsDescription(r: RawAwardRow): string | null {
+  const naics = r.NAICS;
+  if (
+    naics &&
+    typeof naics === "object" &&
+    typeof naics.description === "string" &&
+    naics.description.length > 0
+  ) {
+    return naics.description;
+  }
+  if (typeof r.naics_description === "string" && r.naics_description.length > 0) {
+    return r.naics_description;
   }
   return null;
 }

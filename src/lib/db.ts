@@ -1496,6 +1496,75 @@ async function runInitDdl() {
   await sql`CREATE INDEX IF NOT EXISTS idx_prospect_contacts_prospect ON prospect_contacts (prospect_id)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_prospect_contacts_pushed ON prospect_contacts (pushed_to_instantly_at) WHERE pushed_to_instantly_at IS NULL`;
 
+  // ─── prospect_awards — immutable contract intel for outbound copy ──────
+  // One row per DoD contract award the prospect won. Source-of-truth from
+  // USAspending. Used to hydrate Instantly custom variables for personalized
+  // outreach ("you won the $487K Army TACOM award W56HZV-25-D-0042…").
+  //
+  // ACCURACY CONTRACT:
+  //   • Every column here mirrors a literal field from a USAspending API
+  //     response. Nothing is derived, inferred, or AI-generated.
+  //   • Rows are INSERT-only on (prospect_id, piid, action_date). On repeat
+  //     fetches we update last_seen_at + raw_payload only.
+  //   • If a field was null from USAspending, it stays null. We never
+  //     guess or fall back. Outbound templating skips personalization
+  //     when the cited fields are null.
+  await sql`
+    CREATE TABLE IF NOT EXISTS prospect_awards (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      prospect_id UUID NOT NULL REFERENCES prospects(id) ON DELETE CASCADE,
+      -- Source-of-truth fields (USAspending API). Read-only after first insert.
+      piid TEXT NOT NULL,
+      internal_id TEXT,
+      award_amount_cents BIGINT NOT NULL,
+      action_date DATE,
+      period_of_performance_start_date DATE,
+      period_of_performance_end_date DATE,
+      awarding_agency_name TEXT,
+      awarding_sub_agency_name TEXT,
+      naics_code TEXT,
+      naics_description TEXT,
+      contract_award_type TEXT,
+      description TEXT,
+      place_of_performance_state TEXT,
+      place_of_performance_city TEXT,
+      -- Provenance
+      source TEXT NOT NULL DEFAULT 'usaspending',
+      raw_payload JSONB NOT NULL,
+      first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (prospect_id, piid)
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_prospect_awards_prospect ON prospect_awards (prospect_id, action_date DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_prospect_awards_pop_end ON prospect_awards (period_of_performance_end_date) WHERE period_of_performance_end_date IS NOT NULL`;
+
+  // Migration: an earlier definition of this table used a 3-column UNIQUE
+  // including action_date. action_date is legitimately null on USAspending
+  // purchase-order rows, which breaks that key (NULLs aren't equal in
+  // standard UNIQUE). Replace with (prospect_id, piid) — same PIID for
+  // the same prospect always represents the same contract.
+  await sql`
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'prospect_awards_prospect_id_piid_action_date_key'
+      ) THEN
+        ALTER TABLE prospect_awards
+          DROP CONSTRAINT prospect_awards_prospect_id_piid_action_date_key;
+      END IF;
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'prospect_awards_prospect_id_piid_key'
+      ) THEN
+        ALTER TABLE prospect_awards
+          ADD CONSTRAINT prospect_awards_prospect_id_piid_key
+          UNIQUE (prospect_id, piid);
+      END IF;
+    END$$;
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS referral_sources (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
