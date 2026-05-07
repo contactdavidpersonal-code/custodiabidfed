@@ -43,9 +43,10 @@ export async function GET(req: Request) {
     ok: result.ok,
     aiKept: result.ai.kept,
     prospectsWritten: result.prospects.written,
+    contactsWritten: result.enrichment.contactsWritten,
     awardsFetched: result.awards.fetched,
     pagesScanned: result.awards.pagesScanned,
     durationMs: result.durationMs,
-    error: result.awards.error ?? result.ai.error,
+    error: result.awards.error ?? result.ai.error ?? result.enrichment.error,
   });
 }

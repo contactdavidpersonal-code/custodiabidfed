@@ -1,18 +1,21 @@
 /**
- * Discovery pipeline — agent that finds qualified CMMC L1 prospects.
+ * Discovery pipeline v3 — three stages, agent-driven.
  *
- * Two-stage funnel:
+ *   1. USAspending  → recent DoD prime awards, small_business filter on,
+ *                     $25k-$10M, last 90 days, paginate up to 10 pages
+ *   2. Stage-1 rule filter → drop only obvious non-fits (megaprimes,
+ *                     universities, JVs, foreign, out-of-band amounts)
+ *   3. Stage-2 Claude review → rank survivors, pick top N for outreach
+ *   4. Stage-3 Hunter enrichment → for each kept lead, find best
+ *                     personal email + verification status
  *
- *   1. USAspending → rule-based ICP scorer (fast, cheap)
- *      Drops universities, megaprimes, public engineering firms, JVs,
- *      out-of-band amounts, non-US states, etc.
+ * Designed so 1 run pulls roughly 10 high-quality leads-with-emails,
+ * 3 runs/day = ~30/day pipeline.
  *
- *   2. Survivors → Claude review agent (one batched call)
- *      Reads company name, NAICS, agency, award size, state, etc. and
- *      ranks for fit. Picks top-N "keep" recommendations.
- *
- * Hunter enrichment is OFF in this revision — we want a clean pool of
- * AI-vetted leads first, then we'll burn credits selectively.
+ * Cost per run (rough):
+ *   - USAspending: free
+ *   - Claude (Sonnet 4.6): ~3k input + ~1.5k output ≈ $0.02
+ *   - Hunter: ~10 domain-search calls (≤500/mo plan, 30/day = 900/mo so OK)
  */
 
 import { getSql } from "@/lib/db";
@@ -23,6 +26,11 @@ import {
 } from "@/lib/outbound/usaspending";
 import { scoreAward, inferDomain, type IcpScore } from "@/lib/outbound/icp";
 import { rankAndPick, type ReviewVerdict } from "@/lib/outbound/ai-review";
+import {
+  domainSearch,
+  bestContactForDomain,
+  type HunterDomainEmail,
+} from "@/lib/outbound/hunter";
 
 export type DiscoveryParams = {
   daysBack: number;
@@ -30,27 +38,22 @@ export type DiscoveryParams = {
   maxAmount: number;
   pageLimit: number;
   apply: boolean;
+  /** Whether to call Hunter for kept leads. Off = leads land without emails. */
+  enrichWithHunter: boolean;
 };
 
-/**
- * Defaults for the agent. Wider net than v1 — let Claude do the
- * fine-grained filtering.
- *
- *   - 60 days back: enough catalog depth that we always fill a 10-lead quota
- *   - $100k–$25M: SMB to mid-market band; AI rejects megacorps regardless
- *   - 100/page (USAspending max)
- */
 export const SMART_DEFAULTS: DiscoveryParams = {
-  daysBack: 60,
-  minAmount: 100_000,
-  maxAmount: 25_000_000,
+  daysBack: 90,
+  minAmount: 25_000,
+  maxAmount: 10_000_000,
   pageLimit: 100,
   apply: true,
+  enrichWithHunter: true,
 };
 
-const MAX_PAGES = 5;
-/** Max candidates to send to Claude in one batch. Keeps prompts under ~3k tokens. */
-const MAX_AI_BATCH = 30;
+const MAX_PAGES = 10;
+/** Max candidates to send to Claude in one batch. Caps prompt size + cost. */
+const MAX_AI_BATCH = 40;
 
 export type DiscoveryRunResult = {
   ok: boolean;
@@ -67,6 +70,11 @@ export type DiscoveryRunResult = {
     outputTokens: number;
     error: string | null;
   };
+  enrichment: {
+    attempted: number;
+    contactsWritten: number;
+    error: string | null;
+  };
   prospects: { written: number; updated: number };
   durationMs: number;
 };
@@ -81,20 +89,18 @@ type Candidate = {
 };
 
 /**
- * Persist a single AI-approved prospect. Idempotent. Returns whether
- * this insert was new or an update.
+ * Persist an AI-approved prospect. Idempotent on (company, domain).
+ * Stores both the rule-score and the AI verdict.
  */
 async function persistApproved(
   award: AwardRow,
   rule: IcpScore,
   verdict: ReviewVerdict,
+  domainGuess: string | null,
   apply: boolean,
-): Promise<{ written: boolean; updated: boolean; id: string | null }> {
-  if (!apply) return { written: true, updated: false, id: null };
+): Promise<{ id: string | null; written: boolean; updated: boolean }> {
+  if (!apply) return { id: null, written: true, updated: false };
   const sql = getSql();
-  const domain = inferDomain(award.recipientName);
-  // The AI's decision drives the persisted band/score. We keep the
-  // rule-score around in `icp_score` for comparison.
   const status = verdict.recommend === "keep" ? "approved" : "rejected";
 
   const rows = (await sql`
@@ -108,7 +114,7 @@ async function persistApproved(
     )
     VALUES (
       ${award.recipientName},
-      ${domain},
+      ${domainGuess},
       ${award.recipientUei},
       ${award.naicsCode},
       ${award.recipientStateCode},
@@ -137,6 +143,7 @@ async function persistApproved(
       ai_reviewed_at = NOW(),
       total_award_amount = GREATEST(prospects.total_award_amount, EXCLUDED.total_award_amount),
       most_recent_award_at = GREATEST(prospects.most_recent_award_at, EXCLUDED.most_recent_award_at),
+      domain = COALESCE(prospects.domain, EXCLUDED.domain),
       status = CASE
         WHEN prospects.status IN ('engaged','converted','queued','sending')
           THEN prospects.status
@@ -147,20 +154,130 @@ async function persistApproved(
   `) as Array<{ id: string; inserted: boolean }>;
 
   const row = rows[0];
-  if (!row) return { written: false, updated: false, id: null };
-  return { written: row.inserted, updated: !row.inserted, id: row.id };
+  if (!row) return { id: null, written: false, updated: false };
+  return { id: row.id, written: row.inserted, updated: !row.inserted };
 }
 
 /**
- * Agent entry point. "Bring me N qualified leads."
+ * Update the prospect's domain if Hunter resolved a real one.
+ */
+async function updateProspectDomain(prospectId: string, domain: string) {
+  const sql = getSql();
+  await sql`
+    UPDATE prospects
+    SET domain = ${domain}, updated_at = NOW()
+    WHERE id = ${prospectId} AND (domain IS NULL OR domain != ${domain})
+  `;
+}
+
+/**
+ * Persist a Hunter contact for a prospect. Idempotent on email.
+ */
+async function persistContact(
+  prospectId: string,
+  email: HunterDomainEmail,
+): Promise<boolean> {
+  const sql = getSql();
+  const verification = email.verification.status;
+  const allowedStatuses = new Set([
+    "valid",
+    "accept_all",
+    "webmail",
+    "disposable",
+    "invalid",
+    "unknown",
+  ]);
+  const status = verification && allowedStatuses.has(verification)
+    ? verification
+    : "unknown";
+
+  const rows = (await sql`
+    INSERT INTO prospect_contacts (
+      prospect_id, email, first_name, last_name, title, linkedin_url,
+      hunter_confidence, verification_status, enrichment_source
+    )
+    VALUES (
+      ${prospectId},
+      ${email.value},
+      ${email.firstName},
+      ${email.lastName},
+      ${email.position},
+      ${email.linkedin},
+      ${email.confidence},
+      ${status},
+      'hunter'
+    )
+    ON CONFLICT (email) DO UPDATE SET
+      first_name = COALESCE(EXCLUDED.first_name, prospect_contacts.first_name),
+      last_name = COALESCE(EXCLUDED.last_name, prospect_contacts.last_name),
+      title = COALESCE(EXCLUDED.title, prospect_contacts.title),
+      hunter_confidence = GREATEST(prospect_contacts.hunter_confidence, EXCLUDED.hunter_confidence),
+      verification_status = EXCLUDED.verification_status,
+      updated_at = NOW()
+    RETURNING (xmax = 0) AS inserted
+  `) as Array<{ inserted: boolean }>;
+
+  return rows[0]?.inserted ?? false;
+}
+
+/**
+ * Hunter enrichment for a single kept lead.
  *
- *   - Pulls awards from USAspending (auto-paginates up to MAX_PAGES)
- *   - Rule-filters to drop obvious rejects
- *   - Sends survivors (up to MAX_AI_BATCH) to Claude for ranking
- *   - Persists Claude's top-N picks as `status='approved'`
+ * Strategy:
+ *   1. Try a domain-search by company name (Hunter resolves the domain
+ *      from the name when no domain is supplied).
+ *   2. Pick the best contact (executive title + high confidence) via
+ *      bestContactForDomain.
+ *   3. Persist that single contact.
  *
- * Hunter is intentionally NOT called — emails come later, after manual
- * review of the AI-curated list.
+ * Falls back to inferred-domain guess if name-based search fails. Throws
+ * are caught by the caller — Hunter failures don't kill a run.
+ */
+async function enrichOne(
+  prospectId: string,
+  award: AwardRow,
+  domainGuess: string | null,
+): Promise<{ contactsWritten: number; resolvedDomain: string | null }> {
+  let resolvedDomain: string | null = null;
+  let bestEmail: HunterDomainEmail | null = null;
+
+  // Try by company name first (Hunter does the domain resolution).
+  try {
+    const search = await domainSearch({
+      company: award.recipientName,
+      domain: domainGuess ?? "",
+      limit: 25,
+      personalOnly: true,
+    });
+    resolvedDomain = search.domain || domainGuess;
+    if (search.emails.length > 0) {
+      // Re-use bestContactForDomain's selection logic by calling on the
+      // resolved domain (ensures consistent title-prefer scoring).
+      bestEmail = await bestContactForDomain(search.domain || domainGuess || "");
+    }
+  } catch {
+    // First-pass failed; try guess directly if we have one
+    if (domainGuess) {
+      try {
+        bestEmail = await bestContactForDomain(domainGuess);
+        resolvedDomain = domainGuess;
+      } catch {
+        // give up
+      }
+    }
+  }
+
+  if (resolvedDomain) {
+    await updateProspectDomain(prospectId, resolvedDomain);
+  }
+  if (!bestEmail) return { contactsWritten: 0, resolvedDomain };
+
+  const inserted = await persistContact(prospectId, bestEmail);
+  return { contactsWritten: inserted ? 1 : 0, resolvedDomain };
+}
+
+/**
+ * Agent entry point. "Bring me N qualified CMMC L1 leads with emails."
  */
 export async function runDiscovery(
   targetCount: number,
@@ -178,9 +295,8 @@ export async function runDiscovery(
   let rejectedByRule = 0;
   let usaspendingError: string | null = null;
 
-  // Stage 1 — pull + rule-filter. We aim for ~3x desired in candidates so
-  // Claude has real choices to make.
-  const candidateTarget = Math.min(MAX_AI_BATCH, desired * 3);
+  // Aim for ~3-4x desired in candidates so Claude has real choices.
+  const candidateTarget = Math.min(MAX_AI_BATCH, Math.max(desired * 4, 30));
   for (let page = 1; page <= MAX_PAGES; page++) {
     pagesScanned = page;
     let rows: AwardRow[] = [];
@@ -193,6 +309,7 @@ export async function runDiscovery(
         maxAwardAmount: params.maxAmount,
         limit: params.pageLimit,
         page,
+        smallBusinessOnly: true,
       });
       rows = res.rows;
       if (rows.length === 0) break;
@@ -208,13 +325,18 @@ export async function runDiscovery(
         rejectedByRule += 1;
         continue;
       }
+      // Dedupe by company name within a single run — USAspending often
+      // returns the same prime across multiple awards.
+      if (candidates.some((c) => c.award.recipientName === award.recipientName)) {
+        continue;
+      }
       candidates.push({ award, ruleScore });
       if (candidates.length >= candidateTarget) break;
     }
     if (candidates.length >= candidateTarget) break;
   }
 
-  // Stage 2 — Claude review. Single batched call.
+  // Stage 2 — Claude review.
   let aiInputTokens = 0;
   let aiOutputTokens = 0;
   let aiError: string | null = null;
@@ -230,17 +352,35 @@ export async function runDiscovery(
     }
   }
 
-  // Stage 3 — persist approved leads.
+  // Stage 3 — persist + enrich.
   let written = 0;
   let updated = 0;
+  let enrichmentAttempted = 0;
+  let contactsWritten = 0;
+  let enrichmentError: string | null = null;
+
   if (kept.length > 0 && params.apply) {
     const byId = new Map(candidates.map((c) => [c.award.internalId, c]));
     for (const v of kept) {
       const c = byId.get(v.internalId);
       if (!c) continue;
-      const r = await persistApproved(c.award, c.ruleScore, v, params.apply);
+      const domainGuess = inferDomain(c.award.recipientName);
+      const r = await persistApproved(c.award, c.ruleScore, v, domainGuess, params.apply);
       if (r.written) written += 1;
       if (r.updated) updated += 1;
+
+      if (params.enrichWithHunter && r.id && process.env.HUNTER_API_KEY) {
+        enrichmentAttempted += 1;
+        try {
+          const er = await enrichOne(r.id, c.award, domainGuess);
+          contactsWritten += er.contactsWritten;
+        } catch (e) {
+          // Record the first error but keep going — partial enrichment is fine.
+          if (!enrichmentError) {
+            enrichmentError = e instanceof Error ? e.message : String(e);
+          }
+        }
+      }
     }
   }
 
@@ -259,6 +399,11 @@ export async function runDiscovery(
       inputTokens: aiInputTokens,
       outputTokens: aiOutputTokens,
       error: aiError,
+    },
+    enrichment: {
+      attempted: enrichmentAttempted,
+      contactsWritten,
+      error: enrichmentError,
     },
     prospects: { written, updated },
     durationMs,
@@ -290,9 +435,9 @@ async function logRun(result: DiscoveryRunResult, triggeredBy: string) {
         ${result.prospects.written},
         ${result.prospects.updated},
         ${result.ruleFilter.rejected},
-        ${0},
-        ${0},
-        ${result.awards.error ?? result.ai.error ?? null},
+        ${result.enrichment.attempted},
+        ${result.enrichment.contactsWritten},
+        ${result.awards.error ?? result.ai.error ?? result.enrichment.error ?? null},
         ${result.durationMs},
         ${result.dryRun},
         ${result.ai.reviewed},
@@ -302,7 +447,7 @@ async function logRun(result: DiscoveryRunResult, triggeredBy: string) {
       )
     `;
   } catch {
-    // logging errors never fail a run
+    // logging never fails a run
   }
 }
 

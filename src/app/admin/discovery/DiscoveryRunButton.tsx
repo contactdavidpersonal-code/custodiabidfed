@@ -27,13 +27,17 @@ export default function DiscoveryRunButton() {
       const data = (await res.json()) as {
         ruleFilter: { passed: number; rejected: number };
         ai: { reviewed: number; kept: number; error: string | null };
+        enrichment: { attempted: number; contactsWritten: number; error: string | null };
         prospects: { written: number; updated: number };
         awards: { fetched: number; pagesScanned: number; error: string | null };
       };
       if (data.awards.error) throw new Error(`USAspending: ${data.awards.error}`);
       if (data.ai.error) throw new Error(`AI review: ${data.ai.error}`);
+      const enrichNote = data.enrichment
+        ? ` Hunter found emails for ${data.enrichment.contactsWritten}/${data.enrichment.attempted}.`
+        : "";
       setSummary(
-        `Reviewed ${data.ai.reviewed} survivors from ${data.awards.fetched} awards (${data.awards.pagesScanned} pages, ${data.ruleFilter.rejected} rule-rejected). Claude kept ${data.ai.kept}; saved ${data.prospects.written} new + ${data.prospects.updated} updated.`,
+        `Pulled ${data.awards.fetched} awards across ${data.awards.pagesScanned} pages, ${data.ruleFilter.rejected} rule-rejected. Claude reviewed ${data.ai.reviewed}, kept ${data.ai.kept}. Saved ${data.prospects.written} new + ${data.prospects.updated} updated.${enrichNote}`,
       );
       router.refresh();
     } catch (e) {

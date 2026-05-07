@@ -21,19 +21,37 @@ type ProspectPreview = {
   status: string;
   most_recent_award_at: string | null;
   created_at: string;
+  contact_count: number;
+  best_email: string | null;
+  best_title: string | null;
 };
 
 async function getRecentProspects(): Promise<ProspectPreview[]> {
   const sql = getSql();
   const rows = (await sql`
     SELECT
-      id, company_name, domain, state, naics_code,
-      total_award_amount, icp_score, icp_band,
-      ai_score, ai_band, ai_reasoning, status,
-      most_recent_award_at, created_at
-    FROM prospects
-    WHERE status IN ('approved','new','reviewing')
-    ORDER BY ai_score DESC NULLS LAST, icp_score DESC NULLS LAST, created_at DESC
+      p.id, p.company_name, p.domain, p.state, p.naics_code,
+      p.total_award_amount, p.icp_score, p.icp_band,
+      p.ai_score, p.ai_band, p.ai_reasoning, p.status,
+      p.most_recent_award_at, p.created_at,
+      COALESCE(c.contact_count, 0)::int AS contact_count,
+      c.best_email, c.best_title
+    FROM prospects p
+    LEFT JOIN LATERAL (
+      SELECT
+        COUNT(*) AS contact_count,
+        (SELECT email FROM prospect_contacts pc2
+          WHERE pc2.prospect_id = p.id
+          ORDER BY pc2.hunter_confidence DESC NULLS LAST LIMIT 1) AS best_email,
+        (SELECT title FROM prospect_contacts pc3
+          WHERE pc3.prospect_id = p.id
+          ORDER BY pc3.hunter_confidence DESC NULLS LAST LIMIT 1) AS best_title
+      FROM prospect_contacts pc
+      WHERE pc.prospect_id = p.id
+    ) c ON TRUE
+    WHERE p.status IN ('approved','new','reviewing')
+      AND p.ai_reviewed_at IS NOT NULL
+    ORDER BY p.ai_score DESC NULLS LAST, p.created_at DESC
     LIMIT 25
   `) as ProspectPreview[];
   return rows;
@@ -56,10 +74,9 @@ export default async function DiscoveryPage() {
           Discovery agent
         </h1>
         <p className="mt-3 max-w-2xl text-sm text-white/70">
-          Pulls fresh DoD prime contracts, rule-filters out the obvious
-          non-fits, then sends survivors to Claude for ranking. Top picks
-          land here as approved leads. Hunter enrichment is OFF in this
-          revision &mdash; we&rsquo;ll add emails on demand once the list is curated.
+          Pulls fresh DoD prime contracts (small-business filter on, last 90 days,
+          $25k&ndash;$10M), drops obvious non-fits, sends survivors to Claude for ranking,
+          then Hunter finds the best personal email for each kept lead.
         </p>
       </header>
 
@@ -92,9 +109,9 @@ export default async function DiscoveryPage() {
               <thead className="bg-[#0f3a2d] text-[10px] uppercase tracking-[0.16em] text-[#8ec3b1]">
                 <tr>
                   <th className="px-4 py-3 text-left">AI</th>
-                  <th className="px-4 py-3 text-left">Rule</th>
                   <th className="px-4 py-3 text-left">Company</th>
                   <th className="px-4 py-3 text-left">Why</th>
+                  <th className="px-4 py-3 text-left">Contact</th>
                   <th className="px-4 py-3 text-left">State</th>
                   <th className="px-4 py-3 text-left">NAICS</th>
                   <th className="px-4 py-3 text-right">Award</th>
@@ -107,16 +124,28 @@ export default async function DiscoveryPage() {
                       <BandBadge band={p.ai_band} score={p.ai_score} />
                     </td>
                     <td className="px-4 py-3">
-                      <BandBadge band={p.icp_band} score={p.icp_score} muted />
-                    </td>
-                    <td className="px-4 py-3">
                       <div className="font-medium">{p.company_name}</div>
                       {p.domain && (
                         <div className="text-[11px] text-white/40">{p.domain}</div>
                       )}
                     </td>
                     <td className="max-w-md px-4 py-3 text-[12px] leading-snug text-white/70">
-                      {p.ai_reasoning ?? <span className="text-white/30">—</span>}
+                      {p.ai_reasoning ?? <span className="text-white/30">&mdash;</span>}
+                    </td>
+                    <td className="px-4 py-3 text-[12px]">
+                      {p.best_email ? (
+                        <div>
+                          <div className="font-mono text-[#bdf2cf]">{p.best_email}</div>
+                          {p.best_title && (
+                            <div className="text-[11px] text-white/50">{p.best_title}</div>
+                          )}
+                          {p.contact_count > 1 && (
+                            <div className="text-[10px] text-white/40">+{p.contact_count - 1} more</div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-white/30">no email yet</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 font-mono text-[12px] text-white/70">
                       {p.state ?? "—"}
@@ -155,7 +184,8 @@ export default async function DiscoveryPage() {
                   <th className="px-4 py-3 text-right">Awards</th>
                   <th className="px-4 py-3 text-right">Rule-pass</th>
                   <th className="px-4 py-3 text-right">AI kept</th>
-                  <th className="px-4 py-3 text-right">Tokens (in/out)</th>
+                  <th className="px-4 py-3 text-right">Emails</th>
+                  <th className="px-4 py-3 text-right">Tokens</th>
                   <th className="px-4 py-3 text-right">Time</th>
                   <th className="px-4 py-3 text-left">Error</th>
                 </tr>
@@ -177,6 +207,9 @@ export default async function DiscoveryPage() {
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-[#bdf2cf]">
                       {r.ai_kept}
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-[#bdf2cf]">
+                      {r.contacts_written}/{r.contacts_attempted}
                     </td>
                     <td className="px-4 py-3 text-right font-mono text-[10px] text-white/50">
                       {r.ai_input_tokens}/{r.ai_output_tokens}

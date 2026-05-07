@@ -1,21 +1,28 @@
 /**
- * ICP scorer for cold-outbound prospect discovery.
+ * Stage-1 rule filter for prospect discovery.
  *
- * Translates a USAspending `AwardRow` into a 0–100 score with a band
- * (A / B / C / reject) and a list of human-readable reasons. Stored on
- * the prospect row so the /admin queue can sort and filter.
+ * Cheap, deterministic gate that drops only the *truly* impossible-fit
+ * awards before we send the rest to Claude for ranking. The philosophy
+ * is "let the LLM judge anything subjective; only hard-fail what's
+ * obviously not an ICP."
  *
- * Scoring philosophy: a *real* CMMC L1 ICP looks like
- *   - small DoD prime (1–250 employees, but USAspending doesn't give us
- *     headcount, so we use award size as a strong proxy)
- *   - just won their first or second federal contract (recency = urgency)
- *   - in a NAICS where FCI handling is the norm
- *   - U.S. domestic (no foreign primes)
- *   - not a research university or federal lab
+ * What's an ICP for Custodia?
+ *   - Small US business (SBA-small or similar)
+ *   - Just won a DoD prime contract
+ *   - Almost certainly handles FCI (Federal Contract Information)
+ *   - Probably doesn't have a CMMC compliance officer yet
  *
- * The strongest single signal is "won a $250k–$2M DoD contract in the
- * last 30 days" — that's a founder who just took on a real obligation
- * to safeguard FCI and almost certainly has no compliance staff.
+ * What's an obvious non-fit (and therefore a hard reject here)?
+ *   - Megaprimes by name (Lockheed, Northrop, etc. — they have entire
+ *     compliance departments)
+ *   - Universities, FFRDCs, federal labs
+ *   - Government entities themselves
+ *   - Joint ventures (almost always megaprime + megaprime)
+ *   - Foreign-domiciled recipients
+ *   - Awards <$25k (below CMMC L1 threshold) or >$10M (likely big enough
+ *     to already have it)
+ *
+ * Everything else passes through to Claude.
  */
 
 import type { AwardRow } from "./usaspending";
@@ -29,109 +36,73 @@ export type IcpScore = {
 };
 
 /**
- * Recipient name patterns that auto-reject. Universities, federal labs,
- * mega-primes, and the public engineering / consulting megafirms don't
- * fit our ICP. Case-insensitive substring match.
+ * Confirmed-bad recipient names. Case-insensitive substring match.
+ * Kept tight on purpose — broader filtering happens in the AI step.
+ *
+ * Rule for inclusion: company is publicly known to be too large to be
+ * an ICP, and has a stable, unmistakable name token. ~25 entries total.
  */
 const REJECT_NAME_PATTERNS = [
-  // Universities + research orgs
+  // Government / public sector
+  "DEPARTMENT OF",
+  "STATE OF ",
+  "CITY OF ",
+  "COUNTY OF ",
+  // Universities / FFRDCs / federal labs
   "UNIVERSITY",
-  "COLLEGE",
-  "INSTITUTE OF TECHNOLOGY",
+  "COLLEGE OF",
   "RESEARCH FOUNDATION",
   "TRUSTEES OF",
   "BOARD OF REGENTS",
-  // Federal / state government
-  "DEPARTMENT OF",
-  "U.S. ",
-  "UNITED STATES",
-  "STATE OF",
-  "CITY OF",
-  "COUNTY OF",
+  "MITRE",
+  "BATTELLE",
+  "AEROSPACE CORPORATION",
+  "RAND CORPORATION",
+  "INSTITUTE FOR DEFENSE ANALYSES",
+  "JOHNS HOPKINS APPLIED PHYSICS",
+  "SOUTHWEST RESEARCH INSTITUTE",
   // Mega-defense-primes
   "LOCKHEED MARTIN",
   "RAYTHEON",
-  "RTX ",
   "BOEING",
   "NORTHROP GRUMMAN",
   "GENERAL DYNAMICS",
   "L3HARRIS",
-  "L-3 ",
   "BAE SYSTEMS",
   "LEIDOS",
   "BOOZ ALLEN",
-  "SAIC",
-  "CACI",
-  "MANTECH",
-  "PEROT SYSTEMS",
-  "GENERAL ATOMICS",
-  "TEXTRON",
   "HUNTINGTON INGALLS",
-  "HONEYWELL",
-  "TRIMBLE",
-  // Public engineering megaprimes (publicly traded $1B+ revenue)
+  // Big consulting + big tech federal arms
+  "SAIC",
+  "CACI INTERNATIONAL",
+  "MANTECH",
+  "ACCENTURE FEDERAL",
+  "DELOITTE",
+  "KPMG ",
+  "IBM CORPORATION",
+  "MICROSOFT CORPORATION",
+  "ORACLE AMERICA",
+  "AMAZON WEB SERVICES",
+  // Public engineering megafirms ($1B+ revenue)
   "TETRA TECH",
   "AECOM",
   "JACOBS ENGINEERING",
   "JACOBS SOLUTIONS",
   "PARSONS CORPORATION",
   "PARSONS GOVERNMENT",
-  "ICF ",
   "ICF INTERNATIONAL",
-  "FLUOR ",
-  "KBR ",
-  "BLACK & VEATCH",
-  "STANTEC",
-  "HDR ",
-  "HDR-",
-  "CDM ",
+  "FLUOR FEDERAL",
+  "KBR INC",
   "CDM SMITH",
   "CDM FEDERAL",
+  "HDR ENGINEERING",
+  "HDR-",
+  "STANTEC",
   "ARCADIS",
-  "WSP USA",
-  "WOOD ENVIRONMENT",
-  "MICHAEL BAKER",
-  "GANNETT FLEMING",
+  "BLACK & VEATCH",
   "BURNS & MCDONNELL",
-  "POWER ENGINEERS",
-  "DEWBERRY",
-  "ECC ",
-  "WEST FRASER",
-  // Consulting megafirms
-  "ACCENTURE FEDERAL",
-  "DELOITTE",
-  "KPMG",
-  "PWC",
-  "PRICEWATERHOUSE",
-  "ERNST & YOUNG",
-  "MCKINSEY",
-  "BAIN ",
-  // Big tech
-  "IBM",
-  "MICROSOFT",
-  "ORACLE",
-  "AMAZON WEB SERVICES",
-  "AMAZON.COM",
-  "GOOGLE LLC",
-  "ALPHABET INC",
-  "PALANTIR",
-  "SALESFORCE",
-  "VMWARE",
-  "CISCO SYSTEMS",
-  "DELL FEDERAL",
-  "DELL TECHNOLOGIES",
-  "DELL MARKETING",
-  "HEWLETT PACKARD",
-  "HP ENTERPRISE",
-  // Federal labs / FFRDCs
-  "BATTELLE",
-  "MITRE",
-  "AEROSPACE CORPORATION",
-  "JOHNS HOPKINS APPLIED PHYSICS",
-  "RAND CORPORATION",
-  "INSTITUTE FOR DEFENSE ANALYSES",
-  "SOUTHWEST RESEARCH INSTITUTE",
-  // Joint ventures and special structures (almost always megaprime combos)
+  "MICHAEL BAKER",
+  // Joint ventures
   "JOINT VENTURE",
   " JV ",
   " JV,",
@@ -139,7 +110,6 @@ const REJECT_NAME_PATTERNS = [
   " JV)",
 ];
 
-/** US state codes — anything else triggers a "non-US?" reason. */
 const US_STATE_CODES = new Set([
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
   "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
@@ -149,39 +119,17 @@ const US_STATE_CODES = new Set([
   "DC", "PR", "VI", "GU", "AS", "MP",
 ]);
 
-/** ICP-friendly NAICS where the SMB-DoD-prime overlap is highest. */
-const TIER_A_NAICS = new Set([
-  "541330", // Engineering services
-  "541380", // Testing labs
-  "541511", // Custom programming
-  "541512", // Computer systems design
-  "541513", // Computer facilities mgmt
-  "541519", // Other computer related
-  "336411", // Aircraft mfg
-  "336412", // Aircraft engine + parts
-  "336413", // Other aircraft parts
-  "336414", // Guided missile + space vehicle
-  "336415", // Guided missile/space propulsion
-  "336992", // Military armored vehicle
-  "332994", // Small arms / ordnance
-  "334111", // Electronic computer mfg
-  "334290", // Other comms equipment
-  "334413", // Semiconductors
-  "334511", // Search/detection/nav
-  "334516", // Analytical lab instruments
-]);
-
-const TIER_B_NAICS = new Set([
-  "541611", // Admin / mgmt consulting
-  "541618", // Other mgmt consulting
-  "541690", // Other sci/tech consulting
-  "541713", // R&D nanotech
-  "541714", // R&D biotech
-  "541715", // R&D physical / eng / life sci
-  "541720", // R&D social sci
-  "561621", // Security systems services
-  "561612", // Security guard
-]);
+/**
+ * Award size band for CMMC L1 ICP.
+ *
+ *   < $25k  → below the federal micro-purchase floor for FCI handling;
+ *             also too small a contract to fund a vendor like us
+ *   $25k–$10M → SMB sweet spot
+ *   > $10M  → company is probably already big enough to have compliance
+ *             figured out
+ */
+const MIN_AWARD = 25_000;
+const MAX_AWARD = 10_000_000;
 
 export type ScoreInput = {
   award: AwardRow;
@@ -190,48 +138,50 @@ export type ScoreInput = {
 };
 
 /**
- * Score a single USAspending award row 0–100 with a band + reasons.
+ * Hard-filter only. Awards that pass come back with band="C" and a
+ * generic score so the AI step can rerank. The rule layer no longer
+ * tries to do nuanced 0-100 scoring; that's Claude's job.
  *
- * Bands:
- *   A: 75–100  — top priority, push to outreach immediately
- *   B: 50–74   — second wave, queue behind As
- *   C: 25–49   — keep but don't push to outreach
- *   reject: 0–24 — auto-suppress
+ * This is a big departure from v1. v1 tried to assign a 0-100 fit
+ * score with NAICS tiers, recency curves, agency bonuses, etc. — and
+ * the result was that obvious megaprimes (Tetra Tech, CDM, HDR) leaked
+ * through with band="C" because they hit the right NAICS + recency.
+ *
+ * v2 (this) is a binary gate: either you pass to Claude or you don't.
  */
 export function scoreAward(input: ScoreInput): IcpScore {
   const { award } = input;
-  const now = input.now ?? Date.now();
   const reasons: string[] = [];
 
-  // 1. Hard rejects ─────────────────────────────────────────────────
+  // Hard rejects ─────────────────────────────────────────────────────
+  if (!award.recipientName || award.recipientName.length < 3) {
+    return { score: 0, band: "reject", reasons: ["Missing recipient name"] };
+  }
+
   const upperName = award.recipientName.toUpperCase();
   for (const pattern of REJECT_NAME_PATTERNS) {
     if (upperName.includes(pattern)) {
       return {
         score: 0,
         band: "reject",
-        reasons: [`Recipient name matches reject pattern: "${pattern}"`],
+        reasons: [`Name matches reject pattern: "${pattern.trim()}"`],
       };
     }
   }
-  if (!award.recipientName || award.recipientName.length < 3) {
-    return { score: 0, band: "reject", reasons: ["Missing recipient name"] };
-  }
-  // Award size sanity. Below $50k usually means a one-off purchase;
-  // above $25M means we're not the right vendor.
-  if (award.awardAmount < 50_000) {
+
+  if (award.awardAmount < MIN_AWARD) {
     return {
       score: 0,
       band: "reject",
       reasons: [`Award too small: $${award.awardAmount.toLocaleString()}`],
     };
   }
-  if (award.awardAmount > 25_000_000) {
+  if (award.awardAmount > MAX_AWARD) {
     return {
       score: 0,
       band: "reject",
       reasons: [
-        `Award too large: $${award.awardAmount.toLocaleString()} (likely has compliance team)`,
+        `Award too large: $${award.awardAmount.toLocaleString()} (>$10M = likely already compliant)`,
       ],
     };
   }
@@ -243,115 +193,25 @@ export function scoreAward(input: ScoreInput): IcpScore {
     };
   }
 
-  // 2. Positive scoring ─────────────────────────────────────────────
-  let score = 0;
-
-  // NAICS tier (max 30)
-  if (award.naicsCode && TIER_A_NAICS.has(award.naicsCode)) {
-    score += 30;
-    reasons.push(`Tier-A NAICS: ${award.naicsCode}`);
-  } else if (award.naicsCode && TIER_B_NAICS.has(award.naicsCode)) {
-    score += 18;
-    reasons.push(`Tier-B NAICS: ${award.naicsCode}`);
-  } else if (award.naicsCode) {
-    score += 5;
-    reasons.push(`Other NAICS: ${award.naicsCode}`);
-  }
-
-  // Award size sweet spot: $250k–$2M is the prime SMB band (max 30)
-  const amt = award.awardAmount;
-  if (amt >= 250_000 && amt <= 2_000_000) {
-    score += 30;
-    reasons.push(`Sweet-spot award size: $${amt.toLocaleString()}`);
-  } else if (amt >= 100_000 && amt < 250_000) {
-    score += 22;
-    reasons.push(`Small-but-real award: $${amt.toLocaleString()}`);
-  } else if (amt > 2_000_000 && amt <= 10_000_000) {
-    score += 18;
-    reasons.push(`Large award: $${amt.toLocaleString()}`);
-  } else if (amt > 10_000_000) {
-    score += 8;
-    reasons.push(`Very large award: $${amt.toLocaleString()}`);
-  } else {
-    score += 5;
-    reasons.push(`Below sweet spot: $${amt.toLocaleString()}`);
-  }
-
-  // Recency: fresher = more urgency for them to comply (max 25)
-  if (award.actionDate) {
-    const ageDays = Math.floor(
-      (now - new Date(award.actionDate).getTime()) / 86_400_000,
-    );
-    if (ageDays <= 14) {
-      score += 25;
-      reasons.push(`Awarded ${ageDays}d ago (very fresh)`);
-    } else if (ageDays <= 30) {
-      score += 20;
-      reasons.push(`Awarded ${ageDays}d ago (fresh)`);
-    } else if (ageDays <= 60) {
-      score += 12;
-      reasons.push(`Awarded ${ageDays}d ago`);
-    } else if (ageDays <= 90) {
-      score += 6;
-      reasons.push(`Awarded ${ageDays}d ago (older)`);
-    } else {
-      score += 0;
-      reasons.push(`Awarded ${ageDays}d ago (stale)`);
-    }
-  }
-
-  // Has UEI = registered in SAM, can legally take federal $$ (max 10)
-  if (award.recipientUei) {
-    score += 10;
-    reasons.push(`SAM-registered (UEI: ${award.recipientUei})`);
-  } else {
-    reasons.push("No UEI on award (unusual)");
-  }
-
-  // DoD specifically (max 5) — already filtered to DoD primes upstream
-  // but double-credit when the awarding sub-agency is a primary mission
-  // area like Army/Navy/AF.
-  const subagency = (award.awardingSubAgencyName ?? "").toLowerCase();
-  if (
-    subagency.includes("army") ||
-    subagency.includes("navy") ||
-    subagency.includes("air force") ||
-    subagency.includes("space force") ||
-    subagency.includes("marine")
-  ) {
-    score += 5;
-    reasons.push(`Direct service branch: ${award.awardingSubAgencyName}`);
-  }
-
-  // Cap and band
-  score = Math.max(0, Math.min(100, Math.round(score)));
-  let band: IcpBand;
-  if (score >= 75) band = "A";
-  else if (score >= 50) band = "B";
-  else if (score >= 25) band = "C";
-  else band = "reject";
-
-  return { score, band, reasons };
+  // Pass — generic 50 score so it sorts above hard-rejects but the AI
+  // band is what actually matters downstream.
+  reasons.push(`Passed rule filter (amt=$${award.awardAmount.toLocaleString()}, naics=${award.naicsCode ?? "?"}, state=${award.recipientStateCode ?? "?"})`);
+  if (award.recipientUei) reasons.push(`SAM-registered: ${award.recipientUei}`);
+  return { score: 50, band: "C", reasons };
 }
 
 /**
  * Best-effort domain inference from a recipient company name.
  *
- * USAspending doesn't return websites. We try a tiny heuristic:
- * lowercased, alphanumerics only, ".com" suffix. Catches plain names
- * like "ACME ROBOTICS LLC" → "acmerobotics.com" which Hunter then
- * verifies (or returns nothing for, in which case the prospect goes
- * into the "needs manual research" bucket).
- *
- * This is intentionally simple. Phase 3 can add a real lookup
- * (Clearbit / Apollo / Google) if the manual bucket grows too big.
+ * USAspending doesn't return websites. We strip entity suffixes,
+ * collapse to alnum, and try ".com". Hunter's domainSearch will
+ * accept either a domain or just the company name, so this is just a
+ * starting hint — Hunter resolves the real one.
  */
 export function inferDomain(companyName: string): string | null {
   const slug = companyName
     .toLowerCase()
-    // strip business-entity suffixes
     .replace(/\b(llc|inc|incorporated|corp|corporation|ltd|limited|co|company|llp|lp|pllc|plc|gmbh|ag|sa|nv|bv|sas)\.?\b/g, "")
-    // strip non-alnum
     .replace(/[^a-z0-9]+/g, "")
     .trim();
   if (slug.length < 3 || slug.length > 30) return null;

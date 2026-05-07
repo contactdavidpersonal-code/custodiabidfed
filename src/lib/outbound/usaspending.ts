@@ -107,6 +107,13 @@ export type AwardSearchInput = {
   limit?: number;
   /** 1-indexed page. */
   page?: number;
+  /**
+   * Restrict to small-business recipients. USAspending tags awards by
+   * recipient business type — "small_business" matches SBA-defined small
+   * primes. This is the single best filter we have for our ICP since
+   * megaprimes by definition are NOT small businesses.
+   */
+  smallBusinessOnly?: boolean;
 };
 
 /**
@@ -197,6 +204,23 @@ export async function searchAwards(input: AwardSearchInput): Promise<{
         lower_bound: input.minAwardAmount ?? 0,
         upper_bound: input.maxAwardAmount ?? 999_999_999_999,
       },
+    ];
+  }
+  if (input.smallBusinessOnly) {
+    // recipient_type_names accepts SBA business-type categories. Multiple
+    // values OR together. We pick the SBA "small business" umbrella + the
+    // most common SDB / WOSB / VOSB sub-types so we don't accidentally
+    // exclude legitimate small primes that ALSO have a diversity flag.
+    filters.recipient_type_names = [
+      "small_business",
+      "woman_owned_small_business",
+      "economically_disadvantaged_women_owned_small_business",
+      "service_disabled_veteran_owned_business",
+      "veteran_owned_business",
+      "minority_owned_business",
+      "8a_program_participant",
+      "hubzone_program",
+      "emerging_small_business",
     ];
   }
 

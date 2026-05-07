@@ -1460,6 +1460,16 @@ async function runInitDdl() {
   await sql`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS ai_reviewed_at TIMESTAMPTZ`;
   await sql`CREATE INDEX IF NOT EXISTS idx_prospects_ai_band ON prospects (ai_band, ai_score DESC) WHERE ai_band IS NOT NULL`;
 
+  // v1-ghost backfill: demote any approved prospects that never went
+  // through the AI reviewer (those came from rule-only v1 and include
+  // megaprimes that leaked through the old NAICS-based scorer). One-shot
+  // and idempotent — once they're 'reviewing' they won't match again.
+  await sql`
+    UPDATE prospects
+    SET status = 'reviewing', updated_at = NOW()
+    WHERE status = 'approved' AND ai_reviewed_at IS NULL
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS prospect_contacts (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
