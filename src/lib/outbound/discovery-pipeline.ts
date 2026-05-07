@@ -1,8 +1,8 @@
 /**
  * Discovery pipeline v3 — three stages, agent-driven.
  *
- *   1. USAspending  → recent DoD prime awards, small_business filter on,
- *                     $25k-$10M, last 90 days, paginate up to 10 pages
+ *   1. USAspending  → recent DoD set-aside prime awards, $25k-$2M,
+ *                     last 180 days, all NAICS, paginate up to 10 pages
  *   2. Stage-1 rule filter → drop only obvious non-fits (megaprimes,
  *                     universities, JVs, foreign, out-of-band amounts)
  *   3. Stage-2 Claude review → rank survivors, pick top N for outreach
@@ -22,7 +22,6 @@ import { getSql } from "@/lib/db";
 import {
   searchAwards,
   type AwardRow,
-  DEFAULT_DOD_NAICS,
 } from "@/lib/outbound/usaspending";
 import { scoreAward, inferDomain, type IcpScore } from "@/lib/outbound/icp";
 import { rankAndPick, type ReviewVerdict } from "@/lib/outbound/ai-review";
@@ -43,9 +42,11 @@ export type DiscoveryParams = {
 };
 
 export const SMART_DEFAULTS: DiscoveryParams = {
-  daysBack: 90,
+  // 180d window: empirically a 90d set-aside slice yields ~5 awards
+  // (too narrow); 180d yields ~500 SMB candidates across all NAICS.
+  daysBack: 180,
   minAmount: 25_000,
-  maxAmount: 5_000_000,
+  maxAmount: 2_000_000,
   pageLimit: 100,
   apply: true,
   enrichWithHunter: true,
@@ -304,7 +305,12 @@ export async function runDiscovery(
       const res = await searchAwards({
         startDate: isoDate(start),
         endDate: isoDate(end),
-        naicsCodes: DEFAULT_DOD_NAICS,
+        // No NAICS filter: empirically the DoD-IT NAICS list narrows
+        // results to megaprime-only territory (Tetra Tech, Jacobs,
+        // CDM, etc.) even within a $25k-$2M band. Combining
+        // smallBusinessOnly (set-aside) with no-NAICS surfaces
+        // hundreds of real SMB primes across all NAICS — Claude
+        // then filters for FCI-relevant work.
         minAwardAmount: params.minAmount,
         maxAwardAmount: params.maxAmount,
         limit: params.pageLimit,

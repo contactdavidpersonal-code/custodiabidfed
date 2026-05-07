@@ -192,11 +192,12 @@ export async function searchAwards(input: AwardSearchInput): Promise<{
     time_period: [{ start_date: input.startDate, end_date: input.endDate }],
     award_type_codes: ["A", "B", "C", "D"], // BPA Call, Purchase Order, Delivery Order, Definitive Contract
     naics_codes: [...naics],
-    agencies: DEFAULT_DOD_AGENCIES.map((name) => ({
-      type: "awarding",
-      tier: "toptier",
-      name,
-    })),
+    agencies: [
+      // Department of Defense is the ONLY DoD toptier. Army/Navy/AF/DLA
+      // are subtier under DoD — listing them as toptier silently matches
+      // nothing. One toptier = all DoD awards across all branches.
+      { type: "awarding", tier: "toptier", name: "Department of Defense" },
+    ],
   };
   if (input.minAwardAmount != null || input.maxAwardAmount != null) {
     filters.award_amounts = [
@@ -254,12 +255,12 @@ export async function searchAwards(input: AwardSearchInput): Promise<{
     fields,
     page,
     limit,
-    // USAspending's spending_by_award endpoint does NOT accept "Action Date"
-    // as a sort key (it's allowed in `fields` but not in the sort whitelist).
-    // We sort by Award Amount desc so the biggest contracts come first —
-    // freshness is already controlled by the `time_period` filter.
+    // Sort ASCENDING by Award Amount. Megaprimes win huge contracts;
+    // small primes win small ones — so the smallest awards in our band
+    // are most likely to be ICP. Combined with our $25k floor this
+    // effectively prioritizes the SMB end of the distribution.
     sort: "Award Amount",
-    order: "desc",
+    order: "asc",
     subawards: false,
   };
 
