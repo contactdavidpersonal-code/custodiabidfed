@@ -27,7 +27,6 @@ import { scoreAward, inferDomain, type IcpScore } from "@/lib/outbound/icp";
 import { rankAndPick, type ReviewVerdict } from "@/lib/outbound/ai-review";
 import {
   domainSearch,
-  bestContactForDomain,
   type HunterDomainEmail,
 } from "@/lib/outbound/hunter";
 
@@ -222,56 +221,119 @@ async function persistContact(
 }
 
 /**
- * Hunter enrichment for a single kept lead.
+ * Hunter enrichment for a single prospect.
  *
- * Strategy:
- *   1. Try a domain-search by company name (Hunter resolves the domain
- *      from the name when no domain is supplied).
- *   2. Pick the best contact (executive title + high confidence) via
- *      bestContactForDomain.
- *   3. Persist that single contact.
+ * Strategy (up to three Hunter calls):
+ *   1. domain-search by company NAME, personal-only — Hunter resolves
+ *      domain + named contacts in one call.
+ *   2. If miss, domain-search by domain GUESS, personal-only.
+ *   3. If still miss, domain-search by domain GUESS, ALL email types
+ *      — surfaces generic inboxes (info@, contact@, sales@) which are
+ *      often the only published address for tiny SMBs and ARE valid
+ *      cold-outreach targets at the L1 self-attestation tier.
  *
- * Falls back to inferred-domain guess if name-based search fails. Throws
- * are caught by the caller — Hunter failures don't kill a run.
+ * We only update the prospect's domain if we actually got an email
+ * back — otherwise the "resolved" domain is just our guess that Hunter
+ * has no data for, and writing it pollutes the row.
+ *
+ * Throws are caught — Hunter failures don't kill a run.
  */
-async function enrichOne(
+const ENRICH_TITLE_KEYWORDS = [
+  "founder",
+  "ceo",
+  "coo",
+  "cto",
+  "president",
+  "owner",
+  "principal",
+  "managing",
+  "director",
+  "operations",
+  "security",
+  "compliance",
+  "information",
+  "it ",
+  "facility",
+  "facilities",
+];
+
+function pickBestEmail(
+  emails: HunterDomainEmail[],
+): HunterDomainEmail | null {
+  const valid = emails.filter(
+    (e) => !!e.value && e.verification.status !== "invalid",
+  );
+  if (valid.length === 0) return null;
+  const scored = valid.map((e) => {
+    const title = (e.position ?? "").toLowerCase();
+    const titleMatch = ENRICH_TITLE_KEYWORDS.some((k) => title.includes(k));
+    // Slight preference for personal type when both are present.
+    const typeBonus = e.type === "personal" ? 5 : 0;
+    return { e, score: e.confidence + (titleMatch ? 25 : 0) + typeBonus };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  return scored[0]?.e ?? null;
+}
+
+export async function enrichOne(
   prospectId: string,
-  award: AwardRow,
+  companyName: string,
   domainGuess: string | null,
 ): Promise<{ contactsWritten: number; resolvedDomain: string | null }> {
   let resolvedDomain: string | null = null;
   let bestEmail: HunterDomainEmail | null = null;
 
-  // Try by company name first (Hunter does the domain resolution).
+  // Pass 1: by company name, personal-only.
   try {
     const search = await domainSearch({
-      company: award.recipientName,
       domain: domainGuess ?? "",
+      company: companyName,
       limit: 25,
       personalOnly: true,
     });
-    resolvedDomain = search.domain || domainGuess;
-    if (search.emails.length > 0) {
-      // Re-use bestContactForDomain's selection logic by calling on the
-      // resolved domain (ensures consistent title-prefer scoring).
-      bestEmail = await bestContactForDomain(search.domain || domainGuess || "");
-    }
+    if (search.domain) resolvedDomain = search.domain;
+    bestEmail = pickBestEmail(search.emails);
   } catch {
-    // First-pass failed; try guess directly if we have one
-    if (domainGuess) {
-      try {
-        bestEmail = await bestContactForDomain(domainGuess);
-        resolvedDomain = domainGuess;
-      } catch {
-        // give up
-      }
+    // fall through
+  }
+
+  // Pass 2: by domain guess, personal-only.
+  if (!bestEmail && domainGuess) {
+    try {
+      const search = await domainSearch({
+        domain: domainGuess,
+        limit: 25,
+        personalOnly: true,
+      });
+      if (search.domain) resolvedDomain = search.domain;
+      bestEmail = pickBestEmail(search.emails);
+    } catch {
+      // fall through
     }
   }
 
-  if (resolvedDomain) {
+  // Pass 3: by domain guess, all email types (generic inboxes too).
+  if (!bestEmail && domainGuess) {
+    try {
+      const search = await domainSearch({
+        domain: domainGuess,
+        limit: 25,
+        personalOnly: false,
+      });
+      if (search.domain) resolvedDomain = search.domain;
+      bestEmail = pickBestEmail(search.emails);
+    } catch {
+      // give up
+    }
+  }
+
+  // Only persist resolvedDomain when we actually found an email — the
+  // "resolved" domain in a no-email response is just our guess Hunter
+  // has no data on.
+  if (bestEmail && resolvedDomain) {
     await updateProspectDomain(prospectId, resolvedDomain);
   }
-  if (!bestEmail) return { contactsWritten: 0, resolvedDomain };
+  if (!bestEmail) return { contactsWritten: 0, resolvedDomain: null };
 
   const inserted = await persistContact(prospectId, bestEmail);
   return { contactsWritten: inserted ? 1 : 0, resolvedDomain };
@@ -378,7 +440,7 @@ export async function runDiscovery(
       if (params.enrichWithHunter && r.id && process.env.HUNTER_API_KEY) {
         enrichmentAttempted += 1;
         try {
-          const er = await enrichOne(r.id, c.award, domainGuess);
+          const er = await enrichOne(r.id, c.award.recipientName, domainGuess);
           contactsWritten += er.contactsWritten;
         } catch (e) {
           // Record the first error but keep going — partial enrichment is fine.
