@@ -1451,6 +1451,15 @@ async function runInitDdl() {
   await sql`CREATE INDEX IF NOT EXISTS idx_prospects_band ON prospects (icp_band, icp_score DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_prospects_domain ON prospects (domain) WHERE domain IS NOT NULL`;
 
+  // AI-review columns — additive so existing prospects keep their
+  // rule-based score; the AI columns are populated when the AI agent
+  // runs over a candidate.
+  await sql`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS ai_score INTEGER`;
+  await sql`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS ai_band TEXT`;
+  await sql`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS ai_reasoning TEXT`;
+  await sql`ALTER TABLE prospects ADD COLUMN IF NOT EXISTS ai_reviewed_at TIMESTAMPTZ`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_prospects_ai_band ON prospects (ai_band, ai_score DESC) WHERE ai_band IS NOT NULL`;
+
   await sql`
     CREATE TABLE IF NOT EXISTS prospect_contacts (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -1582,6 +1591,10 @@ async function runInitDdl() {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_discovery_runs_created ON discovery_runs (created_at DESC)`;
+  await sql`ALTER TABLE discovery_runs ADD COLUMN IF NOT EXISTS ai_reviewed INTEGER NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE discovery_runs ADD COLUMN IF NOT EXISTS ai_kept INTEGER NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE discovery_runs ADD COLUMN IF NOT EXISTS ai_input_tokens INTEGER NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE discovery_runs ADD COLUMN IF NOT EXISTS ai_output_tokens INTEGER NOT NULL DEFAULT 0`;
 }
 
 /**

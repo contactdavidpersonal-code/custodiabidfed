@@ -1,14 +1,18 @@
 /**
- * Discovery pipeline — the "agent" that runs end-to-end:
+ * Discovery pipeline — agent that finds qualified CMMC L1 prospects.
  *
- *   USAspending → ICP score → upsert `prospects` → Hunter → upsert `prospect_contacts`
+ * Two-stage funnel:
  *
- * Agent mode: caller says "fetch me N qualified leads with emails."
- * The pipeline auto-paginates USAspending until we have N band-A/B
- * prospects with a Hunter contact, or hits MAX_PAGES / MAX_HUNTER_CALLS.
+ *   1. USAspending → rule-based ICP scorer (fast, cheap)
+ *      Drops universities, megaprimes, public engineering firms, JVs,
+ *      out-of-band amounts, non-US states, etc.
  *
- * The admin UI exposes a single number ("how many?") and a button.
- * Cron passes a fixed daily target. No knobs in normal use.
+ *   2. Survivors → Claude review agent (one batched call)
+ *      Reads company name, NAICS, agency, award size, state, etc. and
+ *      ranks for fit. Picks top-N "keep" recommendations.
+ *
+ * Hunter enrichment is OFF in this revision — we want a clean pool of
+ * AI-vetted leads first, then we'll burn credits selectively.
  */
 
 import { getSql } from "@/lib/db";
@@ -17,62 +21,53 @@ import {
   type AwardRow,
   DEFAULT_DOD_NAICS,
 } from "@/lib/outbound/usaspending";
-import { scoreAward, inferDomain } from "@/lib/outbound/icp";
-import { bestContactForDomain } from "@/lib/outbound/hunter";
+import { scoreAward, inferDomain, type IcpScore } from "@/lib/outbound/icp";
+import { rankAndPick, type ReviewVerdict } from "@/lib/outbound/ai-review";
 
 export type DiscoveryParams = {
   daysBack: number;
   minAmount: number;
   maxAmount: number;
   pageLimit: number;
-  enrich: boolean;
-  enrichLimit: number;
   apply: boolean;
 };
 
 /**
- * Defaults for the agent. Tuned to find SMB-prime CMMC L1 ICPs:
- *   - 30 days back: fresh urgency, deep enough catalog
- *   - $250k–$5M: SMB sweet spot
- *   - 100 awards/page: USAspending max
+ * Defaults for the agent. Wider net than v1 — let Claude do the
+ * fine-grained filtering.
+ *
+ *   - 60 days back: enough catalog depth that we always fill a 10-lead quota
+ *   - $100k–$25M: SMB to mid-market band; AI rejects megacorps regardless
+ *   - 100/page (USAspending max)
  */
 export const SMART_DEFAULTS: DiscoveryParams = {
-  daysBack: 30,
-  minAmount: 250_000,
-  maxAmount: 5_000_000,
+  daysBack: 60,
+  minAmount: 100_000,
+  maxAmount: 25_000_000,
   pageLimit: 100,
-  enrich: true,
-  enrichLimit: 10,
   apply: true,
 };
 
-/** Hard caps so a runaway agent can't burn unlimited Hunter credits. */
-const MAX_PAGES = 5; // 500 awards max
-const MAX_HUNTER_CALLS = 50; // ~$0.50 ceiling per run
-
-export type ProspectInsertResult = {
-  written: number;
-  skipped: number;
-  rejected: number;
-  topBandIds: string[];
-};
-
-export type EnrichResult = {
-  attempted: number;
-  contactsFound: number;
-  contactsWritten: number;
-  errors: string[];
-};
+const MAX_PAGES = 5;
+/** Max candidates to send to Claude in one batch. Keeps prompts under ~3k tokens. */
+const MAX_AI_BATCH = 30;
 
 export type DiscoveryRunResult = {
   ok: boolean;
   dryRun: boolean;
   params: DiscoveryParams;
-  targetCount: number | null;
+  targetCount: number;
   range: { start: string; end: string };
   awards: { fetched: number; pagesScanned: number; error: string | null };
-  prospects: ProspectInsertResult;
-  enrichment: EnrichResult;
+  ruleFilter: { passed: number; rejected: number };
+  ai: {
+    reviewed: number;
+    kept: number;
+    inputTokens: number;
+    outputTokens: number;
+    error: string | null;
+  };
+  prospects: { written: number; updated: number };
   durationMs: number;
 };
 
@@ -80,34 +75,36 @@ function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-async function persistOneAward(
-  award: AwardRow,
-  apply: boolean,
-): Promise<{
-  written: boolean;
-  updated: boolean;
-  rejected: boolean;
-  band: string;
-  id: string | null;
-}> {
-  const sql = getSql();
-  const { score, band, reasons } = scoreAward({ award });
-  const domain = inferDomain(award.recipientName);
-  const status = band === "reject" ? "rejected" : "new";
+type Candidate = {
+  award: AwardRow;
+  ruleScore: IcpScore;
+};
 
-  if (band === "reject") {
-    return { written: false, updated: false, rejected: true, band, id: null };
-  }
-  if (!apply) {
-    return { written: true, updated: false, rejected: false, band, id: null };
-  }
+/**
+ * Persist a single AI-approved prospect. Idempotent. Returns whether
+ * this insert was new or an update.
+ */
+async function persistApproved(
+  award: AwardRow,
+  rule: IcpScore,
+  verdict: ReviewVerdict,
+  apply: boolean,
+): Promise<{ written: boolean; updated: boolean; id: string | null }> {
+  if (!apply) return { written: true, updated: false, id: null };
+  const sql = getSql();
+  const domain = inferDomain(award.recipientName);
+  // The AI's decision drives the persisted band/score. We keep the
+  // rule-score around in `icp_score` for comparison.
+  const status = verdict.recommend === "keep" ? "approved" : "rejected";
 
   const rows = (await sql`
     INSERT INTO prospects (
       company_name, domain, uei, naics_code, state, city,
       total_award_amount, most_recent_award_at,
       data_source, raw_payload,
-      icp_score, icp_band, icp_reasons, status
+      icp_score, icp_band, icp_reasons,
+      ai_score, ai_band, ai_reasoning, ai_reviewed_at,
+      status
     )
     VALUES (
       ${award.recipientName},
@@ -120,9 +117,13 @@ async function persistOneAward(
       ${award.actionDate},
       'usaspending',
       ${JSON.stringify(award)},
-      ${score},
-      ${band},
-      ${JSON.stringify(reasons)},
+      ${rule.score},
+      ${rule.band},
+      ${JSON.stringify(rule.reasons)},
+      ${verdict.aiScore},
+      ${verdict.aiBand},
+      ${verdict.reasoning},
+      NOW(),
       ${status}
     )
     ON CONFLICT (company_name, COALESCE(domain, ''))
@@ -130,112 +131,57 @@ async function persistOneAward(
       icp_score = EXCLUDED.icp_score,
       icp_band = EXCLUDED.icp_band,
       icp_reasons = EXCLUDED.icp_reasons,
+      ai_score = EXCLUDED.ai_score,
+      ai_band = EXCLUDED.ai_band,
+      ai_reasoning = EXCLUDED.ai_reasoning,
+      ai_reviewed_at = NOW(),
       total_award_amount = GREATEST(prospects.total_award_amount, EXCLUDED.total_award_amount),
       most_recent_award_at = GREATEST(prospects.most_recent_award_at, EXCLUDED.most_recent_award_at),
+      status = CASE
+        WHEN prospects.status IN ('engaged','converted','queued','sending')
+          THEN prospects.status
+        ELSE EXCLUDED.status
+      END,
       updated_at = NOW()
     RETURNING id, (xmax = 0) AS inserted
   `) as Array<{ id: string; inserted: boolean }>;
 
   const row = rows[0];
-  if (!row) {
-    return { written: false, updated: false, rejected: false, band, id: null };
-  }
-  return {
-    written: row.inserted,
-    updated: !row.inserted,
-    rejected: false,
-    band,
-    id: row.id,
-  };
-}
-
-async function enrichProspect(
-  prospectId: string,
-  apply: boolean,
-): Promise<{ found: boolean; written: boolean; error: string | null }> {
-  const sql = getSql();
-  const rows = (await sql`
-    SELECT id, company_name, domain
-    FROM prospects
-    WHERE id = ${prospectId}
-      AND NOT EXISTS (SELECT 1 FROM prospect_contacts WHERE prospect_id = prospects.id)
-    LIMIT 1
-  `) as Array<{ id: string; company_name: string; domain: string | null }>;
-  const p = rows[0];
-  if (!p?.domain) return { found: false, written: false, error: null };
-
-  let contact = null;
-  try {
-    contact = await bestContactForDomain(p.domain);
-  } catch (e) {
-    return {
-      found: false,
-      written: false,
-      error: `${p.company_name} (${p.domain}): ${e instanceof Error ? e.message : String(e)}`,
-    };
-  }
-  if (!contact) return { found: false, written: false, error: null };
-  if (!apply) return { found: true, written: false, error: null };
-
-  const verification = contact.verification.status ?? "unknown";
-  await sql`
-    INSERT INTO prospect_contacts (
-      prospect_id, email, first_name, last_name, title, linkedin_url,
-      hunter_confidence, verification_status, enrichment_source
-    )
-    VALUES (
-      ${p.id},
-      ${contact.value},
-      ${contact.firstName ?? null},
-      ${contact.lastName ?? null},
-      ${contact.position ?? null},
-      ${contact.linkedin ?? null},
-      ${contact.confidence ?? null},
-      ${verification},
-      'hunter'
-    )
-    ON CONFLICT (email) DO NOTHING
-  `;
-  return { found: true, written: true, error: null };
+  if (!row) return { written: false, updated: false, id: null };
+  return { written: row.inserted, updated: !row.inserted, id: row.id };
 }
 
 /**
- * Agent entry point. "Bring me N qualified leads with emails."
+ * Agent entry point. "Bring me N qualified leads."
  *
- * Walks USAspending pages, scoring + persisting + enriching as it goes,
- * stopping the moment we have `targetCount` written contacts (or hit
- * MAX_PAGES / MAX_HUNTER_CALLS).
+ *   - Pulls awards from USAspending (auto-paginates up to MAX_PAGES)
+ *   - Rule-filters to drop obvious rejects
+ *   - Sends survivors (up to MAX_AI_BATCH) to Claude for ranking
+ *   - Persists Claude's top-N picks as `status='approved'`
+ *
+ * Hunter is intentionally NOT called — emails come later, after manual
+ * review of the AI-curated list.
  */
 export async function runDiscovery(
   targetCount: number,
   triggeredBy: "cron" | "admin" | "manual" = "manual",
 ): Promise<DiscoveryRunResult> {
   const startedAt = Date.now();
-  const desired = Math.max(1, Math.min(targetCount, MAX_HUNTER_CALLS));
-  const params: DiscoveryParams = {
-    ...SMART_DEFAULTS,
-    enrichLimit: desired,
-  };
+  const desired = Math.max(1, Math.min(targetCount, MAX_AI_BATCH));
+  const params: DiscoveryParams = { ...SMART_DEFAULTS };
   const end = new Date();
   const start = new Date(end.getTime() - params.daysBack * 86_400_000);
 
-  const persist: ProspectInsertResult = {
-    written: 0,
-    skipped: 0,
-    rejected: 0,
-    topBandIds: [],
-  };
-  const enrich: EnrichResult = {
-    attempted: 0,
-    contactsFound: 0,
-    contactsWritten: 0,
-    errors: [],
-  };
+  const candidates: Candidate[] = [];
   let awardsFetched = 0;
   let pagesScanned = 0;
+  let rejectedByRule = 0;
   let usaspendingError: string | null = null;
 
-  pageLoop: for (let page = 1; page <= MAX_PAGES; page++) {
+  // Stage 1 — pull + rule-filter. We aim for ~3x desired in candidates so
+  // Claude has real choices to make.
+  const candidateTarget = Math.min(MAX_AI_BATCH, desired * 3);
+  for (let page = 1; page <= MAX_PAGES; page++) {
     pagesScanned = page;
     let rows: AwardRow[] = [];
     try {
@@ -257,53 +203,72 @@ export async function runDiscovery(
     awardsFetched += rows.length;
 
     for (const award of rows) {
-      const r = await persistOneAward(award, params.apply);
-      if (r.rejected) persist.rejected += 1;
-      else if (r.written) persist.written += 1;
-      else if (r.updated) persist.skipped += 1;
-
-      // Only enrich band-A/B with a fresh insert. Cap by MAX_HUNTER_CALLS
-      // and by the user-requested target so the agent stops the moment
-      // it has what was asked for.
-      if (
-        r.id &&
-        (r.band === "A" || r.band === "B") &&
-        enrich.attempted < MAX_HUNTER_CALLS &&
-        enrich.contactsWritten < desired
-      ) {
-        persist.topBandIds.push(r.id);
-        enrich.attempted += 1;
-        const e = await enrichProspect(r.id, params.apply);
-        if (e.error) enrich.errors.push(e.error);
-        if (e.found) enrich.contactsFound += 1;
-        if (e.written) enrich.contactsWritten += 1;
-        if (enrich.contactsWritten >= desired) break pageLoop;
+      const ruleScore = scoreAward({ award });
+      if (ruleScore.band === "reject") {
+        rejectedByRule += 1;
+        continue;
       }
+      candidates.push({ award, ruleScore });
+      if (candidates.length >= candidateTarget) break;
+    }
+    if (candidates.length >= candidateTarget) break;
+  }
+
+  // Stage 2 — Claude review. Single batched call.
+  let aiInputTokens = 0;
+  let aiOutputTokens = 0;
+  let aiError: string | null = null;
+  let kept: ReviewVerdict[] = [];
+  if (candidates.length > 0) {
+    try {
+      const review = await rankAndPick(candidates, desired);
+      kept = review.winners;
+      aiInputTokens = review.tokens.input;
+      aiOutputTokens = review.tokens.output;
+    } catch (e) {
+      aiError = e instanceof Error ? e.message : String(e);
+    }
+  }
+
+  // Stage 3 — persist approved leads.
+  let written = 0;
+  let updated = 0;
+  if (kept.length > 0 && params.apply) {
+    const byId = new Map(candidates.map((c) => [c.award.internalId, c]));
+    for (const v of kept) {
+      const c = byId.get(v.internalId);
+      if (!c) continue;
+      const r = await persistApproved(c.award, c.ruleScore, v, params.apply);
+      if (r.written) written += 1;
+      if (r.updated) updated += 1;
     }
   }
 
   const durationMs = Date.now() - startedAt;
   const result: DiscoveryRunResult = {
-    ok: !usaspendingError,
+    ok: !usaspendingError && !aiError,
     dryRun: !params.apply,
     params,
     targetCount: desired,
     range: { start: isoDate(start), end: isoDate(end) },
     awards: { fetched: awardsFetched, pagesScanned, error: usaspendingError },
-    prospects: persist,
-    enrichment: enrich,
+    ruleFilter: { passed: candidates.length, rejected: rejectedByRule },
+    ai: {
+      reviewed: candidates.length,
+      kept: kept.length,
+      inputTokens: aiInputTokens,
+      outputTokens: aiOutputTokens,
+      error: aiError,
+    },
+    prospects: { written, updated },
     durationMs,
   };
 
-  await logRun(result, triggeredBy, desired);
+  await logRun(result, triggeredBy);
   return result;
 }
 
-async function logRun(
-  result: DiscoveryRunResult,
-  triggeredBy: string,
-  targetCount: number | null,
-) {
+async function logRun(result: DiscoveryRunResult, triggeredBy: string) {
   try {
     const sql = getSql();
     await sql`
@@ -312,28 +277,32 @@ async function logRun(
         awards_fetched, pages_scanned,
         prospects_written, prospects_updated, prospects_rejected,
         contacts_attempted, contacts_written, error_message, duration_ms,
-        dry_run
+        dry_run, ai_reviewed, ai_kept, ai_input_tokens, ai_output_tokens
       )
       VALUES (
         ${triggeredBy},
         ${JSON.stringify(result.params)},
-        ${targetCount},
+        ${result.targetCount},
         ${result.range.start},
         ${result.range.end},
         ${result.awards.fetched},
         ${result.awards.pagesScanned},
         ${result.prospects.written},
-        ${result.prospects.skipped},
-        ${result.prospects.rejected},
-        ${result.enrichment.attempted},
-        ${result.enrichment.contactsWritten},
-        ${result.awards.error ?? (result.enrichment.errors[0] ?? null)},
+        ${result.prospects.updated},
+        ${result.ruleFilter.rejected},
+        ${0},
+        ${0},
+        ${result.awards.error ?? result.ai.error ?? null},
         ${result.durationMs},
-        ${result.dryRun}
+        ${result.dryRun},
+        ${result.ai.reviewed},
+        ${result.ai.kept},
+        ${result.ai.inputTokens},
+        ${result.ai.outputTokens}
       )
     `;
   } catch {
-    // never fail a run because logging didn't work
+    // logging errors never fail a run
   }
 }
 
@@ -353,6 +322,10 @@ export type DiscoveryRunRow = {
   error_message: string | null;
   duration_ms: number;
   dry_run: boolean;
+  ai_reviewed: number;
+  ai_kept: number;
+  ai_input_tokens: number;
+  ai_output_tokens: number;
   created_at: string;
 };
 
@@ -363,7 +336,8 @@ export async function listRecentRuns(limit = 10): Promise<DiscoveryRunRow[]> {
            awards_fetched, pages_scanned,
            prospects_written, prospects_updated, prospects_rejected,
            contacts_attempted, contacts_written, error_message, duration_ms,
-           dry_run, created_at
+           dry_run, ai_reviewed, ai_kept, ai_input_tokens, ai_output_tokens,
+           created_at
     FROM discovery_runs
     ORDER BY created_at DESC
     LIMIT ${limit}

@@ -25,19 +25,16 @@ export default function DiscoveryRunButton() {
         throw new Error(`${res.status}: ${text.slice(0, 300)}`);
       }
       const data = (await res.json()) as {
-        prospects: { written: number; rejected: number };
-        enrichment: { contactsWritten: number };
+        ruleFilter: { passed: number; rejected: number };
+        ai: { reviewed: number; kept: number; error: string | null };
+        prospects: { written: number; updated: number };
         awards: { fetched: number; pagesScanned: number; error: string | null };
       };
-      if (data.awards.error) throw new Error(data.awards.error);
+      if (data.awards.error) throw new Error(`USAspending: ${data.awards.error}`);
+      if (data.ai.error) throw new Error(`AI review: ${data.ai.error}`);
       setSummary(
-        `Found ${data.enrichment.contactsWritten} new lead${
-          data.enrichment.contactsWritten === 1 ? "" : "s"
-        } from ${data.awards.fetched} awards (${data.awards.pagesScanned} page${
-          data.awards.pagesScanned === 1 ? "" : "s"
-        }). ${data.prospects.written} new prospects, ${data.prospects.rejected} rejected.`,
+        `Reviewed ${data.ai.reviewed} survivors from ${data.awards.fetched} awards (${data.awards.pagesScanned} pages, ${data.ruleFilter.rejected} rule-rejected). Claude kept ${data.ai.kept}; saved ${data.prospects.written} new + ${data.prospects.updated} updated.`,
       );
-      // Refresh the server-rendered tables on the page
       router.refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
@@ -69,10 +66,10 @@ export default function DiscoveryRunButton() {
           disabled={busy}
           className="bg-[#bdf2cf] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-[#0c2219] transition-colors hover:bg-[#a8e6c0] disabled:opacity-50"
         >
-          {busy ? "Agent working…" : `Find ${count} leads`}
+          {busy ? "Agent thinking…" : `Find ${count} leads`}
         </button>
         <p className="text-xs text-white/50">
-          Agent pulls fresh DoD primes, scores them, and drops the top {count} into Prospects with verified emails.
+          Agent pulls fresh DoD primes, Claude ranks them, top {count} land in your queue.
         </p>
       </div>
       {summary && (

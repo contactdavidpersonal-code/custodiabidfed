@@ -30,7 +30,8 @@ export type IcpScore = {
 
 /**
  * Recipient name patterns that auto-reject. Universities, federal labs,
- * and primes-of-primes don't fit our ICP. Case-insensitive substring match.
+ * mega-primes, and the public engineering / consulting megafirms don't
+ * fit our ICP. Case-insensitive substring match.
  */
 const REJECT_NAME_PATTERNS = [
   // Universities + research orgs
@@ -38,19 +39,24 @@ const REJECT_NAME_PATTERNS = [
   "COLLEGE",
   "INSTITUTE OF TECHNOLOGY",
   "RESEARCH FOUNDATION",
+  "TRUSTEES OF",
+  "BOARD OF REGENTS",
   // Federal / state government
   "DEPARTMENT OF",
-  "U.S.",
+  "U.S. ",
   "UNITED STATES",
   "STATE OF",
-  // Mega-primes (already have full compliance staff)
+  "CITY OF",
+  "COUNTY OF",
+  // Mega-defense-primes
   "LOCKHEED MARTIN",
   "RAYTHEON",
-  "RTX",
+  "RTX ",
   "BOEING",
   "NORTHROP GRUMMAN",
   "GENERAL DYNAMICS",
   "L3HARRIS",
+  "L-3 ",
   "BAE SYSTEMS",
   "LEIDOS",
   "BOOZ ALLEN",
@@ -58,21 +64,79 @@ const REJECT_NAME_PATTERNS = [
   "CACI",
   "MANTECH",
   "PEROT SYSTEMS",
+  "GENERAL ATOMICS",
+  "TEXTRON",
+  "HUNTINGTON INGALLS",
+  "HONEYWELL",
+  "TRIMBLE",
+  // Public engineering megaprimes (publicly traded $1B+ revenue)
+  "TETRA TECH",
+  "AECOM",
+  "JACOBS ENGINEERING",
+  "JACOBS SOLUTIONS",
+  "PARSONS CORPORATION",
+  "PARSONS GOVERNMENT",
+  "ICF ",
+  "ICF INTERNATIONAL",
+  "FLUOR ",
+  "KBR ",
+  "BLACK & VEATCH",
+  "STANTEC",
+  "HDR ",
+  "HDR-",
+  "CDM ",
+  "CDM SMITH",
+  "CDM FEDERAL",
+  "ARCADIS",
+  "WSP USA",
+  "WOOD ENVIRONMENT",
+  "MICHAEL BAKER",
+  "GANNETT FLEMING",
+  "BURNS & MCDONNELL",
+  "POWER ENGINEERS",
+  "DEWBERRY",
+  "ECC ",
+  "WEST FRASER",
+  // Consulting megafirms
   "ACCENTURE FEDERAL",
   "DELOITTE",
   "KPMG",
   "PWC",
+  "PRICEWATERHOUSE",
+  "ERNST & YOUNG",
+  "MCKINSEY",
+  "BAIN ",
+  // Big tech
   "IBM",
   "MICROSOFT",
   "ORACLE",
   "AMAZON WEB SERVICES",
+  "AMAZON.COM",
   "GOOGLE LLC",
+  "ALPHABET INC",
   "PALANTIR",
-  // Research labs that contract directly
+  "SALESFORCE",
+  "VMWARE",
+  "CISCO SYSTEMS",
+  "DELL FEDERAL",
+  "DELL TECHNOLOGIES",
+  "DELL MARKETING",
+  "HEWLETT PACKARD",
+  "HP ENTERPRISE",
+  // Federal labs / FFRDCs
   "BATTELLE",
   "MITRE",
   "AEROSPACE CORPORATION",
   "JOHNS HOPKINS APPLIED PHYSICS",
+  "RAND CORPORATION",
+  "INSTITUTE FOR DEFENSE ANALYSES",
+  "SOUTHWEST RESEARCH INSTITUTE",
+  // Joint ventures and special structures (almost always megaprime combos)
+  "JOINT VENTURE",
+  " JV ",
+  " JV,",
+  " JV.",
+  " JV)",
 ];
 
 /** US state codes — anything else triggers a "non-US?" reason. */
@@ -88,20 +152,35 @@ const US_STATE_CODES = new Set([
 /** ICP-friendly NAICS where the SMB-DoD-prime overlap is highest. */
 const TIER_A_NAICS = new Set([
   "541330", // Engineering services
+  "541380", // Testing labs
+  "541511", // Custom programming
   "541512", // Computer systems design
-  "541513", // Computer facilities management
+  "541513", // Computer facilities mgmt
   "541519", // Other computer related
   "336411", // Aircraft mfg
   "336412", // Aircraft engine + parts
   "336413", // Other aircraft parts
   "336414", // Guided missile + space vehicle
   "336415", // Guided missile/space propulsion
-  "334511", // Search/detection/navigation instruments
+  "336992", // Military armored vehicle
+  "332994", // Small arms / ordnance
+  "334111", // Electronic computer mfg
+  "334290", // Other comms equipment
+  "334413", // Semiconductors
+  "334511", // Search/detection/nav
+  "334516", // Analytical lab instruments
 ]);
 
 const TIER_B_NAICS = new Set([
+  "541611", // Admin / mgmt consulting
+  "541618", // Other mgmt consulting
+  "541690", // Other sci/tech consulting
+  "541713", // R&D nanotech
   "541714", // R&D biotech
-  "541715", // R&D physical/eng/life sci
+  "541715", // R&D physical / eng / life sci
+  "541720", // R&D social sci
+  "561621", // Security systems services
+  "561612", // Security guard
 ]);
 
 export type ScoreInput = {

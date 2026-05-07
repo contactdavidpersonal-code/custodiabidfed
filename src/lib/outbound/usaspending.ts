@@ -16,36 +16,72 @@
 const USASPENDING_BASE = "https://api.usaspending.gov/api/v2";
 
 /**
- * Default DoD-aligned NAICS targets for CMMC Level 1 ICP. These are the
- * codes where small primes most often handle FCI without yet having
- * compliance staff. Override per-call if needed.
+ * Default DoD-aligned NAICS targets. Wider net than CMMC L1-only — we let
+ * the AI review agent decide which survivors are real ICPs. Casting wide
+ * keeps the candidate pool large enough to fill a 10-lead daily quota.
  *
+ * Rule of thumb: any NAICS where a small DoD prime handling FCI is
+ * plausible. The AI agent down-selects.
+ *
+ *   Engineering / IT / R&D
  * - 541330 — Engineering services
+ * - 541380 — Testing laboratories
+ * - 541511 — Custom computer programming
  * - 541512 — Computer systems design
  * - 541513 — Computer facilities management
  * - 541519 — Other computer related services
+ * - 541611 — Admin management + general management consulting
+ * - 541618 — Other management consulting
+ * - 541690 — Other scientific + technical consulting
+ * - 541713 — R&D in nanotech
  * - 541714 — R&D in biotech (excluding nanobiotech)
- * - 541715 — R&D in physical/engineering/life sciences
- * - 334511 — Search/detection/navigation/guidance instruments
- * - 336411 — Aircraft manufacturing
- * - 336412 — Aircraft engine + parts manufacturing
- * - 336413 — Other aircraft parts + auxiliary equipment
- * - 336414 — Guided missile + space vehicle manufacturing
- * - 336415 — Guided missile/space propulsion
+ * - 541715 — R&D in physical / engineering / life sciences
+ * - 541720 — R&D in social sciences + humanities
+ *   Defense electronics + manufacturing
+ * - 334111 — Electronic computer mfg
+ * - 334290 — Other communications equipment mfg
+ * - 334413 — Semiconductor + related device mfg
+ * - 334511 — Search/detection/navigation instruments
+ * - 334516 — Analytical lab instrument mfg
+ * - 336411 — Aircraft mfg
+ * - 336412 — Aircraft engine + parts mfg
+ * - 336413 — Other aircraft parts
+ * - 336414 — Guided missile + space vehicle mfg
+ * - 336415 — Guided missile / space propulsion
+ * - 336992 — Military armored vehicle / tank mfg
+ * - 332994 — Small arms, ordnance, and accessories mfg
+ *   Cybersecurity / specialty
+ * - 561621 — Security systems services (electronic locks etc.)
+ * - 561612 — Security guard + patrol services (some FCI relevance)
  */
 export const DEFAULT_DOD_NAICS = [
   "541330",
+  "541380",
+  "541511",
   "541512",
   "541513",
   "541519",
+  "541611",
+  "541618",
+  "541690",
+  "541713",
   "541714",
   "541715",
+  "541720",
+  "334111",
+  "334290",
+  "334413",
   "334511",
+  "334516",
   "336411",
   "336412",
   "336413",
   "336414",
   "336415",
+  "336992",
+  "332994",
+  "561621",
+  "561612",
 ] as const;
 
 /** PSC = Product/Service Codes — agency-side categorization. Empty = no PSC filter. */
