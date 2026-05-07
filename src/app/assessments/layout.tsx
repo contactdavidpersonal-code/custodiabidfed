@@ -2,9 +2,10 @@ import { UserButton } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ensureOrgForUser } from "@/lib/assessment";
+import { getActiveOrgFromAuth } from "@/lib/assessment";
 import { countUnreadOfficerRepliesForOrg } from "@/lib/escalations";
 import { AdminLink } from "@/components/AdminLink";
+import { OrgSwitcher } from "@/components/OrgSwitcher";
 import { WorkspaceBottomNav } from "./_components/WorkspaceBottomNav";
 import { MobileCharlieFAB } from "./_components/MobileCharlieFAB";
 import { DesktopCharlieRail } from "./_components/DesktopCharlieRail";
@@ -18,7 +19,7 @@ export default async function AssessmentsLayout({
   if (!userId) redirect("/sign-in");
   if (!has({ plan: "user:cmmc_lv1_full_access" })) redirect("/upgrade");
 
-  const org = await ensureOrgForUser(userId);
+  const org = (await getActiveOrgFromAuth())!;
   const unreadOfficerReplies = await countUnreadOfficerRepliesForOrg(org.id);
 
   return (
@@ -80,9 +81,10 @@ export default async function AssessmentsLayout({
             </Link>
             <AdminLink className="bg-[#0f2f26] px-3 py-2 font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]" />
             <div className="h-6 w-px bg-[#cfe3d9]" />
+            <OrgSwitcher />
             <UserButton appearance={{ elements: { avatarBox: "h-8 w-8" } }} />
           </nav>
-          {/* Mobile/tablet header right side: just the user button */}
+          {/* Mobile/tablet header right side: org switcher + user button */}
           <div className="flex items-center gap-3 lg:hidden">
             {unreadOfficerReplies > 0 ? (
               <Link
@@ -100,6 +102,7 @@ export default async function AssessmentsLayout({
                 </span>
               </Link>
             ) : null}
+            <OrgSwitcher hideUntilJoined />
             <UserButton appearance={{ elements: { avatarBox: "h-8 w-8" } }} />
           </div>
         </div>

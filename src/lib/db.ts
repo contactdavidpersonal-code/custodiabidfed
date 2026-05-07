@@ -250,6 +250,43 @@ async function runInitDdl() {
   await sql`ALTER TABLE organizations ALTER COLUMN owner_user_id SET NOT NULL`;
   await sql`DROP TABLE IF EXISTS memberships`;
 
+  // ── MSP multi-tenancy ────────────────────────────────────────────────
+  // Re-introduce clerk_org_id, this time as the canonical tenancy key for
+  // any organization that originated from a Clerk Organization (i.e. a
+  // business an MSP is managing). NULL = legacy "personal" org keyed by
+  // owner_user_id only. The two access patterns are kept distinct via
+  // partial unique indexes so a single user can simultaneously own one
+  // personal org AND many Clerk-org-linked managed businesses.
+  await sql`
+    ALTER TABLE organizations
+      ADD COLUMN IF NOT EXISTS clerk_org_id TEXT
+  `;
+  // Drop the old global UNIQUE on owner_user_id — it blocks an MSP user
+  // from owning more than one organization. Replace with a partial index
+  // that only enforces uniqueness for the user's *personal* (non-Clerk)
+  // org row, so legacy solo behaviour is preserved.
+  await sql`
+    DO $$ BEGIN
+      IF EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conname = 'organizations_owner_user_id_key'
+      ) THEN
+        ALTER TABLE organizations
+          DROP CONSTRAINT organizations_owner_user_id_key;
+      END IF;
+    END $$
+  `;
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS organizations_personal_owner_uidx
+      ON organizations (owner_user_id)
+      WHERE clerk_org_id IS NULL
+  `;
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS organizations_clerk_org_uidx
+      ON organizations (clerk_org_id)
+      WHERE clerk_org_id IS NOT NULL
+  `;
+
   // One-shot welcome email dedupe. Set when sendWelcomeEmail succeeds; left
   // NULL on failure so the next sign-in retries.
   await sql`

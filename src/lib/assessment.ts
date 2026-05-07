@@ -121,6 +121,44 @@ export type RemediationPlanRow = {
 };
 
 export async function ensureOrgForUser(userId: string): Promise<OrganizationRow> {
+  // MSP multi-tenancy: when the request is being served on behalf of a
+  // signed-in user with an Active Organization (Clerk Organization), use
+  // the org-scoped row instead of the user's legacy personal org. This
+  // keeps every existing callsite (~30 files) automatically tenancy-aware
+  // without changing any signatures. Falls back to legacy behaviour when
+  // there is no active Clerk org (solo founder UX unchanged).
+  try {
+    const { auth, clerkClient } = await import("@clerk/nextjs/server");
+    const a = await auth();
+    if (a.orgId) {
+      let clerkOrgName: string | null = null;
+      try {
+        const cc = await clerkClient();
+        const o = await cc.organizations.getOrganization({
+          organizationId: a.orgId,
+        });
+        clerkOrgName = o?.name ?? null;
+      } catch {
+        // Non-fatal — fall back to placeholder.
+      }
+      return resolveActiveOrg({
+        userId,
+        clerkOrgId: a.orgId,
+        clerkOrgName,
+      });
+    }
+  } catch {
+    // auth() throws when called outside a request context (e.g. cron
+    // scripts). In that case, fall through to the legacy personal-org
+    // path below.
+  }
+
+  return ensureLegacyPersonalOrg(userId);
+}
+
+async function ensureLegacyPersonalOrg(
+  userId: string,
+): Promise<OrganizationRow> {
   await initDb();
   const sql = getSql();
 
@@ -129,6 +167,7 @@ export async function ensureOrgForUser(userId: string): Promise<OrganizationRow>
            naics_codes, tier, scoped_systems, created_at, updated_at
     FROM organizations
     WHERE owner_user_id = ${userId}
+      AND clerk_org_id IS NULL
     LIMIT 1
   `) as OrganizationRow[];
 
@@ -146,6 +185,92 @@ export async function ensureOrgForUser(userId: string): Promise<OrganizationRow>
 
   await ensureBusinessProfile(inserted[0].id);
   return inserted[0];
+}
+
+/**
+ * MSP multi-tenancy resolver. Returns the organization row that the user
+ * is currently *acting as*, derived from their Clerk session:
+ *
+ * - If `clerkOrgId` is provided (user has selected an Active Organization
+ *   via the OrgSwitcher), look up by `clerk_org_id`. On first visit, the
+ *   row is provisioned with the Clerk Organization's display name so the
+ *   header reads correctly without a separate sync step.
+ * - If `clerkOrgId` is null (user is in their Personal Account), fall
+ *   through to the legacy single-org-per-user behaviour. This preserves
+ *   solo founder UX exactly as it was pre-MSP.
+ *
+ * Same return shape as ensureOrgForUser, so existing code paths can swap
+ * one call for the other without further changes.
+ */
+export async function resolveActiveOrg(args: {
+  userId: string;
+  clerkOrgId: string | null | undefined;
+  /** Optional: human-readable org name from Clerk (when known). Used only on first provision. */
+  clerkOrgName?: string | null;
+}): Promise<OrganizationRow> {
+  if (!args.clerkOrgId) {
+    return ensureOrgForUser(args.userId);
+  }
+  await initDb();
+  const sql = getSql();
+
+  const existing = (await sql`
+    SELECT id, owner_user_id, name, entity_type, cage_code, sam_uei,
+           naics_codes, tier, scoped_systems, created_at, updated_at
+    FROM organizations
+    WHERE clerk_org_id = ${args.clerkOrgId}
+    LIMIT 1
+  `) as OrganizationRow[];
+
+  if (existing.length > 0) {
+    await ensureBusinessProfile(existing[0].id);
+    return existing[0];
+  }
+
+  const displayName =
+    (args.clerkOrgName && args.clerkOrgName.trim().length > 0
+      ? args.clerkOrgName.trim()
+      : "Managed business");
+
+  const inserted = (await sql`
+    INSERT INTO organizations (owner_user_id, clerk_org_id, name, tier)
+    VALUES (${args.userId}, ${args.clerkOrgId}, ${displayName}, 'solo')
+    RETURNING id, owner_user_id, name, entity_type, cage_code, sam_uei,
+              naics_codes, tier, scoped_systems, created_at, updated_at
+  `) as OrganizationRow[];
+
+  await ensureBusinessProfile(inserted[0].id);
+  return inserted[0];
+}
+
+/**
+ * High-level entry point: reads Clerk auth(), pulls the active Clerk
+ * org id (if any), resolves the matching DB org row, and on first visit
+ * fetches the Clerk org name to seed `organizations.name`. Use this in
+ * preference to ensureOrgForUser everywhere a request is being served on
+ * behalf of the signed-in user. Server-only.
+ */
+export async function getActiveOrgFromAuth(): Promise<OrganizationRow | null> {
+  // Lazy import to keep this module usable from contexts that already have
+  // their own auth() call without forcing a circular import.
+  const { auth, clerkClient } = await import("@clerk/nextjs/server");
+  const { userId, orgId } = await auth();
+  if (!userId) return null;
+  if (!orgId) {
+    return ensureOrgForUser(userId);
+  }
+  // First-provision name lookup — only hits Clerk's API the first time we
+  // see this orgId; subsequent visits hit the local row directly.
+  let clerkOrgName: string | null = null;
+  try {
+    const cc = await clerkClient();
+    const o = await cc.organizations.getOrganization({ organizationId: orgId });
+    clerkOrgName = o?.name ?? null;
+  } catch {
+    // Non-fatal — fall back to the placeholder name. The user can rename
+    // via onboarding or the Clerk OrganizationProfile UI.
+  }
+  return resolveActiveOrg({ userId, clerkOrgId: orgId, clerkOrgName });
 }
 
 export type BusinessProfileRow = {
