@@ -45,7 +45,7 @@ export type DiscoveryParams = {
 export const SMART_DEFAULTS: DiscoveryParams = {
   daysBack: 90,
   minAmount: 25_000,
-  maxAmount: 10_000_000,
+  maxAmount: 5_000_000,
   pageLimit: 100,
   apply: true,
   enrichWithHunter: true,

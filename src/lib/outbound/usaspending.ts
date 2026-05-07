@@ -207,20 +207,29 @@ export async function searchAwards(input: AwardSearchInput): Promise<{
     ];
   }
   if (input.smallBusinessOnly) {
-    // recipient_type_names accepts SBA business-type categories. Multiple
-    // values OR together. We pick the SBA "small business" umbrella + the
-    // most common SDB / WOSB / VOSB sub-types so we don't accidentally
-    // exclude legitimate small primes that ALSO have a diversity flag.
-    filters.recipient_type_names = [
-      "small_business",
-      "woman_owned_small_business",
-      "economically_disadvantaged_women_owned_small_business",
-      "service_disabled_veteran_owned_business",
-      "veteran_owned_business",
-      "minority_owned_business",
-      "8a_program_participant",
-      "hubzone_program",
-      "emerging_small_business",
+    // set_aside_type_codes restricts to contracts that were *legally*
+    // reserved for small businesses (or specific small-biz subcategories).
+    // This is the only USAspending filter that's both reliable and
+    // semantically right for our ICP — by procurement law, anyone
+    // winning these awards IS a small business.
+    //
+    // We include the full umbrella of SBA set-aside types so we don't
+    // accidentally exclude WOSB / SDVOSB / 8(a) / HUBZone primes.
+    filters.set_aside_type_codes = [
+      "SBA",       // Small Business Set-Aside (Total)
+      "SBP",       // Small Business Set-Aside (Partial)
+      "8A",        // 8(a) Sole Source
+      "8AN",       // 8(a) Competitive
+      "WOSB",      // WOSB Set-Aside
+      "WOSBSS",    // WOSB Sole Source
+      "EDWOSB",    // EDWOSB Set-Aside
+      "EDWOSBSS",  // EDWOSB Sole Source
+      "SDVOSBC",   // SDVOSB Set-Aside
+      "SDVOSBS",   // SDVOSB Sole Source
+      "HZC",       // HUBZone Set-Aside
+      "HZS",       // HUBZone Sole Source
+      "VSA",       // Veteran-Owned Set-Aside
+      "VSS",       // Veteran-Owned Sole Source
     ];
   }
 

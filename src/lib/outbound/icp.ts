@@ -124,12 +124,13 @@ const US_STATE_CODES = new Set([
  *
  *   < $25k  → below the federal micro-purchase floor for FCI handling;
  *             also too small a contract to fund a vendor like us
- *   $25k–$10M → SMB sweet spot
- *   > $10M  → company is probably already big enough to have compliance
- *             figured out
+ *   $25k–$5M → SMB sweet spot for L1 (above ~$2M, CUI handling becomes
+ *             likely → L2 territory → not our ICP)
+ *   > $5M  → company is probably already big enough to have compliance
+ *             figured out and likely on L2 anyway
  */
 const MIN_AWARD = 25_000;
-const MAX_AWARD = 10_000_000;
+const MAX_AWARD = 5_000_000;
 
 export type ScoreInput = {
   award: AwardRow;
