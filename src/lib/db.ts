@@ -1437,9 +1437,15 @@ async function runInitDdl() {
         CHECK (status IN ('new','reviewing','approved','queued','sending','engaged','converted','rejected','suppressed')),
       notes TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      UNIQUE (company_name, COALESCE(domain, ''))
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
+  `;
+  // Dedup key uses an expression (COALESCE) so it has to be a unique
+  // *index*, not an inline UNIQUE constraint (Postgres rejects
+  // expressions in column constraints).
+  await sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_prospects_company_domain
+      ON prospects (company_name, COALESCE(domain, ''))
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_prospects_status ON prospects (status)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_prospects_band ON prospects (icp_band, icp_score DESC)`;
