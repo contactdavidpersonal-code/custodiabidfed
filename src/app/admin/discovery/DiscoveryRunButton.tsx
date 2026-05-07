@@ -25,7 +25,7 @@ export default function DiscoveryRunButton() {
         throw new Error(`${res.status}: ${text.slice(0, 300)}`);
       }
       const data = (await res.json()) as {
-        ruleFilter: { passed: number; rejected: number };
+        ruleFilter: { passed: number; rejected: number; skippedAlreadyKnown: number };
         ai: { reviewed: number; kept: number; error: string | null };
         enrichment: { attempted: number; contactsWritten: number; error: string | null };
         prospects: { written: number; updated: number };
@@ -37,7 +37,7 @@ export default function DiscoveryRunButton() {
         ? ` Hunter found emails for ${data.enrichment.contactsWritten}/${data.enrichment.attempted}.`
         : "";
       setSummary(
-        `Pulled ${data.awards.fetched} awards across ${data.awards.pagesScanned} pages, ${data.ruleFilter.rejected} rule-rejected. Claude reviewed ${data.ai.reviewed}, kept ${data.ai.kept}. Saved ${data.prospects.written} new + ${data.prospects.updated} updated.${enrichNote}`,
+        `Pulled ${data.awards.fetched} awards across ${data.awards.pagesScanned} pages, ${data.ruleFilter.rejected} rule-rejected, ${data.ruleFilter.skippedAlreadyKnown} already in list. Claude reviewed ${data.ai.reviewed}, kept ${data.ai.kept}. Saved ${data.prospects.written} new + ${data.prospects.updated} updated.${enrichNote}`,
       );
       router.refresh();
     } catch (e) {

@@ -62,7 +62,7 @@ export type DiscoveryRunResult = {
   targetCount: number;
   range: { start: string; end: string };
   awards: { fetched: number; pagesScanned: number; error: string | null };
-  ruleFilter: { passed: number; rejected: number };
+  ruleFilter: { passed: number; rejected: number; skippedAlreadyKnown: number };
   ai: {
     reviewed: number;
     kept: number;
@@ -81,6 +81,21 @@ export type DiscoveryRunResult = {
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Normalize a company name for cross-run dedupe.
+ *
+ * USAspending casing/punctuation is inconsistent ("AERO COMPONENTS, LLC"
+ * vs "Aero Components LLC"). Strip suffixes, lowercase, collapse to
+ * alnum so we can match the same entity across runs.
+ */
+function normalizeCompanyName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/\b(llc|inc|incorporated|corp|corporation|ltd|limited|co|company|llp|lp|pllc|plc|the)\.?\b/g, "")
+    .replace(/[^a-z0-9]+/g, "")
+    .trim();
 }
 
 type Candidate = {
@@ -385,7 +400,21 @@ export async function runDiscovery(
   let awardsFetched = 0;
   let pagesScanned = 0;
   let rejectedByRule = 0;
+  let skippedAlreadyKnown = 0;
   let usaspendingError: string | null = null;
+
+  // Preload every prospect name we already have. Per-run we want only
+  // NEW companies — re-running discovery should keep building the list,
+  // not re-score the same small-DLA awards every time.
+  // Normalize: uppercase, strip suffixes/punctuation, collapse spaces.
+  const knownNames = new Set<string>();
+  try {
+    const sql = getSql();
+    const rows = (await sql`SELECT company_name FROM prospects`) as Array<{ company_name: string }>;
+    for (const r of rows) knownNames.add(normalizeCompanyName(r.company_name));
+  } catch {
+    // If DB read fails, proceed without dedupe rather than blocking the run.
+  }
 
   // Aim for ~3-4x desired in candidates so Claude has real choices.
   const candidateTarget = Math.min(MAX_AI_BATCH, Math.max(desired * 4, 30));
@@ -422,9 +451,16 @@ export async function runDiscovery(
         rejectedByRule += 1;
         continue;
       }
-      // Dedupe by company name within a single run — USAspending often
+      const norm = normalizeCompanyName(award.recipientName);
+      // Skip companies already in the prospects table — we want NEW
+      // leads each run, not Claude re-scoring the same small-DLA awards.
+      if (knownNames.has(norm)) {
+        skippedAlreadyKnown += 1;
+        continue;
+      }
+      // Dedupe by normalized name within a single run — USAspending often
       // returns the same prime across multiple awards.
-      if (candidates.some((c) => c.award.recipientName === award.recipientName)) {
+      if (candidates.some((c) => normalizeCompanyName(c.award.recipientName) === norm)) {
         continue;
       }
       candidates.push({ award, ruleScore });
@@ -510,7 +546,7 @@ export async function runDiscovery(
     targetCount: desired,
     range: { start: isoDate(start), end: isoDate(end) },
     awards: { fetched: awardsFetched, pagesScanned, error: usaspendingError },
-    ruleFilter: { passed: candidates.length, rejected: rejectedByRule },
+    ruleFilter: { passed: candidates.length, rejected: rejectedByRule, skippedAlreadyKnown },
     ai: {
       reviewed: candidates.length,
       kept: kept.length,
