@@ -185,7 +185,11 @@ export async function searchAwards(input: AwardSearchInput): Promise<{
     fields,
     page,
     limit,
-    sort: "Action Date",
+    // USAspending's spending_by_award endpoint does NOT accept "Action Date"
+    // as a sort key (it's allowed in `fields` but not in the sort whitelist).
+    // We sort by Award Amount desc so the biggest contracts come first —
+    // freshness is already controlled by the `time_period` filter.
+    sort: "Award Amount",
     order: "desc",
     subawards: false,
   };
