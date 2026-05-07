@@ -176,6 +176,7 @@ async function updateProspectDomain(prospectId: string, domain: string) {
 async function persistContact(
   prospectId: string,
   email: HunterDomainEmail,
+  source: "hunter" | "guessed" = "hunter",
 ): Promise<boolean> {
   const sql = getSql();
   const verification = email.verification.status;
@@ -205,7 +206,7 @@ async function persistContact(
       ${email.linkedin},
       ${email.confidence},
       ${status},
-      'hunter'
+      ${source}
     )
     ON CONFLICT (email) DO UPDATE SET
       first_name = COALESCE(EXCLUDED.first_name, prospect_contacts.first_name),
@@ -327,6 +328,34 @@ export async function enrichOne(
     }
   }
 
+  // Pass 4 (synth fallback): Hunter has no email for this company, but we
+  // do have a guessed domain. SMBs almost always run an info@ inbox even
+  // when Hunter has nothing indexed. Persist `info@<domain>` as a guessed
+  // contact so the lead is at least usable for outreach. Marked
+  // source='guessed' + confidence=0 so the UI / send pipeline can flag /
+  // sort accordingly.
+  if (!bestEmail && domainGuess) {
+    const synth: HunterDomainEmail = {
+      value: `info@${domainGuess}`,
+      type: "generic",
+      confidence: 0,
+      firstName: null,
+      lastName: null,
+      position: null,
+      department: null,
+      seniority: null,
+      linkedin: null,
+      twitter: null,
+      phoneNumber: null,
+      verification: { date: null, status: "unknown" },
+    };
+    const inserted = await persistContact(prospectId, synth, "guessed");
+    return {
+      contactsWritten: inserted ? 1 : 0,
+      resolvedDomain: domainGuess,
+    };
+  }
+
   // Only persist resolvedDomain when we actually found an email — the
   // "resolved" domain in a no-email response is just our guess Hunter
   // has no data on.
@@ -404,15 +433,24 @@ export async function runDiscovery(
     if (candidates.length >= candidateTarget) break;
   }
 
-  // Stage 2 — Claude review.
+  // Stage 2 — Claude review. Ask for desired+5 keepers so we have a
+  // small bench to swap in if any kept lead can't get an email at all
+  // (rare, only when inferDomain() returns null).
   let aiInputTokens = 0;
   let aiOutputTokens = 0;
   let aiError: string | null = null;
   let kept: ReviewVerdict[] = [];
+  let bench: ReviewVerdict[] = [];
   if (candidates.length > 0) {
     try {
       const review = await rankAndPick(candidates, desired);
       kept = review.winners;
+      // Bench = all "keep" verdicts not already in winners, sorted by AI
+      // score desc. Used only when a kept lead has no usable contact.
+      const winnerIds = new Set(kept.map((w) => w.internalId));
+      bench = review.allVerdicts
+        .filter((v) => v.recommend === "keep" && !winnerIds.has(v.internalId))
+        .sort((a, b) => b.aiScore - a.aiScore);
       aiInputTokens = review.tokens.input;
       aiOutputTokens = review.tokens.output;
     } catch (e) {
@@ -420,16 +458,23 @@ export async function runDiscovery(
     }
   }
 
-  // Stage 3 — persist + enrich.
+  // Stage 3 — persist + enrich. Counts toward `desired` only when a lead
+  // ends up with at least one usable contact (Hunter or synth info@).
   let written = 0;
   let updated = 0;
   let enrichmentAttempted = 0;
   let contactsWritten = 0;
+  let leadsWithContact = 0;
   let enrichmentError: string | null = null;
 
   if (kept.length > 0 && params.apply) {
     const byId = new Map(candidates.map((c) => [c.award.internalId, c]));
-    for (const v of kept) {
+    // Working queue: kept first, then bench. We pull from the queue
+    // until we have `desired` leads-with-contacts, or run out.
+    const queue: ReviewVerdict[] = [...kept, ...bench];
+
+    for (const v of queue) {
+      if (leadsWithContact >= desired) break;
       const c = byId.get(v.internalId);
       if (!c) continue;
       const domainGuess = inferDomain(c.award.recipientName);
@@ -442,12 +487,17 @@ export async function runDiscovery(
         try {
           const er = await enrichOne(r.id, c.award.recipientName, domainGuess);
           contactsWritten += er.contactsWritten;
+          if (er.contactsWritten > 0) leadsWithContact += 1;
         } catch (e) {
           // Record the first error but keep going — partial enrichment is fine.
           if (!enrichmentError) {
             enrichmentError = e instanceof Error ? e.message : String(e);
           }
         }
+      } else if (!params.enrichWithHunter) {
+        // Hunter disabled: count every kept lead as a "lead", since
+        // contact enrichment isn't gating in this mode.
+        leadsWithContact += 1;
       }
     }
   }
