@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClientAction, updateClientStageAction } from "./actions";
 import { getSql, initDb, sprintStages } from "@/lib/db";
+import { AdminLink } from "@/components/AdminLink";
 
 type ClientRow = {
   id: number;
@@ -86,6 +87,7 @@ export default async function DashboardPage() {
             >
               Back to site
             </Link>
+            <AdminLink className="border border-[#bdf2cf]/40 bg-[#0a2620] px-4 py-2 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#0f3a2d]" />
             <UserButton />
           </div>
         </div>

@@ -1403,6 +1403,153 @@ async function runInitDdl() {
       AND implements_all_17 = TRUE
       AND cmmc_status IS NULL
   `;
+
+  // ─── Outbound pipeline + multi-channel attribution ──────────────────────
+  // The /admin console reads/writes these. Every channel that brings paying
+  // customers (cold email, affiliates, content, paid ads, partnerships)
+  // plugs into the same 5 tables — only the `referral_sources.code` differs.
+  //
+  //  prospects             — companies discovered (USAspending awards, etc.)
+  //  prospect_contacts     — verified people inside those companies
+  //  referral_sources      — every channel/affiliate that sends traffic
+  //  attribution_touches   — every visit to a tracked landing URL (cookie + email)
+  //  conversions           — trial start + paid card events with credited source
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS prospects (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      company_name TEXT NOT NULL,
+      domain TEXT,
+      uei TEXT,
+      cage_code TEXT,
+      naics_code TEXT,
+      state TEXT,
+      city TEXT,
+      employee_count INTEGER,
+      total_award_amount BIGINT,
+      most_recent_award_at TIMESTAMPTZ,
+      data_source TEXT NOT NULL DEFAULT 'usaspending',
+      raw_payload JSONB,
+      icp_score INTEGER,
+      icp_band TEXT CHECK (icp_band IN ('A','B','C','reject')),
+      icp_reasons JSONB,
+      status TEXT NOT NULL DEFAULT 'new'
+        CHECK (status IN ('new','reviewing','approved','queued','sending','engaged','converted','rejected','suppressed')),
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (company_name, COALESCE(domain, ''))
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_prospects_status ON prospects (status)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_prospects_band ON prospects (icp_band, icp_score DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_prospects_domain ON prospects (domain) WHERE domain IS NOT NULL`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS prospect_contacts (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      prospect_id UUID NOT NULL REFERENCES prospects(id) ON DELETE CASCADE,
+      email TEXT NOT NULL,
+      first_name TEXT,
+      last_name TEXT,
+      title TEXT,
+      linkedin_url TEXT,
+      hunter_confidence INTEGER,
+      verification_status TEXT
+        CHECK (verification_status IN ('valid','accept_all','webmail','disposable','invalid','unknown')),
+      enrichment_source TEXT NOT NULL DEFAULT 'hunter',
+      pushed_to_instantly_at TIMESTAMPTZ,
+      instantly_lead_id TEXT,
+      bounced BOOLEAN NOT NULL DEFAULT FALSE,
+      replied BOOLEAN NOT NULL DEFAULT FALSE,
+      unsubscribed BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (email)
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_prospect_contacts_prospect ON prospect_contacts (prospect_id)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_prospect_contacts_pushed ON prospect_contacts (pushed_to_instantly_at) WHERE pushed_to_instantly_at IS NULL`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS referral_sources (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      code TEXT NOT NULL UNIQUE,
+      label TEXT NOT NULL,
+      channel TEXT NOT NULL
+        CHECK (channel IN ('cold_email','affiliate','content','paid_ads','partnership','organic','direct','other')),
+      affiliate_email TEXT,
+      affiliate_clerk_user_id TEXT,
+      payout_model TEXT
+        CHECK (payout_model IN ('flat','first_year_pct','lifetime_pct') OR payout_model IS NULL),
+      payout_amount_cents INTEGER,
+      payout_pct NUMERIC(5,2),
+      active BOOLEAN NOT NULL DEFAULT TRUE,
+      notes TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_referral_sources_active ON referral_sources (active) WHERE active = TRUE`;
+
+  // Seed the cold email source so the first campaign has a target. Idempotent.
+  await sql`
+    INSERT INTO referral_sources (code, label, channel)
+    VALUES ('cold_email_v1', 'Cold email — Custodia Compliance Officer (v1)', 'cold_email')
+    ON CONFLICT (code) DO NOTHING
+  `;
+  await sql`
+    INSERT INTO referral_sources (code, label, channel)
+    VALUES ('organic', 'Organic / direct (no source)', 'organic')
+    ON CONFLICT (code) DO NOTHING
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS attribution_touches (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      visitor_cookie_id TEXT NOT NULL,
+      source_code TEXT NOT NULL REFERENCES referral_sources(code) ON UPDATE CASCADE,
+      utm_source TEXT,
+      utm_medium TEXT,
+      utm_campaign TEXT,
+      utm_content TEXT,
+      utm_term TEXT,
+      landing_path TEXT NOT NULL,
+      referrer TEXT,
+      ip_hash TEXT,
+      user_agent TEXT,
+      email TEXT,
+      clerk_user_id TEXT,
+      occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_attribution_touches_cookie ON attribution_touches (visitor_cookie_id, occurred_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_attribution_touches_email ON attribution_touches (email) WHERE email IS NOT NULL`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_attribution_touches_user ON attribution_touches (clerk_user_id) WHERE clerk_user_id IS NOT NULL`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_attribution_touches_source ON attribution_touches (source_code, occurred_at DESC)`;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS conversions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      kind TEXT NOT NULL
+        CHECK (kind IN ('quiz_completed','trial_started','card_added','paid','churned')),
+      email TEXT,
+      clerk_user_id TEXT,
+      organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
+      source_code TEXT REFERENCES referral_sources(code) ON UPDATE CASCADE,
+      attribution_model TEXT NOT NULL DEFAULT 'first_touch',
+      first_touch_at TIMESTAMPTZ,
+      revenue_cents INTEGER,
+      payout_owed_cents INTEGER,
+      payout_paid_at TIMESTAMPTZ,
+      raw_payload JSONB,
+      occurred_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_conversions_kind ON conversions (kind, occurred_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_conversions_source ON conversions (source_code, kind, occurred_at DESC)`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_conversions_user ON conversions (clerk_user_id) WHERE clerk_user_id IS NOT NULL`;
+  await sql`CREATE INDEX IF NOT EXISTS idx_conversions_email ON conversions (email) WHERE email IS NOT NULL`;
 }
 
 /**

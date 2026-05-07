@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, type ComponentProps } from "react";
 import { motion } from "motion/react";
+import { AdminLink } from "@/components/AdminLink";
 
 // Cinematic Apple-style easing
 const SECTION_EASE = [0.16, 1, 0.3, 1] as const;
@@ -225,6 +226,7 @@ export default function Home() {
                 <Link href="/assessments" prefetch={false} className="bg-[#bdf2cf] px-4 py-2 text-sm font-bold text-[#0c2219] transition-colors hover:bg-[#a8e6c0]">
                   Open workspace
                 </Link>
+                <AdminLink className="bg-[#08201a] px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-[#bdf2cf] ring-1 ring-[#bdf2cf]/40 transition-colors hover:bg-[#0c2a22]" />
                 <UserButton />
               </Show>
             </div>
