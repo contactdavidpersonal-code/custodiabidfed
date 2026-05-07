@@ -1556,6 +1556,32 @@ async function runInitDdl() {
   await sql`CREATE INDEX IF NOT EXISTS idx_conversions_source ON conversions (source_code, kind, occurred_at DESC)`;
   await sql`CREATE INDEX IF NOT EXISTS idx_conversions_user ON conversions (clerk_user_id) WHERE clerk_user_id IS NOT NULL`;
   await sql`CREATE INDEX IF NOT EXISTS idx_conversions_email ON conversions (email) WHERE email IS NOT NULL`;
+
+  // Discovery agent run history — every USAspending → ICP → Hunter pass
+  // records a row here. /admin/discovery uses this to show "last run"
+  // without re-fetching, and the daily cron audit lives here too.
+  await sql`
+    CREATE TABLE IF NOT EXISTS discovery_runs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      triggered_by TEXT NOT NULL CHECK (triggered_by IN ('cron','admin','manual')),
+      params JSONB NOT NULL,
+      target_count INTEGER,
+      range_start DATE NOT NULL,
+      range_end DATE NOT NULL,
+      awards_fetched INTEGER NOT NULL DEFAULT 0,
+      pages_scanned INTEGER NOT NULL DEFAULT 1,
+      prospects_written INTEGER NOT NULL DEFAULT 0,
+      prospects_updated INTEGER NOT NULL DEFAULT 0,
+      prospects_rejected INTEGER NOT NULL DEFAULT 0,
+      contacts_attempted INTEGER NOT NULL DEFAULT 0,
+      contacts_written INTEGER NOT NULL DEFAULT 0,
+      error_message TEXT,
+      duration_ms INTEGER NOT NULL DEFAULT 0,
+      dry_run BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_discovery_runs_created ON discovery_runs (created_at DESC)`;
 }
 
 /**
