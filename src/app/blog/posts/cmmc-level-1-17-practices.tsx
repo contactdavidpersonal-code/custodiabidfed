@@ -13,18 +13,18 @@ import {
 const meta = {
   slug: "cmmc-level-1-17-practices-explained",
   title:
-    "CMMC Level 1: All 17 Practices Explained in Plain English (2026 Guide)",
+    "CMMC Level 1: All 15 FAR Safeguarding Requirements Explained in Plain English (2026 Guide)",
   description:
-    "A complete, plain-English walkthrough of every CMMC Level 1 practice — what each FAR 52.204-21 control actually requires, what evidence you need, and the fastest way to implement it. Updated for the 2026 SPRS affirmation cycle.",
+    "A complete, plain-English walkthrough of every CMMC Level 1 safeguarding requirement \u2014 what each FAR 52.204-21(b)(1) control actually requires, what evidence you need, and the fastest way to implement it. Updated for the 2026 SPRS affirmation cycle.",
   excerpt:
-    "Every CMMC Level 1 practice, in language a non-cybersecurity founder can act on — what each control means, what evidence satisfies it, and where teams trip up.",
+    "Every CMMC Level 1 safeguarding requirement, in language a non-cybersecurity founder can act on \u2014 what each control means, what evidence satisfies it, and where teams trip up.",
   datePublished: "2026-05-03",
   category: "CMMC Level 1",
   keywords: [
     "cmmc level 1 practices",
     "far 52.204-21 practices",
     "cmmc level 1 self assessment",
-    "cmmc 17 practices",
+    "cmmc 15 safeguarding requirements",
     "cmmc level 1 controls",
     "cmmc level 1 plain english",
   ],
@@ -37,12 +37,12 @@ const meta = {
 
 const TOC_ITEMS = [
   { id: "what-is-cmmc-l1", label: "What CMMC Level 1 actually is" },
-  { id: "ac", label: "Access Control (AC) — 4 practices" },
-  { id: "ia", label: "Identification & Authentication (IA) — 2 practices" },
-  { id: "mp", label: "Media Protection (MP) — 1 practice" },
-  { id: "pe", label: "Physical Protection (PE) — 4 practices" },
-  { id: "sc", label: "System & Communications Protection (SC) — 2 practices" },
-  { id: "si", label: "System & Information Integrity (SI) — 4 practices" },
+  { id: "ac", label: "Access Control (AC) \u2014 4 requirements" },
+  { id: "ia", label: "Identification & Authentication (IA) \u2014 2 requirements" },
+  { id: "mp", label: "Media Protection (MP) \u2014 1 requirement" },
+  { id: "pe", label: "Physical Protection (PE) \u2014 2 requirements" },
+  { id: "sc", label: "System & Communications Protection (SC) \u2014 2 requirements" },
+  { id: "si", label: "System & Information Integrity (SI) \u2014 4 requirements" },
   { id: "implement", label: "How to actually implement these in a week" },
   { id: "faq", label: "FAQ" },
 ];
@@ -52,17 +52,17 @@ function Body() {
     <Prose>
       <P>
         If you handle Federal Contract Information (FCI) on a Department of
-        Defense contract, you have to attest to 17 specific cybersecurity
-        practices in <strong>SPRS</strong> &mdash; the DoD&apos;s Supplier
+        Defense contract, you have to attest to 15 specific cybersecurity
+        safeguarding requirements in <strong>SPRS</strong> &mdash; the DoD&apos;s Supplier
         Performance Risk System &mdash; before you can keep that contract.
-        Those 17 practices are <strong>CMMC Level 1</strong>, and they&apos;re
-        the exact same 17 controls written into{" "}
-        <strong>FAR 52.204-21</strong>, the &ldquo;Basic Safeguarding of
+        Those 15 requirements are <strong>CMMC Level 1</strong>, and they&apos;re
+        the exact same controls written into{" "}
+        <strong>FAR 52.204-21(b)(1)(i)&ndash;(xv)</strong>, the &ldquo;Basic Safeguarding of
         Covered Contractor Information Systems&rdquo; clause that the
         government has been quietly putting in contracts since 2016.
       </P>
       <P>
-        The problem isn&apos;t the practices themselves &mdash; most of them
+        The problem isn&apos;t the requirements themselves &mdash; most of them
         are common sense. The problem is that they&apos;re written in
         cybersecurity jargon that a five-person defense-tech startup
         cannot reasonably parse. So below is every single one in plain
@@ -74,7 +74,7 @@ function Body() {
       <H2 id="what-is-cmmc-l1">What CMMC Level 1 actually is</H2>
       <P>
         CMMC Level 1 is a <strong>self-attestation</strong>. You implement
-        all 17 practices, you submit a SPRS affirmation signed by a senior
+        all 15 safeguarding requirements, you submit a SPRS affirmation signed by a senior
         official, and you&apos;re bid-eligible for any DoD contract that
         flows down FCI. There is no third-party assessor for Level 1; you
         sign your name and you live with the consequences if you&apos;re
@@ -96,14 +96,22 @@ function Body() {
         is not a strategy.
       </Callout>
       <P>
-        The 17 practices are organized into six families. Each one has a
-        formal identifier (e.g. <code>AC.L1-3.1.1</code>) that maps to NIST
-        SP 800-171. Below, every practice is paired with what it means,
+        The 15 safeguarding requirements are organized into six families. Each is
+        identified in FAR 52.204-21(b)(1) by Roman numeral (i&ndash;xv) and maps to a
+        named CMMC practice (e.g. <code>AC.L1-3.1.1</code>) in the official CMMC
+        Assessment Guide. Below, every requirement is paired with what it means,
         what evidence satisfies it, and where teams typically trip up.
       </P>
+      <Callout tone="info" title="Why some sources say 17">
+        The official CMMC Scoping Guide (Level 1, Sept 2024) and FAR 52.204-21(b)(1)
+        list <strong>15</strong> safeguarding requirements (i&ndash;xv). Older industry
+        articles count 17 because the CMMC Assessment Guide splits one of the FAR
+        physical-protection requirements (b.1.ix) into multiple sub-practices.
+        The authoritative number is <strong>15</strong>.
+      </Callout>
 
       {/* Access Control */}
-      <H2 id="ac">Access Control (AC) — 4 practices</H2>
+      <H2 id="ac">Access Control (AC) &mdash; 4 requirements</H2>
 
       <H3 id="ac-1">AC.L1-3.1.1 — Limit access to authorized users</H3>
       <P>
@@ -160,7 +168,7 @@ function Body() {
       </P>
 
       {/* Identification & Authentication */}
-      <H2 id="ia">Identification &amp; Authentication (IA) — 2 practices</H2>
+      <H2 id="ia">Identification &amp; Authentication (IA) &mdash; 2 requirements</H2>
 
       <H3 id="ia-1">IA.L1-3.5.1 — Identify users and devices</H3>
       <P>
@@ -191,7 +199,7 @@ function Body() {
       </P>
 
       {/* Media Protection */}
-      <H2 id="mp">Media Protection (MP) — 1 practice</H2>
+      <H2 id="mp">Media Protection (MP) &mdash; 1 requirement</H2>
 
       <H3 id="mp-1">MP.L1-3.8.3 — Sanitize media before disposal or reuse</H3>
       <P>
@@ -208,7 +216,7 @@ function Body() {
       </P>
 
       {/* Physical Protection */}
-      <H2 id="pe">Physical Protection (PE) — 4 practices</H2>
+      <H2 id="pe">Physical Protection (PE) &mdash; 2 requirements</H2>
 
       <H3 id="pe-1">PE.L1-3.10.1 — Limit physical access to organizational systems</H3>
       <P>
@@ -258,7 +266,7 @@ function Body() {
       </P>
 
       {/* SC */}
-      <H2 id="sc">System &amp; Communications Protection (SC) — 2 practices</H2>
+      <H2 id="sc">System &amp; Communications Protection (SC) &mdash; 2 requirements</H2>
 
       <H3 id="sc-1">SC.L1-3.13.1 — Monitor, control, and protect organizational communications at the boundaries</H3>
       <P>
@@ -286,7 +294,7 @@ function Body() {
       </P>
 
       {/* SI */}
-      <H2 id="si">System &amp; Information Integrity (SI) — 4 practices</H2>
+      <H2 id="si">System &amp; Information Integrity (SI) &mdash; 4 requirements</H2>
 
       <H3 id="si-1">SI.L1-3.14.1 — Identify, report, and correct system flaws in a timely manner</H3>
       <P>
@@ -364,7 +372,7 @@ function Body() {
         >
           free Custodia SPRS quiz
         </Link>{" "}
-        scores you against all 17 practices in about 4 minutes. No signup,
+        scores you against all 15 safeguarding requirements in about 4 minutes. No signup,
         no credit card &mdash; just an honest read on your gap.
       </Callout>
 
@@ -389,9 +397,9 @@ function Body() {
         in SPRS by a senior official.
       </P>
 
-      <H3>What if I implement 16 of 17 practices?</H3>
+      <H3>What if I implement 14 of 15 safeguarding requirements?</H3>
       <P>
-        Your SPRS affirmation has to be all 17 met or you&apos;re
+        Your SPRS affirmation has to be all 15 met or you&apos;re
         non-affirming. Level 1 is binary. There&apos;s no partial credit.
       </P>
 

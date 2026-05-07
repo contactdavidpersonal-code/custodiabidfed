@@ -14,7 +14,7 @@ import { CourseSidebar, type CourseSection, type SectionStatus } from "./CourseS
 /**
  * Course shell. Wraps every page under /assessments/[id] with the collapsible
  * left sidebar that walks the user through the FCI-readiness curriculum:
- * profile → federal registration → 17 CMMC L1 practices → sign → deliverables.
+ * profile → federal registration → 15 CMMC L1 safeguarding requirements → sign → deliverables.
  *
  * Section statuses are computed server-side per request so the sidebar
  * always reflects the user's true progress, including the locked state on

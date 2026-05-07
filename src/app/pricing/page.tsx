@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 const INCLUDED = [
   "Charlie — your virtual Compliance Officer, 24/7",
-  "Guided CMMC Level 1 interview (the 17 FAR practices)",
+  "Guided CMMC Level 1 interview (the 15 FAR safeguarding requirements)",
   "Evidence collection — Microsoft 365, Google Workspace, manual upload",
   "Signed, hash-anchored annual artifact pack (SPRS-ready)",
   "Continuous monitoring with green/yellow/red alerts",

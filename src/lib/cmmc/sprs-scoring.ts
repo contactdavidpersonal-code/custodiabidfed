@@ -4,7 +4,7 @@
  * The Defense Department's SPRS scoring model for the NIST SP 800-171 r2
  * controls is well-documented (DoD Assessment Methodology v1.2.1):
  * each unmet control deducts a fixed weight (1, 3, or 5) from a 110-point
- * maximum. CMMC Level 1 covers a subset (the 17 FAR 52.204-21 practices)
+ * maximum. CMMC Level 1 covers a subset (the 15 FAR 52.204-21(b)(1) safeguarding requirements)
  * but customers care about the FULL SPRS number because primes ask for it.
  *
  * For the lead-gen quiz we use a friendly proxy:

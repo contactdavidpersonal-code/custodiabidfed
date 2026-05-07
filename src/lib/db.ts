@@ -350,7 +350,10 @@ async function runInitDdl() {
     WHERE fiscal_year IS NULL
   `;
 
-  // CMMC L1 affirmation is binary — implements all 17 yes/no. The legacy
+  // CMMC L1 affirmation is binary — implements all 15 FAR safeguarding
+  // requirements yes/no. The legacy column name is `implements_all_17`
+  // (kept for schema compat — refers to the 17 CMMC practice IDs that map
+  // to the 15 FAR 52.204-21(b)(1) requirements). The legacy
   // sprs_score column was being set to 110 (an L2/DFARS-7012 NIST 800-171
   // scoring artifact that does NOT apply to L1). We keep the column for
   // forward-compat with L2 cycles but track the L1 outcome explicitly.

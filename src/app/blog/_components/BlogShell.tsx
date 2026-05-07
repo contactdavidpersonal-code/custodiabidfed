@@ -95,10 +95,10 @@ export function BlogTrialCTA() {
           Find your SPRS score in 4 minutes. Then file it in 7 days.
         </h2>
         <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#a8cfc0] md:text-lg">
-          Take the free SPRS quiz to see exactly where you stand on the 17 FAR
-          52.204-21 practices &mdash; no signup, no card. If you like what you
-          see, the 14-day Custodia trial picks up where the quiz leaves off
-          and walks you to a signed, bid-ready package.
+          Take the free SPRS quiz to see exactly where you stand on the 15 FAR
+          52.204-21 safeguarding requirements &mdash; no signup, no card. If you
+          like what you see, the 14-day Custodia trial picks up where the quiz
+          leaves off and walks you to a signed, bid-ready package.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link

@@ -125,14 +125,14 @@ function Body() {
         >
           SPRS score
         </Link>{" "}
-        measures. The 17 FAR practices are a strict subset of the 110
+        measures. The 15 FAR safeguarding requirements are a strict subset of the 110
         NIST controls. If you implement all 110, you&apos;ve also
-        implemented the 17.
+        implemented the 15.
       </P>
 
-      <H2 id="cmmc-l1">CMMC Level 1 — self-attestation against the 17</H2>
+      <H2 id="cmmc-l1">CMMC Level 1 — self-attestation against the 15</H2>
       <P>
-        <strong>CMMC Level 1</strong> took the 17 FAR 52.204-21 practices,
+        <strong>CMMC Level 1</strong> took the 15 FAR 52.204-21(b)(1) safeguarding requirements,
         added a self-attestation requirement, and made it{" "}
         <strong>annual</strong>. The DoD&apos;s final rule (32 CFR 170,
         effective Dec 16, 2024) requires:
@@ -278,7 +278,7 @@ function Body() {
           href="/blog/cmmc-level-1-17-practices-explained"
           className="font-semibold text-[#1f5c47] underline underline-offset-2 hover:text-[#0e2a23]"
         >
-          17-practice walkthrough
+          15-requirement walkthrough
         </Link>{" "}
         is your next read, or skip the reading and take the{" "}
         <Link

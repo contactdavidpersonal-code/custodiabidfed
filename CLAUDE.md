@@ -28,7 +28,9 @@ There is no test runner configured.
 
 ## Architecture
 
-The product is a guided self-serve platform that walks a small defense-tech startup through a **CMMC Level 1 annual SPRS affirmation cycle** (17 FAR 52.204-21 practices across AC/IA/MP/PE/SC/SI domains) and produces a printable SSP + signed affirmation memo.
+The product is a guided self-serve platform that walks a small defense-tech startup through a **CMMC Level 1 annual SPRS affirmation cycle** (15 FAR 52.204-21(b)(1)(i)–(xv) safeguarding requirements across AC/IA/MP/PE/SC/SI domains) and produces a printable SSP + signed affirmation memo.
+
+> **Authoritative count: 15 safeguarding requirements.** Per the official DoD CMMC Scoping Guide — Level 1 (v2.13, Sept 2024) and FAR 52.204-21(b)(1)(i)–(xv). Older industry articles cite 17 because the CMMC Assessment Guide splits one FAR requirement into multiple sub-practices. **Never write "17 practices" or "17 controls" in user-facing copy, legal artifacts (SSP / affirmation memo), or marketing.** Internal `playbook.ts` may contain 17 CMMC practice IDs; that data structure is correct — only the prose count must say 15.
 
 ### Data flow per cycle
 
@@ -43,7 +45,7 @@ The product is a guided self-serve platform that walks a small defense-tech star
 
 - `src/lib/db.ts` — Neon serverless client + typed enums (`assessmentStatuses`, `controlResponseStatuses`, etc.). `initDb()` contains **all DDL** including IF-NOT-EXISTS migrations (e.g. the `clerk_org_id` → `owner_user_id` backfill). It's called lazily from the first data function in a request; there is no separate migration system.
 - `src/lib/assessment.ts` — all org/assessment/response/evidence queries. Progress aggregates (`AssessmentWithProgress`) are computed here, not in the DB.
-- `src/lib/playbook.ts` — the 17 CMMC L1 practices as data: FAR/NIST references, plain-English copy, per-provider (M365 / Google Workspace / Okta / AD / AWS / manual) walkthroughs, and a `suggestedNarrative(ctx)` function consumed by the "suggest narrative" server action. Adding or editing practices is a pure data edit here — downstream pages iterate `playbook` and `controlDomains`.
+- `src/lib/playbook.ts` — the CMMC L1 practices as data (17 CMMC practice IDs mapping to the 15 FAR safeguarding requirements): FAR/NIST references, plain-English copy, per-provider (M365 / Google Workspace / Okta / AD / AWS / manual) walkthroughs, and a `suggestedNarrative(ctx)` function consumed by the "suggest narrative" server action. Adding or editing practices is a pure data edit here — downstream pages iterate `playbook` and `controlDomains`.
 - `src/app/assessments/actions.ts` — every mutating server action for the wizard (create cycle, update profile, save response, upload/delete evidence, suggest narrative, submit affirmation). Always calls `auth()` → `requireUserId()` first and scopes queries via `getAssessmentForUser(id, userId)` to enforce ownership.
 
 ### Charlie — the AI compliance officer

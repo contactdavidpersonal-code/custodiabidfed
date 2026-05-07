@@ -112,7 +112,7 @@ function Body() {
         The honest version of DIY: download a free SSP template, read NIST
         SP 800-171 and FAR 52.204-21, attempt to interpret the language,
         build the seven required artifact CSVs, write narratives for each
-        of the 17 practices, sign and file in SPRS.
+        of the 15 safeguarding requirements, sign and file in SPRS.
       </P>
       <H3>What it actually costs</H3>
       <UL>
@@ -187,7 +187,7 @@ function Body() {
       <P>
         SaaS compresses the engagement model into software. You sign in,
         an AI compliance officer (Charlie, in our case) walks you through
-        the 17 practices in plain English with prompts tailored to your
+        the 15 safeguarding requirements in plain English with prompts tailored to your
         exact tech stack, evidence is auto-reviewed as you upload, the
         SSP is auto-drafted from your inputs, and a real human compliance
         officer is one ticket away when something needs judgment.
@@ -210,7 +210,7 @@ function Body() {
         </li>
       </UL>
       <Callout tone="ok" title="What's actually in the bundle">
-        Charlie (AI vCO), guided 17-practice build, evidence auto-review,
+        Charlie (AI vCO), guided 15-requirement build, evidence auto-review,
         signed SPRS-ready artifact pack, year-round posture monitoring,
         weekly SAM.gov opportunity radar, in-app Custodia Compliance Officer
         escalation, annual re-affirmation, public Trust Page primes can
@@ -239,7 +239,7 @@ function Body() {
           "Custodia",
         ]}
         rows={[
-          ["Plain-English walkthrough of 17 practices", "Self-led", "Yes", "No", "<strong>Yes</strong>"],
+          ["Plain-English walkthrough of 15 safeguarding requirements", "Self-led", "Yes", "No", "<strong>Yes</strong>"],
           ["Tailored to your tech stack (M365/Google/AWS/Okta)", "No", "Yes", "No", "<strong>Yes</strong>"],
           ["AI evidence auto-review", "No", "No", "No", "<strong>Yes</strong>"],
           ["Auto-drafted SSP narratives", "No", "Yes (manual)", "No", "<strong>Yes</strong>"],

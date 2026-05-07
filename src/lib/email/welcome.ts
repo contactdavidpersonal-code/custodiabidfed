@@ -125,7 +125,7 @@ function renderWelcomeHtml(input: {
 
               <h2 style="margin:24px 0 8px 0;font-size:15px;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;font-weight:700;">What's inside</h2>
               <ul style="margin:0 0 16px 0;padding-left:20px;font-size:15px;">
-                <li style="margin:6px 0;">A plain-English walkthrough of all <strong>17 CMMC L1 practices</strong> (FAR 52.204-21).</li>
+                <li style="margin:6px 0;">A plain-English walkthrough of all <strong>15 CMMC L1 safeguarding requirements</strong> (FAR 52.204-21(b)(1)).</li>
                 <li style="margin:6px 0;"><strong>The Platform</strong> drafts narratives, reviews your evidence, and flags anything that won't pass a prime's questionnaire.</li>
                 <li style="margin:6px 0;"><strong>Quarterly check-ins</strong> to keep your evidence current &mdash; not one big scramble every September.</li>
                 <li style="margin:6px 0;">A <strong>bid-ready ZIP package</strong>: SSP, signed affirmation memo, every artifact your prime might ask for &mdash; all in one file.</li>

@@ -94,7 +94,7 @@ Pittsburgh, PA · Veteran-owned · CMU built`,
       "Five practices most users mark complete in under thirty minutes — knock them out today.",
     text: (c) => `${c.greeting}
 
-Day 3. Most users have already cleared 4–5 of the 17 CMMC L1 practices by now. Here are the fastest ones to knock out tonight:
+Day 3. Most users have already cleared 4–5 of the 15 CMMC L1 safeguarding requirements by now. Here are the fastest ones to knock out tonight:
 
   1. AC.L1-3.1.1 — Authorized users (export from M365 / Google).
   2. AC.L1-3.1.20 — External system connections (a one-page diagram).

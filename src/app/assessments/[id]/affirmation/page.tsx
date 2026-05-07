@@ -68,7 +68,7 @@ export default async function AffirmationMemoPage(
           <ol className="list-decimal space-y-3 pl-6">
             <li>
               {org.name} has conducted a self-assessment of its compliance with
-              the 17 security requirements set forth at FAR 52.204-21(b)(1)
+              the 15 safeguarding requirements set forth at FAR 52.204-21(b)(1)(i)–(xv)
               (the &ldquo;CMMC Level 1&rdquo; requirements), consistent with the
               methodology described in 32 CFR § 170.15.
             </li>
@@ -82,7 +82,7 @@ export default async function AffirmationMemoPage(
             </li>
             <li>
               To the best of my knowledge, {org.name} implements each of the
-              17 CMMC Level 1 security requirements, and the representations
+              15 CMMC Level 1 safeguarding requirements, and the representations
               made in the associated System Security Plan are accurate and
               complete as of the date of this affirmation.
             </li>

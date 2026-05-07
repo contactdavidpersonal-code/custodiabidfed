@@ -102,7 +102,7 @@ function Body() {
         >
           CMMC Level 1
         </Link>
-        , a 17-practice self-affirmation. The &ldquo;score&rdquo; primes
+        , a 15-requirement self-affirmation. The &ldquo;score&rdquo; primes
         usually ask for is the NIST 800-171 number, but for L1-only
         contractors a successful affirmation in SPRS is what they need to
         see. The two work the same way: you self-attest, you sign your
@@ -150,8 +150,8 @@ function Body() {
         ]}
       />
       <P>
-        For CMMC Level 1, the math is simpler: you either implement all 17
-        practices and affirm, or you don&apos;t. The SPRS record shows
+        For CMMC Level 1, the math is simpler: you either implement all 15
+        safeguarding requirements and affirm, or you don&apos;t. The SPRS record shows
         either &ldquo;Affirmed&rdquo; with a date or it doesn&apos;t.
       </P>
 
@@ -210,7 +210,7 @@ function Body() {
           [your number], submitted [date], next assessment due [date].
           <br />
           2. <strong>CMMC Level 1 affirmation</strong>: affirmed [date],
-          covering all 17 practices in FAR 52.204-21, signed by [name,
+          covering all 15 safeguarding requirements in FAR 52.204-21(b)(1), signed by [name,
           title].
           <br />
           3. <strong>Supporting artifacts available on request</strong>:
@@ -248,7 +248,7 @@ function Body() {
           >
             Custodia SPRS quiz
           </Link>{" "}
-          scores you against all 17 CMMC L1 practices in 4 minutes and
+          scores you against all 15 CMMC L1 safeguarding requirements in 4 minutes and
           tells you exactly what&apos;s missing.
         </li>
         <li>
@@ -320,7 +320,7 @@ function Body() {
 
       <H3>What if I don&apos;t have CUI, just FCI?</H3>
       <P>
-        You only need CMMC Level 1 (the 17-practice affirmation), not the
+        You only need CMMC Level 1 (the 15-requirement affirmation), not the
         110-control NIST 800-171 score.{" "}
         <Link
           href="/blog/far-vs-nist-vs-cmmc-level-1-vs-level-2-comparison"

@@ -41,7 +41,7 @@ export default function SignUpPage() {
           <ul className="mt-4 space-y-1.5 text-xs text-[#cce5da]">
             <li className="flex items-start gap-2">
               <span aria-hidden className="mt-0.5 font-bold text-[#8dd2b1]">&#10003;</span>
-              <span><span className="font-semibold text-white">All 17 FAR 52.204-21 practices</span> walked by Charlie, your vCO</span>
+              <span><span className="font-semibold text-white">All 15 FAR 52.204-21 safeguarding requirements</span> walked by Charlie, your vCO</span>
             </li>
             <li className="flex items-start gap-2">
               <span aria-hidden className="mt-0.5 font-bold text-[#8dd2b1]">&#10003;</span>

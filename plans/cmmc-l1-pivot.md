@@ -8,9 +8,9 @@
 
 ## Guiding Principle: Charlie Drives Everything
 
-Charlie is the AI compliance officer persona. The customer never sees a 17-control checklist, a NIST citation, or the string "AC.L1-3.1.1" unless they click "show me the regulation." Charlie talks like a trusted advisor:
+Charlie is the AI compliance officer persona. The customer never sees a 15-requirement checklist, a NIST citation, or the string "AC.L1-3.1.1" unless they click "show me the regulation." Charlie talks like a trusted advisor:
 
-> *"Hey — I'm Charlie. I'll walk you through the 17 things DoD wants you to confirm. Most take seconds. I'll tell you when something needs fixing and exactly how to fix it. Ready?"*
+> *"Hey — I'm Charlie. I'll walk you through the 15 things DoD wants you to confirm. Most take seconds. I'll tell you when something needs fixing and exactly how to fix it. Ready?"*
 
 Every flow below is an **interview**, not a form. Guided tax-prep model:
 - One question per screen
@@ -27,7 +27,7 @@ Every flow below is an **interview**, not a form. Guided tax-prep model:
 
 ### 1. Charlie Interview Engine (replaces current assessment UI)
 
-**What it is:** A branching, plain-English Q&A that maps to the 17 FAR 52.204-21 / CMMC L1 controls behind the scenes.
+**What it is:** A branching, plain-English Q&A that maps to the 15 FAR 52.204-21(b)(1) safeguarding requirements behind the scenes.
 
 **Interview sections (guided chapters):**
 1. **About Your Business** (entity, EIN, NAICS, federal contract status)

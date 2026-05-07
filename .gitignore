@@ -49,5 +49,8 @@ next-env.d.ts
 
 .env*.local
 
+# local-only secrets and exports (Mailforge CSVs, etc)
+.local/
+
 vlogs.txt
 vlogs.err

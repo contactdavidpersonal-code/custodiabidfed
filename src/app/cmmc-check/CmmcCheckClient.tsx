@@ -92,9 +92,9 @@ export default function CmmcCheckClient() {
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_-24px_rgba(16,35,29,0.18)]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_-24px_rgba(16,35,29,0.18)]">
       {/* Charlie header */}
-      <div className="flex items-center gap-3 border-b border-slate-100 bg-[#10231d] px-5 py-4 text-white">
+      <div className="flex shrink-0 items-center gap-3 border-b border-slate-100 bg-[#10231d] px-5 py-3 text-white">
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-300 font-serif text-lg font-bold text-[#10231d]">
           C
         </div>
@@ -109,7 +109,7 @@ export default function CmmcCheckClient() {
       {/* Conversation */}
       <div
         ref={scrollRef}
-        className="h-[440px] overflow-y-auto bg-[#fafaf7] px-5 py-6 sm:px-8"
+        className="min-h-0 flex-1 overflow-y-auto bg-[#fafaf7] px-5 py-5 sm:px-8"
       >
         {!opened && (
           <div className="flex h-full flex-col items-center justify-center text-center">
@@ -151,7 +151,7 @@ export default function CmmcCheckClient() {
       {opened && (
         <form
           onSubmit={onSubmit}
-          className="flex items-end gap-3 border-t border-slate-100 bg-white px-5 py-4 sm:px-8"
+          className="flex shrink-0 items-end gap-3 border-t border-slate-100 bg-white px-5 py-3 sm:px-8"
         >
           <textarea
             ref={inputRef}

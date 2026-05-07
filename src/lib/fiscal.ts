@@ -68,7 +68,7 @@ export const defaultMilestones: MilestoneTemplate[] = [
     kind: "q2_check",
     title: "Q2 mid-cycle checkpoint",
     description:
-      "Check your progress against the 17 practices. Any 'Not met' or 'Partial' items get officer attention.",
+      "Check your progress against the 15 safeguarding requirements. Any 'Not met' or 'Partial' items get officer attention.",
     daysFromStart: 150, // ~Feb 28
   },
   {
