@@ -39,6 +39,10 @@ const TOOL_LABELS: Record<string, string> = {
   add_esp: "Registering an external service provider",
   add_specialized_asset: "Documenting a specialized asset",
   read_scope_inventory_state: "Reading your scope inventory",
+  read_boundary_state: "Reading your FCI boundary",
+  set_affirming_official: "Recording your affirming official",
+  add_fci_flow: "Documenting an FCI data flow",
+  add_out_of_scope_item: "Declaring an out-of-scope item",
 };
 
 const STORAGE_OPEN_KEY = "custodia.chat.open";

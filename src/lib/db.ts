@@ -339,6 +339,48 @@ async function runInitDdl() {
       ADD COLUMN IF NOT EXISTS dek_shredded_at TIMESTAMPTZ
   `;
 
+  // FCI Boundary Scope Profile (CMMC L1). Typed JSON object that drives the
+  // boundary diagram, SSP § 1.2 narrative, and validation gates. Replaces the
+  // freeform `scoped_systems` paragraph for new clients; old paragraph is
+  // kept for backward compatibility and migrated lazily on next intake.
+  // See src/lib/cmmc/scope.ts and plans/fci-boundary-scope.md.
+  await sql`
+    ALTER TABLE organizations
+      ADD COLUMN IF NOT EXISTS scope_profile JSONB
+  `;
+
+  // Client-side intake portal — magic-link invitations an MSP sends to a
+  // client so they can complete onboarding (and later boundary capture) on
+  // their own time. The token is the only auth; expires after 14 days. Each
+  // invite is scoped to ONE organization. completed_sections tracks which
+  // chunks the client has finished so the MSP gets notified.
+  await sql`
+    CREATE TABLE IF NOT EXISTS intake_invitations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      created_by_user_id TEXT NOT NULL,
+      client_email TEXT NOT NULL,
+      client_name TEXT,
+      token TEXT NOT NULL UNIQUE,
+      sections TEXT[] NOT NULL DEFAULT ARRAY['profile','boundary'],
+      completed_sections TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+      last_seen_at TIMESTAMPTZ,
+      notified_at TIMESTAMPTZ,
+      expires_at TIMESTAMPTZ NOT NULL DEFAULT (NOW() + INTERVAL '14 days'),
+      revoked_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_intake_invitations_org
+    ON intake_invitations(organization_id)
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_intake_invitations_token
+    ON intake_invitations(token)
+    WHERE revoked_at IS NULL
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS officer_assignments (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

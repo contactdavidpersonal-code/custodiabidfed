@@ -42,6 +42,20 @@ import {
   listScopeItems,
   listSpecializedAssets,
 } from "@/lib/cmmc/scope";
+import {
+  assembleBoundaryView,
+  getScopeProfile,
+  patchScopeProfile,
+  validateBoundary,
+  findingCounts,
+  isReadyForSsp,
+  type AffirmingOfficial,
+  type FlowChannel,
+  type FlowDirection,
+  type OutOfScopeItem,
+  type ScopeFlow,
+} from "@/lib/cmmc/boundary";
+import { randomUUID } from "node:crypto";
 import { getPracticeSpec } from "@/lib/cmmc/practice-spec";
 import { put } from "@vercel/blob";
 
@@ -440,6 +454,105 @@ export const officerTools = [
     },
   },
   {
+    name: "read_boundary_state",
+    description:
+      "Read the org's FCI Boundary state: assembled view (people, technology, facilities, ESPs, flows, out-of-scope, affirming official) plus validation findings (pass/warn/fail with control refs). Call this at the start of the boundary step and any time the user asks 'what's missing for the SSP' or 'am I ready'. The findings tell you exactly which fail/warn rows still block SSP generation.",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "set_affirming_official",
+    description:
+      "Capture the named human who will sign the SPRS affirmation for this organization. Required before SSP generation. The affirming official MUST be a senior official with authority to attest on behalf of the entity (owner, CEO, president, CFO, sole proprietor) — NOT an MSP, NOT a consultant, NOT this platform. Pass all three fields together. acknowledged_at is reset on every edit; the user must re-acknowledge in the workspace UI.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        name: { type: "string", description: "Full legal name of the signer." },
+        title: {
+          type: "string",
+          description:
+            "Their title (e.g. 'Owner', 'President', 'Sole Proprietor', 'CEO').",
+        },
+        email: {
+          type: "string",
+          description: "Direct contact email — must reach the named person.",
+        },
+      },
+      required: ["name", "title", "email"],
+    },
+  },
+  {
+    name: "add_fci_flow",
+    description:
+      "Document a single inbound, outbound, or internal FCI data flow on the boundary. Examples: prime emails specs (inbound, email), uploads deliverable to Exostar (outbound, prime_portal), SharePoint syncs to laptops (internal, internal_sync). Call once per flow. Read boundary state first to avoid duplicates. The SSP needs at minimum one inbound and one outbound flow before generation.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        direction: {
+          type: "string",
+          enum: ["inbound", "outbound", "internal"],
+          description:
+            "inbound = FCI enters the boundary. outbound = FCI leaves. internal = stays inside but moves between assets.",
+        },
+        channel: {
+          type: "string",
+          enum: [
+            "prime_portal",
+            "email",
+            "sftp",
+            "api",
+            "removable_media",
+            "paper",
+            "internal_sync",
+            "other",
+          ],
+          description:
+            "How the data moves. prime_portal = vendor portal like Exostar/PIEE. internal_sync = OneDrive/SharePoint sync.",
+        },
+        description: {
+          type: "string",
+          description:
+            "One-sentence plain-English description, e.g. 'Prime sends drawings via Exostar; Romero downloads to SharePoint'.",
+        },
+        counterparty: {
+          type: "string",
+          description:
+            "Who is on the other end (omit for internal). e.g. 'Lockheed Martin RMS', 'DoD SPRS'.",
+        },
+      },
+      required: ["direction", "channel", "description"],
+    },
+  },
+  {
+    name: "add_out_of_scope_item",
+    description:
+      "Declare an asset / system as explicitly OUT of FCI scope. Each row needs (1) what it is, (2) why no FCI touches it, (3) how it is segregated from in-scope assets. Reviewers expect this list — assume nothing is out of scope by default. Common entries: marketing site, accounting system, BYOD phones, shop-floor equipment, public-facing apps.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        asset: {
+          type: "string",
+          description:
+            "Short name of the asset. e.g. 'acme-machining.com', 'QuickBooks Online', 'BYOD phones'.",
+        },
+        reason: {
+          type: "string",
+          description:
+            "Why FCI never touches this. e.g. 'Marketing only — no DoD content', 'Invoices contain PO numbers, no FCI'.",
+        },
+        segregation: {
+          type: "string",
+          description:
+            "How it is technically/contractually segregated from in-scope assets. e.g. 'Hosted Squarespace, no integration with M365 tenant', 'Conditional Access blocks SharePoint on unmanaged devices'.",
+        },
+      },
+      required: ["asset", "reason", "segregation"],
+    },
+  },
+  {
     name: "escalate_to_officer",
     description:
       "Flag a request for a human Custodia officer (Bootcamp / Command tier). Use when the user's situation needs judgment beyond L1 self-serve — e.g. a prime is demanding an SSP rewrite, a guarantee claim dispute, CUI handling outside L1 scope, or they explicitly ask for human help.",
@@ -527,6 +640,14 @@ export async function executeOfficerTool(
         return await handleAddSpecializedAsset(input, ctx);
       case "read_scope_inventory_state":
         return await handleReadScopeInventoryState(ctx);
+      case "read_boundary_state":
+        return await handleReadBoundaryState(ctx);
+      case "set_affirming_official":
+        return await handleSetAffirmingOfficial(input, ctx);
+      case "add_fci_flow":
+        return await handleAddFciFlow(input, ctx);
+      case "add_out_of_scope_item":
+        return await handleAddOutOfScopeItem(input, ctx);
       default:
         return { ok: false, error: `Unknown tool: ${name}` };
     }
@@ -1447,6 +1568,210 @@ async function handleReadScopeInventoryState(
         asset_type: a.asset_type,
         handles_fci: a.handles_fci,
       })),
+    },
+  };
+}
+
+// ────────────────────────────────────────────────────────────────────
+// FCI Boundary tools
+// ────────────────────────────────────────────────────────────────────
+
+async function loadOrgLegalEntity(organizationId: string): Promise<{
+  id: string;
+  name: string;
+  cage: string | null;
+  uei: string | null;
+  naics: string[];
+}> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT id, name, cage_code, sam_uei, naics_codes
+    FROM organizations
+    WHERE id = ${organizationId}
+    LIMIT 1
+  `) as Array<{
+    id: string;
+    name: string;
+    cage_code: string | null;
+    sam_uei: string | null;
+    naics_codes: string[] | null;
+  }>;
+  const r = rows[0];
+  return {
+    id: r?.id ?? organizationId,
+    name: r?.name ?? "",
+    cage: r?.cage_code ?? null,
+    uei: r?.sam_uei ?? null,
+    naics: r?.naics_codes ?? [],
+  };
+}
+
+async function handleReadBoundaryState(ctx: ToolContext): Promise<ToolResult> {
+  const legalEntity = await loadOrgLegalEntity(ctx.organizationId);
+  const view = await assembleBoundaryView({
+    organizationId: ctx.organizationId,
+    legalEntity,
+  });
+  const findings = validateBoundary(view);
+  const counts = findingCounts(findings);
+  return {
+    ok: true,
+    data: {
+      legal_entity: view.legal_entity,
+      counts: {
+        people: view.people.length,
+        technology: view.technology.length,
+        facilities: view.facilities.length,
+        esps: view.esps.length + view.scope_inventory_esps.length,
+        flows_inbound: view.flows.filter((f) => f.direction === "inbound").length,
+        flows_outbound: view.flows.filter((f) => f.direction === "outbound").length,
+        flows_internal: view.flows.filter((f) => f.direction === "internal").length,
+        out_of_scope: view.out_of_scope.length,
+      },
+      affirming_official: view.affirming_official,
+      narrative: view.narrative,
+      ready_for_ssp: isReadyForSsp(findings),
+      findings_summary: counts,
+      findings: findings.map((f) => ({
+        level: f.level,
+        code: f.code,
+        message: f.message,
+        control_refs: f.control_refs ?? [],
+      })),
+    },
+  };
+}
+
+async function handleSetAffirmingOfficial(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const name = typeof input.name === "string" ? input.name.trim() : "";
+  const title = typeof input.title === "string" ? input.title.trim() : "";
+  const email = typeof input.email === "string" ? input.email.trim() : "";
+  if (!name) return { ok: false, error: "name is required." };
+  if (!title) return { ok: false, error: "title is required." };
+  if (!email) return { ok: false, error: "email is required." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: "email must be a valid email address." };
+  }
+
+  const ao: AffirmingOfficial = {
+    name,
+    title,
+    email,
+    acknowledged_at: null, // user re-acknowledges in the workspace UI
+  };
+  await patchScopeProfile(ctx.organizationId, { affirming_official: ao });
+  return {
+    ok: true,
+    data: {
+      name: ao.name,
+      title: ao.title,
+      email: ao.email,
+      acknowledged_at: null,
+      next_step:
+        "The affirming official must visit /assessments/boundary and click 'Acknowledge boundary' before SSP generation is unlocked.",
+    },
+  };
+}
+
+async function handleAddFciFlow(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const direction = typeof input.direction === "string" ? input.direction : "";
+  const channel = typeof input.channel === "string" ? input.channel : "";
+  const description =
+    typeof input.description === "string" ? input.description.trim() : "";
+  const counterparty =
+    typeof input.counterparty === "string" && input.counterparty.trim()
+      ? input.counterparty.trim()
+      : null;
+
+  const validDirections: FlowDirection[] = ["inbound", "outbound", "internal"];
+  if (!(validDirections as string[]).includes(direction)) {
+    return {
+      ok: false,
+      error: `direction must be one of: ${validDirections.join(", ")}.`,
+    };
+  }
+  const validChannels: FlowChannel[] = [
+    "prime_portal",
+    "email",
+    "sftp",
+    "api",
+    "removable_media",
+    "paper",
+    "internal_sync",
+    "other",
+  ];
+  if (!(validChannels as string[]).includes(channel)) {
+    return {
+      ok: false,
+      error: `channel must be one of: ${validChannels.join(", ")}.`,
+    };
+  }
+  if (!description) {
+    return { ok: false, error: "description is required." };
+  }
+
+  const flow: ScopeFlow = {
+    id: randomUUID(),
+    direction: direction as FlowDirection,
+    channel: channel as FlowChannel,
+    description,
+    counterparty,
+    touches_scope_item_ids: [],
+  };
+
+  const current = await getScopeProfile(ctx.organizationId);
+  await patchScopeProfile(ctx.organizationId, {
+    flows: [...current.flows, flow],
+  });
+  return {
+    ok: true,
+    data: {
+      id: flow.id,
+      direction: flow.direction,
+      channel: flow.channel,
+      description: flow.description,
+      counterparty: flow.counterparty,
+    },
+  };
+}
+
+async function handleAddOutOfScopeItem(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const asset = typeof input.asset === "string" ? input.asset.trim() : "";
+  const reason = typeof input.reason === "string" ? input.reason.trim() : "";
+  const segregation =
+    typeof input.segregation === "string" ? input.segregation.trim() : "";
+  if (!asset) return { ok: false, error: "asset is required." };
+  if (!reason) return { ok: false, error: "reason is required." };
+  if (!segregation) {
+    return { ok: false, error: "segregation rationale is required." };
+  }
+
+  const item: OutOfScopeItem = {
+    id: randomUUID(),
+    asset,
+    reason,
+    segregation,
+  };
+  const current = await getScopeProfile(ctx.organizationId);
+  await patchScopeProfile(ctx.organizationId, {
+    out_of_scope: [...current.out_of_scope, item],
+  });
+  return {
+    ok: true,
+    data: {
+      id: item.id,
+      asset: item.asset,
+      reason: item.reason,
+      segregation: item.segregation,
     },
   };
 }

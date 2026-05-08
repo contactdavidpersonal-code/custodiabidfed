@@ -48,6 +48,10 @@ const TOOL_LABELS: Record<string, string> = {
   suggest_narrative: "Drafting a note",
   check_readiness: "Auditing readiness",
   cite_regulation: "Looking up the rule text",
+  read_boundary_state: "Reading your FCI boundary",
+  set_affirming_official: "Recording your affirming official",
+  add_fci_flow: "Documenting an FCI data flow",
+  add_out_of_scope_item: "Declaring an out-of-scope item",
 };
 
 /**
