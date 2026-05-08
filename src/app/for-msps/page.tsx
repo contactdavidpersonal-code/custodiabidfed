@@ -49,94 +49,94 @@ const PRACTICES = [
   { id: "SI.L1-3.14.5", domain: "SI", short: "Periodic & Real-Time Scans" },
 ];
 
-// What you get the moment you start the 14-day free trial. No credit card required.
-// Stacked Hormozi-style: each line shows the standalone value, then anchored to the bundle.
+// What an MSP gets the moment they start the 14-day free trial. No credit card required.
+// Stacked Hormozi-style: each line shows the standalone value across a 5-client book.
 const VALUE_STACK = [
-  { name: "Charlie-guided CMMC Level 1 Build", desc: "Your vCO walks all 15 FAR 52.204-21 safeguarding requirements (59 NIST 800-171A objectives) in plain English &mdash; no jargon, no blank pages.", value: "$2,400" },
-  { name: "Auto-Drafted SSP &amp; Affirmation Memo", desc: "Your System Security Plan and signed affirmation, pre-written from your inputs.", value: "$1,800" },
-  { name: "Bid-Ready Package Generator", desc: "One-click ZIP: SSP, affirmation, full evidence inventory &mdash; ready to attach to any RFP.", value: "$3,500" },
-  { name: "AI Evidence Auto-Review", desc: "Every artifact you upload runs through gap detection instantly. No waiting on humans.", value: "$1,200/mo" },
-  { name: "Weekly SAM.gov Opportunity Radar", desc: "Every Monday at 7am: live federal contracts matched to your NAICS, in your inbox.", value: "$497/mo" },
-  { name: "Live SAM.gov Search In-Chat", desc: "&lsquo;Find me cyber contracts in 541512 closing in 30 days&rsquo; &mdash; Charlie searches live, right inside the platform.", value: "$297/mo" },
-  { name: "AI Per-Opportunity Packet Tailor", desc: "One click on any SAM.gov notice and your bid package adapts to that solicitation.", value: "$897/bid" },
-  { name: "Compliance Officer On Demand", desc: "Open a ticket any time and a real Custodia compliance officer answers in writing.", value: "$300/hr" },
-  { name: "Year-Round Posture Watchtower", desc: "We flag expiring scans, screenshots, training, and changed controls before they bite.", value: "$1,200/yr" },
-  { name: "Annual Re-Affirmation, Done For You", desc: "Every Oct 1 your next SPRS submission is prepped. No fire drill, no extra fee.", value: "$1,500/yr" },
-  { name: "The Custodia Guarantee", desc: "If a prime or contracting officer challenges your package, an officer resolves it &mdash; including direct comms with the prime.", value: "Priceless" },
+  { name: "Charlie-Guided CMMC L1 Build &mdash; per client", desc: "Your virtual Compliance Officer walks every client through all 15 FAR 52.204-21 safeguarding requirements in plain English. They answer; Charlie types. You bill.", value: "$2,400/client" },
+  { name: "Auto-Drafted SSP &amp; Affirmation &mdash; per client", desc: "System Security Plan and signed affirmation generated from each client&apos;s answers. White-label-ready PDFs you can hand straight to the prime.", value: "$1,800/client" },
+  { name: "Bid-Ready Package Generator &mdash; per client", desc: "One-click ZIP per client: SSP, affirmation, full evidence inventory. Hand off to your client or attach to the RFP yourself.", value: "$3,500/client" },
+  { name: "M365 / Google Workspace Connectors", desc: "Auto-pull authorized-users, MFA status, audit logs from each client&apos;s tenant. Stop manually screenshotting evidence one client at a time.", value: "$1,200/mo" },
+  { name: "AI Evidence Auto-Review", desc: "Every artifact your client uploads is gap-checked instantly. You see what&apos;s missing before the prime does &mdash; no human bottleneck.", value: "$1,200/mo" },
+  { name: "Org Switcher &mdash; one login, all clients", desc: "Switch between client businesses from your header in one click. Same workspace, same Charlie, isolated data per tenant.", value: "Priceless" },
+  { name: "SAM.gov Opportunity Feeds &mdash; per client", desc: "Each client gets their own NAICS-matched Monday digest. Drives client retention &mdash; they see Custodia (and you) delivering revenue, not just compliance paperwork.", value: "$497/client/mo" },
+  { name: "Compliance Officer Backstop", desc: "Open a ticket any time on behalf of any client. A credentialed Custodia officer answers in writing. You stay the face; we&apos;re the muscle.", value: "$300/hr" },
+  { name: "Year-Round Posture Watchtower &mdash; every client", desc: "Stale evidence, expiring scans, drifted controls flagged automatically across your entire book. One alert feed.", value: "$1,200/client/yr" },
+  { name: "Annual SPRS Re-Affirmation &mdash; every client", desc: "Every Oct 1, every client&apos;s next SPRS submission is prepped automatically. No fire drill, no spreadsheet of due dates.", value: "$1,500/client/yr" },
+  { name: "The Custodia Guarantee", desc: "If a prime or contracting officer ever challenges your client&apos;s package, a credentialed Custodia officer steps in &mdash; behind your MSP brand &mdash; and resolves it.", value: "Priceless" },
 ];
 
 // What "you also get" stacks for the offer slide.
 const BONUSES = [
-  { name: "BONUS #1 &mdash; AI-Drafted Federal Capability Statement", desc: "The federal-format one-pager every prime asks for, generated from your inputs.", value: "$497" },
-  { name: "BONUS #2 &mdash; Fiscal Compass", desc: "Federal calendar in-app: end-of-year obligation surges, Q4 spend windows, micro-purchase thresholds.", value: "$297" },
-  { name: "BONUS #3 &mdash; Milestone Reminder System", desc: "Email nudges before SPRS deadlines, prime audits, and re-affirmation due dates.", value: "$197" },
-  { name: "BONUS #4 &mdash; Daily Discover Feed", desc: "15 fresh, CMMC Level 1-fit SAM.gov opportunities matched to your NAICS, refreshed every day you log in. Plus a Monday digest of the week&rsquo;s newest contracts in your inbox.", value: "$597/yr" },
+  { name: "BONUS #1 &mdash; Capability Statement Generator (per client)", desc: "Federal-format one-pager generated for each client. Hand it to them as a deliverable; they hand it to primes.", value: "$497/client" },
+  { name: "BONUS #2 &mdash; MSP Fiscal Compass", desc: "Federal calendar across all your clients: end-of-year obligation surges, Q4 spend windows, re-affirmation deadlines &mdash; one view.", value: "$297/yr" },
+  { name: "BONUS #3 &mdash; MSP Milestone Reminders", desc: "Automated email nudges before each client&apos;s SPRS deadline, prime audit, or re-affirmation date. Never lose a client to a missed cycle.", value: "$197/yr" },
+  { name: "BONUS #4 &mdash; Onboarding Playbook", desc: "The exact 5-step playbook to onboard a new CMMC L1 client in week 1 &mdash; intake form, kickoff script, evidence-collection checklist, hand-off email templates.", value: "$997" },
 ];
 
-// Hormozi-style triple guarantee.
+// Hormozi-style triple guarantee &mdash; reframed for MSPs.
 const GUARANTEES = [
   {
-    title: "Guarantee #1 &mdash; CMMC Level 1 Success, or We Stay With You",
-    body: "Try Custodia free for 14 days &mdash; no credit card required to start. Most users complete their CMMC Level 1 package in 3&ndash;5 business days inside The Platform. If you stay and your package isn&apos;t defensible to FAR 52.204-21 standard, your assigned compliance officer rebuilds it with you, on our time, until it is. The platform is the leverage. The officer is the guarantee.",
+    title: "Guarantee #1 &mdash; First Client Bid-Ready in Week 1, or We Stay With You",
+    body: "Onboard your first client during the 14-day free trial &mdash; no credit card required to start. Most MSPs ship their first client&apos;s bid-ready package within the trial window. If your package isn&apos;t defensible to FAR 52.204-21 standard, our credentialed compliance officer rebuilds it with you, on our time, until it is. The platform is the leverage. The officer is the muscle behind your brand.",
   },
   {
-    title: "Guarantee #2 &mdash; Officer-Backed Challenge Resolution",
-    body: "If a prime or contracting officer ever challenges your package while you&apos;re a member, a Custodia compliance officer takes over the conversation &mdash; including direct comms with the prime &mdash; until your package is accepted. We don&apos;t hand you off. We resolve it.",
+    title: "Guarantee #2 &mdash; Officer-Backed Challenge Resolution &mdash; Behind Your Brand",
+    body: "If a prime or contracting officer ever challenges one of your clients&apos; packages while you&apos;re a member, a Custodia compliance officer steps in to resolve it &mdash; behind your MSP brand. Your client sees you handling it; we do the heavy lifting. We don&apos;t hand you off. We don&apos;t go around you to your client. We resolve it.",
   },
   {
-    title: "Guarantee #3 &mdash; Year-Round Posture Watchtower",
-    body: "As long as you&apos;re a member, your compliance posture is watched. Connect Microsoft 365 or Google Workspace and Custodia continuously monitors evidence freshness, flags expiring scans/screenshots/training, and preps your annual SPRS re-affirmation every October. Your vCO is on call all year &mdash; no fire drills, no extra fees.",
+    title: "Guarantee #3 &mdash; Year-Round Posture Watchtower &mdash; Every Client",
+    body: "As long as you&apos;re a member, every client business in your portfolio is watched. M365 and Google Workspace connectors continuously monitor evidence freshness, flag expiring scans/screenshots/training, and prep every client&apos;s annual SPRS re-affirmation every October. One alert feed across your whole book. No fire drills. No per-client surcharge.",
   },
 ];
 
 const FAQ_ITEMS = [
   {
     q: "How does the 14-day free trial work?",
-    a: "Sign up with just an email &mdash; no credit card required. You get the full platform free for 14 days: Charlie (your vCO) walks you through CMMC Level 1, generates your bid-ready package, sources opportunities from SAM.gov on demand, and runs the officer chat. Most users complete their initial CMMC L1 package in 3&ndash;5 business days, well inside the trial. If you stay past day 14, you add your card and start at $449/mo (locked-in Summer Federal Cash Incentive pricing for the next 100 clients; list price is $749). The Custodia Success Guarantee continues for the life of your membership: if your package isn&apos;t defensible to standard, your assigned officer rebuilds it with you until it is.",
+    a: "Sign up with just an email &mdash; no credit card required. You get the full MSP platform free for 14 days: invite a real client business, run them through CMMC Level 1 with Charlie, generate their bid-ready package, file SPRS. Most MSPs ship their first client&apos;s package inside the trial. If you stay past day 14, add a card and pick Squad ($499/mo, up to 5 client businesses) or Platoon ($1,499/mo, up to 20). The Custodia Guarantee continues for the life of your membership.",
   },
   {
-    q: "Why $449 instead of $749? What's the catch?",
-    a: "No catch. We&apos;re running a Summer Federal Cash Incentive: the next 100 customers lock in $449/mo for life. After 100, the price goes to $749/mo. That&apos;s the list price &mdash; $449 is the launch window. The math still works at $749, but at $449 it&apos;s a no-brainer for any business that wants to stay bid-eligible for federal work.",
+    q: "Can I rebrand the deliverables for my MSP?",
+    a: "Yes. The signed SSP, affirmation memo, and bid-ready ZIP are clean PDFs without Custodia chrome by default &mdash; hand them to your client or attach them to the prime as your deliverable. Light white-label (your MSP logo on the cover) is on the roadmap; full white-label (custom domain, custom theme) is available on request for Platoon members.",
   },
   {
-    q: "How do you keep my FCI secure?",
-    a: "Sensitive fields are protected with AWS KMS-backed envelope encryption: a per-tenant Data Encryption Key (DEK) wraps your data, and the master Key Encryption Key (KEK) lives inside AWS KMS &mdash; the key bytes never leave AWS, ever. Custodia engineers cannot read your encrypted FCI without going through KMS, which is logged in CloudTrail. Your tenant data is logically isolated from every other client. Hosting is U.S.-region only (AWS us-east-2 + Vercel U.S. edge). Aligned with FAR 52.204-21 safeguarding requirements for Federal Contract Information.",
+    q: "What happens if I leave the platform &mdash; does my client lose access?",
+    a: "Your clients keep their data. The bid-ready packages, SSPs, evidence ZIPs, and SPRS affirmation history are exportable at any time. If you cancel, you can either (1) hand exports to your client and walk away, or (2) we&apos;ll work with you to migrate the client to a direct Custodia subscription so their compliance posture stays watched. We&apos;re a software platform, not a hostage situation.",
   },
   {
-    q: "Does Charlie or any AI train on my FCI?",
-    a: "No. Custodia only uses enterprise AI providers under a zero-retention, no-training contract &mdash; your prompts and uploaded evidence are never used to train any model. Charlie reads your data in-context to answer the question you asked, then the context is discarded. We do not sell, share, or feed your FCI to any third-party AI, analytics tool, or marketing pipeline. No training. No retention. No exceptions.",
+    q: "Do you sell direct to my clients?",
+    a: "Not the ones you&apos;ve onboarded under your MSP account. Once a client is in your Squad or Platoon book, they belong to your MSP relationship &mdash; we don&apos;t market them, contact them, or invite them to switch to direct billing. We make money from MSPs serving DoD primes; cannibalizing your book would tank our biggest channel.",
   },
   {
-    q: "Is CMMC Level 1 mandatory for all federal contractors?",
-    a: "CMMC Level 1 is required for any contractor that handles Federal Contract Information (FCI). If you work on DoD contracts that involve FCI, you must self-attest annual compliance in SPRS and meet all 15 FAR 52.204-21 safeguarding requirements (59 NIST 800-171A assessment objectives). L1 affirmation is binary &mdash; every requirement must roll up to MET (32 CFR § 170.24) or you do not. Custodia handles CMMC Level 1 only; we do not handle CUI / Level 2 work.",
+    q: "Can I bring my existing clients in?",
+    a: "Yes &mdash; that&apos;s the point. Click &lsquo;Create Organization&rsquo; in the workspace, name it after the client business, invite the client&apos;s owner or IT lead as a member, and start the CMMC L1 walkthrough. Each client gets their own isolated workspace under your one login. Onboarding a known client typically takes &lt;30 minutes; Charlie does the heavy lifting from there.",
   },
   {
-    q: "How long does the build take?",
-    a: "Most clients complete their initial CMMC Level 1 package in 3&ndash;5 business days with The Platform. The trial is sized exactly for that &mdash; you can have a defensible package built before you ever pull out a credit card.",
+    q: "How do you keep my client&apos;s FCI secure?",
+    a: "Per-tenant envelope encryption with AWS KMS. Each client business has its own Data Encryption Key; the master KEK lives inside AWS KMS and never leaves. Custodia engineers can&apos;t read encrypted FCI without going through KMS, which is logged in CloudTrail. Tenant data is logically isolated &mdash; even if our database leaked, every client&apos;s ciphertext would still be unreadable on its own. U.S.-region hosting only. Aligned with FAR 52.204-21 safeguarding for Federal Contract Information.",
   },
   {
-    q: "What if a prime pushes back on my package?",
-    a: "The Custodia Guarantee covers every active membership. We assign a dedicated compliance officer to resolve any prime or contracting officer challenge &mdash; including working with the prime directly if needed &mdash; until your package is accepted.",
+    q: "Does Charlie or any AI train on my client&apos;s FCI?",
+    a: "No. Custodia only uses enterprise AI providers under a zero-retention, no-training contract &mdash; prompts and uploaded evidence are never used to train any model. Charlie reads in-context to answer the question, then the context is discarded. We do not sell, share, or feed any client&apos;s FCI to third-party AI, analytics, or marketing. No training. No retention. No exceptions.",
   },
   {
-    q: "What does &lsquo;year-round posture watchtower&rsquo; actually do?",
-    a: "If you connect Microsoft 365 or Google Workspace, Custodia continuously monitors the evidence behind your authorized-users roster, MFA enforcement, audit logging, and access-control policies. We flag stale evidence, expiring scans, training due dates, and configuration drift before they bite during a prime audit. Your vCO is available year-round via in-platform tickets to advise on changes. The point: you finish CMMC L1 once, then stay compliant the whole year without fire drills.",
+    q: "What&apos;s the pricing?",
+    a: "Two MSP plans, monthly or annual: <b>Squad</b> &mdash; $499/mo (or $420/mo billed annually, 2 months free), manage up to 5 client businesses. <b>Platoon</b> &mdash; $1,499/mo (or $1,250/mo billed annually, 2 months free), manage up to 20 client businesses. Every client gets the full Custodia stack &mdash; Charlie, connectors, signed artifact pack, officer escalation. Unlimited team members per client. 14-day free trial on both. No credit card to start.",
   },
   {
-    q: "Do I need a cybersecurity background to use The Platform?",
-    a: "No. The Platform is designed for non-technical operators. Every practice is explained in plain English with specific steps tailored to your tech stack. When you have a question only a human can answer, open a ticket in The Platform &mdash; a Custodia compliance officer responds with audit-grade guidance (membership only).",
+    q: "Why a per-business cap instead of unlimited?",
+    a: "Two reasons. (1) Every client business gets dedicated AI analysis, evidence storage, and credentialed officer escalation &mdash; that&apos;s real cost we want to scale honestly. (2) We&apos;re early; serving 30 businesses excellently beats 100 poorly. If you legitimately manage more than 20 DoD primes, email founders@custodia.com &mdash; we&apos;ll talk enterprise.",
   },
   {
-    q: "What is included in the annual re-affirmation?",
-    a: "Annual re-affirmation is included with every active membership. We flag changed controls, update your SSP, and prepare your SPRS re-submission every October at no additional charge. Your next cycle is ready before your fiscal year deadline.",
+    q: "How long does it take to onboard a client?",
+    a: "Most MSPs onboard a new client in 30 minutes (intake + connector setup) and ship their bid-ready package within 3&ndash;5 business days. Charlie runs the interview; the client answers the questions only they can answer. You stay the relationship; we do the typing.",
   },
   {
-    q: "Why pay for this when I could DIY the 15 requirements?",
-    a: "You can. People do. They also burn 80&ndash;120 hours of founder time, hire a $200/hr consultant, and still file an SPRS affirmation that won&apos;t hold up under prime scrutiny &mdash; which is False Claims Act exposure under 18 USC 1001. Custodia compresses that into a week-1 platform-led build with officer backing, then keeps your posture watched all year. The price is the cheapest part of the equation.",
+    q: "What if a prime pushes back on my client&apos;s package?",
+    a: "The Custodia Guarantee covers every active membership. A credentialed compliance officer steps in &mdash; behind your MSP brand &mdash; to resolve any prime or contracting officer challenge, including direct communication with the prime if needed, until your client&apos;s package is accepted.",
   },
   {
-    q: "What is the EMEC Protocol?",
-    a: "EMEC stands for Engage, Map, Execute, Confirm &mdash; the four phases of the Custodia compliance workflow. Engage captures your business scope and tech stack. Map walks the 15 safeguarding requirements with evidence guidance for every assessment objective. Execute produces your signed SSP and SPRS submission. Confirm maintains and re-affirms your package each year.",
+    q: "Does CMMC Level 1 cover what my clients actually need?",
+    a: "CMMC Level 1 covers the ~80,000 DoD contractors who handle Federal Contract Information (FCI) and self-attest annually in SPRS &mdash; the largest tier of the Defense Industrial Base. If a client handles Controlled Unclassified Information (CUI), they need Level 2 (we don&apos;t do L2; we&apos;ll refer you to a C3PAO). For everyone else &mdash; the small DoD primes most MSPs actually serve &mdash; L1 is the gate, and Custodia handles it end-to-end.",
   },
 ];
 
@@ -237,7 +237,7 @@ export default function Home() {
         <div className="relative mx-auto max-w-5xl px-4 pb-20 pt-14 text-center sm:px-6 sm:pb-28 sm:pt-20 md:pb-36 md:pt-28">
           <div className="mx-auto mb-5 inline-flex max-w-full items-center gap-2 rounded-full border border-[#2f8f6d]/40 bg-[#0e2a23]/40 px-3 py-1.5 text-[9px] font-bold uppercase tracking-[0.18em] text-[#bdf2cf] backdrop-blur sm:px-4 sm:text-[10px] sm:tracking-[0.22em]">
             <span className="inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-[#bdf2cf]" aria-hidden />
-            <span className="truncate">Secure Your Business. Stay Bid-Eligible Year-Round.</span>
+            <span className="truncate">Run a CMMC Level 1 Practice. Without Hiring For One.</span>
           </div>
 
           <h1
@@ -245,10 +245,10 @@ export default function Home() {
             style={{ textShadow: "0 4px 40px rgba(0,0,0,0.45)" }}
           >
             <span className="block">
-              Federally Secure Your Business With CMMC Level&nbsp;1<span className="text-[#8dd2b1]">.</span>
+              Run a CMMC&nbsp;L1 Practice<span className="text-[#8dd2b1]">.</span>
             </span>
             <span className="block bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text pb-2 text-transparent leading-[1.15]">
-              Stay Secure Year Round<span className="text-[#8dd2b1] [-webkit-text-fill-color:#8dd2b1]">.</span>
+              Without hiring for one<span className="text-[#8dd2b1] [-webkit-text-fill-color:#8dd2b1]">.</span>
             </span>
           </h1>
 
@@ -289,7 +289,7 @@ export default function Home() {
           </div>
 
           <p className="mx-auto mt-5 max-w-3xl text-[15px] leading-relaxed text-[#a8cfc0] sm:mt-6 sm:text-base md:text-lg">
-            Custodia walks you through CMMC Level&nbsp;1 in plain English, hands you a bid-ready package no prime can pick apart, and keeps your compliance posture watched <span className="font-semibold text-white">year-round</span> &mdash; vCO support, evidence freshness alerts, and continuous monitoring through your Microsoft 365 or Google Workspace tenant. <span className="font-semibold text-white">14-day free trial. No credit card required.</span>
+            Custodia is the operating system for MSPs running a CMMC Level&nbsp;1 line of business. Onboard each DoD client in 30 minutes, ship their bid-ready package in week 1, and keep their posture watched <span className="font-semibold text-white">year-round</span> &mdash; one login, every client, credentialed officer behind your brand. <span className="font-semibold text-white">14-day free trial. No credit card required.</span>
           </p>
 
           <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:mt-10 sm:flex-row sm:items-center">
@@ -328,7 +328,7 @@ export default function Home() {
           </div>
 
           <p className="mt-5 text-xs font-medium tracking-wide text-[#7aab98]">
-            14-day free trial &middot; No credit card required &middot; $449/mo <span className="line-through opacity-60">$749</span> Summer Sale &middot; Cancel anytime
+            14-day free trial &middot; No credit card required &middot; <span className="font-semibold text-white">Squad $499/mo</span> (up to 5 clients) or <span className="font-semibold text-white">Platoon $1,499/mo</span> (up to 20) &middot; Cancel anytime
           </p>
 
           {/* Powered by AWS — credibility under CTA */}
@@ -349,7 +349,7 @@ export default function Home() {
 
           {/* Below-headline outcome line — sets expectation for what's next */}
           <p className="mx-auto mt-10 max-w-2xl border-t border-white/[0.08] pt-8 font-serif text-base italic leading-snug text-[#bdf2cf] md:text-lg">
-            &ldquo;The DoD spends $80B/year with small businesses. The only thing standing between you and bidding on a slice of it is one piece of paperwork. Get Started Now.&rdquo;
+            &ldquo;~80,000 DoD contractors need CMMC Level 1. Most don&apos;t have one yet. Their MSP is the natural buyer of the practice that gets them there. That&apos;s you.&rdquo;
           </p>
         </div>
 
@@ -357,10 +357,10 @@ export default function Home() {
         <div className="relative border-t border-white/[0.08] bg-black/30 backdrop-blur-sm">
           <div className="mx-auto grid max-w-6xl grid-cols-2 divide-x divide-white/[0.08] px-2 md:grid-cols-4 md:px-6">
             {[
-              { value: "$80B+", label: "Yearly DoD small-biz spend" },
-              { value: "23%", label: "Statutory set-aside floor" },
-              { value: "17", label: "Practices to bid-eligible" },
-              { value: "Mondays", label: "We email new contracts" },
+              { value: "~80k", label: "DoD contractors needing L1" },
+              { value: "3,607", label: "CyberAB-listed providers (gap)" },
+              { value: "3-8", label: "DoD clients per typical MSP" },
+              { value: "Week 1", label: "First client bid-ready" },
             ].map((s) => (
               <div key={s.label} className="px-3 py-7 text-center md:px-4">
                 <div className="font-serif text-3xl font-bold tracking-tight text-white md:text-4xl">
@@ -384,10 +384,10 @@ export default function Home() {
           </div>
           <div className="grid gap-10 md:grid-cols-[1.4fr_1fr] md:items-end">
             <h2 className="font-serif text-4xl font-bold leading-[1.05] text-[#10231d] md:text-6xl">
-              The contracts are there. CMMC Level 1 is the password.
+              Your DoD clients need CMMC L1. You&apos;re already their IT.
             </h2>
             <p className="text-lg leading-relaxed text-[#44695c]">
-              Most defense-tech SMBs leave federal money on the table because compliance feels opaque. Custodia changes the math: build your CMMC Level 1 package free in The Platform, then unlock the bid-ready download when you&apos;re ready.
+              Every MSP serving DoD primes is sitting on a compliance line of business waiting to be turned on. Custodia gives you the platform, the playbook, and the officer &mdash; so you can stop turning down CMMC requests and start charging $1,200&ndash;$3,500/month per client for it.
             </p>
           </div>
 
@@ -395,19 +395,19 @@ export default function Home() {
           <div className="mt-14 grid gap-6 md:grid-cols-3">
             {[
               {
-                n: "$80B+",
-                label: "DoD prime contracts to small businesses",
-                sub: "Awarded annually (DoD OSBP, FY23 small business goaling report)",
+                n: "~80,000",
+                label: "DoD contractors that need CMMC Level 1 self-attestation",
+                sub: "Per DoD&apos;s CMMC final rule regulatory impact analysis &mdash; the largest tier of the Defense Industrial Base",
               },
               {
-                n: "220,000+",
-                label: "Defense Industrial Base businesses subject to CMMC",
-                sub: "Per DoD&apos;s CMMC final rule regulatory impact analysis",
+                n: "3,607",
+                label: "CyberAB-listed providers serving them today",
+                sub: "22:1 ratio of contractors needing help to providers offering it &mdash; this market is wildly under-supplied",
               },
               {
-                n: "23%",
-                label: "Federal prime contract dollars reserved for small business by law",
-                sub: "Small Business Act, 15 U.S.C. &sect; 644(g) statutory goal",
+                n: "3-8",
+                label: "DoD primes the typical MSP already serves",
+                sub: "Survey of 200+ MSPs &mdash; most have a hidden book of compliance work they&apos;re currently turning down",
               },
             ].map((s) => (
               <div
@@ -427,25 +427,25 @@ export default function Home() {
           </div>
 
           <p className="mt-8 text-sm leading-relaxed text-[#5a7d70]">
-            Federal Contract Information (FCI) work &mdash; the contracts CMMC Level 1 unlocks &mdash; is the largest pool of DoD opportunity flowing to small businesses. Subcontracts from primes. Set-aside primes for SDVOSBs and SDBs. SBIR Phase II awards. Agency direct buys. The barrier is the 15 safeguarding requirements, the SSP, and a defensible SPRS affirmation. We remove that barrier in days.
+            Federal Contract Information (FCI) work is the largest pool of DoD opportunity flowing to small businesses. Your DoD clients are sitting in that pool right now. Their primes are already asking for SPRS affirmations. Today, they call you and you say not my lane. With Custodia, you say we will have your package next week &mdash; and bill recurring revenue to do it.
           </p>
 
           {/* Barrier vs Fix split */}
           <div className="mt-14 grid gap-6 md:grid-cols-2">
             <div className="border border-[#e8d4a1] bg-[#fff8e8] p-8">
               <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#a06b1a]">
-                The barrier
+                Why most MSPs don&apos;t run a CMMC practice
               </div>
               <h3 className="mt-3 font-serif text-2xl font-bold text-[#10231d]">
-                Why most SMBs never bid
+                The math doesn&apos;t pencil &mdash; until now
               </h3>
               <ul className="mt-5 space-y-3 text-sm text-[#5d4f30]">
                 {[
-                  "15 CMMC practices written in cybersecurity jargon, not plain English",
-                  "No template for SSP narratives, evidence inventories, or affirmation memos",
-                  "No expert on call &mdash; nowhere to turn when a CMMC question comes up mid-bid",
-                  "SPRS affirmation carries 18 USC 1001 and False Claims Act liability if you sign and you're wrong",
-                  "Compliance work derails the engineering and BD work you actually got funded to do",
+                  "Hiring a credentialed compliance officer ($120k+ fully loaded) just to handle questions you can't answer",
+                  "Each new client = 80+ hours of manual evidence collection, SSP drafting, and screenshots &mdash; non-billable bench time",
+                  "C3PAO and template providers price out at $5k-$15k per client one-time, leaving you on the hook for re-affirmation",
+                  "False Claims Act liability on every SPRS submission you advise on &mdash; one wrong MET and your E&amp;O premium triples",
+                  "Compliance work derails the IT and security work your MSP actually got hired to do",
                 ].map((b) => (
                   <li key={b} className="flex items-start gap-2">
                     <span aria-hidden className="mt-0.5 flex-none font-bold text-[#a06b1a]">&times;</span>
@@ -460,17 +460,17 @@ export default function Home() {
                 The Custodia answer
               </div>
               <h3 className="mt-3 font-serif text-2xl font-bold">
-                Bid-ready in week 1. Watched all year.
+                A turnkey CMMC&nbsp;L1 practice. Behind your brand.
               </h3>
               <ul className="mt-5 space-y-3 text-sm text-[#cce5da]">
                 {[
-                  "All 15 requirements walked in plain English, tailored to your tech stack",
-                  "SSP narratives drafted for you &mdash; accept or edit in one click",
-                  "AI evidence auto-review &mdash; instant feedback on every artifact you upload",
-                  "Custodia officer on-call via in-app tickets &mdash; ask any CMMC question",
-                  "Connect M365 or Google Workspace &mdash; year-round monitoring + freshness alerts",
-                  "Custodia Guarantee &mdash; we resolve any prime or contracting officer challenge after you file",
-                  "Annual re-affirmation included &mdash; your next cycle is ready every Oct 1",
+                  "All 15 requirements walked in plain English &mdash; tailored per client's tech stack",
+                  "SSP narratives auto-drafted per client &mdash; accept or edit, hand off as your deliverable",
+                  "AI evidence auto-review across your whole book &mdash; instant gap detection per client",
+                  "Credentialed Custodia officer answers any CMMC question &mdash; behind your MSP brand",
+                  "M365 / Google connectors per client &mdash; year-round monitoring + freshness alerts",
+                  "Custodia Guarantee &mdash; we resolve any prime challenge for any client in your book",
+                  "Annual re-affirmation included for every client &mdash; one Oct 1 cycle, every client prepped",
                 ].map((b) => (
                   <li key={b} className="flex items-start gap-2">
                     <span aria-hidden className="mt-0.5 flex-none font-bold text-[#8dd2b1]">&#10003;</span>
@@ -504,16 +504,16 @@ export default function Home() {
         </div>
       </RevealSection>
 
-      {/* 5 — How federal contracting actually works */}
+      {/* 5 — How an MSP onboards a CMMC L1 client */}
       <RevealSection className="bg-white px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-16 text-center">
             <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">how it works</div>
             <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-6xl">
-              How federal contracting actually works
+              How an MSP onboards a CMMC&nbsp;L1 client
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-[#44695c]">
-              Most SMBs don&apos;t bid because the path looks opaque. Here&apos;s the actual flow &mdash; and where Custodia removes the friction.
+              Four steps. ~30 minutes of your time per client. Bid-ready package shipped to your client inside week 1.
             </p>
           </div>
 
@@ -521,30 +521,30 @@ export default function Home() {
             {[
               {
                 n: "01",
-                step: "Register",
-                desc: "SAM.gov registration. CAGE code. UEI. NAICS codes that match your work.",
-                custodia: "We point you to the right registrations and check your work.",
+                step: "Invite the client",
+                desc: "Click Create Organization in your workspace. Name it after the client business. Invite their owner or IT lead by email. Their workspace is isolated under your one MSP login.",
+                custodia: "Per-tenant encryption keys + isolated workspace per client.",
                 highlight: false,
               },
               {
                 n: "02",
-                step: "Find opportunities",
-                desc: "SAM.gov, agency portals (DoD SBIR, AFWERX, NavalX, DIU), prime contractor subs.",
-                custodia: "We teach you the search patterns and where to look first.",
+                step: "Charlie interviews",
+                desc: "Your virtual Compliance Officer captures the client's business scope, FCI handling, tech stack, and team. Plain English. The questions only the client can answer.",
+                custodia: "You stay the relationship. We do the typing.",
                 highlight: false,
               },
               {
                 n: "03",
-                step: "Bid with compliance proof",
-                desc: "Submit your SSP, SPRS affirmation, and prime security questionnaires. Most SMBs stall here.",
-                custodia: "Your bid-ready package is generated in The Platform &mdash; ready to attach.",
+                step: "Connect M365 / Google",
+                desc: "Read-only OAuth into the client's tenant pulls the authorized-users roster, MFA status, and audit logs &mdash; the evidence that takes 80 hours to collect manually, automated.",
+                custodia: "Year-round monitoring switches on the moment connectors hand-shake.",
                 highlight: true,
               },
               {
                 n: "04",
-                step: "Win + maintain",
-                desc: "Stay compliant year-round. File annual re-affirmation. Respond to prime audits when they come.",
-                custodia: "Year-round monitoring + annual re-affirmation, included.",
+                step: "Ship the package + file SPRS",
+                desc: "Generate the bid-ready ZIP &mdash; signed SSP, affirmation memo, evidence inventory. Hand it to your client as your deliverable. Walk them through SPRS submission. Bill recurring.",
+                custodia: "Officer backstop on every submission, behind your MSP brand.",
                 highlight: false,
               },
             ].map((step) => (
@@ -594,7 +594,7 @@ export default function Home() {
           </div>
 
           <p className="mx-auto mt-10 max-w-3xl text-center text-base text-[#44695c]">
-            Step 3 is where most SMBs stall. The compliance package is the difference between a bid and a no-bid &mdash; and it&apos;s the part Custodia builds for you.
+            Step 3 is the unlock. Most MSPs would have to run a 6-week services engagement per client just to collect that evidence by hand. Custodia automates it &mdash; so your billable hours go to the parts only your team can do.
           </p>
         </div>
       </RevealSection>
@@ -608,34 +608,34 @@ export default function Home() {
               the stakes
             </div>
             <h2 className="font-serif text-4xl font-bold leading-[1.05] tracking-tight text-[#10231d] md:text-6xl">
-              Your business is on the front line.
+              Your clients are on the front line. Their MSP is their first line.
             </h2>
             <p className="mx-auto mt-5 max-w-3xl text-lg leading-relaxed text-[#44695c]">
-              The minute you handle data for the U.S. government, you become a target. Foreign adversaries &mdash; China, Russia, Iran, North Korea &mdash; hunt small American defense contractors because we&apos;re the easiest way into the country&apos;s biggest programs. Custodia puts a shield between your business and them, and keeps it up year-round so you can focus on winning the work.
+              The minute your client handles data for the U.S. government, they become a target. Foreign adversaries hunt small American defense contractors because they&apos;re the easiest way into the country&apos;s biggest programs &mdash; and you&apos;re the one they call when something breaks. Custodia puts a real shield between your clients and the threat &mdash; and a credentialed officer behind your MSP brand to back you up.
             </p>
           </div>
 
           {/* What happens if you skip this */}
           <div className="mb-12">
             <h3 className="mb-6 text-center font-serif text-2xl font-bold text-[#10231d] md:text-3xl">
-              What happens to small businesses that get this wrong
+              What happens to MSPs who tell DoD clients &ldquo;not my lane&rdquo;
             </h3>
             <div className="grid gap-5 md:grid-cols-3">
               {[
                 {
-                  stat: "Contracts pulled",
-                  title: "Primes drop you",
-                  body: "When a prime audits your security and finds gaps &mdash; or you can&apos;t answer their questionnaire &mdash; the work goes to someone else. You don&apos;t get a second chance, and other primes hear about it.",
+                  stat: "Client churn",
+                  title: "Your client fires you",
+                  body: "When a prime asks for SPRS proof and you can&apos;t deliver, your client finds an MSP that can. They take the rest of the IT contract with them. The CMMC question is now the table-stakes question for every DoD-adjacent SMB.",
                 },
                 {
-                  stat: "Federal lawsuits",
-                  title: "False Claims Act exposure",
-                  body: "Filing a SPRS affirmation that isn&apos;t true is a federal violation under 18 USC 1001 and the False Claims Act. The DOJ&apos;s Civil Cyber-Fraud Initiative is actively pursuing contractors. Recent settlements have run from $1M to over $9M.",
+                  stat: "E&amp;O exposure",
+                  title: "Liability flows uphill",
+                  body: "If you advise a client on SPRS without a credentialed officer behind you, your E&amp;O carrier becomes the deep pocket on every False Claims Act action. Recent DOJ Civil Cyber-Fraud settlements: $1M-$9M+. With Custodia, the officer signs off &mdash; not you.",
                 },
                 {
-                  stat: "Adversaries get in",
-                  title: "Foreign actors steal your work",
-                  body: "State-sponsored hackers target defense small businesses because we&apos;re the soft underbelly of the supply chain. One ransomware hit, one spear-phish, and your IP, your contract data, and your business can be gone overnight.",
+                  stat: "Revenue left behind",
+                  title: "$50k-$200k ARR per client, gone",
+                  body: "Every MSP turning down CMMC work is leaving $1,200-$3,500/month per DoD client on the table. With 5-20 clients in your book, that&apos;s a real recurring revenue line &mdash; one that lifts the value of your MSP at exit.",
                 },
               ].map((c) => (
                 <div
@@ -662,10 +662,10 @@ export default function Home() {
                 the custodia shield &middot; zero-trust security
               </div>
               <h3 className="font-serif text-3xl font-bold leading-tight md:text-5xl">
-                Built so even <span className="italic">we</span>&nbsp;can&rsquo;t read your FCI.
+                Built so even <span className="italic">we</span>&nbsp;can&rsquo;t read your client&apos;s FCI.
               </h3>
               <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[#a8cfc0]">
-                Custodia is engineered on AWS with envelope encryption, per-tenant keys, and a zero-AI-training pledge. If our database leaked tomorrow, your Federal Contract Information would still be ciphertext &mdash; useless to attackers, useless to us, useless to any AI. That&rsquo;s the bar. That&rsquo;s the shield.
+                Custodia is engineered on AWS with envelope encryption, per-tenant keys per client business, and a zero-AI-training pledge. If our database leaked tomorrow, every one of your clients&apos; FCI would still be ciphertext &mdash; useless to attackers, useless to us, useless to any AI. That&rsquo;s the bar. That&rsquo;s the shield.
               </p>
             </div>
 
@@ -679,18 +679,18 @@ export default function Home() {
                 },
                 {
                   tag: "Per-Tenant Keys",
-                  title: "Your tenant. Your key.",
-                  body: "Every customer gets its own Data Encryption Key. Your ciphertext is mathematically useless to any other tenant &mdash; even if the entire database leaked. No shared keys, no shared encryption surface, no blast radius across customers.",
+                  title: "Each client. Their own key.",
+                  body: "Every client business in your MSP book gets its own Data Encryption Key. One client&apos;s ciphertext is mathematically useless to any other &mdash; and useless to anyone outside that tenant. No shared keys, no cross-client blast radius if anything ever leaks.",
                 },
                 {
                   tag: "Zero AI Training",
                   title: "Charlie reads. Charlie forgets.",
-                  body: "Charlie only runs on enterprise AI providers under a no-training, zero-retention contract. Your FCI is never used to train any model &mdash; ours or anyone else&rsquo;s. He answers your question in-context, then the context is gone.",
+                  body: "Charlie only runs on enterprise AI providers under a no-training, zero-retention contract. Your clients&apos; FCI is never used to train any model &mdash; ours or anyone else&rsquo;s. He answers in-context, then the context is gone.",
                 },
                 {
                   tag: "U.S. Only",
-                  title: "Your FCI never leaves the U.S.",
-                  body: "Application, database, and AWS KMS keys are all hosted in U.S. regions. No foreign hops, no foreign sub-processors touching your evidence. Aligned with FAR 52.204-21 and NIST SP 800-171 r2 &mdash; the same standard your SPRS affirmation attests to.",
+                  title: "Client FCI never leaves the U.S.",
+                  body: "Application, database, and AWS KMS keys are all hosted in U.S. regions. No foreign hops, no foreign sub-processors touching any client&apos;s evidence. Aligned with FAR 52.204-21 safeguarding.",
                 },
               ].map((s) => (
                 <div
@@ -717,7 +717,7 @@ export default function Home() {
                     the custodia pledge
                   </div>
                   <h4 className="mt-2 font-serif text-2xl font-bold leading-tight text-white md:text-3xl">
-                    What we will <span className="italic">never</span> do with your data.
+                    What we will <span className="italic">never</span> do with your client&apos;s data.
                   </h4>
                 </div>
                 <ul className="space-y-3 text-sm leading-relaxed text-[#cce5da] md:text-base">
@@ -773,7 +773,7 @@ export default function Home() {
             </div>
 
             <p className="mx-auto mt-10 max-w-3xl text-center font-serif text-2xl leading-snug text-[#bdf2cf] md:text-3xl">
-              You stay safe. You keep bidding. You keep winning. Custodia stands watch.
+              Your clients stay safe. You keep billing. You both keep winning. Custodia stands watch.
             </p>
 
             {/* Honesty footnote */}
@@ -1108,10 +1108,10 @@ export default function Home() {
           <div className="mb-16 text-center">
             <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">why custodia</div>
             <h2 className="font-serif text-4xl font-bold tracking-tight md:text-6xl">
-              Built by CMMC professionals. Self-serve, officer-supported.
+              Built for MSPs who want a CMMC&nbsp;L1 line of business.
             </h2>
             <p className="mx-auto mt-5 max-w-3xl text-lg text-[#a8cfc0]">
-              Most compliance products are templates and forms. Custodia is a cybersecurity firm with a Platform built to take you from zero to bid-ready hands-off &mdash; with our compliance officers on-call via tickets whenever you need a real human answer.
+              Most CMMC products are templates and forms aimed at end-contractors. Custodia is a cybersecurity firm with a multi-tenant Platform built for the MSPs who actually serve the DoD primes &mdash; with credentialed compliance officers on-call, behind your brand, whenever you need a real human answer.
             </p>
           </div>
 
@@ -1119,27 +1119,27 @@ export default function Home() {
             {[
               {
                 title: "Cybersecurity firm, not a template",
-                body: "Custodia is a veteran-owned cybersecurity firm in Pittsburgh, PA. We staff compliance officers, not customer-success reps. The Platform takes you from zero to bid-ready on its own &mdash; the officers are on-call when you need a human.",
+                body: "Custodia is a veteran-owned cybersecurity firm in Pittsburgh, PA. We staff compliance officers, not customer-success reps. The Platform takes each of your clients from zero to bid-ready &mdash; the officers are on-call, behind your MSP brand, when you or your client need a human.",
               },
               {
                 title: "CMMC Level 1 specialists",
-                body: "We do one thing &mdash; CMMC L1 for FCI handlers &mdash; and we do it all the way. No scope drift into L2 or L3. The 15 safeguarding requirements are our entire focus.",
+                body: "We do one thing &mdash; CMMC L1 for FCI handlers &mdash; and we do it all the way. No scope drift into L2 or L3. The 15 safeguarding requirements are our entire focus, so your MSP can offer a clean, focused product line.",
               },
               {
-                title: "Officers on-call via in-app tickets",
-                body: "Hit a question The Platform can&apos;t answer? Open a ticket. A Custodia compliance officer responds with audit-grade guidance, in writing, in The Platform &mdash; included with every active membership.",
+                title: "Officers on-call &mdash; behind your brand",
+                body: "Hit a question The Platform can&apos;t answer? Open a ticket on behalf of any client. A Custodia compliance officer responds with audit-grade guidance, in writing &mdash; behind your MSP brand. Included with every active membership.",
               },
               {
                 title: "The Custodia Guarantee",
-                body: "If a prime or contracting officer challenges your package, we assign a dedicated officer to resolve it &mdash; including direct communication with the prime, until your package is accepted.",
+                body: "If a prime or contracting officer challenges any of your clients&apos; packages, we assign a dedicated officer to resolve it &mdash; including direct communication with the prime &mdash; until the package is accepted. You stay the face. We do the muscle.",
               },
               {
                 title: "Veteran-owned, mission-aligned",
-                body: "Built by people who understand federal procurement from the inside. We&apos;re here to expand the small-business defense industrial base, not extract from it.",
+                body: "Built by people who understand federal procurement from the inside. We&apos;re here to expand the small-business defense industrial base by powering MSPs &mdash; not extracting from them.",
               },
               {
-                title: "Annual re-affirmation included",
-                body: "Compliance isn&apos;t one-and-done. We monitor changed controls year-round, flag expiring evidence, and prepare your next SPRS re-affirmation every October &mdash; included in your membership.",
+                title: "Annual re-affirmation included &mdash; every client",
+                body: "Compliance isn&apos;t one-and-done. We monitor changed controls year-round, flag expiring evidence per client, and prep every client&apos;s next SPRS re-affirmation every October &mdash; included in your MSP membership.",
               },
             ].map((d) => (
               <div key={d.title} className="border border-[#2a5a49] bg-[#193d31] p-7">
@@ -1154,9 +1154,9 @@ export default function Home() {
 
           <div className="mt-14 grid gap-6 border-t border-[#2a5a49] pt-12 md:grid-cols-3">
             {[
-              { stat: "17", label: "Practices covered" },
-              { stat: "100%", label: "Bid-ready rate" },
-              { stat: "$150K+", label: "Avg. contract value" },
+              { stat: "30 min", label: "Per-client onboarding" },
+              { stat: "Week 1", label: "First client bid-ready" },
+              { stat: "$1.2k+", label: "MRR per managed client" },
             ].map((s) => (
               <div key={s.label} className="text-center">
                 <div className="font-serif text-4xl font-bold text-white md:text-5xl">{s.stat}</div>
@@ -1174,10 +1174,10 @@ export default function Home() {
         <div className="mx-auto max-w-5xl">
           <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">your journey</div>
           <h2 className="font-serif text-4xl font-bold leading-[1.05] text-[#10231d] md:text-6xl">
-            From signup to a defensible bid-ready package
+            From signup to a defensible bid-ready package — for every client in your book
           </h2>
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[#44695c]">
-            Here&apos;s the path you&apos;ll walk inside The Platform during your 14-day free trial &mdash; bid-ready by week 1, no credit card required to start. Membership keeps your posture watched, your evidence fresh, and your vCO on call all year.
+            Here&apos;s the path you&apos;ll walk inside The Platform during your 14-day free trial &mdash; first client bid-ready by week 1, no credit card required to start. Membership keeps every client&apos;s posture watched, evidence fresh, and a credentialed officer on-call all year.
           </p>
 
           <ol className="relative mt-16 space-y-12 border-l-2 border-[#cfe3d9] pl-10 md:pl-14">
@@ -1286,10 +1286,10 @@ export default function Home() {
           <div className="mt-16 border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_15px_45px_rgba(14,48,37,0.18)] md:p-12">
             <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">where it ends</div>
             <h3 className="mt-3 font-serif text-3xl font-bold leading-tight md:text-4xl">
-              You, bidding with a defensible package &mdash; and watched all year.
+              Your client, bidding with a defensible package &mdash; you, billing recurring.
             </h3>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#cce5da]">
-              All 8 steps happen inside your 14-day free trial. Steps 1&ndash;6 (build to bid-ready) typically wrap up in week 1. Steps 7&ndash;8 are where membership earns its keep: continuous monitoring through your M365 or Google Workspace tenant, freshness alerts, year-round vCO, and your annual SPRS re-affirmation. \$449/mo only kicks in if you stay past day 14 (locked-in summer pricing for the next 100 clients).
+              All 8 steps happen inside your 14-day free trial &mdash; with a real client. Steps 1&ndash;6 (build to bid-ready) typically wrap up in week 1. Steps 7&ndash;8 are where membership earns its keep: continuous monitoring through every client&apos;s M365 or Google tenant, freshness alerts across your whole book, year-round officer access, and annual SPRS re-affirmation. Squad ($499/mo, up to 5 clients) or Platoon ($1,499/mo, up to 20) only kicks in if you stay past day 14.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Show when="signed-out">
@@ -1317,7 +1317,7 @@ export default function Home() {
               </Show>
             </div>
             <p className="mt-4 text-xs text-[#7aab98]">
-              14-day free trial &middot; No credit card required &middot; $449/mo after (locked for next 100 clients)
+              14-day free trial &middot; No credit card required &middot; Squad $499/mo or Platoon $1,499/mo after
             </p>
           </div>
         </div>
@@ -1462,22 +1462,22 @@ export default function Home() {
               Every capability above is included in your 14-day free trial &mdash; the build, Charlie&apos;s opportunity sourcing, the bid generator, year-round monitoring, and the officer.
             </p>
             <p className="mt-3 text-sm text-[#5a7d70]">
-              Sign up with email &mdash; no credit card required. Build your CMMC Level 1 package in week 1, connect M365 or Google Workspace for continuous monitoring, and let Charlie surface matched opportunities. \$449/mo only kicks in if you stay past day 14 (locked-in summer pricing).
+              Sign up with email &mdash; no credit card required. Onboard your first real client and ship their bid-ready package in week 1. Connect their M365 or Google tenant for continuous monitoring. Squad ($499/mo, up to 5 clients) or Platoon ($1,499/mo, up to 20) only kicks in if you stay past day 14.
             </p>
           </div>
         </div>
       </RevealSection>
 
-      {/* 9.9 — Your potential profit / ROI */}
+      {/* 9.9 — Your potential MRR / ROI as an MSP */}
       <RevealSection className="bg-[#0e2a23] px-6 py-24 text-white">
         <div className="mx-auto max-w-6xl">
           <div className="mb-14 text-center">
-            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">your potential profit</div>
+            <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">your potential ARR</div>
             <h2 className="font-serif text-4xl font-bold tracking-tight md:text-6xl">
-              One contract pays for years of Custodia.
+              A handful of clients pays for the platform many times over.
             </h2>
             <p className="mx-auto mt-5 max-w-3xl text-lg text-[#a8cfc0]">
-              Federal small-business contractors run on 8&ndash;15% net margins. The math on whether Custodia is worth it isn&apos;t close &mdash; here&apos;s what a single won bid does to your numbers.
+              MSPs typically charge $1,200&ndash;$3,500/mo per DoD client for managed CMMC. Custodia&apos;s Squad and Platoon plans are flat &mdash; every additional client is pure margin until you hit the cap.
             </p>
           </div>
 
@@ -1485,29 +1485,29 @@ export default function Home() {
           <div className="grid gap-6 md:grid-cols-3">
             {[
               {
-                tier: "First sub-contract",
-                size: "$150,000",
-                net: "10%",
-                profit: "$15,000",
-                payback: "~2.8 years of Custodia",
-                ratio: "2.8x",
+                tier: "Squad &middot; 3 clients",
+                size: "$1,500/mo each",
+                net: "minus $499 Custodia",
+                profit: "$54,000 ARR",
+                payback: "~9x return on subscription",
+                ratio: "9x",
               },
               {
-                tier: "SBIR Phase II",
-                size: "$400,000",
-                net: "8%",
-                profit: "$32,000",
-                payback: "~5.9 years of Custodia",
-                ratio: "5.9x",
+                tier: "Platoon &middot; 10 clients",
+                size: "$1,500/mo each",
+                net: "minus $1,499 Custodia",
+                profit: "$162,000 ARR",
+                payback: "~9x return on subscription",
+                ratio: "9x",
                 highlight: true,
               },
               {
-                tier: "Prime sub-contract",
-                size: "$1,200,000",
-                net: "10%",
-                profit: "$120,000",
-                payback: "22+ years of Custodia",
-                ratio: "22x",
+                tier: "Platoon &middot; 20 clients",
+                size: "$2,000/mo each",
+                net: "minus $1,499 Custodia",
+                profit: "$462,000 ARR",
+                payback: "~26x return on subscription",
+                ratio: "26x",
               },
             ].map((s) => (
               <div
@@ -1518,22 +1518,23 @@ export default function Home() {
                     : "border-[#2a5a49] bg-[#163027]"
                 }`}
               >
-                <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">
-                  {s.tier}
-                </div>
-                <div className="mt-3 text-sm text-[#a8cfc0]">Contract value</div>
+                <div
+                  className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]"
+                  dangerouslySetInnerHTML={{ __html: s.tier }}
+                />
+                <div className="mt-3 text-sm text-[#a8cfc0]">MSP service price</div>
                 <div className="font-serif text-3xl font-bold text-white md:text-4xl">{s.size}</div>
-                <div className="mt-3 text-sm text-[#a8cfc0]">Net at {s.net}</div>
+                <div className="mt-3 text-sm text-[#a8cfc0]">{s.net}</div>
                 <div className="font-serif text-2xl font-bold text-[#bdf2cf]">{s.profit}</div>
                 <div className="mt-5 border-t border-[#2a5a49] pt-4">
                   <div className="text-[10px] font-bold uppercase tracking-wider text-[#8dd2b1]">
-                    Pays for
+                    Net of platform
                   </div>
                   <div className="mt-1 font-serif text-xl font-bold text-white">
                     {s.payback}
                   </div>
                   <div className="mt-1 text-[11px] font-bold tracking-wide text-[#bdf2cf]">
-                    {s.ratio} return on subscription
+                    {s.ratio} on subscription cost
                   </div>
                 </div>
               </div>
@@ -1545,13 +1546,13 @@ export default function Home() {
             <div className="grid gap-8 md:grid-cols-[1fr_auto_1fr] md:items-center">
               <div className="text-center md:text-right">
                 <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#8dd2b1]">
-                  You pay
+                  You pay (Platoon)
                 </div>
                 <div className="mt-2 font-serif text-3xl font-bold text-white md:text-5xl">
-                  $449/mo
+                  $1,499/mo
                 </div>
                 <div className="mt-1 text-sm text-[#a8cfc0]">
-                  $5,388/year &middot; locked-in summer pricing &middot; cancel anytime
+                  $17,988/year &middot; flat &middot; up to 20 clients
                 </div>
               </div>
 
@@ -1561,200 +1562,237 @@ export default function Home() {
 
               <div className="text-center md:text-left">
                 <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#8dd2b1]">
-                  You earn (per single $400k SBIR win)
+                  You bill (10 clients @ $1,500/mo)
                 </div>
                 <div className="mt-2 font-serif text-3xl font-bold text-[#bdf2cf] md:text-5xl">
-                  +$32,000
+                  +$180,000/yr
                 </div>
                 <div className="mt-1 text-sm text-[#a8cfc0]">
-                  Net profit on one contract &middot; gates years of Phase III
+                  Recurring &middot; sticky &middot; ~$75/client to Custodia
                 </div>
               </div>
             </div>
 
             <p className="mx-auto mt-8 max-w-3xl text-center font-serif text-lg italic leading-relaxed text-[#bdf2cf] md:text-2xl">
-              &ldquo;If a single matched sub-contract The Platform sends you converts, Custodia is paid for through 2028.&rdquo;
+              &ldquo;Close one managed-CMMC client and Custodia is paid through 2026. Close ten and you have a real practice line.&rdquo;
             </p>
           </div>
 
           {/* Caveats / honesty */}
           <p className="mx-auto mt-8 max-w-3xl text-center text-xs leading-relaxed text-[#7aab98]">
-            Source ranges based on FY2023 SBA Small Business Goaling Report and DoD CAS / FAR 15.404 weighted-guidelines analysis. Net margins for federal small-business contractors typically run 6&ndash;20% depending on contract type (cost-plus, FFP, T&amp;M, sub-contract). Your numbers will vary &mdash; the directional math doesn&apos;t.
+            MSP service pricing ranges based on public managed-compliance and managed-security MSP pricing for SMB DoD-adjacent contractors. Each MSP sets its own retail price; Custodia&apos;s subscription is flat per cohort tier. Your numbers will vary &mdash; the directional math doesn&apos;t.
           </p>
         </div>
       </RevealSection>
 
-      {/* 10 — Pricing: ONE OFFER, Hormozi-stacked */}
+      {/* 10 — Pricing: Squad + Platoon, two-tier */}
       <RevealSection id="pricing" className="scroll-mt-16 border-y border-[#d5e5dd] bg-white px-6 py-24">
-        <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-6xl">
           {/* Scarcity banner */}
           <div className="mb-8 flex flex-col items-center gap-2 border border-[#a06b1a] bg-[#fff8e8] px-6 py-4 text-center md:flex-row md:justify-center md:gap-4">
             <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#a06b1a]">
-              ⚡ Summer Federal Cash Incentive
+              Founding MSP Cohort
             </span>
             <span className="text-sm font-semibold text-[#5d4f30]">
-              Lock in <span className="font-black text-[#10231d]">$449/mo</span> for life &mdash; only the next 100 clients. After that: $749/mo.
+              First <span className="font-black text-[#10231d]">25 MSP partners</span> lock in monthly pricing for life. After cohort closes, prices step up.
             </span>
           </div>
 
           <div className="mb-12 text-center">
             <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">the offer</div>
             <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-6xl">
-              Everything you need to bid federal &mdash; and stay compliant year-round.
+              Two plans. One platform. Every client included.
               <br />
-              <span className="text-[#2f8f6d]">$0 today. $449/mo if you stay.</span>
+              <span className="text-[#2f8f6d]">$0 today. Pick a tier on day 14 if you stay.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-[#44695c]">
-              Try the entire platform &mdash; build, bid, monitor, maintain &mdash; free for 14 days. No credit card required. Cancel any time inside the platform. If you stay, your assigned compliance officer is on call year-round &mdash; that is the Custodia Success Guarantee.
+              Try the entire MSP platform free for 14 days. Onboard a real client, ship a real bid-ready package, file a real SPRS affirmation. No credit card to start. Cancel any time inside the platform. The Custodia Guarantee runs for the life of your membership.
             </p>
           </div>
 
-          {/* The single offer card */}
-          <div className="mx-auto max-w-3xl border-2 border-[#2f8f6d] bg-white shadow-[0_25px_60px_rgba(14,48,37,0.14)]">
-
-            {/* Header band */}
-            <div className="border-b-2 border-[#2f8f6d] bg-[#0e2a23] px-8 py-6 text-center text-white md:px-12">
-              <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[#bdf2cf]">
-                The Custodia Bid-Ready Engine
+          {/* Two-tier pricing grid: Squad + Platoon */}
+          <div className="mx-auto grid max-w-5xl gap-6 md:grid-cols-2">
+            {/* Squad */}
+            <div className="flex flex-col border-2 border-[#cfe3d9] bg-white p-8 shadow-[0_15px_40px_rgba(14,48,37,0.08)] md:p-10">
+              <div className="border-b border-[#cfe3d9] pb-6">
+                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[#2f8f6d]">Squad</div>
+                <h3 className="mt-2 font-serif text-3xl font-bold text-[#10231d]">Up to 5 client businesses</h3>
+                <p className="mt-2 text-sm text-[#5a7d70]">For MSPs starting a CMMC line of business or managing a tight DoD-adjacent book.</p>
               </div>
-              <h3 className="mt-2 font-serif text-2xl font-bold leading-tight md:text-3xl">
-                CMMC Level 1 + Weekly Opportunity Radar + Officer Backing
-              </h3>
-              <p className="mt-2 text-sm text-[#a8cfc0]">
-                One platform. One subscription. Everything you need to go from zero to bidding to winning.
-              </p>
+
+              <div className="mt-6">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-serif text-5xl font-bold text-[#10231d]">$499</span>
+                  <span className="text-base text-[#5a7d70]">/mo</span>
+                </div>
+                <p className="mt-2 text-xs text-[#5a7d70]">
+                  Or <span className="font-bold text-[#10231d]">$420/mo billed annually</span> &middot; $5,040/yr &middot; 2 months free
+                </p>
+              </div>
+
+              <ul className="mt-6 space-y-2.5 text-sm text-[#31594d]">
+                {[
+                  "Up to 5 isolated client workspaces",
+                  "Charlie-guided CMMC L1 build per client",
+                  "M365 / Google connectors per client",
+                  "Auto-drafted SSP + bid-ready ZIP per client",
+                  "Officer escalation behind your MSP brand",
+                  "Annual SPRS re-affirmation for every client",
+                  "Unlimited team members per client workspace",
+                ].map((b) => (
+                  <li key={b} className="flex items-start gap-2">
+                    <span aria-hidden className="mt-0.5 flex-none font-bold text-[#2f8f6d]">&#10003;</span>
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-auto pt-8">
+                <Show when="signed-out">
+                  <Link
+                    href="/sign-up?plan=msp_squad_5"
+                    prefetch={false}
+                    className="block w-full bg-[#0e2a23] px-6 py-4 text-center text-base font-bold text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
+                  >
+                    Start Squad &mdash; 14 days free
+                  </Link>
+                </Show>
+                <Show when="signed-in">
+                  <Link
+                    href="/upgrade?plan=msp_squad_5"
+                    prefetch={false}
+                    className="block w-full bg-[#0e2a23] px-6 py-4 text-center text-base font-bold text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
+                  >
+                    Activate Squad
+                  </Link>
+                </Show>
+                <p className="mt-3 text-center text-xs text-[#5a7d70]">No credit card required to start the trial</p>
+              </div>
             </div>
 
-            {/* Value stack — what you get */}
-            <div className="px-8 py-10 md:px-12">
-              <div className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#2f8f6d]">
-                What you get the moment you start
+            {/* Platoon */}
+            <div className="relative flex flex-col border-2 border-[#2f8f6d] bg-[#0e2a23] p-8 text-white shadow-[0_25px_60px_rgba(14,48,37,0.18)] md:p-10">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#bdf2cf] px-4 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-[#0c2219]">
+                Most popular for established MSPs
               </div>
-              <h4 className="mb-6 font-serif text-xl font-bold text-[#10231d]">
-                Here&apos;s every piece &mdash; with what it&apos;s worth on its own.
-              </h4>
 
-              <ul className="divide-y divide-[#cfe3d9] border-y border-[#cfe3d9]">
-                {VALUE_STACK.map((item) => (
-                  <li key={item.name} className="flex items-start justify-between gap-4 py-3">
+              <div className="border-b border-[#2a5a49] pb-6">
+                <div className="text-[10px] font-black uppercase tracking-[0.24em] text-[#bdf2cf]">Platoon</div>
+                <h3 className="mt-2 font-serif text-3xl font-bold">Up to 20 client businesses</h3>
+                <p className="mt-2 text-sm text-[#a8cfc0]">For MSPs running a real CMMC line of business across a meaningful DoD book.</p>
+              </div>
+
+              <div className="mt-6">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-serif text-5xl font-bold text-white">$1,499</span>
+                  <span className="text-base text-[#a8cfc0]">/mo</span>
+                </div>
+                <p className="mt-2 text-xs text-[#a8cfc0]">
+                  Or <span className="font-bold text-white">$1,250/mo billed annually</span> &middot; $15,000/yr &middot; 2 months free
+                </p>
+              </div>
+
+              <ul className="mt-6 space-y-2.5 text-sm text-[#cce5da]">
+                {[
+                  "Up to 20 isolated client workspaces",
+                  "Everything in Squad &mdash; 4x the capacity",
+                  "Priority officer ticket queue",
+                  "MSP onboarding playbook + intake templates",
+                  "Custom domain / light white-label on request",
+                  "Quarterly portfolio review with a Custodia officer",
+                  "Annual SPRS re-affirmation for every client",
+                ].map((b) => (
+                  <li key={b} className="flex items-start gap-2">
+                    <span aria-hidden className="mt-0.5 flex-none font-bold text-[#8dd2b1]">&#10003;</span>
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-auto pt-8">
+                <Show when="signed-out">
+                  <Link
+                    href="/sign-up?plan=msp_platoon_20"
+                    prefetch={false}
+                    className="block w-full bg-[#bdf2cf] px-6 py-4 text-center text-base font-black text-[#0c2219] shadow-[0_10px_30px_rgba(189,242,207,0.35)] transition-colors hover:bg-[#a8e6c0]"
+                  >
+                    Start Platoon &mdash; 14 days free
+                  </Link>
+                </Show>
+                <Show when="signed-in">
+                  <Link
+                    href="/upgrade?plan=msp_platoon_20"
+                    prefetch={false}
+                    className="block w-full bg-[#bdf2cf] px-6 py-4 text-center text-base font-black text-[#0c2219] shadow-[0_10px_30px_rgba(189,242,207,0.35)] transition-colors hover:bg-[#a8e6c0]"
+                  >
+                    Activate Platoon
+                  </Link>
+                </Show>
+                <p className="mt-3 text-center text-xs text-[#7aab98]">No credit card required to start the trial</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Hormozi value stack */}
+          <div className="mx-auto mt-16 max-w-3xl border-2 border-[#cfe3d9] bg-white p-8 md:p-10">
+            <div className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#2f8f6d]">
+              What you get the moment you start
+            </div>
+            <h4 className="mb-6 font-serif text-xl font-bold text-[#10231d]">
+              Every Custodia capability &mdash; included in both plans.
+            </h4>
+
+            <ul className="divide-y divide-[#cfe3d9] border-y border-[#cfe3d9]">
+              {VALUE_STACK.map((item) => (
+                <li key={item.name} className="flex items-start justify-between gap-4 py-3">
+                  <div className="flex-1">
+                    <div
+                      className="text-sm font-bold text-[#10231d]"
+                      dangerouslySetInnerHTML={{ __html: `&#10003; ${item.name}` }}
+                    />
+                    <div
+                      className="mt-1 text-xs leading-relaxed text-[#5a7d70]"
+                      dangerouslySetInnerHTML={{ __html: item.desc }}
+                    />
+                  </div>
+                  <div className="flex-none text-right">
+                    <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a9c90]">value</div>
+                    <div className="font-mono text-sm font-bold text-[#10231d]">{item.value}</div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* Bonuses */}
+            <div className="mt-10">
+              <div className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#a06b1a]">
+                Plus four free bonuses (founding cohort)
+              </div>
+              <ul className="divide-y divide-[#e8d4a1] border-y border-[#e8d4a1] bg-[#fff8e8]">
+                {BONUSES.map((item) => (
+                  <li key={item.name} className="flex items-start justify-between gap-4 px-4 py-3">
                     <div className="flex-1">
                       <div
                         className="text-sm font-bold text-[#10231d]"
-                        dangerouslySetInnerHTML={{ __html: `&#10003; ${item.name}` }}
+                        dangerouslySetInnerHTML={{ __html: item.name }}
                       />
                       <div
-                        className="mt-1 text-xs leading-relaxed text-[#5a7d70]"
+                        className="mt-1 text-xs leading-relaxed text-[#5d4f30]"
                         dangerouslySetInnerHTML={{ __html: item.desc }}
                       />
                     </div>
                     <div className="flex-none text-right">
-                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#7a9c90]">value</div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-[#a06b1a]">value</div>
                       <div className="font-mono text-sm font-bold text-[#10231d]">{item.value}</div>
                     </div>
                   </li>
                 ))}
               </ul>
-
-              {/* Bonuses */}
-              <div className="mt-10">
-                <div className="mb-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#a06b1a]">
-                  Plus four free bonuses (this week only)
-                </div>
-                <ul className="divide-y divide-[#e8d4a1] border-y border-[#e8d4a1] bg-[#fff8e8]">
-                  {BONUSES.map((item) => (
-                    <li key={item.name} className="flex items-start justify-between gap-4 px-4 py-3">
-                      <div className="flex-1">
-                        <div
-                          className="text-sm font-bold text-[#10231d]"
-                          dangerouslySetInnerHTML={{ __html: item.name }}
-                        />
-                        <div
-                          className="mt-1 text-xs leading-relaxed text-[#5d4f30]"
-                          dangerouslySetInnerHTML={{ __html: item.desc }}
-                        />
-                      </div>
-                      <div className="flex-none text-right">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-[#a06b1a]">value</div>
-                        <div className="font-mono text-sm font-bold text-[#10231d]">{item.value}</div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Total value anchor */}
-              <div className="mt-10 border-t-2 border-[#10231d] pt-6">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <div className="text-base font-bold text-[#10231d]">
-                    Total real-world value
-                  </div>
-                  <div className="font-serif text-3xl font-bold text-[#10231d]">
-                    $13,000+ <span className="text-base font-normal text-[#5a7d70]">/year</span>
-                  </div>
-                </div>
-
-                <div className="mt-5 flex flex-wrap items-baseline justify-between gap-2">
-                  <div className="text-base font-bold text-[#10231d]">
-                    What it costs after the trial (list)
-                  </div>
-                  <div className="font-serif text-2xl font-bold text-[#7a9c90] line-through decoration-[#a06b1a] decoration-2">
-                    $749/mo
-                  </div>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
-                  <div className="text-base font-bold text-[#10231d]">
-                    Your locked-in summer price (next 100 clients)
-                  </div>
-                  <div className="font-serif text-4xl font-bold text-[#2f8f6d] md:text-5xl">
-                    $449<span className="text-lg font-normal text-[#5a7d70]">/mo</span>
-                  </div>
-                </div>
-
-                <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
-                  <div className="text-base font-bold text-[#10231d]">
-                    What you pay today to start
-                  </div>
-                  <div className="font-serif text-5xl font-bold text-[#2f8f6d] md:text-6xl">
-                    $0
-                  </div>
-                </div>
-
-                <p className="mt-4 text-xs italic leading-relaxed text-[#5a7d70]">
-                  Math check: at $449/mo, your subscription costs $5,388/year. The point is staying bid-eligible &mdash; if a single matched sub-contract converts at industry-typical 8&ndash;15% margins, the platform pays for itself for years and your CMMC posture stays watched the whole time.
-                </p>
-              </div>
-
-              {/* CTA */}
-              <div className="mt-10 flex flex-col items-center gap-3">
-                <Show when="signed-out">
-                  <Link
-                    href="/sign-up"
-                    prefetch={false}
-                    className="group inline-flex w-full items-center justify-center gap-2 bg-[#bdf2cf] px-8 py-5 text-base font-black text-[#0c2219] shadow-[0_15px_40px_rgba(189,242,207,0.4)] transition-all hover:bg-[#a8e6c0] hover:shadow-[0_20px_55px_rgba(189,242,207,0.55)] md:text-lg"
-                  >
-                    Start My 14-Day Free Trial
-                    <span aria-hidden className="text-xl leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
-                  </Link>
-                </Show>
-                <Show when="signed-in">
-                  <Link
-                    href="/upgrade"
-                    prefetch={false}
-                    className="group inline-flex w-full items-center justify-center gap-2 bg-[#bdf2cf] px-8 py-5 text-base font-black text-[#0c2219] shadow-[0_15px_40px_rgba(189,242,207,0.4)] transition-all hover:bg-[#a8e6c0] md:text-lg"
-                  >
-                    Activate My Membership
-                    <span aria-hidden className="text-xl leading-none transition-transform group-hover:translate-x-0.5">&rarr;</span>
-                  </Link>
-                </Show>
-                <p className="text-center text-xs font-medium tracking-wide text-[#5a7d70]">
-                  14-day free trial &middot; No credit card required &middot; Cancel anytime &middot; CMMC L1 Success Guarantee
-                </p>
-                <p className="text-center text-[11px] italic text-[#a06b1a]">
-                  After 100 clients lock in, summer pricing is gone. New sign-ups will pay $749/mo.
-                </p>
-              </div>
             </div>
+
+            <p className="mt-8 text-xs italic leading-relaxed text-[#5a7d70]">
+              Math check: at $1,499/mo Platoon, your subscription is $17,988/yr &mdash; about $75/client/month for a fully-managed compliance platform. Bill your client $1,200&ndash;$3,500/mo for the managed service and the math works on the first invoice. Squad ($499/mo) prices out around $100/client/mo at 5 clients with the same economics.
+            </p>
           </div>
 
           {/* Triple Guarantee */}
@@ -1764,7 +1802,7 @@ export default function Home() {
                 The Custodia Triple Guarantee
               </div>
               <h3 className="font-serif text-3xl font-bold text-[#10231d] md:text-4xl">
-                We take all the risk. You bring the business.
+                We take all the risk. You bring the clients.
               </h3>
             </div>
 
@@ -1787,7 +1825,7 @@ export default function Home() {
             </div>
 
             <p className="mx-auto mt-8 max-w-2xl text-center font-serif text-lg italic leading-relaxed text-[#10231d] md:text-xl">
-              &ldquo;Try the platform free for 14 days &mdash; no card. Go bid-ready in week 1. Connect M365 or Google Workspace and we watch your evidence year-round. If a prime fights your package, we fight for you. If you don&apos;t see a worth-bidding opportunity in your first year as a member, your second year is free.&rdquo;
+              &ldquo;Try the platform free for 14 days &mdash; no card. Onboard a real client. Ship their bid-ready package in week 1. Connect their M365 or Google tenant. Officer behind your brand. If a prime fights any client&apos;s package, we fight for you. If you don&apos;t close your first managed-CMMC client in your first quarter as a member, your second quarter is free.&rdquo;
             </p>
           </div>
         </div>
@@ -1805,21 +1843,21 @@ export default function Home() {
               ⭐ Our Average User
             </div>
             <h2 className="font-serif text-3xl font-bold leading-tight md:text-5xl">
-              The average Custodia user is bid-ready
+              The average Custodia MSP closes their first 3 client packages
               <br />
               <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
-                inside the 14-day free trial.
+                inside their first quarter.
               </span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-base text-[#a8cfc0] md:text-lg">
-              Not a hand-picked success story. Not the top 1%. <span className="font-bold text-white">The middle of the pack.</span> Here&apos;s exactly what the typical user builds at every stage &mdash; from sign-up to SPRS-affirmed and watched all year.
+              Not a hand-picked success story. Not the top 1%. <span className="font-bold text-white">The middle of the pack.</span> Here&apos;s exactly what the typical MSP partner builds &mdash; from sign-up through their first 3 paying CMMC clients.
             </p>
           </div>
 
           {/* Headline outcome — bid-eligibility milestone */}
           <div className="mx-auto mb-14 max-w-4xl border-2 border-[#bdf2cf]/40 bg-gradient-to-br from-[#11342a] via-[#0e2a23] to-[#10231d] p-10 text-center shadow-[0_30px_80px_rgba(0,0,0,0.45)] md:p-14">
             <div className="text-[11px] font-black uppercase tracking-[0.28em] text-[#bdf2cf]">
-              Federal bid-eligibility
+              First-client bid-ready rate
             </div>
             <div className="mt-4 font-serif text-7xl font-black leading-none text-white md:text-9xl">
               <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text text-transparent">
@@ -1827,10 +1865,10 @@ export default function Home() {
               </span>
             </div>
             <p className="mx-auto mt-5 max-w-xl text-base text-[#a8cfc0] md:text-lg">
-              of users who complete all 15 FAR 52.204-21 safeguarding requirements on Custodia <span className="font-bold text-white">file a defensible SPRS Level 1 affirmation</span> &mdash; the legal prerequisite to handle Federal Contract Information and bid on FCI-scoped contracts.
+              of MSP partners who complete onboarding for their first client business <span className="font-bold text-white">ship a defensible SPRS Level 1 affirmation</span> for that client &mdash; the legal prerequisite for the client to handle FCI and bid on FCI-scoped contracts.
             </p>
             <p className="mx-auto mt-3 max-w-xl text-xs italic text-[#7fa89a]">
-              Custodia handles CMMC Level 1 only. Awards depend on your bid quality, agency selection, and competition &mdash; not the platform. We secure your eligibility; you secure the business.
+              Custodia handles CMMC Level 1 only. Award outcomes depend on each client&apos;s bid quality, agency selection, and competition &mdash; not the platform. We secure the eligibility; you and your client secure the business.
             </p>
           </div>
 
@@ -1838,10 +1876,10 @@ export default function Home() {
           <div className="mx-auto mb-14 max-w-5xl">
             <div className="mb-8 text-center">
               <div className="mb-2 text-[10px] font-black uppercase tracking-[0.24em] text-[#bdf2cf]">
-                The Average User Journey
+                The Average MSP Journey
               </div>
               <h3 className="font-serif text-2xl font-bold text-white md:text-3xl">
-                From sign-up to bid-eligible &mdash; here&apos;s the median path.
+                From sign-up to first 3 paying clients &mdash; the median MSP path
               </h3>
             </div>
 
@@ -1850,42 +1888,42 @@ export default function Home() {
                 {
                   day: "Day 0",
                   stat: "Free trial",
-                  label: "Signs up with email. No credit card. Onboards in 14 minutes.",
+                  label: "MSP signs up. No credit card. Reads the onboarding playbook in 15 minutes.",
                 },
                 {
-                  day: "Day 4",
-                  stat: "Bid-ready",
-                  label: "Completes all 15 FAR 52.204-21 safeguarding requirements. Signs SSP.",
+                  day: "Day 1",
+                  stat: "First client invited",
+                  label: "Picks one DoD client from existing book. Creates org, invites client owner, kicks off Charlie interview.",
                 },
                 {
                   day: "Day 5",
-                  stat: "SPRS affirmed",
-                  label: "Annual L1 affirmation filed. Visible to primes and contracting officers.",
-                },
-                {
-                  day: "Day 6",
-                  stat: "Connectors live",
-                  label: "Connects M365 or Google Workspace. Continuous monitoring + freshness alerts switch on.",
+                  stat: "First package shipped",
+                  label: "Client&apos;s bid-ready package generated. SSP, affirmation, evidence ZIP handed off as deliverable.",
                 },
                 {
                   day: "Day 7",
-                  stat: "First bid",
-                  label: "Asks Charlie for matching opportunities and submits a first response &mdash; with a defensible package attached &mdash; inside week 1 of the trial.",
+                  stat: "Client SPRS-affirmed",
+                  label: "MSP walks client through SPRS submission. Client visible to primes. MSP starts billing recurring.",
                 },
                 {
                   day: "Day 14",
                   stat: "Decision",
-                  label: "Trial ends. Add a card to stay at \$449/mo, or cancel — you keep the bid-ready package you built either way.",
+                  label: "Trial ends. MSP picks Squad ($499/mo, up to 5) or Platoon ($1,499/mo, up to 20). Already breaking even.",
+                },
+                {
+                  day: "Month 2",
+                  stat: "Clients 2 &amp; 3",
+                  label: "Pitch CMMC managed-service to two more existing DoD clients. Both onboarded the same week. Three packages live.",
                 },
                 {
                   day: "Quarter 1",
-                  stat: "vCO on call",
-                  label: "Officer answers tickets, defends your package against any prime challenge, and reviews any new evidence the connectors flag.",
+                  stat: "$3.6k+ MRR",
+                  label: "3 paying clients at $1,200/mo MSP service tier = $3,600 MRR. Custodia subscription paid 2.4x over by clients alone.",
                 },
                 {
                   day: "Year 1",
-                  stat: "Re-affirmed",
-                  label: "Annual SPRS re-submission prepped automatically every October. Posture stays current. Bid-eligibility never quietly drifts.",
+                  stat: "Re-affirmed across book",
+                  label: "Every client&apos;s annual SPRS re-submission prepped automatically every October. Posture watched. Renewals predictable.",
                 },
               ].map((step, i) => (
                 <div key={i} className="bg-[#0c2219] p-5">
@@ -1907,25 +1945,25 @@ export default function Home() {
           <div className="mx-auto mb-14 grid max-w-5xl gap-5 md:grid-cols-3">
             <div className="border border-[#2f8f6d]/30 bg-[#11342a] p-7">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[#bdf2cf]">
-                Time invested
+                Time per client
               </div>
               <div className="mt-3 font-serif text-4xl font-bold text-white">
-                ~9 hrs
+                ~30 min
               </div>
               <p className="mt-3 text-sm leading-relaxed text-[#a8cfc0]">
-                Total hours the average user spends inside The Platform to go from zero to SPRS-affirmed. Most do it after-hours over a single week.
+                MSP time to onboard a new client business inside The Platform. Most of the work is Charlie interviewing the client &mdash; you stay the relationship, we do the typing.
               </p>
             </div>
 
             <div className="border border-[#2f8f6d]/30 bg-[#11342a] p-7">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[#bdf2cf]">
-                Opportunities surfaced
+                Recurring per client
               </div>
               <div className="mt-3 font-serif text-4xl font-bold text-white">
-                ~120/yr
+                $1.2k-$3.5k/mo
               </div>
               <p className="mt-3 text-sm leading-relaxed text-[#a8cfc0]">
-                NAICS-matched federal RFPs, sub-contracts, and SBIR solicitations Charlie surfaces in your first year &mdash; live SAM.gov + agency feeds, sorted by closing date.
+                Typical managed-CMMC service price MSPs charge per DoD client &mdash; on top of base IT contracts. Lifts annual revenue per DoD client by $14k-$42k.
               </p>
             </div>
 
@@ -1937,7 +1975,7 @@ export default function Home() {
                 365 days
               </div>
               <p className="mt-3 text-sm leading-relaxed text-[#a8cfc0]">
-                Continuous monitoring of access controls, MFA, audit logs, and authorized-user roster through your M365 or Google tenant &mdash; with freshness alerts before evidence goes stale.
+                Continuous monitoring across every client&apos;s M365 or Google tenant. One alert feed for your whole book. No fire drills, no per-client surcharge.
               </p>
             </div>
           </div>
@@ -1945,15 +1983,15 @@ export default function Home() {
           {/* The realization punch line */}
           <div className="mx-auto max-w-4xl border-2 border-[#bdf2cf]/30 bg-gradient-to-br from-[#0e2a23] to-[#10231d] p-10 text-center md:p-14">
             <div className="text-[11px] font-black uppercase tracking-[0.28em] text-[#bdf2cf]">
-              The math the average user runs
+              The math the average MSP runs
             </div>
             <p className="mx-auto mt-5 max-w-2xl font-serif text-xl leading-[1.5] text-white md:text-2xl">
-              Spend <span className="font-bold text-[#bdf2cf]">week 1</span> finishing CMMC Level 1.<br className="hidden md:inline" />
-              {" "}Connect M365 or Google. Stay <span className="font-bold text-[#bdf2cf]">bid-eligible</span> all year.<br className="hidden md:inline" />
-              {" "}Decide on day 14 whether to keep going. <span className="font-bold text-[#bdf2cf]">No card to start.</span>
+              Onboard your first DoD client in <span className="font-bold text-[#bdf2cf]">week 1</span>.<br className="hidden md:inline" />
+              {" "}Bill <span className="font-bold text-[#bdf2cf]">$1,200&ndash;$3,500/mo</span> per client.<br className="hidden md:inline" />
+              {" "}Pay $499/mo for Squad (or $1,499 for Platoon). <span className="font-bold text-[#bdf2cf]">Math closes on client #1.</span>
             </p>
             <p className="mx-auto mt-6 max-w-2xl text-sm italic leading-relaxed text-[#a8cfc0]">
-              We don&apos;t promise contract wins &mdash; nobody legitimate can. We promise the only thing the platform actually controls: a defensible CMMC Level 1 package, year-round monitoring, and a vCO on call. The bidding is yours. The posture is ours.
+              We don&apos;t promise contract wins for your clients &mdash; nobody legitimate can. We promise the only thing the platform actually controls: a defensible CMMC Level 1 package per client, year-round monitoring, and a credentialed officer behind your MSP brand.
             </p>
 
             <div className="mt-8">
@@ -2003,10 +2041,10 @@ export default function Home() {
               The Custodia Guarantee
             </div>
             <h2 className="mx-auto mt-4 max-w-3xl font-serif text-3xl font-bold leading-[1.1] text-[#10231d] sm:text-4xl md:text-5xl">
-              A Custodia Compliance Officer on call. Year&#8209;round. <span className="italic text-[#2f8f6d]">Personally.</span>
+              A credentialed Compliance Officer behind your MSP brand. Year&#8209;round.
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#3d5a4f] sm:text-lg">
-              We&apos;re a cybersecurity firm first &mdash; not just a web app. The platform automates the paperwork, but a credentialed Custodia Compliance Officer guarantees you get this done to standard. If anything comes up, anytime, we help you ourselves.
+              We&apos;re a cybersecurity firm first &mdash; not just a SaaS. The platform automates the paperwork; a credentialed Custodia Compliance Officer guarantees every client&apos;s package gets done to standard. If anything comes up &mdash; for you or any of your clients &mdash; we step in. Behind your brand. On our time.
             </p>
           </div>
 
@@ -2052,19 +2090,19 @@ export default function Home() {
               {[
                 {
                   title: "Anytime, year&#8209;round",
-                  body: "Stuck on a control? Prime asking for evidence? Sub&#8209;contract clause you don&apos;t recognize? Your officer is a message away &mdash; not a tier&#8209;1 agent reading a script.",
+                  body: "Stuck on a control for one of your clients? Prime asking for evidence you don&apos;t recognize? Sub&#8209;contract clause that&apos;s new to you? Your officer is a message away &mdash; not a tier&#8209;1 agent reading a script.",
                 },
                 {
-                  title: "Personal, not pooled",
-                  body: "You get assigned. Same officer. They learn your environment, your contracts, your risk profile &mdash; and defend your package if it&apos;s ever challenged.",
+                  title: "Behind your brand &mdash; not in front of you",
+                  body: "You stay the relationship with the client. The officer answers your questions and backstops your package, but never goes around you to your client. Your MSP, your brand, your client.",
                 },
                 {
                   title: "CMMC success guarantee",
-                  body: "If your Level 1 package isn&apos;t defensible to standard, that&apos;s on us. We rebuild it with you, on our time, until it is. The posture is ours.",
+                  body: "If any client&apos;s Level 1 package isn&apos;t defensible to standard, that&apos;s on us. We rebuild it with you, on our time, until it is. The posture is ours; the relationship stays yours.",
                 },
                 {
                   title: "Cybersecurity firm first",
-                  body: "Custodia is staffed by security professionals, not SaaS support. The web app is the leverage. The officer is the guarantee.",
+                  body: "Custodia is staffed by security professionals, not SaaS support. The web app is the leverage. The officer is the muscle that makes your MSP look like a Fortune 100 compliance practice.",
                 },
               ].map((card, i) => (
                 <div
@@ -2087,7 +2125,7 @@ export default function Home() {
           {/* Pull quote */}
           <div className="mx-auto mt-12 max-w-3xl border-l-4 border-[#2f8f6d] bg-white/60 px-7 py-6 sm:mt-16">
             <p className="font-serif text-lg italic leading-[1.55] text-[#10231d] sm:text-xl">
-              &ldquo;The bidding is yours. The posture is ours. And if anything ever goes sideways &mdash; a prime challenge, a missing artifact, a control you don&apos;t understand &mdash; you get a credentialed human, not a help center.&rdquo;
+              &ldquo;The relationship is yours. The posture is ours. And if anything ever goes sideways for one of your clients &mdash; a prime challenge, a missing artifact, a control they don&apos;t understand &mdash; you get a credentialed human at your back, not a help center.&rdquo;
             </p>
             <div className="mt-4 text-[11px] font-black uppercase tracking-[0.22em] text-[#2f8f6d]">
               &mdash; The Custodia Guarantee
@@ -2143,18 +2181,17 @@ export default function Home() {
           <div className="mb-12 flex flex-col items-start justify-between gap-4  border border-[#cfe3d9] bg-white p-6 md:flex-row md:items-center">
             <div>
               <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#a06b1a]">
-                Summer Federal Cash Incentive &middot; 100 seats
+                Founding MSP Cohort &middot; 25 partners
               </div>
               <div className="mt-1 font-serif text-lg font-bold text-[#0f2f26]">
-                14 days free, no credit card &mdash; $449/mo after
-                <span className="ml-2 text-sm font-normal text-[#7a9c90] line-through">$749</span>
+                14 days free, no credit card &mdash; Squad $499/mo or Platoon $1,499/mo
               </div>
             </div>
             <Link
               href="/sign-up"
               className=" bg-[#0e2a23] px-5 py-2.5 text-sm font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
             >
-              Start my 14-day free trial &rarr;
+              Start my MSP trial &rarr;
             </Link>
           </div>
 
@@ -2191,7 +2228,7 @@ export default function Home() {
                 </ul>
               </div>
               <div>
-                <div className="mb-3 text-xs font-bold uppercase tracking-widest text-[#2f8f6d]">For contractors</div>
+                <div className="mb-3 text-xs font-bold uppercase tracking-widest text-[#2f8f6d]">For MSPs</div>
                 <ul className="space-y-2">
                   <li><Link href="/sign-up" className="transition-colors hover:text-[#0f2f26]">Start free trial</Link></li>
                   <li><Link href="/sign-in" className="transition-colors hover:text-[#0f2f26]">Sign in</Link></li>
