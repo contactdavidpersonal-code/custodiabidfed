@@ -86,8 +86,21 @@ export const ONBOARDING_OPENER_TEXT = `Hi, I'm Charlie — I'll be your complian
 
 Before we start, have you ever bid on a federal contract before, or worked under a company that did? Totally fine either way — I just want to know what pace to use.`;
 
+/**
+ * MSP variant: the user is a managed-services provider and the active Clerk
+ * org represents one of their client businesses. Frame the walk in third
+ * person ("the client") rather than second person ("you").
+ */
+export function buildMspOnboardingOpener(orgName: string): string {
+  const name = orgName && orgName.trim().length > 0 ? orgName.trim() : "this client";
+  return `Hi, I'm Charlie — I'll be the compliance officer for ${name}.
+
+You're walking ${name} through CMMC Level 1 as their MSP, so I'll ask about their setup, not yours. First question: has ${name} ever bid on a federal contract before, or worked under a company that did? Totally fine either way — I just want to know what pace to use.`;
+}
+
 export async function ensureOnboardingOpener(
   conversationId: string,
+  opts?: { isMsp?: boolean; orgName?: string },
 ): Promise<void> {
   const sql = getSql();
   const existing = (await sql`
@@ -97,10 +110,14 @@ export async function ensureOnboardingOpener(
   `) as Array<{ id: string }>;
   if (existing.length > 0) return;
 
+  const text = opts?.isMsp
+    ? buildMspOnboardingOpener(opts.orgName ?? "this client")
+    : ONBOARDING_OPENER_TEXT;
+
   await appendMessage({
     conversationId,
     role: "assistant",
-    content: [{ type: "text", text: ONBOARDING_OPENER_TEXT }],
+    content: [{ type: "text", text }],
     model: "seed",
     stopReason: "seed",
   });

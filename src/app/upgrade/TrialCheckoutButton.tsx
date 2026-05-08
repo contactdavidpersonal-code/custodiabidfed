@@ -66,7 +66,10 @@ export function TrialCheckoutButton({
       clerk.__internal_openCheckout({
         planId: resolvedId,
         planPeriod: "month",
-        newSubscriptionRedirectUrl: "/assessments",
+        // Always land on /onboard after the trial activates. For solo users
+        // this runs onboarding then redirects to /assessments. For MSPs it
+        // prompts them to create their first client business org.
+        newSubscriptionRedirectUrl: "/onboard",
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not open checkout");

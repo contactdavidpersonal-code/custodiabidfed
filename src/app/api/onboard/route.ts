@@ -10,6 +10,7 @@ import {
 import { runOfficerAgentStream, SSE_HEADERS } from "@/lib/ai/stream";
 import {
   ensureOrgForUser,
+  getActiveOrgFromAuth,
   getBusinessProfile,
   isOnboardingComplete,
 } from "@/lib/assessment";
@@ -54,7 +55,7 @@ type OnboardRequestBody = {
  * tools as it learns.
  */
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
+  const { userId, has, orgId } = await auth();
   if (!userId) {
     return new Response("Unauthorized", { status: 401 });
   }
@@ -71,9 +72,15 @@ export async function POST(req: NextRequest) {
   const blocked = await enforceCharlieBudget({ scope: "onboard", userId });
   if (blocked) return blocked;
 
-  const org = await ensureOrgForUser(userId);
+  // MSPs walk each client business through onboarding under that client's
+  // active Clerk org. Solo users fall back to their personal-account org.
+  const isMsp =
+    has({ plan: "user:msp_squad_5" }) || has({ plan: "user:msp_platoon_20" });
+  const org = orgId
+    ? (await getActiveOrgFromAuth()) ?? (await ensureOrgForUser(userId))
+    : await ensureOrgForUser(userId);
   const conv = await getOrCreateOnboardingConversation(org.id);
-  await ensureOnboardingOpener(conv.id);
+  await ensureOnboardingOpener(conv.id, { isMsp, orgName: org.name });
 
   await appendMessage({
     conversationId: conv.id,
@@ -92,6 +99,9 @@ export async function POST(req: NextRequest) {
 
   const contextBlock = [
     `## Current user state`,
+    isMsp
+      ? `- Caller is a Managed Services Provider walking their CLIENT through CMMC Level 1. The "user" of this conversation answers ON BEHALF OF their client. Refer to the client by name (${org.name}). Use third-person framing — "the client", "${org.name}", "their team" — NOT "you" / "your business".`
+      : `- Caller is the business owner answering for their own company.`,
     `- Current organization name (may be a placeholder): ${org.name}`,
     `- Scoped systems captured: ${org.scoped_systems ? "yes" : "no"}`,
     `- Federal ID number on file: ${org.sam_uei ? "yes" : "no"}`,
@@ -126,13 +136,17 @@ export async function POST(req: NextRequest) {
  * redirect into the workspace once the agent has captured enough.
  */
 export async function GET() {
-  const { userId } = await auth();
+  const { userId, has, orgId } = await auth();
   if (!userId) {
     return new Response("Unauthorized", { status: 401 });
   }
-  const org = await ensureOrgForUser(userId);
+  const isMsp =
+    has({ plan: "user:msp_squad_5" }) || has({ plan: "user:msp_platoon_20" });
+  const org = orgId
+    ? (await getActiveOrgFromAuth()) ?? (await ensureOrgForUser(userId))
+    : await ensureOrgForUser(userId);
   const conv = await getOrCreateOnboardingConversation(org.id);
-  await ensureOnboardingOpener(conv.id);
+  await ensureOnboardingOpener(conv.id, { isMsp, orgName: org.name });
   const rows = await listMessages(conv.id, 100);
   const profile = await getBusinessProfile(org.id);
 
