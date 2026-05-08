@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>FCI Boundary Diagram — Preview</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root {
+    --ink: #10231d;
+    --ink-soft: #44695c;
+    --line: #cfe3d9;
+    --green: #2f8f6d;
+    --green-dk: #0e2a23;
+    --green-bg: #f7fcf9;
+    --amber: #a06b1a;
+    --amber-bg: #fff8e8;
+    --red: #b3261e;
+    --red-bg: #fdecea;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: #f5f5f1;
+    color: var(--ink);
+    padding: 32px 16px 80px;
+  }
+  .page {
+    max-width: 1040px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid var(--line);
+    box-shadow: 0 20px 60px rgba(14, 48, 37, 0.08);
+    padding: 40px 48px;
+  }
+  .doc-header {
+    border-bottom: 2px solid var(--green-dk);
+    padding-bottom: 16px;
+    margin-bottom: 28px;
+  }
+  .doc-header .eyebrow {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+  .doc-header h1 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 28px;
+    margin: 6px 0 4px;
+    line-height: 1.15;
+  }
+  .doc-header .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .doc-header .meta b { color: var(--ink); }
+
+  /* Diagram */
+  .diagram-wrap {
+    border: 1px solid var(--line);
+    background: #fafdfb;
+    padding: 18px;
+    margin: 18px 0 26px;
+  }
+  svg { display: block; width: 100%; height: auto; }
+
+  .legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px 20px;
+    margin: 18px 0 28px;
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .legend .swatch {
+    display: inline-block;
+    width: 14px; height: 14px;
+    margin-right: 8px;
+    vertical-align: -2px;
+    border: 1px solid rgba(0,0,0,0.12);
+  }
+
+  /* Tables */
+  h2 {
+    font-family: Georgia, serif;
+    font-size: 18px;
+    margin: 28px 0 8px;
+    color: var(--ink);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 4px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  th, td {
+    text-align: left;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+  th {
+    background: var(--green-bg);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--green-dk);
+    border-bottom: 1px solid var(--green);
+  }
+  tr:last-child td { border-bottom: none; }
+  .pill {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .pill-in    { background: #e3f5ec; color: var(--green-dk); }
+  .pill-esp   { background: #e8eef9; color: #1f3d7a; }
+  .pill-out   { background: #f0eee8; color: #5b554a; }
+  .pill-hot   { background: var(--amber-bg); color: var(--amber); }
+
+  /* Validation block */
+  .validation {
+    margin-top: 26px;
+    border: 1px solid var(--line);
+    background: #fbfcfa;
+  }
+  .validation-row {
+    display: flex;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+  }
+  .validation-row:last-child { border-bottom: none; }
+  .validation-row .icon {
+    flex: none;
+    width: 22px; height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 800;
+    font-size: 12px;
+    color: #fff;
+  }
+  .v-pass .icon { background: var(--green); }
+  .v-warn .icon { background: var(--amber); }
+  .v-fail .icon { background: var(--red); }
+
+  .footer-note {
+    margin-top: 32px;
+    padding-top: 14px;
+    border-top: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--ink-soft);
+    line-height: 1.55;
+  }
+
+  .source-stamp {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    background: var(--green-bg);
+    color: var(--green-dk);
+    font-size: 10px;
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    border: 1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="doc-header">
+    <div class="eyebrow">SSP § 1.2 — Assessment &amp; FCI Boundary</div>
+    <h1>Acme Defense Machining LLC — FCI Boundary Diagram</h1>
+    <div class="meta">
+      <span><b>Generated:</b> May 6, 2026</span>
+      <span><b>SPRS confidence:</b> Self-Assessment, Level 1</span>
+      <span><b>Affirming Official:</b> Jane Romero, Owner</span>
+      <span><b>CAGE:</b> 8K2X4</span>
+      <span><b>NAICS:</b> 332710</span>
+    </div>
+  </div>
+
+  <p style="font-size:13px;line-height:1.55;color:var(--ink-soft);max-width:780px;">
+    This diagram defines the <b>FCI Boundary</b> for Acme Defense Machining LLC for the purpose of FAR 52.204-21
+    safeguarding and the CMMC Level 1 self-assessment. All assets, personnel, and external service providers
+    that store, process, or transmit Federal Contract Information (FCI) are inside the inner boundary.
+    Everything outside is explicitly out of scope.
+  </p>
+
+  <div class="diagram-wrap">
+    <svg viewBox="0 0 980 640" xmlns="http://www.w3.org/2000/svg" role="img"
+         aria-label="FCI boundary diagram for Acme Defense Machining LLC">
+      <!-- defs: shadows -->
+      <defs>
+        <filter id="soft" x="-10%" y="-10%" width="120%" height="120%">
+          <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0e2a23" flood-opacity="0.10"/>
+        </filter>
+      </defs>
+
+      <!-- OUTERMOST: External (everything off-network) -->
+      <rect x="10" y="10" width="960" height="620" fill="#f0eee8" stroke="#5b554a" stroke-dasharray="6 4" stroke-width="1.5"/>
+      <text x="26" y="34" font-size="12" font-weight="800" letter-spacing="2" fill="#5b554a">EXTERNAL — OUT OF NETWORK</text>
+
+      <!-- External actors -->
+      <g font-size="11" fill="#3d3a33">
+        <rect x="36" y="56" width="170" height="48" fill="#fff" stroke="#bdb8a8"/>
+        <text x="121" y="76" text-anchor="middle" font-weight="700">DoD Prime Contractor</text>
+        <text x="121" y="92" text-anchor="middle">(Lockheed Martin RMS)</text>
+
+        <rect x="220" y="56" width="170" height="48" fill="#fff" stroke="#bdb8a8"/>
+        <text x="305" y="76" text-anchor="middle" font-weight="700">DoD SPRS</text>
+        <text x="305" y="92" text-anchor="middle">sprs.dla.mil</text>
+
+        <rect x="784" y="56" width="170" height="48" fill="#fff" stroke="#bdb8a8"/>
+        <text x="869" y="76" text-anchor="middle" font-weight="700">Internet / Public</text>
+        <text x="869" y="92" text-anchor="middle">acme-machining.com</text>
+      </g>
+
+      <!-- ASSESSMENT BOUNDARY (organization perimeter) -->
+      <rect x="40" y="120" width="900" height="490" fill="#fff" stroke="#2f8f6d" stroke-width="2"/>
+      <text x="58" y="142" font-size="11" font-weight="800" letter-spacing="2" fill="#2f8f6d">ASSESSMENT BOUNDARY — ACME DEFENSE MACHINING LLC</text>
+
+      <!-- FCI BOUNDARY (inner) -->
+      <rect x="70" y="158" width="540" height="430" fill="#f0fbf4" stroke="#0e2a23" stroke-width="2.5" filter="url(#soft)"/>
+      <text x="88" y="182" font-size="11" font-weight="800" letter-spacing="2" fill="#0e2a23">FCI BOUNDARY — STORES / PROCESSES / TRANSMITS FCI</text>
+
+      <!-- People in scope -->
+      <g>
+        <rect x="88" y="200" width="240" height="116" fill="#fff" stroke="#0e2a23"/>
+        <text x="100" y="220" font-size="11" font-weight="800" fill="#0e2a23">PEOPLE (3)</text>
+        <g font-size="11" fill="#10231d">
+          <text x="100" y="242">• Jane Romero — Owner / Affirming Official</text>
+          <text x="100" y="260">• Marcus Hill — Project Manager</text>
+          <text x="100" y="278">• Priya Shah — Senior Machinist</text>
+        </g>
+        <text x="100" y="304" font-size="10" fill="#44695c" font-style="italic">Source: M365 Entra ID group "FCI-Users"</text>
+      </g>
+
+      <!-- Endpoints -->
+      <g>
+        <rect x="340" y="200" width="260" height="116" fill="#fff" stroke="#0e2a23"/>
+        <text x="352" y="220" font-size="11" font-weight="800" fill="#0e2a23">ENDPOINTS (3 LAPTOPS)</text>
+        <g font-size="11" fill="#10231d">
+          <text x="352" y="242">• ACME-LT-001 — Win 11 Pro (Romero)</text>
+          <text x="352" y="260">• ACME-LT-002 — Win 11 Pro (Hill)</text>
+          <text x="352" y="278">• ACME-LT-003 — Win 11 Pro (Shah)</text>
+        </g>
+        <text x="352" y="304" font-size="10" fill="#44695c" font-style="italic">BitLocker on, Defender on. Source: Intune</text>
+      </g>
+
+      <!-- Storage -->
+      <g>
+        <rect x="88" y="332" width="512" height="98" fill="#fff" stroke="#0e2a23"/>
+        <text x="100" y="352" font-size="11" font-weight="800" fill="#0e2a23">FCI STORAGE / PROCESSING</text>
+        <g font-size="11" fill="#10231d">
+          <text x="100" y="374">• SharePoint site "DoD-Contracts" — restricted to FCI-Users group</text>
+          <text x="100" y="392">• Shared mailbox dod@acmedef.onmicrosoft.com — FCI in/out</text>
+          <text x="100" y="410">• OneDrive (per-user) — derivative copies; conditional access enforced</text>
+        </g>
+      </g>
+
+      <!-- Inbound / Outbound flows -->
+      <g>
+        <rect x="88" y="446" width="512" height="124" fill="#fff" stroke="#0e2a23"/>
+        <text x="100" y="466" font-size="11" font-weight="800" fill="#0e2a23">FCI DATA FLOWS</text>
+        <g font-size="11" fill="#10231d">
+          <text x="100" y="488">↓ INBOUND: Prime sends drawings via Lockheed Exostar portal → Romero downloads to SharePoint</text>
+          <text x="100" y="506">↓ INBOUND: Prime emails technical questions → dod@ shared mailbox</text>
+          <text x="100" y="524">↑ OUTBOUND: Replies via shared mailbox; deliverables uploaded to Exostar</text>
+          <text x="100" y="542">↺ INTERNAL: SharePoint ↔ laptops via OneDrive sync (encrypted in transit, BitLocker at rest)</text>
+        </g>
+      </g>
+
+      <!-- ESPs (External Service Providers) on the right inside Assessment boundary -->
+      <g>
+        <rect x="630" y="200" width="290" height="370" fill="#eef3fb" stroke="#1f3d7a" stroke-width="1.5"/>
+        <text x="644" y="220" font-size="11" font-weight="800" letter-spacing="1" fill="#1f3d7a">EXTERNAL SERVICE PROVIDERS (ESP)</text>
+        <text x="644" y="236" font-size="10" fill="#1f3d7a" font-style="italic">In-scope per CMMC scoping guidance</text>
+
+        <g font-size="11" fill="#10231d">
+          <rect x="644" y="252" width="262" height="56" fill="#fff" stroke="#1f3d7a"/>
+          <text x="656" y="270" font-weight="700">Microsoft 365 Business Premium</text>
+          <text x="656" y="286">• SharePoint, Exchange, OneDrive, Entra ID</text>
+          <text x="656" y="300" font-style="italic" fill="#44695c">FedRAMP Moderate (Commercial). Tenant: US.</text>
+
+          <rect x="644" y="318" width="262" height="48" fill="#fff" stroke="#1f3d7a"/>
+          <text x="656" y="336" font-weight="700">Microsoft Defender for Business</text>
+          <text x="656" y="352">• AV/EDR on all 3 endpoints</text>
+
+          <rect x="644" y="376" width="262" height="48" fill="#fff" stroke="#1f3d7a"/>
+          <text x="656" y="394" font-weight="700">Lockheed Exostar (prime portal)</text>
+          <text x="656" y="410">• File transfer channel for FCI</text>
+
+          <rect x="644" y="434" width="262" height="58" fill="#fff" stroke="#1f3d7a"/>
+          <text x="656" y="452" font-weight="700">Custodia BidFed (this platform)</text>
+          <text x="656" y="468">• MSP-managed compliance &amp; SSP system</text>
+          <text x="656" y="484" font-style="italic" fill="#44695c">No FCI stored; metadata + evidence only.</text>
+
+          <rect x="644" y="502" width="262" height="58" fill="#fff" stroke="#1f3d7a"/>
+          <text x="656" y="520" font-weight="700">North Hills MSP (the user of this app)</text>
+          <text x="656" y="536">• Managed IT — has admin to M365 tenant</text>
+          <text x="656" y="552" font-style="italic" fill="#44695c">FAR 52.204-21 flow-down acknowledged</text>
+        </g>
+      </g>
+
+      <!-- OUT OF SCOPE strip at bottom -->
+      <g>
+        <rect x="70" y="588" width="850" height="0" fill="none"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="legend">
+    <div><span class="swatch" style="background:#0e2a23"></span><b>FCI Boundary</b> — assets that touch FCI</div>
+    <div><span class="swatch" style="background:#fff;border:2px solid #2f8f6d"></span><b>Assessment Boundary</b> — Acme legal entity</div>
+    <div><span class="swatch" style="background:#eef3fb;border:1px solid #1f3d7a"></span><b>External Service Provider</b> — flow-down required</div>
+    <div><span class="swatch" style="background:#f0eee8;border:1px dashed #5b554a"></span><b>External</b> — out of network</div>
+  </div>
+
+  <h2>Out-of-Scope (declared)</h2>
+  <table>
+    <thead>
+      <tr><th>Asset / system</th><th>Why out of scope</th><th>How segregated</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>acme-machining.com (marketing site)</td>
+        <td>No FCI stored, processed, or transmitted</td>
+        <td>Hosted Squarespace, no integrations with M365 tenant</td>
+      </tr>
+      <tr>
+        <td>QuickBooks Online (accounting)</td>
+        <td>Invoices contain no FCI; PO numbers only</td>
+        <td>Separate SSO; no shared storage with FCI containers</td>
+      </tr>
+      <tr>
+        <td>BYOD mobile phones (5 devices)</td>
+        <td>FCI not permitted on personal devices per AUP</td>
+        <td>Conditional Access blocks SharePoint "DoD-Contracts" on unmanaged devices</td>
+      </tr>
+      <tr>
+        <td>Shop-floor CNC machines (2)</td>
+        <td>Receive G-code from FCI laptop; do not store FCI persistently</td>
+        <td>Air-gapped; G-code transferred via removable media, sanitized after job</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Boundary inventory — quick view</h2>
+  <table>
+    <thead>
+      <tr><th style="width:25%">Item</th><th style="width:18%">Category</th><th>Detail</th><th style="width:18%">Source of truth</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Jane Romero</td><td><span class="pill pill-in">In FCI</span></td><td>Owner; affirming official</td><td><span class="source-stamp">Entra ID</span></td></tr>
+      <tr><td>Marcus Hill</td><td><span class="pill pill-in">In FCI</span></td><td>Project Manager</td><td><span class="source-stamp">Entra ID</span></td></tr>
+      <tr><td>Priya Shah</td><td><span class="pill pill-in">In FCI</span></td><td>Sr. Machinist; reads drawings</td><td><span class="source-stamp">Entra ID</span></td></tr>
+      <tr><td>ACME-LT-001 / 002 / 003</td><td><span class="pill pill-in">In FCI</span></td><td>Win 11 Pro, BitLocker, Defender, Intune-enrolled</td><td><span class="source-stamp">Intune</span></td></tr>
+      <tr><td>SharePoint "DoD-Contracts"</td><td><span class="pill pill-in">In FCI</span></td><td>Restricted to FCI-Users group; external sharing off</td><td><span class="source-stamp">M365 audit</span></td></tr>
+      <tr><td>dod@acmedef.onmicrosoft.com</td><td><span class="pill pill-in">In FCI</span></td><td>Shared mailbox; MFA-required delegated access</td><td><span class="source-stamp">Exchange</span></td></tr>
+      <tr><td>Microsoft 365 Business Premium</td><td><span class="pill pill-esp">ESP</span></td><td>Underpins all FCI storage; FedRAMP Moderate (Commercial)</td><td><span class="source-stamp">contract</span></td></tr>
+      <tr><td>Lockheed Exostar</td><td><span class="pill pill-esp">ESP</span></td><td>Prime-mandated FCI transfer channel</td><td><span class="source-stamp">prime</span></td></tr>
+      <tr><td>North Hills MSP</td><td><span class="pill pill-esp">ESP</span></td><td>Managed IT; FAR 52.204-21 flow-down on file</td><td><span class="source-stamp">MSA</span></td></tr>
+      <tr><td>Custodia BidFed</td><td><span class="pill pill-esp">ESP</span></td><td>Compliance platform; metadata + evidence only, no FCI</td><td><span class="source-stamp">DPA</span></td></tr>
+      <tr><td>BYOD phones</td><td><span class="pill pill-out">Out</span></td><td>Conditional Access blocks FCI containers</td><td><span class="source-stamp">CA policy</span></td></tr>
+      <tr><td>QuickBooks Online</td><td><span class="pill pill-out">Out</span></td><td>No FCI; PO numbers only</td><td><span class="source-stamp">declared</span></td></tr>
+      <tr><td>acme-machining.com</td><td><span class="pill pill-out">Out</span></td><td>Marketing only; isolated hosting</td><td><span class="source-stamp">declared</span></td></tr>
+      <tr><td>CNC machines (2)</td><td><span class="pill pill-out">Out</span></td><td>No persistent FCI storage; air-gapped</td><td><span class="source-stamp">declared</span></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Validation checks (run automatically before SSP generation)</h2>
+  <div class="validation">
+    <div class="validation-row v-pass">
+      <span class="icon">✓</span>
+      <div><b>People in FCI scope identified.</b> 3 users in Entra ID group "FCI-Users" — matches affirming official's declared headcount.</div>
+    </div>
+    <div class="validation-row v-pass">
+      <span class="icon">✓</span>
+      <div><b>FCI storage covered by connector.</b> SharePoint site "DoD-Contracts" is enumerated by the M365 connector; external sharing setting confirmed off in last pull (May 6, 2026 04:12 UTC).</div>
+    </div>
+    <div class="validation-row v-pass">
+      <span class="icon">✓</span>
+      <div><b>External Service Providers declared.</b> M365, Defender, Exostar, North Hills MSP, Custodia BidFed all listed. FAR 52.204-21 flow-down on file for the MSP.</div>
+    </div>
+    <div class="validation-row v-pass">
+      <span class="icon">✓</span>
+      <div><b>Out-of-scope list non-empty.</b> 4 items declared with segregation rationale.</div>
+    </div>
+    <div class="validation-row v-warn">
+      <span class="icon">!</span>
+      <div><b>CNC machines flagged for re-confirmation.</b> Removable-media transfer was declared. Confirm media-sanitization SOP (MP.L1-3.8.3) covers job-end wipe.</div>
+    </div>
+    <div class="validation-row v-pass">
+      <span class="icon">✓</span>
+      <div><b>Inbound &amp; outbound paths each have a system.</b> Exostar (in/out) and shared mailbox (in/out) both inside FCI boundary.</div>
+    </div>
+  </div>
+
+  <p class="footer-note">
+    <b>How this is generated.</b> Every box, label, and inventory row above is rendered from the
+    <code>scope_profile</code> object captured during Charlie's onboarding interview, plus connector pulls (M365 Entra ID,
+    Intune, SharePoint audit). The client never opens a drawing tool. Edits in the intake form re-render the diagram
+    on save. Validation rules block SSP generation until all <span style="color:var(--red);font-weight:700">FAIL</span>
+    items are resolved; <span style="color:var(--amber);font-weight:700">WARN</span> items are surfaced to the affirming
+    official for explicit acknowledgement.
+    <br/><br/>
+    <b>What a reviewer sees.</b> One page. Concentric scopes. Every asset traceable to a system of record. Out-of-scope
+    explicit, not inferred. This is what a DCMA reviewer or a prime's compliance officer wants to see on page 2 of the
+    SSP — and it's what most L1 packages are missing today.
+  </p>
+
+</div>
+</body>
+</html>
