@@ -2,7 +2,7 @@ import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
 
 const ALLOWED_PLANS = new Set([
-  "msp_squad_5",
+  "custodia_squad",
   "msp_platoon_20",
   "cmmc_lv1_full_access",
 ]);
@@ -14,7 +14,7 @@ export default async function SignUpPage({
 }) {
   const { plan } = await searchParams;
   // After sign-up, send the user to /upgrade to pick (or auto-start trial of)
-  // their chosen plan. MSPs come in via /for-msps?plan=msp_squad_5 etc.
+  // their chosen plan. MSPs come in via /for-msps?plan=custodia_squad etc.
   const safePlan = plan && ALLOWED_PLANS.has(plan) ? plan : null;
   const redirectAfter = safePlan ? `/upgrade?plan=${safePlan}` : "/assessments";
 

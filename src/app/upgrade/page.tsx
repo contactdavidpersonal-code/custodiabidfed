@@ -5,7 +5,7 @@ import { TrialCheckoutButton } from "./TrialCheckoutButton";
 
 const SOLO_PLAN_SLUG = "cmmc_lv1_full_access";
 
-type PlanKey = "msp_squad_5" | "msp_platoon_20" | "cmmc_lv1_full_access";
+type PlanKey = "custodia_squad" | "msp_platoon_20" | "cmmc_lv1_full_access";
 
 const PLAN_CONFIG: Record<PlanKey, {
   slug: string;
@@ -18,8 +18,8 @@ const PLAN_CONFIG: Record<PlanKey, {
   bullets: string[];
   hasFeatureKey: string;
 }> = {
-  msp_squad_5: {
-    slug: "msp_squad_5",
+  custodia_squad: {
+    slug: "custodia_squad",
     title: "Squad — manage up to 5 client businesses",
     badge: "MSP · Squad",
     price: "$499",
@@ -36,7 +36,7 @@ const PLAN_CONFIG: Record<PlanKey, {
       "BONUS: Daily Discover (SAM.gov bids matched to each client's NAICS)",
       "BONUS: Monday Bid Digest emailed weekly",
     ],
-    hasFeatureKey: "msp_squad_5",
+    hasFeatureKey: "custodia_squad",
   },
   msp_platoon_20: {
     slug: "msp_platoon_20",
@@ -82,7 +82,7 @@ const PLAN_CONFIG: Record<PlanKey, {
 
 function isPlanKey(value: string | undefined): value is PlanKey {
   return (
-    value === "msp_squad_5" ||
+    value === "custodia_squad" ||
     value === "msp_platoon_20" ||
     value === "cmmc_lv1_full_access"
   );
@@ -108,7 +108,7 @@ export default async function UpgradePage({
     redirect("/onboard");
   }
 
-  const isMsp = planKey === "msp_squad_5" || planKey === "msp_platoon_20";
+  const isMsp = planKey === "custodia_squad" || planKey === "msp_platoon_20";
 
   return (
     <div className="min-h-screen bg-[#f7f7f3] text-[#10231d]">

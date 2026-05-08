@@ -36,7 +36,7 @@ type CapStatus = {
   ok: boolean;
   limit: number;
   current: number;
-  plan: "msp_platoon_20" | "msp_squad_5" | "cmmc_lv1_full_access" | "free";
+  plan: "msp_platoon_20" | "custodia_squad" | "cmmc_lv1_full_access" | "free";
 };
 
 export function OrgSwitcher({ className, hideUntilJoined = false }: Props) {
@@ -70,7 +70,7 @@ export function OrgSwitcher({ className, hideUntilJoined = false }: Props) {
   // Solo (`cmmc_lv1_full_access`) and free users never see this UI — they
   // operate on their personal Clerk account exclusively.
   const isMspPlan =
-    cap?.plan === "msp_squad_5" || cap?.plan === "msp_platoon_20";
+    cap?.plan === "custodia_squad" || cap?.plan === "msp_platoon_20";
   if (!isMspPlan) return null;
 
   const atCap = cap !== null && cap.limit > 0 && cap.current >= cap.limit;

@@ -1650,7 +1650,7 @@ export default function Home() {
               <div className="mt-auto pt-8">
                 <Show when="signed-out">
                   <Link
-                    href="/sign-up?plan=msp_squad_5"
+                    href="/sign-up?plan=custodia_squad"
                     prefetch={false}
                     className="block w-full bg-[#0e2a23] px-6 py-4 text-center text-base font-bold text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
                   >
@@ -1659,7 +1659,7 @@ export default function Home() {
                 </Show>
                 <Show when="signed-in">
                   <Link
-                    href="/upgrade?plan=msp_squad_5"
+                    href="/upgrade?plan=custodia_squad"
                     prefetch={false}
                     className="block w-full bg-[#0e2a23] px-6 py-4 text-center text-base font-bold text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
                   >

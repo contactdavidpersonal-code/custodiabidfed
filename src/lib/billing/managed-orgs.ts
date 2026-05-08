@@ -2,7 +2,7 @@
  * Managed-orgs billing gate.
  *
  * MSPs subscribe to one of two User Plans in Clerk Billing:
- *   - msp_squad_5     — up to 5 client businesses
+ *   - custodia_squad     — up to 5 client businesses
  *   - msp_platoon_20  — up to 20 client businesses
  *
  * Solo customers are on `cmmc_lv1_full_access` (1 business). Free tier = 0.
@@ -27,7 +27,7 @@ export type ManagedOrgsStatus = {
   /** Current count of Clerk org memberships. Personal account NOT counted. */
   current: number;
   /** Which plan/feature granted the cap, for telemetry + nag copy. */
-  plan: "msp_platoon_20" | "msp_squad_5" | "cmmc_lv1_full_access" | "free";
+  plan: "msp_platoon_20" | "custodia_squad" | "cmmc_lv1_full_access" | "free";
 };
 
 export async function getManagedOrgsLimit(): Promise<{
@@ -38,7 +38,7 @@ export async function getManagedOrgsLimit(): Promise<{
   if (!has) return { limit: 0, plan: "free" };
 
   if (has({ feature: "msp_platoon_20" })) return { limit: 20, plan: "msp_platoon_20" };
-  if (has({ feature: "msp_squad_5" })) return { limit: 5, plan: "msp_squad_5" };
+  if (has({ feature: "custodia_squad" })) return { limit: 5, plan: "custodia_squad" };
   if (has({ feature: "cmmc_lv1_full_access" })) {
     return { limit: 1, plan: "cmmc_lv1_full_access" };
   }

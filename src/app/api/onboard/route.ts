@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
   // MSPs walk each client business through onboarding under that client's
   // active Clerk org. Solo users fall back to their personal-account org.
   const isMsp =
-    has({ plan: "user:msp_squad_5" }) || has({ plan: "user:msp_platoon_20" });
+    has({ plan: "user:custodia_squad" }) || has({ plan: "user:msp_platoon_20" });
   const org = orgId
     ? (await getActiveOrgFromAuth()) ?? (await ensureOrgForUser(userId))
     : await ensureOrgForUser(userId);
@@ -141,7 +141,7 @@ export async function GET() {
     return new Response("Unauthorized", { status: 401 });
   }
   const isMsp =
-    has({ plan: "user:msp_squad_5" }) || has({ plan: "user:msp_platoon_20" });
+    has({ plan: "user:custodia_squad" }) || has({ plan: "user:msp_platoon_20" });
   const org = orgId
     ? (await getActiveOrgFromAuth()) ?? (await ensureOrgForUser(userId))
     : await ensureOrgForUser(userId);

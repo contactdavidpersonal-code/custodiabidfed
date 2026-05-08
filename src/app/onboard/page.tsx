@@ -18,7 +18,7 @@ export default async function OnboardPage() {
   if (!userId) redirect("/sign-in");
 
   const isMsp =
-    has({ plan: "user:msp_squad_5" }) || has({ plan: "user:msp_platoon_20" });
+    has({ plan: "user:custodia_squad" }) || has({ plan: "user:msp_platoon_20" });
   const isSolo = has({ plan: "user:cmmc_lv1_full_access" });
 
   // No active plan/trial → upgrade gate.
