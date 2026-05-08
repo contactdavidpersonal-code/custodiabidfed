@@ -3,9 +3,9 @@ import Link from "next/link";
 import CmmcCheckClient from "./CmmcCheckClient";
 
 export const metadata: Metadata = {
-  title: "Do you need federal cyber compliance? | Custodia",
+  title: "Do you need CMMC (Cybersecurity Maturity Model Certification) Level 1? | Custodia",
   description:
-    "Five-minute conversation with Charlie. Find out whether your federal contract requires you to meet the basic cyber compliance standard — and exactly where you stand.",
+    "Five-minute conversation with Charlie. Find out whether your federal contract requires Cybersecurity Maturity Model Certification (CMMC) Level 1 — the basic federal cyber standard — and exactly where you stand.",
   robots: { index: true, follow: true },
 };
 
@@ -48,13 +48,17 @@ export default function CmmcCheckPage() {
             Free · Five minutes · No signup
           </div>
           <h1 className="font-serif text-2xl leading-[1.05] tracking-tight text-white sm:text-3xl md:text-4xl">
-            Does your federal contract require you to meet the{" "}
-            <span className="text-[#c4f0b8]">basic cyber standard</span>?
+            Do you need{" "}
+            <span className="text-[#c4f0b8]">
+              Cybersecurity Maturity Model Certification (CMMC) Level&nbsp;1
+            </span>{" "}
+            for your federal contract?
           </h1>
           <p className="mx-auto mt-3 hidden max-w-2xl text-sm leading-snug text-white/70 sm:block sm:text-base">
-            Five-minute conversation with Charlie. He&apos;ll tell you whether
-            you&apos;re on the hook, where the gaps are, and what to fix
-            before your next bid or annual affirmation.
+            Five-minute conversation with Charlie. He&apos;ll confirm whether
+            CMMC Level&nbsp;1 (the basic federal cyber standard) applies to
+            you, where the gaps are, and what to fix before your next bid or
+            annual affirmation.
           </p>
         </div>
       </section>
