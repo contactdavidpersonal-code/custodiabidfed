@@ -3,33 +3,33 @@ import Link from "next/link";
 import CmmcCheckClient from "./CmmcCheckClient";
 
 export const metadata: Metadata = {
-  title: "CMMC Level 1 Check | Custodia",
+  title: "Do you need federal cyber compliance? | Custodia",
   description:
-    "Free 5-minute conversation with Charlie. Find out if your company needs CMMC Level 1, where the gaps are, and get a one-page printable report you can save or share. No signup. No credit card.",
+    "Five-minute conversation with Charlie. Find out whether your federal contract requires you to meet the basic cyber compliance standard — and exactly where you stand.",
   robots: { index: true, follow: true },
 };
 
 export default function CmmcCheckPage() {
   return (
-    <main className="flex h-[100dvh] flex-col overflow-hidden bg-[#fafaf7]">
-      <header className="shrink-0 border-b border-slate-200/70 bg-white/80 backdrop-blur">
+    <main className="flex h-[100dvh] flex-col overflow-hidden bg-[#0d2e25] text-white">
+      <header className="shrink-0 border-b border-white/10 bg-[#0a2620]/60 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <Link
             href="/"
-            className="font-serif text-lg font-bold tracking-tight text-[#10231d]"
+            className="font-serif text-lg font-bold tracking-tight text-white"
           >
             Custodia
           </Link>
-          <nav className="flex items-center gap-4 text-sm text-slate-600">
-            <Link href="/pricing" className="hover:text-slate-900">
+          <nav className="flex items-center gap-4 text-sm text-white/70">
+            <Link href="/pricing" className="hover:text-white">
               Pricing
             </Link>
-            <Link href="/meet-charlie" className="hidden hover:text-slate-900 sm:block">
+            <Link href="/meet-charlie" className="hidden hover:text-white sm:block">
               Meet Charlie
             </Link>
             <Link
               href="/sign-up"
-              className="hidden rounded-full bg-[#10231d] px-4 py-1.5 text-xs font-semibold tracking-wide text-white hover:bg-[#0a1813] sm:inline-block"
+              className="hidden bg-[#c4f0b8] px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-[#0a2620] transition-colors hover:bg-white sm:inline-block"
             >
               Start free trial
             </Link>
@@ -37,27 +37,25 @@ export default function CmmcCheckPage() {
         </div>
       </header>
 
-      <section className="mx-auto w-full max-w-6xl shrink-0 px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4">
+      <section className="relative mx-auto w-full max-w-6xl shrink-0 px-4 pt-5 pb-3 sm:px-6 sm:pt-7 sm:pb-4">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[420px] w-[900px] -translate-x-1/2 bg-[radial-gradient(ellipse_at_top,_rgba(196,240,184,0.10),_transparent_70%)]"
+        />
         <div className="mx-auto max-w-3xl text-center">
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-medium text-emerald-800">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
-            Free for federal awardees — no signup
+          <div className="mb-3 inline-flex items-center gap-2 border border-[#c4f0b8]/40 bg-[#0a2620] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#c4f0b8]">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#c4f0b8]" />
+            Free · Five minutes · No signup
           </div>
-          <h1 className="font-serif text-2xl font-bold leading-[1.1] tracking-tight text-[#10231d] sm:text-3xl md:text-4xl">
-            Do you actually need <span className="italic">CMMC Level 1?</span>
+          <h1 className="font-serif text-2xl leading-[1.05] tracking-tight text-white sm:text-3xl md:text-4xl">
+            Does your federal contract require you to meet the{" "}
+            <span className="text-[#c4f0b8]">basic cyber standard</span>?
           </h1>
-          <p className="mx-auto mt-2 hidden max-w-2xl text-sm leading-snug text-slate-700 sm:block sm:text-base">
-            A 5-minute conversation with Charlie — Custodia&apos;s virtual
-            Compliance Officer. Walk away with a one-page report you can save,
-            print, or send to anyone.
+          <p className="mx-auto mt-3 hidden max-w-2xl text-sm leading-snug text-white/70 sm:block sm:text-base">
+            Five-minute conversation with Charlie. He&apos;ll tell you whether
+            you&apos;re on the hook, where the gaps are, and what to fix
+            before your next bid or annual affirmation.
           </p>
-          <div className="mt-3 hidden items-center justify-center gap-4 text-[10px] uppercase tracking-widest text-slate-500 sm:flex">
-            <span>FAR 52.204-21</span>
-            <span className="h-3 w-px bg-slate-300" />
-            <span>32 CFR § 170</span>
-            <span className="h-3 w-px bg-slate-300" />
-            <span>CMMC v2.13</span>
-          </div>
         </div>
       </section>
 
@@ -65,11 +63,11 @@ export default function CmmcCheckPage() {
         <CmmcCheckClient />
       </section>
 
-      <footer className="shrink-0 border-t border-slate-200 bg-[#fafaf7]">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2 text-[11px] text-slate-500 sm:px-6">
+      <footer className="shrink-0 border-t border-white/10 bg-[#0a2620]/60">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2 text-[11px] text-white/40 sm:px-6">
           <span>© Custodia · bidfedcmmc.com</span>
           <span className="hidden sm:inline">
-            $449/mo locked through end of fiscal year for CMMC Check arrivals.
+            $449/mo locked through end of fiscal year for arrivals from this page.
           </span>
         </div>
       </footer>

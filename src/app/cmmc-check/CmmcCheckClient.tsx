@@ -16,7 +16,7 @@ type ApiErr = { error: string; retryAfterSec?: number };
 type ApiResp = ApiOk | ApiErr;
 
 const STARTERS = [
-  "Tell Charlie about your company in one sentence",
+  "Mention if you just won an award, are bidding, or already hold one — Charlie will take it from there",
 ];
 
 export default function CmmcCheckClient() {
@@ -92,16 +92,16 @@ export default function CmmcCheckClient() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_60px_-24px_rgba(16,35,29,0.18)]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden border border-white/10 bg-[#0a2620] shadow-[0_24px_60px_-24px_rgba(0,0,0,0.6)]">
       {/* Charlie header */}
-      <div className="flex shrink-0 items-center gap-3 border-b border-slate-100 bg-[#10231d] px-5 py-3 text-white">
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-300 font-serif text-lg font-bold text-[#10231d]">
+      <div className="flex shrink-0 items-center gap-3 border-b border-white/10 bg-[#082018] px-5 py-3 text-white">
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#c4f0b8] font-serif text-lg font-bold text-[#0a2620]">
           C
         </div>
         <div className="flex flex-col">
           <div className="text-sm font-semibold leading-tight">Charlie</div>
-          <div className="text-[11px] leading-tight text-emerald-200/80">
-            Custodia · CMMC Level 1 Diagnostic · Isolated session
+          <div className="text-[10px] uppercase tracking-[0.18em] leading-tight text-[#c4f0b8]/70">
+            Custodia · Compliance Officer · Isolated session
           </div>
         </div>
       </div>
@@ -109,24 +109,24 @@ export default function CmmcCheckClient() {
       {/* Conversation */}
       <div
         ref={scrollRef}
-        className="min-h-0 flex-1 overflow-y-auto bg-[#fafaf7] px-5 py-5 sm:px-8"
+        className="min-h-0 flex-1 overflow-y-auto bg-[#0d2e25] px-5 py-5 sm:px-8"
       >
         {!opened && (
           <div className="flex h-full flex-col items-center justify-center text-center">
-            <div className="mb-3 font-serif text-2xl text-[#10231d]">
+            <div className="mb-3 font-serif text-2xl text-white">
               Ready when you are.
             </div>
-            <p className="mb-6 max-w-md text-sm text-slate-600">
-              Charlie will ask 6–8 short questions. Most prospects finish in
-              under 5 minutes. The report is yours at the end.
+            <p className="mb-6 max-w-md text-sm text-white/70">
+              Charlie will ask six to eight short questions. Most folks
+              finish in under five minutes. Your report is yours to keep.
             </p>
             <button
               onClick={start}
-              className="rounded-full bg-[#10231d] px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-[#0a1813]"
+              className="bg-[#c4f0b8] px-7 py-3 text-sm font-bold uppercase tracking-[0.18em] text-[#0a2620] transition-all hover:bg-white hover:tracking-[0.22em]"
             >
               Start the check
             </button>
-            <div className="mt-6 text-[11px] uppercase tracking-widest text-slate-400">
+            <div className="mt-6 max-w-sm text-[11px] uppercase tracking-[0.2em] text-white/40">
               {STARTERS[0]}
             </div>
           </div>
@@ -139,7 +139,7 @@ export default function CmmcCheckClient() {
             ))}
             {busy && <Typing />}
             {error && (
-              <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+              <div className="border border-rose-300/40 bg-rose-500/10 px-3 py-2 text-xs text-rose-200">
                 {error}
               </div>
             )}
@@ -151,7 +151,7 @@ export default function CmmcCheckClient() {
       {opened && (
         <form
           onSubmit={onSubmit}
-          className="flex shrink-0 items-end gap-3 border-t border-slate-100 bg-white px-5 py-3 sm:px-8"
+          className="flex shrink-0 items-end gap-3 border-t border-white/10 bg-[#082018] px-5 py-3 sm:px-8"
         >
           <textarea
             ref={inputRef}
@@ -167,12 +167,12 @@ export default function CmmcCheckClient() {
             rows={1}
             maxLength={4_000}
             disabled={busy}
-            className="block w-full resize-none rounded-xl border border-slate-200 bg-[#fafaf7] px-4 py-3 text-sm text-slate-900 outline-none focus:border-[#10231d] focus:bg-white"
+            className="block w-full resize-none border border-white/10 bg-[#0d2e25] px-4 py-3 text-sm text-white placeholder:text-white/40 outline-none focus:border-[#c4f0b8]"
           />
           <button
             type="submit"
             disabled={busy || draft.trim().length === 0}
-            className="rounded-xl bg-[#10231d] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#0a1813] disabled:cursor-not-allowed disabled:opacity-40"
+            className="bg-[#c4f0b8] px-5 py-3 text-sm font-bold uppercase tracking-[0.18em] text-[#0a2620] transition-all hover:bg-white disabled:cursor-not-allowed disabled:opacity-40"
           >
             Send
           </button>
@@ -189,7 +189,7 @@ function Bubble({ role, content }: { role: "user" | "assistant"; content: string
   if (role === "user") {
     return (
       <div className="flex justify-end">
-        <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-[#10231d] px-4 py-2.5 text-sm leading-relaxed text-white">
+        <div className="max-w-[85%] bg-[#c4f0b8] px-4 py-2.5 text-sm leading-relaxed text-[#0a2620]">
           {clean}
         </div>
       </div>
@@ -197,10 +197,10 @@ function Bubble({ role, content }: { role: "user" | "assistant"; content: string
   }
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-amber-300 font-serif text-xs font-bold text-[#10231d]">
+      <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#c4f0b8] font-serif text-xs font-bold text-[#0a2620]">
         C
       </div>
-      <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-2.5 text-sm leading-relaxed text-slate-800 shadow-sm">
+      <div className="max-w-[85%] whitespace-pre-wrap border border-white/10 bg-[#0a2620] px-4 py-2.5 text-sm leading-relaxed text-white/90">
         {clean}
       </div>
     </div>
@@ -210,10 +210,10 @@ function Bubble({ role, content }: { role: "user" | "assistant"; content: string
 function Typing() {
   return (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-amber-300 font-serif text-xs font-bold text-[#10231d]">
+      <div className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-[#c4f0b8] font-serif text-xs font-bold text-[#0a2620]">
         C
       </div>
-      <div className="rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="border border-white/10 bg-[#0a2620] px-4 py-3">
         <div className="flex items-center gap-1.5">
           <Dot delay="0ms" />
           <Dot delay="150ms" />
@@ -227,7 +227,7 @@ function Typing() {
 function Dot({ delay }: { delay: string }) {
   return (
     <span
-      className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400"
+      className="inline-block h-1.5 w-1.5 animate-bounce rounded-full bg-[#c4f0b8]/60"
       style={{ animationDelay: delay }}
     />
   );

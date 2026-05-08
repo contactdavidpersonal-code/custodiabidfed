@@ -86,7 +86,7 @@ export default function SprsCheckClient() {
   }
 
   return (
-    <div className="relative isolate overflow-hidden">
+    <div className="relative isolate flex min-h-[100dvh] flex-col overflow-hidden">
       {/* Ambient mint glow */}
       <div
         aria-hidden
@@ -94,7 +94,7 @@ export default function SprsCheckClient() {
       />
 
       {/* Top bar */}
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-6 pt-8">
+      <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 pt-5">
         <Link
           href="/"
           className="text-xs font-semibold uppercase tracking-[0.22em] text-white/60 transition-colors hover:text-[#c4f0b8]"
@@ -106,7 +106,7 @@ export default function SprsCheckClient() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-3xl px-6 pb-24 pt-10 sm:pt-16">
+      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col justify-center px-6 py-6">
         <AnimatePresence mode="wait">
           {stage === "intro" && (
             <IntroStage key="intro" onBegin={() => setStage("quiz")} />
@@ -167,7 +167,7 @@ function IntroStage({ onBegin }: { onBegin: () => void }) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.05, duration: 0.5, ease: EASE_OUT }}
-        className="mx-auto mb-8 inline-flex items-center gap-2 border border-[#c4f0b8]/40 bg-[#0a2620] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#c4f0b8]"
+        className="mx-auto mb-5 inline-flex items-center gap-2 border border-[#c4f0b8]/40 bg-[#0a2620] px-4 py-1.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#c4f0b8]"
       >
         <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#c4f0b8]" />
         Free · Two minutes · No login
@@ -177,7 +177,7 @@ function IntroStage({ onBegin }: { onBegin: () => void }) {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.12, duration: 0.7, ease: EASE_OUT }}
-        className="font-serif text-4xl leading-[1.05] tracking-tight text-white sm:text-5xl md:text-6xl"
+        className="font-serif text-3xl leading-[1.05] tracking-tight text-white sm:text-4xl md:text-5xl"
       >
         Find out if your company is{" "}
         <span className="text-[#c4f0b8]">bid-eligible</span> for federal contracts.
@@ -187,7 +187,7 @@ function IntroStage({ onBegin }: { onBegin: () => void }) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.22, duration: 0.6, ease: EASE_OUT }}
-        className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/70 sm:text-lg"
+        className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-white/70 sm:text-base"
       >
         Twelve plain-English questions. We&apos;ll calculate the same Supplier
         Performance Risk System (SPRS) score that prime contractors look for,
@@ -200,7 +200,7 @@ function IntroStage({ onBegin }: { onBegin: () => void }) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.32, duration: 0.6, ease: EASE_OUT }}
-        className="mx-auto mt-10 grid max-w-2xl grid-cols-3 gap-3 text-center"
+        className="mx-auto mt-6 grid max-w-2xl grid-cols-3 gap-3 text-center"
       >
         {[
           { k: "12", v: "Plain-English questions" },
@@ -209,7 +209,7 @@ function IntroStage({ onBegin }: { onBegin: () => void }) {
         ].map((s) => (
           <div
             key={s.k}
-            className="border border-white/10 bg-[#0a2620] px-3 py-5"
+            className="border border-white/10 bg-[#0a2620] px-3 py-3"
           >
             <div className="font-serif text-2xl text-white">{s.k}</div>
             <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/50">
@@ -223,12 +223,12 @@ function IntroStage({ onBegin }: { onBegin: () => void }) {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.42, duration: 0.6, ease: EASE_OUT }}
-        className="mt-10 flex flex-col items-center gap-3"
+        className="mt-6 flex flex-col items-center gap-3"
       >
         <button
           type="button"
           onClick={onBegin}
-          className="group inline-flex items-center gap-3 bg-[#c4f0b8] px-8 py-4 text-sm font-bold uppercase tracking-[0.18em] text-[#0a2620] transition-all hover:bg-white hover:tracking-[0.22em]"
+          className="group inline-flex items-center gap-3 bg-[#c4f0b8] px-8 py-3.5 text-sm font-bold uppercase tracking-[0.18em] text-[#0a2620] transition-all hover:bg-white hover:tracking-[0.22em]"
         >
           Begin my readiness check
           <span className="transition-transform group-hover:translate-x-1">&rarr;</span>
@@ -243,7 +243,7 @@ function IntroStage({ onBegin }: { onBegin: () => void }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.6, duration: 0.6 }}
-        className="mx-auto mt-16 flex max-w-xl flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-white/10 pt-8 text-[11px] uppercase tracking-[0.2em] text-white/40"
+        className="mx-auto mt-8 flex max-w-xl flex-wrap items-center justify-center gap-x-6 gap-y-2 border-t border-white/10 pt-5 text-[11px] uppercase tracking-[0.2em] text-white/40"
       >
         <span>Mirrors DoD Assessment Methodology v1.2.1</span>
         <span aria-hidden>·</span>

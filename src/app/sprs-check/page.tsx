@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function SprsCheckPage() {
   return (
-    <main className="min-h-screen bg-[#0d2e25] text-white">
+    <main className="min-h-[100dvh] bg-[#0d2e25] text-white">
       <SprsCheckClient />
     </main>
   );
