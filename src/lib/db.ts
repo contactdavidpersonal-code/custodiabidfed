@@ -1050,6 +1050,61 @@ async function runInitDdl() {
       WHERE revoked_at IS NULL
   `;
 
+  // Connector pull provenance. Every fetch from a connected provider
+  // (M365 Graph, Google Workspace) writes a row here BEFORE the resulting
+  // bytes land in evidence_artifacts. This is the audit trail an assessor
+  // looks at to answer "where did this user roster come from and when?".
+  // raw_hash is sha256 of the canonical payload bytes — the same bytes
+  // we wrote to blob storage. row_count is the artifact count produced.
+  await sql`
+    CREATE TABLE IF NOT EXISTS connector_runs (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      completed_at TIMESTAMPTZ,
+      status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending','success','partial','failed')),
+      row_count INT,
+      error TEXT,
+      raw_hash TEXT,
+      triggered_by TEXT NOT NULL DEFAULT 'scheduler'
+        CHECK (triggered_by IN ('scheduler','manual','webhook'))
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_connector_runs_org_started
+      ON connector_runs (organization_id, started_at DESC)
+  `;
+
+  // Connector evidence provenance on evidence_artifacts. These columns
+  // mark an artifact as "pulled from a system of record" rather than
+  // "uploaded by a human". An assessor can recompute data_hash from the
+  // bytes and compare against this column to prove the artifact has not
+  // been tampered with since the connector wrote it.
+  await sql`
+    ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS source_provider TEXT
+  `;
+  await sql`
+    ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS source_kind TEXT
+  `;
+  await sql`
+    ALTER TABLE evidence_artifacts
+      ADD COLUMN IF NOT EXISTS source_run_id UUID REFERENCES connector_runs(id) ON DELETE SET NULL
+  `;
+  await sql`
+    ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS data_hash TEXT
+  `;
+  await sql`
+    ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS synced_at TIMESTAMPTZ
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_evidence_artifacts_source
+      ON evidence_artifacts (assessment_id, source_provider, source_kind)
+      WHERE source_provider IS NOT NULL
+  `;
+
   // Per-customer task scheduler. Pulls due tasks every ~5min via
   // /api/cron/scheduler. Keeps the task graph in Postgres so we can
   // reschedule, retry, and audit without touching code.

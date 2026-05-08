@@ -7,6 +7,8 @@
 
 import { registerTaskHandler } from "./index";
 import { sendCompliancePulse } from "@/lib/email/compliance-pulse";
+import { runConnectorSync } from "@/lib/connectors/sync";
+import { getSql } from "@/lib/db";
 
 registerTaskHandler("compliance_pulse.weekly", async (ctx) => {
   await sendCompliancePulse({ organizationId: ctx.organizationId });
@@ -18,12 +20,40 @@ registerTaskHandler("compliance_pulse.weekly", async (ctx) => {
   return { status: "ok", nextRunAt: next };
 });
 
-registerTaskHandler("connector.refresh", async () => {
-  // Skeleton: connector token refresh is implemented per-provider in a
-  // follow-up. The scheduler row is already wired so we can ship it
-  // once the refresh logic lands. Re-run weekly until then.
-  const next = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  return { status: "skip", nextRunAt: next, notes: "refresh handler pending" };
+registerTaskHandler("connector.refresh", async (ctx) => {
+  // Pick the most recent in-progress assessment for the org. If there
+  // is none yet (org just signed up, hasn't started anything), skip and
+  // retry tomorrow — there's no sensible target to attach evidence to.
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT id FROM assessments
+    WHERE organization_id = ${ctx.organizationId}::uuid
+      AND submitted_at IS NULL
+    ORDER BY created_at DESC
+    LIMIT 1
+  `) as Array<{ id: string }>;
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  if (rows.length === 0) {
+    return {
+      status: "skip",
+      nextRunAt: tomorrow,
+      notes: "no active assessment",
+    };
+  }
+  const outcomes = await runConnectorSync({
+    organizationId: ctx.organizationId,
+    assessmentId: rows[0].id,
+    triggeredBy: "scheduler",
+  });
+  const ok = outcomes.filter((o) => o.status === "ok").length;
+  const failed = outcomes.filter((o) => o.status === "failed").length;
+  // Re-run nightly while at least one provider is connected; otherwise
+  // the next outcome will be all-skipped and we just keep no-op'ing.
+  return {
+    status: failed > 0 && ok === 0 ? "retry" : "ok",
+    nextRunAt: tomorrow,
+    notes: `connector sync: ${ok} ok, ${failed} failed, ${outcomes.length - ok - failed} skipped`,
+  };
 });
 
 registerTaskHandler("monitor.run_checks", async () => {

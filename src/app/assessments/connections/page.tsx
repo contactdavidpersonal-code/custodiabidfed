@@ -1,12 +1,14 @@
 import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ensureOrgForUser } from "@/lib/assessment";
+import { ensureOrgForUser, listAssessmentsForOrg } from "@/lib/assessment";
 import { CONNECTORS, isConnectorConfigured } from "@/lib/connectors/registry";
 import { getConnectorTokenStatus } from "@/lib/connectors/storage";
+import { listRecentConnectorRuns } from "@/lib/connectors/auto-map";
 import type { ConnectorProvider } from "@/lib/connectors/types";
 import { playbookById } from "@/lib/playbook";
 import { disconnectConnectorAction } from "./actions";
+import SyncNowButton from "./SyncNowButton";
 
 export const metadata = {
   title: "Connections · Custodia",
@@ -55,6 +57,13 @@ export default async function ConnectionsPage() {
   for (const t of tokens) {
     if (!t.revoked_at) tokenByProvider.set(t.provider, t);
   }
+
+  // Pick the most recent open assessment to attach connector pulls to.
+  const assessments = await listAssessmentsForOrg(org.id);
+  const activeAssessment =
+    assessments.find((a) => !a.submitted_at) ?? assessments[0] ?? null;
+
+  const recentRuns = await listRecentConnectorRuns(org.id, 12);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-10">
@@ -192,6 +201,72 @@ export default async function ConnectionsPage() {
           );
         })}
       </div>
+
+      <section className="mt-8 border border-[#cfe3d9] bg-white p-6 shadow-sm">
+        <h2 className="font-serif text-xl font-bold text-[#10231d]">
+          Pull connector evidence
+        </h2>
+        <p className="mt-1 max-w-2xl text-sm text-[#456c5f]">
+          Pulls live data from every connected provider, auto-maps it to the
+          right CMMC L1 practices, and stamps each artifact with source +
+          timestamp + SHA-256 so it&apos;s audit-defensible.
+        </p>
+        <div className="mt-4">
+          <SyncNowButton
+            assessmentId={activeAssessment ? activeAssessment.id : null}
+          />
+        </div>
+
+        {recentRuns.length > 0 && (
+          <div className="mt-6 border-t border-[#eef3f0] pt-4">
+            <h3 className="text-[11px] font-bold uppercase tracking-wider text-[#5a7d70]">
+              Recent pulls
+            </h3>
+            <table className="mt-2 w-full text-xs">
+              <thead>
+                <tr className="text-left text-[#5a7d70]">
+                  <th className="py-1 pr-3 font-semibold">When</th>
+                  <th className="py-1 pr-3 font-semibold">Provider</th>
+                  <th className="py-1 pr-3 font-semibold">Kind</th>
+                  <th className="py-1 pr-3 font-semibold">Status</th>
+                  <th className="py-1 pr-3 font-semibold">Rows</th>
+                  <th className="py-1 pr-3 font-semibold">Hash</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentRuns.map((r) => (
+                  <tr key={r.id} className="border-t border-[#eef3f0]">
+                    <td className="py-1 pr-3 text-[#10231d]">
+                      {fmt(r.started_at)}
+                    </td>
+                    <td className="py-1 pr-3 font-mono text-[#456c5f]">
+                      {r.provider}
+                    </td>
+                    <td className="py-1 pr-3 text-[#10231d]">{r.kind}</td>
+                    <td
+                      className={`py-1 pr-3 font-semibold ${
+                        r.status === "success"
+                          ? "text-emerald-700"
+                          : r.status === "failed"
+                            ? "text-rose-700"
+                            : "text-amber-700"
+                      }`}
+                    >
+                      {r.status}
+                    </td>
+                    <td className="py-1 pr-3 text-[#10231d]">
+                      {r.row_count ?? "—"}
+                    </td>
+                    <td className="py-1 pr-3 font-mono text-[10px] text-[#5a7d70]">
+                      {r.raw_hash ? `${r.raw_hash.slice(0, 12)}…` : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       <p className="mt-8 max-w-2xl text-xs leading-relaxed text-[#5a7d70]">
         Tokens are encrypted at rest with AES-256-GCM. Connecting requires a

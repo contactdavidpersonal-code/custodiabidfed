@@ -705,6 +705,18 @@ function EvidenceRow({
                   Reused from {a.control_id}
                 </span>
               )}
+              {a.source_provider && (
+                <span
+                  title={
+                    a.data_hash
+                      ? `Pulled from ${a.source_provider}\nSHA-256: ${a.data_hash}\nSynced: ${a.synced_at ?? "—"}`
+                      : `Pulled from ${a.source_provider}`
+                  }
+                  className=" bg-emerald-100 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-emerald-900 ring-1 ring-emerald-200"
+                >
+                  Auto · {a.source_provider}
+                </span>
+              )}
             </div>
             <div className="mt-0.5 text-xs text-[#5a7d70]">
               {new Date(a.captured_at).toLocaleDateString(undefined, {
@@ -712,6 +724,11 @@ function EvidenceRow({
                 day: "numeric",
                 year: "numeric",
               })}
+              {a.data_hash && (
+                <span className="ml-2 font-mono text-[10px] opacity-75">
+                  sha256:{a.data_hash.slice(0, 12)}…
+                </span>
+              )}
             </div>
           </div>
         </div>

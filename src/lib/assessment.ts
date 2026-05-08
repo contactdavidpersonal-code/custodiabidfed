@@ -655,6 +655,16 @@ export type EvidenceArtifactRow = {
    * a whole" (legacy behaviour). Only populated by `listEvidenceForControl`.
    */
   tagged_objectives: string[];
+  /**
+   * Connector provenance (null for human uploads). When set, the artifact
+   * was auto-pulled from a system of record and `data_hash` is the
+   * SHA-256 of the raw bytes — recompute and compare to verify integrity.
+   */
+  source_provider: string | null;
+  source_kind: string | null;
+  source_run_id: string | null;
+  data_hash: string | null;
+  synced_at: string | null;
 };
 
 /**
@@ -675,6 +685,8 @@ export async function listEvidenceForControl(
            a.ai_review_verdict, a.ai_review_summary, a.ai_review_mapped_controls,
            a.ai_reviewed_at, a.ai_review_model,
            a.prior_artifact_id, a.carry_forward_status,
+           a.source_provider, a.source_kind, a.source_run_id,
+           a.data_hash, a.synced_at,
            COALESCE(eap.objectives, '{}'::text[]) AS tagged_objectives
     FROM evidence_artifacts a
     LEFT JOIN evidence_artifact_practices eap
@@ -700,6 +712,8 @@ export async function listEvidenceForAssessment(
            ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
            ai_reviewed_at, ai_review_model,
            prior_artifact_id, carry_forward_status,
+           source_provider, source_kind, source_run_id,
+           data_hash, synced_at,
            '{}'::text[] AS tagged_objectives
     FROM evidence_artifacts
     WHERE assessment_id = ${assessmentId}
@@ -777,6 +791,8 @@ export async function getReuseCandidates(
            a.ai_review_verdict, a.ai_review_summary, a.ai_review_mapped_controls,
            a.ai_reviewed_at, a.ai_review_model,
            a.prior_artifact_id, a.carry_forward_status,
+           a.source_provider, a.source_kind, a.source_run_id,
+           a.data_hash, a.synced_at,
            '{}'::text[] AS tagged_objectives,
            a.control_id AS source_control_id
     FROM evidence_artifacts a
@@ -1048,6 +1064,8 @@ export async function listCarryForwardPending(
            ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
            ai_reviewed_at, ai_review_model,
            prior_artifact_id, carry_forward_status,
+           source_provider, source_kind, source_run_id,
+           data_hash, synced_at,
            '{}'::text[] AS tagged_objectives
     FROM evidence_artifacts
     WHERE assessment_id = ${assessmentId}::uuid
