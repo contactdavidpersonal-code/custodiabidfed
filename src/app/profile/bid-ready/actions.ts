@@ -8,11 +8,10 @@ import {
   draftDifferentiators,
 } from "@/lib/ai/bid-drafting";
 import {
-  loadBidProfile,
   normalizeBidProfile,
-  saveBidProfile,
   type BidProfile,
 } from "@/lib/bid-profile";
+import { loadBidProfile, saveBidProfile } from "@/lib/bid-profile-server";
 import { setRadarEmailsEnabled } from "@/lib/sam-radar";
 
 async function requireUserId(): Promise<string> {

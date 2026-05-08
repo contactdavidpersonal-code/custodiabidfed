@@ -3,7 +3,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { tailorForOpportunity, type TailorResult } from "@/lib/ai/bid-drafting";
 import { getAssessmentForUser } from "@/lib/assessment";
-import { loadBidProfile } from "@/lib/bid-profile";
+import { loadBidProfile } from "@/lib/bid-profile-server";
 
 async function requireUserId(): Promise<string> {
   const { userId } = await auth();

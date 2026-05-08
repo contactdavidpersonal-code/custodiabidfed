@@ -5,7 +5,7 @@ import {
   ensureOrgForUser,
   listAssessmentsForOrg,
 } from "@/lib/assessment";
-import { loadBidProfile } from "@/lib/bid-profile";
+import { loadBidProfile } from "@/lib/bid-profile-server";
 import { getSql } from "@/lib/db";
 import { TailorForm } from "@/app/assessments/[id]/bid-packet/tailor/TailorForm";
 import { tailorOpportunityAction } from "@/app/assessments/[id]/bid-packet/tailor/actions";

@@ -2,7 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { enforceStepOrder, getAssessmentForUser } from "@/lib/assessment";
-import { loadBidProfile, setAsideLabels } from "@/lib/bid-profile";
+import { setAsideLabels } from "@/lib/bid-profile";
+import { loadBidProfile } from "@/lib/bid-profile-server";
 import { loadTrustPageForOrg } from "@/lib/trust-page";
 import { ensureDbReady, getSql } from "@/lib/db";
 import {

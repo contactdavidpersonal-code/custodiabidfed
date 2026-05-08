@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ensureDbReady, getSql } from "@/lib/db";
-import { setAsideLabels, type SetAside, loadBidProfile } from "@/lib/bid-profile";
+import { setAsideLabels, type SetAside } from "@/lib/bid-profile";
+import { loadBidProfile } from "@/lib/bid-profile-server";
 import { tryDecryptField } from "@/lib/security/field-encryption";
 
 export const revalidate = 300; // 5min ISR — short enough to feel live

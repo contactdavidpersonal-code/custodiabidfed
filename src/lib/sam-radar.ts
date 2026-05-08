@@ -1,5 +1,5 @@
 import { getSql } from "@/lib/db";
-import { loadBidProfile } from "@/lib/bid-profile";
+import { loadBidProfile } from "@/lib/bid-profile-server";
 
 /**
  * SAM.gov opportunity radar.

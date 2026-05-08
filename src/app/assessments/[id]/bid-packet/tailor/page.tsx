@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { enforceStepOrder, getAssessmentForUser } from "@/lib/assessment";
-import { loadBidProfile } from "@/lib/bid-profile";
+import { loadBidProfile } from "@/lib/bid-profile-server";
 import { TailorForm } from "./TailorForm";
 import { tailorOpportunityAction } from "./actions";
 

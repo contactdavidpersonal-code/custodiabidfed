@@ -1,9 +1,6 @@
-import type { BusinessProfileRow } from "@/lib/assessment";
-
-// Server-only helpers from @/lib/assessment are dynamically imported inside
-// loadBidProfile / saveBidProfile so this module stays safe to pull into the
-// client bundle for its types and pure utility functions (used by
-// BidProfileForm.tsx).
+// Pure types + utility functions only. The server-only loaders/savers live in
+// bid-profile-server.ts so this module is safe to import from client components
+// (BidProfileForm.tsx) without dragging Clerk server into the client bundle.
 
 /**
  * Master Bid Profile. The editable surface a small business curates once and
@@ -173,41 +170,7 @@ export function normalizeBidProfile(input: unknown): BidProfile {
   };
 }
 
-export async function loadBidProfile(
-  organizationId: string,
-): Promise<BidProfile> {
-  const { ensureBusinessProfile, getBusinessProfile } = await import("@/lib/assessment");
-  await ensureBusinessProfile(organizationId);
-  const row = await getBusinessProfile(organizationId);
-  const data = (row?.data ?? {}) as Record<string, unknown>;
-  return normalizeBidProfile(data.bid_ready);
-}
-
-/**
- * Save the bid_ready namespace WITHOUT clobbering other onboarding fields the
- * AI tooling has captured (what_we_do, primary_customers, team_size, etc.).
- * Re-uses the existing updateBusinessProfile helper for write-through.
- */
-export async function saveBidProfile(
-  organizationId: string,
-  next: BidProfile,
-): Promise<void> {
-  const { ensureBusinessProfile, getBusinessProfile, updateBusinessProfile } =
-    await import("@/lib/assessment");
-  await ensureBusinessProfile(organizationId);
-  const row: BusinessProfileRow | null = await getBusinessProfile(organizationId);
-  const existing = (row?.data ?? {}) as Record<string, unknown>;
-  const merged = {
-    ...existing,
-    bid_ready: { ...next, updated_at: new Date().toISOString() },
-  };
-  await updateBusinessProfile(
-    organizationId,
-    merged,
-    row?.completeness_score ?? 0,
-    "user",
-  );
-}
+// loadBidProfile / saveBidProfile now live in @/lib/bid-profile-server
 
 /**
  * Completeness score for the bid profile — drives the readiness indicator

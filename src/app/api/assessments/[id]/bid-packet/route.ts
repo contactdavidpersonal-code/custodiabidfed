@@ -1,7 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getAssessmentForUser } from "@/lib/assessment";
-import { loadBidProfile, setAsideLabels, type BidProfile } from "@/lib/bid-profile";
+import { setAsideLabels, type BidProfile } from "@/lib/bid-profile";
+import { loadBidProfile } from "@/lib/bid-profile-server";
 import {
   auditContextFromRequest,
   recordAuditEvent,

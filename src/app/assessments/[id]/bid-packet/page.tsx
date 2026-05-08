@@ -2,7 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { enforceStepOrder, getAssessmentForUser } from "@/lib/assessment";
-import { bidProfileCompleteness, loadBidProfile } from "@/lib/bid-profile";
+import { bidProfileCompleteness } from "@/lib/bid-profile";
+import { loadBidProfile } from "@/lib/bid-profile-server";
 
 export const dynamic = "force-dynamic";
 

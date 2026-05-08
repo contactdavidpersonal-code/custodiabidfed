@@ -2,7 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ensureOrgForUser } from "@/lib/assessment";
-import { loadBidProfile } from "@/lib/bid-profile";
+import { loadBidProfile } from "@/lib/bid-profile-server";
 import { getRadarEmailsEnabled } from "@/lib/sam-radar";
 import {
   draftCapabilityAction,
