@@ -1,9 +1,9 @@
-import {
-  ensureBusinessProfile,
-  getBusinessProfile,
-  updateBusinessProfile,
-  type BusinessProfileRow,
-} from "@/lib/assessment";
+import type { BusinessProfileRow } from "@/lib/assessment";
+
+// Server-only helpers from @/lib/assessment are dynamically imported inside
+// loadBidProfile / saveBidProfile so this module stays safe to pull into the
+// client bundle for its types and pure utility functions (used by
+// BidProfileForm.tsx).
 
 /**
  * Master Bid Profile. The editable surface a small business curates once and
@@ -176,6 +176,7 @@ export function normalizeBidProfile(input: unknown): BidProfile {
 export async function loadBidProfile(
   organizationId: string,
 ): Promise<BidProfile> {
+  const { ensureBusinessProfile, getBusinessProfile } = await import("@/lib/assessment");
   await ensureBusinessProfile(organizationId);
   const row = await getBusinessProfile(organizationId);
   const data = (row?.data ?? {}) as Record<string, unknown>;
@@ -191,6 +192,8 @@ export async function saveBidProfile(
   organizationId: string,
   next: BidProfile,
 ): Promise<void> {
+  const { ensureBusinessProfile, getBusinessProfile, updateBusinessProfile } =
+    await import("@/lib/assessment");
   await ensureBusinessProfile(organizationId);
   const row: BusinessProfileRow | null = await getBusinessProfile(organizationId);
   const existing = (row?.data ?? {}) as Record<string, unknown>;
