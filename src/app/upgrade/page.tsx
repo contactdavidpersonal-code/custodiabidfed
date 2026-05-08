@@ -3,22 +3,113 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TrialCheckoutButton } from "./TrialCheckoutButton";
 
-const PLAN_SLUG = "cmmc_lv1_full_access";
+const SOLO_PLAN_SLUG = "cmmc_lv1_full_access";
 
-export default async function UpgradePage() {
+type PlanKey = "msp_squad_5" | "msp_platoon_20" | "cmmc_lv1_full_access";
+
+const PLAN_CONFIG: Record<PlanKey, {
+  slug: string;
+  title: string;
+  badge: string;
+  price: string;
+  priceSuffix: string;
+  capLine: string;
+  ctaText: string;
+  bullets: string[];
+  hasFeatureKey: string;
+}> = {
+  msp_squad_5: {
+    slug: "msp_squad_5",
+    title: "Squad — manage up to 5 client businesses",
+    badge: "MSP · Squad",
+    price: "$499",
+    priceSuffix: "/mo after trial",
+    capLine: "Up to 5 client businesses · 14 days free, no card",
+    ctaText: "Start my Squad trial",
+    bullets: [
+      "Up to 5 client businesses managed from one login",
+      "All 15 FAR 52.204-21 controls walked per client by Charlie, your vCO",
+      "Bid-ready package per client: SSP, affirmation, evidence",
+      "Year-round M365/Google monitoring across every client",
+      "Annual SPRS re-affirmation handled per client",
+      "Officer-reviewed before any client submits",
+      "BONUS: Daily Discover (SAM.gov bids matched to each client's NAICS)",
+      "BONUS: Monday Bid Digest emailed weekly",
+    ],
+    hasFeatureKey: "msp_squad_5",
+  },
+  msp_platoon_20: {
+    slug: "msp_platoon_20",
+    title: "Platoon — manage up to 20 client businesses",
+    badge: "MSP · Platoon",
+    price: "$1,499",
+    priceSuffix: "/mo after trial",
+    capLine: "Up to 20 client businesses · 14 days free, no card",
+    ctaText: "Start my Platoon trial",
+    bullets: [
+      "Up to 20 client businesses managed from one login",
+      "Everything in Squad, scaled to a full client roster",
+      "Year-round M365/Google monitoring across every client",
+      "Annual SPRS re-affirmation handled per client",
+      "Officer-reviewed before any client submits",
+      "Priority support",
+      "BONUS: Daily Discover per client",
+      "BONUS: Monday Bid Digest emailed weekly",
+    ],
+    hasFeatureKey: "msp_platoon_20",
+  },
+  cmmc_lv1_full_access: {
+    slug: SOLO_PLAN_SLUG,
+    title: "CMMC Level 1 — Solo",
+    badge: "Solo operator",
+    price: "$449",
+    priceSuffix: "/mo after trial",
+    capLine: "1 business · 14 days free, no card",
+    ctaText: "Start my 14-day free trial",
+    bullets: [
+      "All 15 FAR 52.204-21 safeguarding requirements walked by Charlie",
+      "Bid-ready package: SSP, affirmation, evidence",
+      "Year-round M365 / Google Workspace monitoring",
+      "Evidence freshness alerts",
+      "Annual SPRS re-affirmation handled",
+      "Officer-reviewed before you submit",
+      "BONUS: Daily Discover — 15 fresh SAM.gov bids/day matched to your NAICS",
+      "BONUS: Monday Bid Digest emailed weekly",
+    ],
+    hasFeatureKey: SOLO_PLAN_SLUG,
+  },
+};
+
+function isPlanKey(value: string | undefined): value is PlanKey {
+  return (
+    value === "msp_squad_5" ||
+    value === "msp_platoon_20" ||
+    value === "cmmc_lv1_full_access"
+  );
+}
+
+export default async function UpgradePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
   const { userId, has } = await auth();
   if (!userId) redirect("/sign-in");
 
-  // If the user already has active access (paid OR active trial), Clerk's `has`
-  // returns true. We send them straight back into the workspace — no payment
-  // collection until the trial ends and the plan flips to inactive.
-  if (has({ plan: "user:cmmc_lv1_full_access" })) redirect("/assessments");
+  const { plan: planParam } = await searchParams;
+  const planKey: PlanKey = isPlanKey(planParam) ? planParam : "cmmc_lv1_full_access";
+  const cfg = PLAN_CONFIG[planKey];
 
-  // Falls through here when:
-  //   - the 14-day trial has expired (Clerk revokes the plan), OR
-  //   - the user never started the trial / it lapsed without payment.
-  // We render our own pricing UI and use Clerk's CheckoutButton to trigger
-  // the hosted checkout flow.
+  // If the user already has active access (paid OR active trial) on the
+  // requested plan, send them to the workspace.
+  if (has({ plan: `user:${cfg.hasFeatureKey}` })) redirect("/onboard");
+  // If they already have a higher-tier MSP plan, also let them through.
+  if (planKey !== "msp_platoon_20" && has({ plan: "user:msp_platoon_20" })) {
+    redirect("/onboard");
+  }
+
+  const isMsp = planKey === "msp_squad_5" || planKey === "msp_platoon_20";
+
   return (
     <div className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
       <header className="border-b border-[#cfe3d9] bg-white">
@@ -34,152 +125,88 @@ export default async function UpgradePage() {
                 Custodia
               </div>
               <div className="font-serif text-xs font-bold text-[#10231d]">
-                CMMC Level 1 workspace
+                {isMsp ? "MSP control room" : "CMMC Level 1 workspace"}
               </div>
             </div>
           </Link>
           <Link
-            href="/"
+            href={isMsp ? "/for-msps" : "/"}
             className="text-xs font-medium text-[#456c5f] transition-colors hover:text-[#10231d]"
           >
-            ← Back to home
+            ← Back
           </Link>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-5">
-        <div className="mb-4 text-center">
+      <main className="mx-auto max-w-4xl px-6 py-8">
+        <div className="mb-5 text-center">
           <div className="mb-2 inline-flex items-center gap-2 border border-[#bdf2cf] bg-[#eaf7ef] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#1d6a4a]">
             <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-[#1d6a4a]" />
             14 days free &middot; No credit card required
           </div>
-          <h1 className="font-serif text-2xl font-bold tracking-tight text-[#10231d] md:text-4xl">
-            Start your 14-day free trial. Get bid-ready without paying a cent.
+          <h1 className="font-serif text-2xl font-bold tracking-tight text-[#10231d] md:text-3xl">
+            {isMsp
+              ? "Start your Custodia MSP trial. Onboard your first client business in minutes."
+              : "Start your 14-day free trial. Get bid-ready without paying a cent."}
           </h1>
           <p className="mx-auto mt-2 max-w-2xl text-sm leading-snug text-[#4a7164]">
-            Full Custodia workspace &mdash; CMMC Level&nbsp;1 build, freshness alerts, vCO on call. No card until day 14, only if you stay.
+            {isMsp
+              ? "Full Custodia MSP workspace — multi-tenant, vCO-walked, officer-reviewed. No card until day 14, only if you stay."
+              : "Full Custodia workspace — CMMC Level 1 build, freshness alerts, vCO on call. No card until day 14, only if you stay."}
           </p>
         </div>
 
-        {/* Stats: why now */}
-        <div className="mb-4 grid gap-2 grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              stat: "$830B+",
-              label: "FY26 federal contract obligations open to small business",
-            },
-            {
-              stat: "23%",
-              label: "Statutory federal small-business contracting goal",
-            },
-            {
-              stat: "Nov 10, 2025",
-              label: "CMMC clauses flow down on new DoD solicitations",
-            },
-            {
-              stat: "0 bids",
-              label: "Without FAR 52.204-21 affirmation — no exceptions",
-            },
-          ].map((s) => (
-            <div
-              key={s.label}
-              className="border border-[#cfe3d9] bg-white px-3 py-2"
+        <div className="border border-[#cfe3d9] bg-white p-5 shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
+          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a06b1a]">
+            {cfg.badge}
+          </div>
+          <div className="mt-1 flex items-baseline gap-2 flex-wrap">
+            <span className="font-serif text-3xl font-bold text-[#10231d]">{cfg.price}</span>
+            <span className="text-xs text-[#5a7f72]">{cfg.priceSuffix}</span>
+            <span className="ml-auto text-[11px] font-semibold text-[#1d6a4a]">{cfg.capLine}</span>
+          </div>
+          <p className="mt-2 text-sm font-semibold text-[#10231d]">{cfg.title}</p>
+
+          <ul className="mt-3 grid grid-cols-1 gap-x-4 gap-y-1 text-[12.5px] text-[#2c4940] sm:grid-cols-2">
+            {cfg.bullets.map((b) => (
+              <li key={b} className="flex items-start gap-2">
+                <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">&#10003;</span>
+                <span>{b}</span>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-4">
+            <TrialCheckoutButton
+              planId={cfg.slug}
+              className="group flex w-full items-center justify-center gap-2 bg-[#0e2a23] px-5 py-3 text-sm font-bold text-[#bdf2cf] shadow-[0_10px_30px_-10px_rgba(14,42,35,0.6)] transition-colors hover:bg-[#10342a]"
             >
-              <div className="font-serif text-lg font-bold leading-tight text-[#10231d]">{s.stat}</div>
-              <div className="mt-0.5 text-[11px] leading-snug text-[#5a7f72]">{s.label}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* Pricing card — our design, Clerk button */}
-        <div className="grid gap-3 lg:grid-cols-[1.1fr_1fr]">
-          <div className="border border-[#cfe3d9] bg-white p-5 shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
-            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a06b1a]">
-              Summer Federal Cash Incentive &middot; 100 seats
-            </div>
-            <div className="mt-1 flex items-baseline gap-2">
-              <span className="font-serif text-3xl font-bold text-[#10231d]">$449</span>
-              <span className="text-xs text-[#5a7f72]">/mo after trial</span>
-              <span className="text-xs text-[#7a9c90] line-through">$749</span>
-              <span className="ml-auto text-[11px] font-semibold text-[#1d6a4a]">14 days free, no card</span>
-            </div>
-
-            <ul className="mt-3 grid grid-cols-1 gap-x-4 gap-y-1 text-[12.5px] text-[#2c4940] sm:grid-cols-2">
-              {[
-                "All 15 FAR 52.204-21 safeguarding requirements walked by Charlie",
-                "Bid-ready package: SSP, affirmation, evidence",
-                "Year-round M365 / Google Workspace monitoring",
-                "Evidence freshness alerts",
-                "Annual SPRS re-affirmation handled",
-                "Officer-reviewed before you submit",
-                "BONUS: Daily Discover — 15 fresh SAM.gov bids/day matched to your NAICS",
-                "BONUS: Monday Bid Digest emailed weekly",
-              ].map((b) => (
-                <li key={b} className="flex items-start gap-2">
-                  <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">&#10003;</span>
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="mt-4">
-              <TrialCheckoutButton
-                planId={PLAN_SLUG}
-                className="group flex w-full items-center justify-center gap-2 bg-[#0e2a23] px-5 py-3 text-sm font-bold text-[#bdf2cf] shadow-[0_10px_30px_-10px_rgba(14,42,35,0.6)] transition-colors hover:bg-[#10342a]"
-              >
-                Start my 14-day free trial
-                <span aria-hidden className="text-base transition-transform group-hover:translate-x-0.5">&rarr;</span>
-              </TrialCheckoutButton>
-              <p className="mt-1.5 text-center text-[11px] text-[#5a7f72]">
-                No charge for 14 days &middot; Cancel anytime &middot; CMMC L1 Success Guarantee
-              </p>
-            </div>
+              {cfg.ctaText}
+              <span aria-hidden className="text-base transition-transform group-hover:translate-x-0.5">&rarr;</span>
+            </TrialCheckoutButton>
+            <p className="mt-1.5 text-center text-[11px] text-[#5a7f72]">
+              No charge for 14 days &middot; Cancel anytime
+            </p>
           </div>
 
-          {/* Why now / proof */}
-          <div className="flex flex-col gap-3">
-            <div className="border border-[#cfe3d9] bg-white p-4">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-                Why now is the moment
-              </div>
-              <ul className="mt-2 space-y-1.5 text-[12.5px] leading-snug text-[#2c4940]">
-                <li className="flex items-start gap-2">
-                  <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">&middot;</span>
-                  <span>CMMC clauses flow down on new DoD solicitations &mdash; primes filter subs without affirmations.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">&middot;</span>
-                  <span>Small-business set-asides at a record share &mdash; pipeline is real but gated.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">&middot;</span>
-                  <span>Launch pricing ($449 vs $749) ends after the next 100 seats.</span>
-                </li>
-              </ul>
-            </div>
-            <div className="border border-[#cfe3d9] bg-[#0e2a23] p-4 text-[#cce5da]">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">
-                vs. doing it yourself
-              </div>
-              <div className="mt-2 grid grid-cols-3 gap-2 text-[11px]">
-                <div>
-                  <div className="font-bold uppercase tracking-[0.12em] text-[#7aab98]">DIY</div>
-                  <div className="mt-0.5">3&ndash;6 mo &middot; $5k+ &middot; stale fast</div>
-                </div>
-                <div>
-                  <div className="font-bold uppercase tracking-[0.12em] text-[#7aab98]">Audit firm</div>
-                  <div className="mt-0.5">$25k+ &middot; no monitoring</div>
-                </div>
-                <div>
-                  <div className="font-bold uppercase tracking-[0.12em] text-[#bdf2cf]">Custodia</div>
-                  <div className="mt-0.5 font-semibold text-white">Days &middot; $449/mo &middot; watched</div>
-                </div>
-              </div>
-            </div>
-          </div>
+          {isMsp ? (
+            <p className="mt-4 border-t border-[#e3eee7] pt-3 text-center text-[11px] text-[#5a7f72]">
+              Want the solo plan instead?{" "}
+              <Link href="/upgrade?plan=cmmc_lv1_full_access" className="font-medium text-[#20684f] underline underline-offset-2 hover:text-[#174f3c]">
+                Single business — $449/mo
+              </Link>
+            </p>
+          ) : (
+            <p className="mt-4 border-t border-[#e3eee7] pt-3 text-center text-[11px] text-[#5a7f72]">
+              Manage multiple clients?{" "}
+              <Link href="/for-msps" className="font-medium text-[#20684f] underline underline-offset-2 hover:text-[#174f3c]">
+                See MSP plans
+              </Link>
+            </p>
+          )}
         </div>
 
-        <p className="mt-3 text-center text-[11px] text-[#5a7f72]">
+        <p className="mt-4 text-center text-[11px] text-[#5a7f72]">
           Questions before you start?{" "}
           <a
             href="mailto:support@custodia.dev"

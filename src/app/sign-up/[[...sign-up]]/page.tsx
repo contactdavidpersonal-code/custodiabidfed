@@ -1,7 +1,23 @@
 import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
 
-export default function SignUpPage() {
+const ALLOWED_PLANS = new Set([
+  "msp_squad_5",
+  "msp_platoon_20",
+  "cmmc_lv1_full_access",
+]);
+
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
+  const { plan } = await searchParams;
+  // After sign-up, send the user to /upgrade to pick (or auto-start trial of)
+  // their chosen plan. MSPs come in via /for-msps?plan=msp_squad_5 etc.
+  const safePlan = plan && ALLOWED_PLANS.has(plan) ? plan : null;
+  const redirectAfter = safePlan ? `/upgrade?plan=${safePlan}` : "/assessments";
+
   return (
     <main className="min-h-screen bg-[#0e2a23] px-6 py-8 text-white">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
@@ -84,7 +100,7 @@ export default function SignUpPage() {
           </p>
         </div>
         <div className="flex justify-center lg:justify-end">
-          <SignUp path="/sign-up" signInUrl="/sign-in" fallbackRedirectUrl="/assessments" />
+          <SignUp path="/sign-up" signInUrl="/sign-in" fallbackRedirectUrl={redirectAfter} forceRedirectUrl={redirectAfter} />
         </div>
       </div>
     </main>

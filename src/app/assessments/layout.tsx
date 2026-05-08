@@ -17,7 +17,12 @@ export default async function AssessmentsLayout({
 }) {
   const { userId, has } = await auth();
   if (!userId) redirect("/sign-in");
-  if (!has({ plan: "user:cmmc_lv1_full_access" })) redirect("/upgrade");
+  // Allow solo CMMC plan or either MSP tier through the workspace gate.
+  const hasAccess =
+    has({ plan: "user:cmmc_lv1_full_access" }) ||
+    has({ plan: "user:msp_squad_5" }) ||
+    has({ plan: "user:msp_platoon_20" });
+  if (!hasAccess) redirect("/upgrade");
 
   const org = (await getActiveOrgFromAuth())!;
   const unreadOfficerReplies = await countUnreadOfficerRepliesForOrg(org.id);
