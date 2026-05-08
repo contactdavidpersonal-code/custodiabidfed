@@ -185,33 +185,128 @@ function Report({ result }: { result: CmmcCheckResult }) {
           </section>
         )}
 
-        {/* CTA — Custodia value prop */}
-        <section className="mb-8 rounded-xl border border-[#10231d] bg-[#10231d] p-6 text-white print:bg-white print:text-[#10231d]">
-          <div className="text-xs font-semibold uppercase tracking-widest text-amber-300 print:text-emerald-800">
-            How Custodia closes this in 7 days
-          </div>
-          <h2 className="mt-2 font-serif text-2xl font-bold leading-tight">
-            One officer. One platform. The 15 requirements done right.
-          </h2>
-          <ul className="mt-4 grid gap-2 text-sm leading-relaxed sm:grid-cols-2">
-            <li>· Charlie 24/7 inside the workspace, with full evidence tooling</li>
-            <li>· Microsoft 365 / Google Workspace evidence collection</li>
-            <li>· Signed, hash-anchored annual artifact pack (SPRS-ready)</li>
-            <li>· Continuous monitoring · audit support · officer escalation</li>
-          </ul>
-          <div className="mt-5 flex flex-wrap items-center gap-4">
-            <Link
-              href="/sign-up?utm_source=cmmc-check"
-              className="rounded-full bg-amber-300 px-5 py-2.5 text-sm font-bold text-[#10231d] hover:bg-amber-200 print:bg-[#10231d] print:text-white"
-            >
-              Start 14-day free trial — no card
-            </Link>
-            <span className="text-xs text-emerald-100 print:text-slate-700">
-              Current rate <strong>$449/mo</strong> locked through {fyEnd} for
-              CMMC Check arrivals.
-            </span>
-          </div>
-        </section>
+        {/* CTA — branches on determination */}
+        {isL1 && (
+          <section className="mb-8 rounded-xl border border-[#10231d] bg-[#10231d] p-6 text-white print:bg-white print:text-[#10231d]">
+            <div className="text-xs font-semibold uppercase tracking-widest text-[#c4f0b8] print:text-emerald-800">
+              You&apos;re in scope. Here&apos;s how Custodia closes this in seven days.
+            </div>
+            <h2 className="mt-2 font-serif text-2xl font-bold leading-tight">
+              One officer. One platform. The fifteen practices done right.
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-emerald-100 print:text-slate-700">
+              You walked through this with me, Charlie. Inside Custodia, I&apos;m
+              your full-time officer with the tools to actually fix the gaps
+              we just found, generate the artifact pack a contracting officer
+              expects, and post your score where they look for it.
+            </p>
+            <ul className="mt-4 grid gap-2 text-sm leading-relaxed sm:grid-cols-2">
+              <li>· Charlie 24/7 inside the workspace, full evidence tooling</li>
+              <li>· Microsoft 365 / Google Workspace evidence collection</li>
+              <li>· Signed annual artifact pack — security plan, evidence, affirmation</li>
+              <li>· Continuous monitoring · audit support · officer escalation</li>
+            </ul>
+            <div className="mt-6 flex flex-wrap items-center gap-4 print:hidden">
+              <Link
+                href="/sign-up?utm_source=cmmc-check&utm_medium=report&utm_campaign=l1"
+                className="inline-flex items-center gap-2 bg-[#c4f0b8] px-6 py-3 text-sm font-bold uppercase tracking-[0.18em] text-[#0a2620] transition-all hover:bg-white hover:tracking-[0.22em]"
+              >
+                Continue with Custodia →
+              </Link>
+              <span className="text-xs text-emerald-100 print:text-slate-700">
+                14-day free trial · No credit card · <strong>$449/mo</strong>{" "}
+                locked through {fyEnd} for arrivals from this Check.
+              </span>
+            </div>
+          </section>
+        )}
+
+        {determination === "none" && (
+          <section className="mb-8 rounded-xl border border-slate-200 bg-white p-6 print:shadow-none">
+            <div className="text-xs font-semibold uppercase tracking-widest text-emerald-800">
+              You&apos;re not in scope today
+            </div>
+            <h2 className="mt-2 font-serif text-2xl font-bold leading-tight text-[#10231d]">
+              Save this report. Come back when one of these happens.
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-700">
+              The basic federal cyber standard kicks in the moment you handle{" "}
+              <em>non-public</em> contract information from a federal buyer or
+              prime. None of that&apos;s true for you yet — most small
+              businesses aren&apos;t in scope and don&apos;t need to spend a
+              dollar on this until they are.
+            </p>
+            <div className="mt-4 grid gap-3 text-sm text-slate-800 sm:grid-cols-2">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  When to come back
+                </div>
+                <ul className="mt-2 space-y-1.5 leading-relaxed">
+                  <li>· You win a federal contract or task order — even a small one</li>
+                  <li>· A prime contractor adds you to a teaming agreement</li>
+                  <li>
+                    · A buyer sends you specs, drawings, or statements of work
+                    that aren&apos;t public on a government website
+                  </li>
+                  <li>· A contracting officer or prime asks for your score</li>
+                </ul>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <div className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  What size contract triggers it
+                </div>
+                <p className="mt-2 leading-relaxed">
+                  There is no dollar floor. A $5,000 task order with non-public
+                  contract info triggers the same fifteen practices as a
+                  $5M one. If you&apos;re subbing under a prime, the prime
+                  flows it down to you regardless of award size.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex flex-wrap items-center gap-3 print:hidden">
+              <Link
+                href="/sign-up?utm_source=cmmc-check&utm_medium=report&utm_campaign=none"
+                className="inline-flex items-center gap-2 bg-[#c4f0b8] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-[#0a2620] transition-all hover:bg-white hover:tracking-[0.22em]"
+              >
+                Set up Custodia anyway →
+              </Link>
+              <span className="text-xs text-slate-600">
+                Some founders set the platform up <em>before</em> the first
+                award lands so they&apos;re bid-ready day one.
+              </span>
+            </div>
+          </section>
+        )}
+
+        {determination === "level_2" && (
+          <section className="mb-8 rounded-xl border border-amber-300 bg-amber-50 p-6 print:shadow-none">
+            <div className="text-xs font-semibold uppercase tracking-widest text-amber-900">
+              This is bigger than the basic standard
+            </div>
+            <h2 className="mt-2 font-serif text-2xl font-bold leading-tight text-[#10231d]">
+              You&apos;re looking at Level 2 — talk to a human on our team.
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-slate-800">
+              You mentioned controlled or marked information. That puts you
+              past the basic standard and into a much heavier lift —
+              roughly 110 controls, third-party audits, and serious
+              documentation. Custodia handles Level 2 as a separate
+              officer-led engagement; we don&apos;t recommend tackling it
+              yourself with a self-serve tool.
+            </p>
+            <div className="mt-5 flex flex-wrap items-center gap-3 print:hidden">
+              <Link
+                href="/sign-up?utm_source=cmmc-check&utm_medium=report&utm_campaign=l2"
+                className="inline-flex items-center gap-2 bg-[#10231d] px-5 py-2.5 text-sm font-bold uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#0a1813]"
+              >
+                Talk to a Custodia officer →
+              </Link>
+              <span className="text-xs text-slate-600">
+                A real person reaches out within one business day.
+              </span>
+            </div>
+          </section>
+        )}
 
         {/* Footer / sources */}
         <footer className="border-t border-slate-200 pt-6 text-xs leading-relaxed text-slate-500">
