@@ -200,8 +200,7 @@ export function VerifiedPageOfferCard({
 
   return (
     <div className="overflow-hidden border border-slate-200 bg-gradient-to-br from-white via-emerald-50/40 to-amber-50/40 shadow-sm">
-      <div className="grid gap-0 lg:grid-cols-[1fr_360px]">
-        <div className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8">
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
             New · Available now
           </div>
@@ -267,7 +266,7 @@ export function VerifiedPageOfferCard({
             <em>Manage Verified page</em>.
           </p>
         </div>
-        <div className="border-t border-slate-200 bg-white p-6 lg:border-t-0 lg:border-l">
+        <div className="border-t border-slate-200 bg-white p-6 lg:p-8">
           <h3 className="text-sm font-bold text-slate-900">
             Publish your page
           </h3>
@@ -275,26 +274,27 @@ export function VerifiedPageOfferCard({
             One click. You can review and edit content from the manage panel
             after publishing.
           </p>
-          <form action={publishVerifiedPageAction} className="mt-4 space-y-2">
-            <input type="hidden" name="assessmentId" value={assessmentId} />
-            <button
-              type="submit"
-              className="w-full bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
+          <div className="mt-4 flex flex-wrap gap-2">
+            <form action={publishVerifiedPageAction}>
+              <input type="hidden" name="assessmentId" value={assessmentId} />
+              <button
+                type="submit"
+                className="bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
+              >
+                Publish my Verified page
+              </button>
+            </form>
+            <Link
+              href={`/assessments/${assessmentId}/verified`}
+              className="border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-900 transition-colors hover:border-slate-400"
             >
-              Publish my Verified page
-            </button>
-          </form>
-          <Link
-            href={`/assessments/${assessmentId}/verified`}
-            className="mt-2 block w-full border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-900 transition-colors hover:border-slate-400"
-          >
-            Preview &amp; customize first
-          </Link>
-          <p className="mt-3 text-center text-[11px] text-slate-500">
+              Preview &amp; customize first
+            </Link>
+          </div>
+          <p className="mt-3 text-[11px] text-slate-500">
             Not now? You can publish any time from this bid-ready packet page.
           </p>
         </div>
-      </div>
     </div>
   );
 }

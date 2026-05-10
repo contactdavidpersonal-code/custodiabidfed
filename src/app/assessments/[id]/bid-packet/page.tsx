@@ -8,7 +8,7 @@ import {
   type SetAside,
 } from "@/lib/bid-profile";
 import { loadBidProfile } from "@/lib/bid-profile-server";
-import { loadTrustPageForOrg } from "@/lib/trust-page";
+import { loadTrustPageForOrg, publishTrustPage } from "@/lib/trust-page";
 import { PrintButton } from "../PrintButton";
 import {
   SprsFilingPromptCard,
@@ -34,7 +34,22 @@ export default async function BidPacketPage(
 
   const profile = await loadBidProfile(ctx.organization.id);
   const { score, missing } = bidProfileCompleteness(profile);
-  const trustPage = await loadTrustPageForOrg(ctx.organization.id);
+  let trustPage = await loadTrustPageForOrg(ctx.organization.id);
+  // Custodia Verified is a standardized third-party attestation, not an
+  // opt-in marketing page. Auto-publish any existing trust_page that was
+  // provisioned before this change so customers don't see a 404 when they
+  // click through to their public page.
+  if (trustPage && !trustPage.is_public && ctx.assessment.sprs_filed_at) {
+    try {
+      await publishTrustPage({
+        organizationId: ctx.organization.id,
+        userId,
+      });
+      trustPage = await loadTrustPageForOrg(ctx.organization.id);
+    } catch {
+      // Non-fatal: the manage page still has an explicit Publish button.
+    }
+  }
 
   const org = ctx.organization;
   const a = ctx.assessment;

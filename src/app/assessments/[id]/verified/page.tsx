@@ -9,7 +9,6 @@ import { ensureDbReady, getSql } from "@/lib/db";
 import {
   publishVerifiedPageAction,
   unpublishVerifiedPageAction,
-  updateVerifiedPageAction,
   rotateVerifiedPageSlugAction,
 } from "../../actions";
 
@@ -208,83 +207,11 @@ export default async function VerifiedOwnerPanel(
         </section>
       )}
 
-      {/* Content + toggles */}
-      <section className="mb-6  border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="font-serif text-lg text-slate-900">
-          Content &amp; sections
-        </h2>
-        <form action={updateVerifiedPageAction} className="mt-4 space-y-5">
-          <input type="hidden" name="assessmentId" value={id} />
-          <div>
-            <label
-              htmlFor="customAbout"
-              className="block text-sm font-semibold text-slate-900"
-            >
-              About (max 500 characters)
-            </label>
-            <textarea
-              id="customAbout"
-              name="customAbout"
-              defaultValue={trustPage.custom_about ?? ""}
-              maxLength={500}
-              rows={5}
-              className="mt-1 w-full  border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-              placeholder="What you build, who you serve, and what makes you a strong subcontractor."
-            />
-            <p className="mt-1 text-xs text-slate-500">
-              Plain text. No HTML. Shown in the &ldquo;About&rdquo; section of
-              your public page.
-            </p>
-          </div>
-          <div>
-            <label
-              htmlFor="contactEmail"
-              className="block text-sm font-semibold text-slate-900"
-            >
-              Contact email
-            </label>
-            <input
-              id="contactEmail"
-              name="contactEmail"
-              type="email"
-              defaultValue={trustPage.contact_email ?? ""}
-              className="mt-1 w-full  border border-slate-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
-              placeholder="bd@yourcompany.com"
-            />
-          </div>
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-semibold text-slate-900">
-              Sections to display
-            </legend>
-            <ToggleField
-              name="showContinuousMonitoring"
-              label="Continuous monitoring section"
-              defaultChecked={trustPage.show_continuous_monitoring}
-            />
-            <ToggleField
-              name="showConnectors"
-              label="Microsoft 365 / Google Workspace status rows"
-              defaultChecked={trustPage.show_connectors}
-            />
-            <ToggleField
-              name="showSprsLink"
-              label="“Verify SPRS by UEI” outbound link"
-              defaultChecked={trustPage.show_sprs_link}
-            />
-            <ToggleField
-              name="showSetAsides"
-              label="Set-asides (pulled from bid-ready profile)"
-              defaultChecked={trustPage.show_set_asides}
-            />
-          </fieldset>
-          <button
-            type="submit"
-            className=" bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-slate-800"
-          >
-            Save changes
-          </button>
-        </form>
-      </section>
+      {/* Content + toggles intentionally removed — the Custodia Verified
+          page is a standardized third-party attestation, identical layout
+          for every client. Identity, set-asides, monitoring, and SPRS
+          filing data are pulled live from your federal record and the
+          platform's monitoring signals. */}
 
       {/* Embed snippets */}
       <section className="mb-6  border border-slate-200 bg-white p-6 shadow-sm">
@@ -351,32 +278,6 @@ export default async function VerifiedOwnerPanel(
         </form>
       </section>
     </main>
-  );
-}
-
-function ToggleField({
-  name,
-  label,
-  defaultChecked,
-}: {
-  name: string;
-  label: string;
-  defaultChecked: boolean;
-}) {
-  return (
-    <label className="flex items-center gap-3 text-sm text-slate-900">
-      {/* Marker tells the server action that this toggle was rendered, so an
-          unchecked checkbox is interpreted as "off" instead of "leave as-is". */}
-      <input type="hidden" name={`${name}__present`} value="1" />
-      <input
-        type="checkbox"
-        name={name}
-        defaultChecked={defaultChecked}
-        value="on"
-        className="h-4 w-4  border-slate-300 text-emerald-700 focus:ring-emerald-500"
-      />
-      <span>{label}</span>
-    </label>
   );
 }
 

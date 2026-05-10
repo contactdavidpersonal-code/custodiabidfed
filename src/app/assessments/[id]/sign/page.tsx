@@ -30,9 +30,13 @@ export default async function SignPage(
   if (!ctx) notFound();
   await enforceStepOrder(ctx, "sign");
 
-  if (ctx.assessment.status === "attested") {
-    redirect(`/assessments/${id}`);
-  }
+  // Already attested? Don't kick the user away — they may have edited a
+  // practice, uploaded new evidence, or fixed a boundary item and want to
+  // re-affirm so the packet reflects the latest state. submitAffirmation
+  // UPDATEs the row in place (refreshes signature/payload/affirmed_at);
+  // status stays 'attested'. We just surface a banner so they know they're
+  // re-signing rather than signing for the first time.
+  const alreadyAttested = ctx.assessment.status === "attested";
 
   const search = await props.searchParams;
   const submitError = (() => {
@@ -145,15 +149,52 @@ export default async function SignPage(
           Step 5 of 8 · Sign &amp; affirm
         </div>
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
-          Affirm your CMMC Level 1 compliance
+          {alreadyAttested
+            ? "Re-affirm your CMMC Level 1 compliance"
+            : "Affirm your CMMC Level 1 compliance"}
         </h1>
         <p className="mt-3 text-base leading-relaxed text-slate-600">
           A senior official signs below on behalf of{" "}
-          <strong>{ctx.organization.name}</strong>. This generates your
-          affirmation memo and locks the assessment. You can download your SSP
-          and affirmation immediately after.
+          <strong>{ctx.organization.name}</strong>.{" "}
+          {alreadyAttested
+            ? "This assessment is already signed. Re-submitting refreshes the affirmation memo, payload hash, and signature with whatever changes you've made — your bid-ready packet will regenerate on the next download."
+            : "This generates your affirmation memo and locks the assessment. You can download your SSP and affirmation immediately after."}
         </p>
       </header>
+
+      {alreadyAttested && (
+        <div className="mb-8 border border-emerald-200 bg-emerald-50 p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-emerald-800">
+            Already signed
+          </h2>
+          <p className="mt-2 text-sm text-emerald-900">
+            {ctx.assessment.affirmed_at ? (
+              <>
+                Last affirmed{" "}
+                <strong>
+                  {new Date(ctx.assessment.affirmed_at).toLocaleString(
+                    "en-US",
+                    {
+                      dateStyle: "long",
+                      timeStyle: "short",
+                    },
+                  )}
+                </strong>
+                .{" "}
+              </>
+            ) : null}
+            You only need to re-sign if you updated answers, evidence, the
+            boundary, or the signer details. Otherwise{" "}
+            <Link
+              href={`/assessments/${id}/bid-packet`}
+              className="underline font-medium"
+            >
+              go to your bid-ready packet
+            </Link>
+            .
+          </p>
+        </div>
+      )}
 
       {submitError && (
         <noscript>

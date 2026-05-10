@@ -114,10 +114,11 @@ export type TrustPageRow = {
 
 /**
  * Idempotently create-or-update the trust_pages row for an org after a
- * SPRS filing. Always sets `is_public = FALSE` on first creation — the
- * customer must explicitly opt in. Subsequent calls (e.g. re-filing on a
- * new cycle) refresh the verification IDs but preserve `is_public` and
- * customer-curated fields.
+ * SPRS filing. Auto-publishes on first creation — the Verified page is a
+ * standardized third-party attestation owned by Custodia, not a
+ * user-editable marketing page, so there's no opt-in step. Subsequent
+ * calls (e.g. re-filing on a new cycle) refresh the verification IDs but
+ * preserve `is_public` and any customer-curated fields that remain.
  */
 export async function provisionTrustPageForFiling(input: {
   organizationId: string;
@@ -150,6 +151,8 @@ export async function provisionTrustPageForFiling(input: {
       SET verification_slug = ${ids.verificationSlug},
           custodia_verification_id = ${ids.custodiaVerificationId},
           slug = ${ids.verificationSlug},
+          is_public = TRUE,
+          published_at = COALESCE(published_at, NOW()),
           updated_at = NOW()
       WHERE organization_id = ${input.organizationId}
       RETURNING id, organization_id, slug, verification_slug,
@@ -175,11 +178,11 @@ export async function provisionTrustPageForFiling(input: {
   const inserted = (await sql`
     INSERT INTO trust_pages
       (organization_id, slug, verification_slug, custodia_verification_id,
-       is_public, fields)
+       is_public, published_at, fields)
     VALUES
       (${input.organizationId}, ${ids.verificationSlug},
        ${ids.verificationSlug}, ${ids.custodiaVerificationId},
-       FALSE, '{}'::jsonb)
+       TRUE, NOW(), '{}'::jsonb)
     RETURNING id, organization_id, slug, verification_slug,
               custodia_verification_id, is_public, headline, summary,
               custom_about, contact_email,

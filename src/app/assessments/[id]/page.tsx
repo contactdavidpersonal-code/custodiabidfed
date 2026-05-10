@@ -1,4 +1,4 @@
-﻿import { auth } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
@@ -37,9 +37,9 @@ const statusPillStyles: Record<ControlResponseRow["status"], string> = {
 };
 
 // Per-practice progress for the small bar at the bottom of each card.
-// `met` and `not_applicable` are 100% â€” the practice is resolved either way.
-// `partial` is 50% â€” user has some evidence but not all six objectives.
-// `no` is 25% â€” user has acknowledged the practice but hasn't fixed it.
+// `met` and `not_applicable` are 100% — the practice is resolved either way.
+// `partial` is 50% — user has some evidence but not all six objectives.
+// `no` is 25% — user has acknowledged the practice but hasn't fixed it.
 // `unanswered` is 0%.
 const statusPercent: Record<ControlResponseRow["status"], number> = {
   unanswered: 0,
@@ -102,7 +102,7 @@ export default async function AssessmentOverviewPage(
 
       <section className="mb-6">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-          CMMC Level 1 â€¢ FY{ctx.assessment.fiscal_year}
+          CMMC Level 1 · FY{ctx.assessment.fiscal_year}
         </p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -111,7 +111,7 @@ export default async function AssessmentOverviewPage(
             </h1>
             <p className="mt-2 text-sm text-[#5a7d70]">
               {ctx.organization.name !== "My Organization"
-                ? `${ctx.organization.name} â€” work the 15 safeguarding requirements below to MET, then sign and file with SPRS.`
+                ? `${ctx.organization.name} — work the 15 safeguarding requirements below to MET, then sign and file with SPRS.`
                 : "Business profile not set yet"}
             </p>
           </div>
@@ -280,7 +280,7 @@ function CarryForwardReviewBanner({
                 {pendingArtifactCount === 1 ? "" : "s"} need re-confirmation.
               </>
             )}{" "}
-            Walk each practice to confirm or replace â€” one step at a time
+            Walk each practice to confirm or replace — one step at a time
             importing last year&apos;s return.
           </p>
         </div>
@@ -306,10 +306,10 @@ function CelebrationBanner({ assessmentId }: { assessmentId: string }) {
             You&apos;re signed and bid-ready
           </div>
           <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-            Congratulations â€” your affirmation is locked.
+            Congratulations — your affirmation is locked.
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-700">
-            Download your bid-ready package below â€” it bundles your SSP,
+            Download your bid-ready package below — it bundles your SSP,
             signed affirmation memo, control inventory, and every evidence
             artifact in one zip. File it in SPRS and you&apos;re CMMC Level 1
             compliant for this cycle.
@@ -418,7 +418,7 @@ function NextStepBanner({
           </h2>
           <p className="mt-1 text-sm text-slate-700">
             The bid-ready package bundles your SSP, signed affirmation, and
-            every evidence artifact â€” everything a prime or SPRS filing might
+            every evidence artifact — everything a prime or SPRS filing might
             ask for.
           </p>
         </div>
@@ -457,7 +457,7 @@ function NextStepBanner({
             Finish telling the officer about your business
           </h2>
           <p className="mt-1 text-sm text-slate-700">
-            Legal name, UEI/CAGE, and the systems in scope â€” captured through a
+            Legal name, UEI/CAGE, and the systems in scope — captured through a
             quick chat, not a form.
           </p>
         </div>
@@ -493,7 +493,7 @@ function NextStepBanner({
             >
               Document an Enduring Exception or Temporary Deficiency
             </Link>
-            {" "}â€” per CMMC AG v2.13, both can roll up to MET when properly
+            {" "}— per CMMC AG v2.13, both can roll up to MET when properly
             documented.
           </p>
         </div>
@@ -509,7 +509,7 @@ function NextStepBanner({
         </div>
         <h2 className="mt-1 text-lg font-bold">
           {hasBlockers
-            ? "All answered â€” but some practices need fixing first"
+            ? "All answered — but some practices need fixing first"
             : "You're ready to affirm."}
         </h2>
         <p className="mt-1 text-sm text-emerald-100/80">
@@ -585,7 +585,7 @@ function ProfileSection({
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             Captured conversationally through your officer. Ask them to update
-            anything â€” no forms.
+            anything — no forms.
           </p>
         </div>
         <div className="flex items-center gap-2">
