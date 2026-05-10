@@ -229,7 +229,7 @@ export default async function VerifiedOwnerPanel(
           your public Custodia Verified page so primes and contracting
           officers can vet you in seconds.
         </p>
-        <div className="mt-4 grid gap-6 lg:grid-cols-2">
+        <div className="mt-4 space-y-8">
           <div>
             <h3 className="text-sm font-semibold text-slate-900">
               Large (with caption)

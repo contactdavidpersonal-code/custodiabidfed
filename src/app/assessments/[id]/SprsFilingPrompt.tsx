@@ -210,43 +210,39 @@ export function VerifiedPageOfferCard({
             appears in the header, that the customer can drop on their site,
             email signature, or capability statement. Click → their public
             Verified page. */}
-        <div className="mt-6 grid gap-6 border-t border-slate-200 pt-6 lg:grid-cols-[200px_1fr]">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
-              Your Custodia badge
+        <div className="mt-6 border-t border-slate-200 pt-6">
+          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
+            Your Custodia badge
+          </div>
+          <a
+            href={publicUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 flex w-full max-w-xs flex-col items-center gap-2 border border-slate-200 bg-white p-5 transition-shadow hover:shadow-md"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/custodia-logo.png"
+              alt={altText}
+              width={96}
+              height={115}
+              className="h-24 w-auto"
+            />
+            <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#10231d]">
+              CMMC Level 1 · Verified
             </div>
-            <a
-              href={publicUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 flex flex-col items-center gap-2 border border-slate-200 bg-white p-5 transition-shadow hover:shadow-md"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/custodia-logo.png"
-                alt={altText}
-                width={96}
-                height={115}
-                className="h-24 w-auto"
-              />
-              <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#10231d]">
-                CMMC Level 1 · Verified
-              </div>
-            </a>
-            <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
-              Click to preview where the badge links.
-            </p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm text-slate-700">
-              Drop this on your website footer, capability statement, or email
-              signature. Clicking opens your live Custodia Verified page so
-              primes can confirm your CMMC Level 1 status in seconds.
-            </p>
-            <EmbedSnippet label="HTML" code={embedHtml} />
-            <EmbedSnippet label="Markdown" code={embedMarkdown} />
-            <EmbedSnippet label="Direct link" code={publicUrl} />
-          </div>
+          </a>
+          <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+            Click to preview where the badge links.
+          </p>
+          <p className="mt-4 text-sm text-slate-700">
+            Drop this on your website footer, capability statement, or email
+            signature. Clicking opens your live Custodia Verified page so
+            primes can confirm your CMMC Level 1 status in seconds.
+          </p>
+          <EmbedSnippet label="HTML" code={embedHtml} />
+          <EmbedSnippet label="Markdown" code={embedMarkdown} />
+          <EmbedSnippet label="Direct link" code={publicUrl} />
         </div>
       </div>
     );
