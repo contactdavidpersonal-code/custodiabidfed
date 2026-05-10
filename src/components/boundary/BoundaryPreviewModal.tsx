@@ -55,9 +55,24 @@ export function BoundaryPreviewModal({ children }: { children: ReactNode }) {
 
   return (
     <>
-      <button
-        type="button"
+      {/*
+        IMPORTANT: this trigger MUST be a <div role="button"> rather than a
+        <button>. The boundary document children contain block-level elements
+        (<section>, <table>, <div>) and HTML disallows those inside <button>;
+        browsers re-parent them, breaking React hydration and crashing the
+        server-component tree. role="button" + tabIndex + key handlers gives
+        us the same a11y surface without the parsing hazard.
+      */}
+      <div
+        role="button"
+        tabIndex={0}
         onClick={() => setOpen(true)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setOpen(true);
+          }
+        }}
         aria-label="Open boundary diagram in larger view"
         className="group relative block w-full cursor-zoom-in border-0 bg-transparent p-0 text-left"
       >
@@ -67,7 +82,7 @@ export function BoundaryPreviewModal({ children }: { children: ReactNode }) {
             Click to enlarge
           </span>
         </div>
-      </button>
+      </div>
 
       {open && (
         <div
