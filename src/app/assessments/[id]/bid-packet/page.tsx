@@ -9,6 +9,7 @@ import {
 } from "@/lib/bid-profile";
 import { loadBidProfile } from "@/lib/bid-profile-server";
 import { PrintButton } from "../PrintButton";
+import { SprsFilingPromptCard } from "../SprsFilingPrompt";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +33,7 @@ export default async function BidPacketPage(
   const org = ctx.organization;
   const a = ctx.assessment;
   const attested = a.status === "attested";
+  const sprsFiled = Boolean(a.sprs_filed_at);
   const registrationOk = Boolean(org.sam_uei && org.cage_code);
 
   const generatedDate = new Date().toLocaleDateString(undefined, {
@@ -98,6 +100,15 @@ export default async function BidPacketPage(
             </Link>{" "}
             and paste the SPRS confirmation number to mark your filing complete.
           </p>
+        </div>
+      ) : null}
+
+      {attested && !sprsFiled ? (
+        <div className="mb-8 print:hidden">
+          <SprsFilingPromptCard
+            assessmentId={id}
+            fiscalYear={a.fiscal_year}
+          />
         </div>
       ) : null}
 
