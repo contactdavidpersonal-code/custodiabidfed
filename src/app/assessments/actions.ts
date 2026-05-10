@@ -875,11 +875,11 @@ export async function submitAffirmationAction(formData: FormData) {
   // instead of crashing into error.tsx. Next 16 server actions surface any
   // thrown Error as an opaque 500 with a digest — useless to the user. We
   // never want validation failures to look like "the platform broke".
-  const bail = (msg: string): never => {
+  function bail(msg: string): never {
     redirect(
       `/assessments/${assessmentId}/sign?error=${encodeURIComponent(msg)}`,
     );
-  };
+  }
   const signerName = String(formData.get("signerName") ?? "").trim();
   const signerTitle = String(formData.get("signerTitle") ?? "").trim();
   const affirmingOfficialEmail = String(
