@@ -80,13 +80,20 @@ export default async function VerifiedOwnerPanel(
     process.env.NEXT_PUBLIC_APP_URL ?? "https://bidfedcmmc.com"
   ).replace(/\/$/, "");
   const publicUrl = `${appUrl}/verified/${slug}`;
-  const badgeWide = `${appUrl}/api/badge/${slug}`;
-  const badgeSquare = `${appUrl}/api/badge/${slug}?size=square`;
+  // The "badge" is the Custodia shield logo itself — exactly what appears in
+  // the platform header — wrapped in an anchor to the customer's public
+  // Verified page. No composited org name or burned-in metadata; the page
+  // it links to carries every detail. This keeps embeds light, cacheable
+  // by the customer's CDN, and visually consistent with the brand.
+  const badgeImg = `${appUrl}/custodia-logo.png`;
   const setAsides = bidProfile.set_asides ?? [];
 
-  const embedHtmlWide = `<a href="${publicUrl}" target="_blank" rel="noopener"><img src="${badgeWide}" alt="Custodia Verified — ${ctx.organization.name}" width="240" height="60"/></a>`;
-  const embedHtmlSquare = `<a href="${publicUrl}" target="_blank" rel="noopener"><img src="${badgeSquare}" alt="Custodia Verified — ${ctx.organization.name}" width="120" height="120"/></a>`;
-  const embedMarkdown = `[![Custodia Verified](${badgeWide})](${publicUrl})`;
+  const altText = `CMMC Level 1 — Custodia Verified${
+    trustPage.custodia_verification_id ? ` — ${trustPage.custodia_verification_id}` : ""
+  }`;
+  const embedHtmlLarge = `<a href="${publicUrl}" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;font-family:system-ui,sans-serif"><img src="${badgeImg}" alt="${altText}" width="120" height="144" style="display:block;height:auto"/><div style="margin-top:6px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#10231d">CMMC Level 1 · Verified</div></a>`;
+  const embedHtmlSmall = `<a href="${publicUrl}" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;font-family:system-ui,sans-serif"><img src="${badgeImg}" alt="${altText}" width="64" height="76" style="display:block;height:auto;vertical-align:middle"/></a>`;
+  const embedMarkdown = `[![${altText}](${badgeImg})](${publicUrl})`;
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-10">
@@ -217,39 +224,66 @@ export default async function VerifiedOwnerPanel(
       <section className="mb-6  border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="font-serif text-lg text-slate-900">Embed your badge</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Drop into your website footer, capability statement, or email
-          signature. The badge auto-updates as your monitoring signals change.
+          The badge is the Custodia shield itself — drop it into your website
+          footer, capability statement, or email signature. Clicking opens
+          your public Custodia Verified page so primes and contracting
+          officers can vet you in seconds.
         </p>
-        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <div className="mt-4 grid gap-6 lg:grid-cols-2">
           <div>
             <h3 className="text-sm font-semibold text-slate-900">
-              Wide (240×60)
+              Large (with caption)
             </h3>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={badgeWide}
-              alt="Wide Custodia Verified badge preview"
-              width={240}
-              height={60}
-              className="mt-2"
-            />
-            <CodeBlock label="HTML" code={embedHtmlWide} />
+            <a
+              href={publicUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-flex flex-col items-center gap-2 border border-slate-200 bg-[#0a1814] p-6"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/custodia-logo.png"
+                alt={altText}
+                width={120}
+                height={144}
+                className="h-28 w-auto"
+              />
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#f59e0b]">
+                CMMC Level 1 · Verified
+              </div>
+            </a>
+            <CodeBlock label="HTML" code={embedHtmlLarge} />
             <CodeBlock label="Markdown" code={embedMarkdown} />
           </div>
           <div>
             <h3 className="text-sm font-semibold text-slate-900">
-              Square (120×120)
+              Compact (email signature)
             </h3>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={badgeSquare}
-              alt="Square Custodia Verified badge preview"
-              width={120}
-              height={120}
-              className="mt-2"
-            />
-            <CodeBlock label="HTML" code={embedHtmlSquare} />
-            <CodeBlock label="Plain URL" code={publicUrl} />
+            <a
+              href={publicUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-flex items-center gap-3 border border-slate-200 bg-white px-4 py-3"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/custodia-logo.png"
+                alt={altText}
+                width={64}
+                height={76}
+                className="h-16 w-auto"
+              />
+              <div className="text-left">
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#2f8f6d]">
+                  Custodia Verified
+                </div>
+                <div className="text-sm font-bold text-[#10231d]">
+                  CMMC Level 1
+                </div>
+              </div>
+            </a>
+            <CodeBlock label="HTML" code={embedHtmlSmall} />
+            <CodeBlock label="Direct link" code={publicUrl} />
           </div>
         </div>
       </section>

@@ -143,6 +143,7 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
             {sections.map((s) => {
               const isActive = s.id === activeId;
               const locked = s.status === "locked";
+              const complete = s.status === "complete";
               return (
                 <li key={s.id}>
                   <Link
@@ -155,9 +156,11 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
                     className={`relative flex items-center gap-3  px-3 py-2.5 transition-colors ${
                       isActive
                         ? "text-[#0c2219]"
-                        : locked
-                          ? "text-[#7a9c90] hover:bg-[#eef5f0] hover:text-[#10231d]"
-                          : "text-[#456c5f] hover:bg-[#eef5f0] hover:text-[#10231d]"
+                        : complete
+                          ? "text-[#10231d] hover:bg-[#eef5f0]"
+                          : locked
+                            ? "text-[#7a9c90] hover:bg-[#eef5f0] hover:text-[#10231d]"
+                            : "text-[#456c5f] hover:bg-[#eef5f0] hover:text-[#10231d]"
                     }`}
                   >
                     <StepDot step={s.step} status={s.status} active={isActive} />
@@ -166,7 +169,11 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
                         <div className="flex items-center gap-1.5">
                           <span
                             className={`truncate text-sm font-semibold ${
-                              isActive ? "text-[#0c2219]" : ""
+                              isActive
+                                ? "text-[#0c2219]"
+                                : complete
+                                  ? "text-[#10231d]"
+                                  : ""
                             }`}
                           >
                             {s.title}
@@ -184,7 +191,11 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
                         </div>
                         <div
                           className={`mt-0.5 truncate text-[11px] ${
-                            isActive ? "text-[#1f4a3b]" : "text-[#7a9c90]"
+                            isActive
+                              ? "text-[#1f4a3b]"
+                              : complete
+                                ? "text-[#2f8f6d]"
+                                : "text-[#7a9c90]"
                           }`}
                         >
                           {s.subtitle}

@@ -155,6 +155,17 @@ export function VerifiedPageOfferCard({
   verifiedPageSlug: string | null;
 }) {
   if (verifiedPagePublic && verifiedPageSlug) {
+    const appUrl = (
+      process.env.NEXT_PUBLIC_APP_URL ?? "https://bidfedcmmc.com"
+    ).replace(/\/$/, "");
+    const publicUrl = `${appUrl}/verified/${verifiedPageSlug}`;
+    const badgeImg = `${appUrl}/custodia-logo.png`;
+    const altText = `CMMC Level 1 — Custodia Verified${
+      custodiaVerificationId ? ` — ${custodiaVerificationId}` : ""
+    }`;
+    const embedHtml = `<a href="${publicUrl}" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;font-family:system-ui,sans-serif"><img src="${badgeImg}" alt="${altText}" width="96" height="115" style="display:block;height:auto"/><div style="margin-top:6px;font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#10231d">CMMC Level 1 · Verified</div></a>`;
+    const embedMarkdown = `[![${altText}](${badgeImg})](${publicUrl})`;
+
     return (
       <div className="border border-emerald-300 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-6">
@@ -176,7 +187,7 @@ export function VerifiedPageOfferCard({
                 {custodiaVerificationId ?? "—"}
               </span>
               <a
-                href={`/verified/${verifiedPageSlug}`}
+                href={publicUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 underline hover:text-emerald-800"
@@ -192,6 +203,49 @@ export function VerifiedPageOfferCard({
             >
               Manage Verified page
             </Link>
+          </div>
+        </div>
+
+        {/* Badge embed — the actual Custodia shield logo, exactly as it
+            appears in the header, that the customer can drop on their site,
+            email signature, or capability statement. Click → their public
+            Verified page. */}
+        <div className="mt-6 grid gap-6 border-t border-slate-200 pt-6 lg:grid-cols-[200px_1fr]">
+          <div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
+              Your Custodia badge
+            </div>
+            <a
+              href={publicUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-3 flex flex-col items-center gap-2 border border-slate-200 bg-[#0a1814] p-5 transition-shadow hover:shadow-md"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/custodia-logo.png"
+                alt={altText}
+                width={96}
+                height={115}
+                className="h-24 w-auto"
+              />
+              <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#f59e0b]">
+                CMMC Level 1 · Verified
+              </div>
+            </a>
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+              Click to preview where the badge links.
+            </p>
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm text-slate-700">
+              Drop this on your website footer, capability statement, or email
+              signature. Clicking opens your live Custodia Verified page so
+              primes can confirm your CMMC Level 1 status in seconds.
+            </p>
+            <EmbedSnippet label="HTML" code={embedHtml} />
+            <EmbedSnippet label="Markdown" code={embedMarkdown} />
+            <EmbedSnippet label="Direct link" code={publicUrl} />
           </div>
         </div>
       </div>
@@ -424,6 +478,22 @@ export function SprsFilingPointer({ assessmentId }: { assessmentId: string }) {
       >
         Go to Bid-ready packet →
       </Link>
+    </div>
+  );
+}
+/**
+ * Read-only code snippet block with a label. Used for embed snippets on
+ * the bid-packet page. Customers can hand-copy or use browser's select-all.
+ */
+function EmbedSnippet({ label, code }: { label: string; code: string }) {
+  return (
+    <div className="mt-3">
+      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </div>
+      <pre className="mt-1 max-h-32 overflow-auto border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-800">
+        <code>{code}</code>
+      </pre>
     </div>
   );
 }
