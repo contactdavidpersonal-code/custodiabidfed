@@ -1,7 +1,7 @@
 "use server";
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
-import { del, put } from "@vercel/blob";
+import { del, get, put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
@@ -1003,20 +1003,32 @@ export async function submitAffirmationAction(formData: FormData) {
   );
   const evidenceFingerprints = await Promise.all(
     liveEvidence.map(async (e) => {
-      let res: Response;
+      // Blobs are stored privately — a raw fetch on `blob_url` returns 403.
+      // Use the SDK `get()` which sends BLOB_READ_WRITE_TOKEN, mirroring the
+      // /api/evidence proxy.
+      let upstream: Awaited<ReturnType<typeof get>>;
       try {
-        res = await fetch(e.blob_url);
+        upstream = await get(e.blob_url, { access: "private", useCache: false });
       } catch (err) {
         throw new Error(
           `Failed to fetch evidence ${e.filename} for fingerprinting: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
-      if (!res.ok) {
+      if (!upstream || upstream.statusCode !== 200 || !upstream.stream) {
         throw new Error(
-          `Failed to fetch evidence ${e.filename} (HTTP ${res.status})`,
+          `Failed to fetch evidence ${e.filename} (HTTP ${upstream?.statusCode ?? "unknown"})`,
         );
       }
-      const rawBuf = Buffer.from(await res.arrayBuffer());
+      const reader = upstream.stream.getReader();
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        chunks.push(value);
+      }
+      const rawBuf = Buffer.concat(chunks.map((c) => Buffer.from(c)), total);
       // Bytes on disk are AES-256-GCM-encrypted (Tier 1). Decrypt before
       // hashing so the canonical attestation continues to fingerprint the
       // PLAINTEXT content the user attested to. Legacy plaintext-on-disk
