@@ -408,8 +408,8 @@ const PACKET_CSS = `
   .center { text-align: center; }
   .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
   .page-actions { max-width: 820px; margin: 0 auto 16px; display: flex; justify-content: flex-end; }
-  .btn-primary { background: #10231d; color: white; border: 0; padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer; }
-  .btn-primary:hover { background: #0e2a23; }
+  .btn-primary { background: #047857; color: white; border: 0; padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-primary:hover { background: #065f46; }
   @media print {
     body { background: white; padding: 0; }
     article { border: 0; padding: 0; max-width: 100%; }

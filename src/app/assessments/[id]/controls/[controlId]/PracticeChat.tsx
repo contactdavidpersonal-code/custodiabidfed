@@ -660,8 +660,8 @@ function DestinationButton({
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
 }) {
   const baseClasses = recommended
-    ? "rounded-lg bg-stone-900 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-stone-800"
-    : "rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 hover:border-stone-400 hover:bg-stone-50";
+    ? "bg-emerald-700 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-800"
+    : "border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 hover:border-stone-400 hover:bg-stone-50";
 
   if (dest.type === "generate") {
     return (
@@ -737,8 +737,8 @@ function SlotUploadButton({
   recommended: boolean;
 }) {
   const baseClasses = recommended
-    ? "inline-flex cursor-pointer items-center rounded-lg bg-stone-900 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-stone-800"
-    : "inline-flex cursor-pointer items-center rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 hover:border-stone-400 hover:bg-stone-50";
+    ? "inline-flex cursor-pointer items-center bg-emerald-700 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-800"
+    : "inline-flex cursor-pointer items-center border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 hover:border-stone-400 hover:bg-stone-50";
 
   return (
     <form
