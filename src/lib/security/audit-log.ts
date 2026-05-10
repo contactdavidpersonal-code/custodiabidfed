@@ -29,6 +29,7 @@ export type AuditAction =
   | "trust_page.rotated"
   | "sprs_quiz.submitted"
   | "assessment.sprs_filed"
+  | "assessment.sprs_filing_amended"
   | "email.sprs_filed.failed"
   | "scope_inventory.added"
   | "scope_inventory.retired"
