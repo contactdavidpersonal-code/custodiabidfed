@@ -861,12 +861,12 @@ function NextStepBanner({
 
   if (!allAnswered) {
     return (
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-sky-200 bg-sky-50 p-5">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-[#cfe3d9] bg-[#f1f9f4] p-5">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-wider text-sky-700">
+          <div className="text-xs font-semibold uppercase tracking-wider text-[#2f8f6d]">
             Step 4 of 8 · You are here
           </div>
-          <h2 className="mt-1 text-lg font-bold text-slate-900">
+          <h2 className="mt-1 text-lg font-bold text-[#10231d]">
             Answer the 15 requirements
           </h2>
           <p className="mt-1 text-sm text-slate-700">
@@ -877,7 +877,7 @@ function NextStepBanner({
             Can&apos;t fully meet a requirement?{" "}
             <Link
               href={`/assessments/${assessmentId}/exceptions`}
-              className="font-semibold text-sky-700 underline hover:text-sky-900"
+              className="font-semibold text-emerald-700 underline hover:text-emerald-900"
             >
               Document an Enduring Exception or Temporary Deficiency
             </Link>
@@ -890,9 +890,9 @@ function NextStepBanner({
   }
 
   return (
-    <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-slate-900 bg-slate-900 p-5 text-white">
+    <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-[#10231d] bg-[#10231d] p-5 text-white">
       <div>
-        <div className="text-xs font-semibold uppercase tracking-wider text-amber-400">
+        <div className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
           Ready for step 5 · Sign &amp; affirm
         </div>
         <h2 className="mt-1 text-lg font-bold">
@@ -900,7 +900,7 @@ function NextStepBanner({
             ? "All answered — but some practices need fixing first"
             : "You're ready to affirm."}
         </h2>
-        <p className="mt-1 text-sm text-slate-300">
+        <p className="mt-1 text-sm text-emerald-100/80">
           {hasBlockers
             ? "'Not met' or 'Partial' practices must become 'Met' or 'N/A' before you can sign the SPRS affirmation."
             : "A senior official signs the SPRS annual affirmation. This locks the assessment and generates your SSP."}
@@ -909,7 +909,7 @@ function NextStepBanner({
       {!hasBlockers && (
         <Link
           href={`/assessments/${assessmentId}/sign`}
-          className=" bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:bg-amber-300"
+          className=" bg-emerald-400 px-4 py-2.5 text-sm font-bold text-[#10231d] transition-colors hover:bg-emerald-300"
         >
           Review & sign &rarr;
         </Link>
