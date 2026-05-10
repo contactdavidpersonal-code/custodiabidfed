@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+﻿import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
@@ -11,9 +11,6 @@ import {
   type OrganizationRow,
 } from "@/lib/assessment";
 import { controlDomains, playbook } from "@/lib/playbook";
-import { loadTrustPageForOrg } from "@/lib/trust-page";
-import { publishVerifiedPageAction } from "../actions";
-import { SprsFilingPointer } from "./SprsFilingPrompt";
 
 const statusLabels: Record<ControlResponseRow["status"], string> = {
   unanswered: "Not started",
@@ -40,9 +37,9 @@ const statusPillStyles: Record<ControlResponseRow["status"], string> = {
 };
 
 // Per-practice progress for the small bar at the bottom of each card.
-// `met` and `not_applicable` are 100% — the practice is resolved either way.
-// `partial` is 50% — user has some evidence but not all six objectives.
-// `no` is 25% — user has acknowledged the practice but hasn't fixed it.
+// `met` and `not_applicable` are 100% â€” the practice is resolved either way.
+// `partial` is 50% â€” user has some evidence but not all six objectives.
+// `no` is 25% â€” user has acknowledged the practice but hasn't fixed it.
 // `unanswered` is 0%.
 const statusPercent: Record<ControlResponseRow["status"], number> = {
   unanswered: 0,
@@ -86,10 +83,9 @@ export default async function AssessmentOverviewPage(
   if (!ctx) notFound();
   await enforceStepOrder(ctx, "practices");
 
-  const [responses, carryForward, trustPage] = await Promise.all([
+  const [responses, carryForward] = await Promise.all([
     listResponsesForAssessment(id),
     listCarryForwardPending(id),
-    loadTrustPageForOrg(ctx.organization.id),
   ]);
   const responseByControl = new Map(responses.map((r) => [r.control_id, r]));
   const progress = computeProgress(responses);
@@ -104,21 +100,9 @@ export default async function AssessmentOverviewPage(
     <main className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-10">
       {justSigned && <CelebrationBanner assessmentId={ctx.assessment.id} />}
 
-      {attested && (
-        <SprsFilingSection
-          assessmentId={ctx.assessment.id}
-          fiscalYear={ctx.assessment.fiscal_year}
-          sprsFiledAt={ctx.assessment.sprs_filed_at}
-          sprsConfirmationNumber={ctx.assessment.sprs_confirmation_number}
-          custodiaVerificationId={ctx.assessment.custodia_verification_id}
-          verifiedPagePublic={trustPage?.is_public ?? false}
-          verifiedPageSlug={trustPage?.verification_slug ?? null}
-        />
-      )}
-
       <section className="mb-6">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-          CMMC Level 1 • FY{ctx.assessment.fiscal_year}
+          CMMC Level 1 â€¢ FY{ctx.assessment.fiscal_year}
         </p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -127,7 +111,7 @@ export default async function AssessmentOverviewPage(
             </h1>
             <p className="mt-2 text-sm text-[#5a7d70]">
               {ctx.organization.name !== "My Organization"
-                ? `${ctx.organization.name} — work the 15 safeguarding requirements below to MET, then sign and file with SPRS.`
+                ? `${ctx.organization.name} â€” work the 15 safeguarding requirements below to MET, then sign and file with SPRS.`
                 : "Business profile not set yet"}
             </p>
           </div>
@@ -296,7 +280,7 @@ function CarryForwardReviewBanner({
                 {pendingArtifactCount === 1 ? "" : "s"} need re-confirmation.
               </>
             )}{" "}
-            Walk each practice to confirm or replace — one step at a time
+            Walk each practice to confirm or replace â€” one step at a time
             importing last year&apos;s return.
           </p>
         </div>
@@ -322,10 +306,10 @@ function CelebrationBanner({ assessmentId }: { assessmentId: string }) {
             You&apos;re signed and bid-ready
           </div>
           <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-            Congratulations — your affirmation is locked.
+            Congratulations â€” your affirmation is locked.
           </h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-700">
-            Download your bid-ready package below — it bundles your SSP,
+            Download your bid-ready package below â€” it bundles your SSP,
             signed affirmation memo, control inventory, and every evidence
             artifact in one zip. File it in SPRS and you&apos;re CMMC Level 1
             compliant for this cycle.
@@ -354,7 +338,7 @@ function CelebrationBanner({ assessmentId }: { assessmentId: string }) {
             href="/opportunities"
             className=" bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
           >
-            Step 7 → Find &amp; submit bids
+            Step 7 â†’ Find &amp; submit bids
           </Link>
         </div>
       </div>
@@ -362,293 +346,6 @@ function CelebrationBanner({ assessmentId }: { assessmentId: string }) {
   );
 }
 
-/**
- * Post-attestation, pre-SPRS-filing panel — and once filed, the receipt.
- *
- * The signed affirmation memo only matters once the federal record exists.
- * This panel walks the user from the platform to https://piee.eb.mil for
- * the SPRS step they have to do themselves (we can't file on their behalf),
- * captures the confirmation number when they're back, and from then on
- * shows the receipt + a link to download their Statement of Compliance.
- */
-function SprsFilingSection({
-  assessmentId,
-  fiscalYear,
-  sprsFiledAt,
-  sprsConfirmationNumber,
-  custodiaVerificationId,
-  verifiedPagePublic,
-  verifiedPageSlug,
-}: {
-  assessmentId: string;
-  fiscalYear: number;
-  sprsFiledAt: string | null;
-  sprsConfirmationNumber: string | null;
-  custodiaVerificationId: string | null;
-  verifiedPagePublic: boolean;
-  verifiedPageSlug: string | null;
-}) {
-  if (sprsFiledAt && sprsConfirmationNumber) {
-    const filed = new Date(sprsFiledAt).toLocaleDateString(undefined, {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-    const nextDue = new Date(
-      Date.UTC((fiscalYear ?? new Date().getUTCFullYear()) + 1, 8, 30),
-    ).toLocaleDateString(undefined, {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-    return (
-      <>
-        <div className="mb-8  border border-emerald-300 bg-emerald-50/70 p-6 shadow-sm">
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div className="max-w-xl">
-              <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-                Filed in SPRS · FY{fiscalYear}
-              </div>
-              <h2 className="mt-2 text-xl font-bold tracking-tight text-emerald-900">
-                You&apos;re bid-eligible for this fiscal year.
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-slate-700">
-                Your CMMC Level 1 annual affirmation is on record with the
-                federal government. Custodia will monitor your connectors,
-                push freshness reminders, and nudge you 60 / 30 / 14 days
-                before your next re-affirmation.
-              </p>
-              <dl className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
-                    Custodia ID
-                  </dt>
-                  <dd className="mt-1 font-mono text-base font-semibold text-emerald-900">
-                    {custodiaVerificationId ?? "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
-                    SPRS confirmation #
-                  </dt>
-                  <dd className="mt-1 font-mono text-base font-semibold text-emerald-900">
-                    {sprsConfirmationNumber}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
-                    Filed
-                  </dt>
-                  <dd className="mt-1 font-semibold text-emerald-900">
-                    {filed}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
-                    Next re-affirmation
-                  </dt>
-                  <dd className="mt-1 font-semibold text-emerald-900">
-                    {nextDue}
-                  </dd>
-                </div>
-              </dl>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href={`/assessments/${assessmentId}/statement`}
-                className=" bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
-              >
-                Download Statement of Compliance
-              </Link>
-              <Link
-                href="/opportunities"
-                className=" border border-emerald-300 bg-white px-4 py-2.5 text-sm font-bold text-emerald-900 transition-colors hover:border-emerald-400"
-              >
-                Find bids →
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <VerifiedPageOfferCard
-          assessmentId={assessmentId}
-          custodiaVerificationId={custodiaVerificationId}
-          verifiedPagePublic={verifiedPagePublic}
-          verifiedPageSlug={verifiedPageSlug}
-        />
-      </>
-    );
-  }
-
-  // Not yet filed — the full SPRS filing card lives on the bid-packet
-  // page (step 6). Show only a small pointer here so the overview stays
-  // scannable.
-  return <SprsFilingPointer assessmentId={assessmentId} />;
-}
-
-/**
- * Custodia Verified offer card — only shown after SPRS filing is recorded.
- * Two states: not-yet-published (offer + benefits + Publish button) and
- * published (live page receipt + manage link). The customer's SPRS
- * confirmation number is NEVER shown on the public page; the public
- * identifier is the human-friendly Custodia Verification ID.
- */
-function VerifiedPageOfferCard({
-  assessmentId,
-  custodiaVerificationId,
-  verifiedPagePublic,
-  verifiedPageSlug,
-}: {
-  assessmentId: string;
-  custodiaVerificationId: string | null;
-  verifiedPagePublic: boolean;
-  verifiedPageSlug: string | null;
-}) {
-  if (verifiedPagePublic && verifiedPageSlug) {
-    return (
-      <div className="mb-8  border border-emerald-300 bg-white p-6 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-6">
-          <div className="max-w-2xl">
-            <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-              Custodia Verified · Live
-            </div>
-            <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-900">
-              Your public Verified page is live.
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-700">
-              Share your page or badge with primes and contracting officers.
-              The page updates automatically as Custodia&rsquo;s monitoring
-              signals change. Your SPRS confirmation number stays private —
-              only your Custodia ID is shown publicly.
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
-              <span className="inline-flex items-center gap-2  border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-mono font-semibold text-emerald-900">
-                {custodiaVerificationId ?? "—"}
-              </span>
-              <a
-                href={`/verified/${verifiedPageSlug}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-1 text-sm font-semibold text-emerald-700 underline hover:text-emerald-800"
-              >
-                View public page →
-              </a>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/assessments/${assessmentId}/verified`}
-              className=" bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-slate-800"
-            >
-              Manage Verified page
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Not yet published — the opt-in offer.
-  return (
-    <div className="mb-8 overflow-hidden  border border-slate-200 bg-gradient-to-br from-white via-emerald-50/40 to-amber-50/40 shadow-sm">
-      <div className="grid gap-0 lg:grid-cols-[1fr_360px]">
-        <div className="p-6 lg:p-8">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">
-            New · Available now
-          </div>
-          <h2 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">
-            Your Custodia Verified page is ready.
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-700">
-            A live, federally-professional profile primes can use to vet you
-            in 30 seconds. Continuously monitored. Updates automatically when
-            your evidence freshens or your Microsoft 365 / Google Workspace
-            tenant signals drift.
-          </p>
-          <ul className="mt-4 space-y-2 text-sm text-slate-700">
-            <li className="flex gap-2">
-              <span className="mt-0.5 text-emerald-700">✓</span>
-              <span>
-                <strong>Custodia ID:</strong>{" "}
-                <span className="font-mono">
-                  {custodiaVerificationId ?? "—"}
-                </span>{" "}
-                — your public identifier (your SPRS number stays private).
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-0.5 text-emerald-700">✓</span>
-              <span>
-                UEI, CAGE, NAICS, set-asides — pulled from your bid-ready
-                profile.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-0.5 text-emerald-700">✓</span>
-              <span>
-                Live <em>Healthy</em> badge with a timestamped freshness
-                signal.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-0.5 text-emerald-700">✓</span>
-              <span>
-                &ldquo;Verify on SAM.gov&rdquo; + &ldquo;Verify SPRS by
-                UEI&rdquo; outbound links so primes can independently confirm
-                your federal record.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-0.5 text-emerald-700">✓</span>
-              <span>
-                Embeddable badge for your website, capability statement, and
-                email signature.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <span className="mt-0.5 text-emerald-700">✓</span>
-              <span>500-character custom about section — your words.</span>
-            </li>
-          </ul>
-          <p className="mt-4  border border-slate-200 bg-white/80 p-3 text-xs leading-relaxed text-slate-600">
-            <strong>Privacy:</strong> your SPRS confirmation number is never
-            shown on the public page or in the URL. The Custodia Verification
-            ID is the only public identifier and reveals nothing private. You
-            can unpublish, customize, or rotate the ID any time from{" "}
-            <em>Manage Verified page</em>.
-          </p>
-        </div>
-        <div className="border-t border-slate-200 bg-white p-6 lg:border-t-0 lg:border-l">
-          <h3 className="text-sm font-bold text-slate-900">
-            Publish your page
-          </h3>
-          <p className="mt-1 text-xs text-slate-600">
-            One click. You can review and edit content from the manage panel
-            after publishing.
-          </p>
-          <form action={publishVerifiedPageAction} className="mt-4 space-y-2">
-            <input type="hidden" name="assessmentId" value={assessmentId} />
-            <button
-              type="submit"
-              className="w-full  bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
-            >
-              Publish my Verified page
-            </button>
-          </form>
-          <Link
-            href={`/assessments/${assessmentId}/verified`}
-            className="mt-2 block w-full  border border-slate-300 bg-white px-4 py-2.5 text-center text-sm font-semibold text-slate-900 transition-colors hover:border-slate-400"
-          >
-            Preview &amp; customize first
-          </Link>
-          <p className="mt-3 text-center text-[11px] text-slate-500">
-            Not now? You can publish any time from the assessment overview.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ProgressRing({ percent }: { percent: number }) {
   const radius = 28;
@@ -721,7 +418,7 @@ function NextStepBanner({
           </h2>
           <p className="mt-1 text-sm text-slate-700">
             The bid-ready package bundles your SSP, signed affirmation, and
-            every evidence artifact — everything a prime or SPRS filing might
+            every evidence artifact â€” everything a prime or SPRS filing might
             ask for.
           </p>
         </div>
@@ -754,13 +451,13 @@ function NextStepBanner({
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-amber-200 bg-amber-50 p-5">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-            Action needed · Step 1 of 8
+            Action needed Â· Step 1 of 8
           </div>
           <h2 className="mt-1 text-lg font-bold text-slate-900">
             Finish telling the officer about your business
           </h2>
           <p className="mt-1 text-sm text-slate-700">
-            Legal name, UEI/CAGE, and the systems in scope — captured through a
+            Legal name, UEI/CAGE, and the systems in scope â€” captured through a
             quick chat, not a form.
           </p>
         </div>
@@ -779,7 +476,7 @@ function NextStepBanner({
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-[#cfe3d9] bg-[#f1f9f4] p-5">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-[#2f8f6d]">
-            Step 4 of 8 · You are here
+            Step 4 of 8 Â· You are here
           </div>
           <h2 className="mt-1 text-lg font-bold text-[#10231d]">
             Answer the 15 requirements
@@ -796,7 +493,7 @@ function NextStepBanner({
             >
               Document an Enduring Exception or Temporary Deficiency
             </Link>
-            {" "}— per CMMC AG v2.13, both can roll up to MET when properly
+            {" "}â€” per CMMC AG v2.13, both can roll up to MET when properly
             documented.
           </p>
         </div>
@@ -808,11 +505,11 @@ function NextStepBanner({
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-[#10231d] bg-[#10231d] p-5 text-white">
       <div>
         <div className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
-          Ready for step 5 · Sign &amp; affirm
+          Ready for step 5 Â· Sign &amp; affirm
         </div>
         <h2 className="mt-1 text-lg font-bold">
           {hasBlockers
-            ? "All answered — but some practices need fixing first"
+            ? "All answered â€” but some practices need fixing first"
             : "You're ready to affirm."}
         </h2>
         <p className="mt-1 text-sm text-emerald-100/80">
@@ -888,7 +585,7 @@ function ProfileSection({
           </h2>
           <p className="mt-1 text-sm text-slate-600">
             Captured conversationally through your officer. Ask them to update
-            anything — no forms.
+            anything â€” no forms.
           </p>
         </div>
         <div className="flex items-center gap-2">

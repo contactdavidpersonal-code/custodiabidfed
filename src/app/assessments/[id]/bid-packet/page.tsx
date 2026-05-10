@@ -8,8 +8,13 @@ import {
   type SetAside,
 } from "@/lib/bid-profile";
 import { loadBidProfile } from "@/lib/bid-profile-server";
+import { loadTrustPageForOrg } from "@/lib/trust-page";
 import { PrintButton } from "../PrintButton";
-import { SprsFilingPromptCard, SprsFilingReceiptCard } from "../SprsFilingPrompt";
+import {
+  SprsFilingPromptCard,
+  SprsFilingReceiptCard,
+  VerifiedPageOfferCard,
+} from "../SprsFilingPrompt";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +34,7 @@ export default async function BidPacketPage(
 
   const profile = await loadBidProfile(ctx.organization.id);
   const { score, missing } = bidProfileCompleteness(profile);
+  const trustPage = await loadTrustPageForOrg(ctx.organization.id);
 
   const org = ctx.organization;
   const a = ctx.assessment;
@@ -119,6 +125,18 @@ export default async function BidPacketPage(
             fiscalYear={a.fiscal_year}
             sprsFiledAt={a.sprs_filed_at}
             sprsConfirmationNumber={a.sprs_confirmation_number}
+            custodiaVerificationId={a.custodia_verification_id}
+          />
+        </div>
+      ) : null}
+
+      {attested && sprsFiled ? (
+        <div className="mb-8 print:hidden">
+          <VerifiedPageOfferCard
+            assessmentId={id}
+            custodiaVerificationId={a.custodia_verification_id}
+            verifiedPagePublic={trustPage?.is_public ?? false}
+            verifiedPageSlug={trustPage?.verification_slug ?? null}
           />
         </div>
       ) : null}
