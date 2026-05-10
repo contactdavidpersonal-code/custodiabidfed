@@ -94,9 +94,9 @@ let _kmsClient: KMSClient | null = null;
 
 function getKmsClient(): KMSClient {
   if (!_kmsClient) {
-    _kmsClient = new KMSClient({
-      region: process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-2",
-    });
+    const region =
+      (process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-2").trim();
+    _kmsClient = new KMSClient({ region });
   }
   return _kmsClient;
 }
