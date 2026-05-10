@@ -9,6 +9,7 @@ import {
   stepHref,
 } from "@/lib/assessment";
 import { computeExceptionCoverage } from "@/lib/cmmc/objectives";
+import { listScopeItems, listEsps } from "@/lib/cmmc/scope";
 import { CourseSidebar, type CourseSection, type SectionStatus } from "./CourseSidebar";
 
 /**
@@ -30,10 +31,21 @@ export default async function CourseLayout(
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
 
-  const [responses, profile] = await Promise.all([
+  const [responses, profile, scopeItems, esps] = await Promise.all([
     listResponsesForAssessment(id),
     getBusinessProfile(ctx.organization.id),
+    listScopeItems(ctx.organization.id),
+    listEsps(ctx.organization.id),
   ]);
+
+  // Scope step is "complete" when the operator has captured at least one
+  // People row, one Technology row, one Facility row, and one ESP — the
+  // minimum 32 CFR § 170.19 scope inventory an assessor would accept.
+  const hasPeople = scopeItems.some((s) => s.kind === "people");
+  const hasTech = scopeItems.some((s) => s.kind === "technology");
+  const hasFacility = scopeItems.some((s) => s.kind === "facility");
+  const hasEsp = esps.length > 0;
+  const scopeComplete = hasPeople && hasTech && hasFacility && hasEsp;
 
   // EE/TD coverage so practices marked Not Met / Partial in the legacy table
   // but documented as Enduring Exceptions or Temporary Deficiencies (with
@@ -110,7 +122,11 @@ export default async function CourseLayout(
       subtitle: registrationComplete
         ? "People, technology, facilities, ESPs"
         : "Unlocks after registration",
-      status: registrationComplete ? "available" : "locked",
+      status: !registrationComplete
+        ? "locked"
+        : scopeComplete
+          ? "complete"
+          : "available",
       match: "prefix",
     },
     {
