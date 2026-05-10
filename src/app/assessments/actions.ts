@@ -1713,6 +1713,16 @@ export async function updateBusinessProfileManualAction(formData: FormData) {
     "physical_workspace",
     "it_identity",
     "data_location",
+    // Brand fields — surfaced on customer-facing deliverables (SSP,
+    // affirmation memo, zipped HTML header bars).
+    "website",
+    "phone",
+    "customer_facing_email",
+    "street_address",
+    "street_address_2",
+    "city",
+    "state",
+    "zip",
   ] as const;
 
   const existing = (await getBusinessProfile(ctx.organization.id))?.data ?? {};
@@ -1723,13 +1733,48 @@ export async function updateBusinessProfileManualAction(formData: FormData) {
     else delete merged[k];
   }
 
+  // Logo upload — public Vercel Blob so it can render inside the HTML
+  // deliverables (which are downloaded standalone). Size + MIME gated.
+  const logoFile = formData.get("logo");
+  const removeLogo = String(formData.get("remove_logo") ?? "") === "1";
+  if (removeLogo) {
+    delete merged.logo_url;
+  }
+  if (logoFile instanceof File && logoFile.size > 0) {
+    const MAX = 2 * 1024 * 1024;
+    if (logoFile.size > MAX) {
+      redirect(
+        `/assessments/${assessmentId}/profile?logo_error=size`,
+      );
+    }
+    if (!/^image\//.test(logoFile.type)) {
+      redirect(
+        `/assessments/${assessmentId}/profile?logo_error=type`,
+      );
+    }
+    const extFromName = logoFile.name.split(".").pop()?.toLowerCase() ?? "";
+    const ext = /^[a-z0-9]+$/.test(extFromName)
+      ? extFromName
+      : logoFile.type.split("/")[1] ?? "png";
+    const pathname = `org-branding/${ctx.organization.id}/logo-${Date.now()}.${ext}`;
+    const blob = await put(pathname, logoFile, {
+      access: "public",
+      contentType: logoFile.type,
+      addRandomSuffix: false,
+    });
+    merged.logo_url = blob.url;
+  }
+
   const captured = [
     legalName,
     entityType,
     scopedSystems,
     ...profileFields.map((k) => String(merged[k] ?? "")),
   ].filter((v) => v.trim().length > 0).length;
-  const completeness = Math.min(100, Math.round((captured / 9) * 100));
+  const completeness = Math.min(
+    100,
+    Math.round((captured / (3 + profileFields.length)) * 100),
+  );
 
   const sql = getSql();
   await sql`

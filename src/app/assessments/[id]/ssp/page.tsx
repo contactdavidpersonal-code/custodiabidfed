@@ -4,12 +4,14 @@ import { notFound, redirect } from "next/navigation";
 import {
   enforceStepOrder,
   getAssessmentForUser,
+  getBusinessProfile,
   listEvidenceForAssessment,
   listResponsesForAssessment,
   type ControlResponseRow,
 } from "@/lib/assessment";
 import { controlDomains, playbook } from "@/lib/playbook";
 import { listObjectivesForAssessment } from "@/lib/cmmc/objectives";
+import { resolveOrgBranding, displayUrl } from "@/lib/org-branding";
 import { PrintButton } from "../PrintButton";
 
 const statusText: Record<ControlResponseRow["status"], string> = {
@@ -73,6 +75,11 @@ export default async function SystemSecurityPlanPage(
 
   const org = ctx.organization;
   const a = ctx.assessment;
+  const profile = await getBusinessProfile(org.id);
+  const branding = resolveOrgBranding(
+    org,
+    (profile?.data ?? {}) as Record<string, unknown>,
+  );
   const generatedDate = new Date().toLocaleDateString(undefined, {
     month: "long",
     day: "numeric",
@@ -92,16 +99,44 @@ export default async function SystemSecurityPlanPage(
       </div>
 
       <article className="print-document border border-[#cfe3d9] bg-white shadow-sm print:border-0 print:shadow-none">
-        {/* Branded header bar — mirrors the public Verified page and the
-            zipped HTML deliverables so primes recognize the Custodia document
-            chain at a glance. */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b-4 border-[#f59e0b] bg-[#0a1814] px-10 py-4 text-white print:px-0">
-          <div className="font-serif text-lg font-bold tracking-tight">
-            Custodia<span className="text-[#f59e0b]">.</span>
+        {/* Customer-branded header bar — their letterhead, their attestation.
+            Custodia attribution lives in the small footer note + the
+            verifier pill on the right. */}
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b-4 border-[#f59e0b] bg-[#0a1814] px-10 py-5 text-white print:px-0">
+          <div className="flex min-w-0 items-center gap-4">
+            {branding.logoUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={branding.logoUrl}
+                alt={`${org.name} logo`}
+                className="h-12 w-auto bg-white p-1"
+              />
+            ) : null}
+            <div className="min-w-0">
+              <div className="font-serif text-lg font-bold leading-tight tracking-tight">
+                {org.name}
+              </div>
+              <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[#cfe3d9]">
+                {[
+                  branding.locationLine,
+                  displayUrl(branding.website),
+                  branding.phone,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </div>
+            </div>
           </div>
-          <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#f59e0b]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#f59e0b]" />
-            CMMC Level 1 · Verified
+          <div className="inline-flex flex-col items-end gap-1 text-right">
+            <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#f59e0b]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#f59e0b]" />
+              CMMC Level 1 · Verified by Custodia
+            </div>
+            {a.custodia_verification_id ? (
+              <div className="font-mono text-[10px] text-[#cfe3d9]">
+                {a.custodia_verification_id}
+              </div>
+            ) : null}
           </div>
         </div>
         <div className="p-10 print:p-0">

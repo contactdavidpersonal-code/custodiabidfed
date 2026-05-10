@@ -5,6 +5,7 @@ import {
   getAssessmentForUser,
   getBusinessProfile,
 } from "@/lib/assessment";
+import { resolveOrgBranding } from "@/lib/org-branding";
 import { updateBusinessProfileManualAction } from "../../actions";
 
 export default async function ProfilePage(
@@ -20,8 +21,10 @@ export default async function ProfilePage(
   const profile = await getBusinessProfile(ctx.organization.id);
   const data = (profile?.data ?? {}) as Record<string, unknown>;
   const completeness = profile?.completeness_score ?? 0;
+  const branding = resolveOrgBranding(ctx.organization, data);
   const sp = (await props.searchParams) as Record<string, string | string[] | undefined>;
   const justSaved = sp?.saved === "1";
+  const logoError = sp?.logo_error === "size" ? "Logo must be under 2 MB." : sp?.logo_error === "type" ? "Logo must be an image (PNG, JPG, SVG, WebP)." : null;
 
   const legalName =
     ctx.organization.name !== "My Organization" ? ctx.organization.name : "";
@@ -112,9 +115,117 @@ export default async function ProfilePage(
 
       <form
         action={updateBusinessProfileManualAction}
+        encType="multipart/form-data"
         className="mb-6 border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04)]"
       >
         <input type="hidden" name="assessmentId" value={id} />
+
+        {/* Brand — drives the customer-facing header bar on the SSP,
+            affirmation memo, and zipped HTML so deliverables look like the
+            customer's letterhead instead of Custodia's. */}
+        <div className="mb-6 border border-[#cfe3d9] border-l-4 border-l-[#f59e0b] bg-[#fffbf2] p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="font-serif text-lg font-bold text-[#10231d]">
+                Brand your deliverables
+              </h2>
+              <p className="mt-1 text-xs leading-relaxed text-[#5a7d70]">
+                Your SSP, affirmation memo, and bid-ready ZIP will be branded
+                with your company logo + contact details. Custodia stays as
+                the verifier in a small footer note (so primes can validate
+                the document) but the document itself is yours.
+              </p>
+            </div>
+            {branding.logoUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={branding.logoUrl}
+                alt={`${ctx.organization.name} logo`}
+                className="h-16 w-auto border border-[#cfe3d9] bg-white p-2"
+              />
+            ) : null}
+          </div>
+          {logoError ? (
+            <div className="mt-3 border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-800">
+              {logoError}
+            </div>
+          ) : null}
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
+            <label className="flex min-w-0 flex-col border border-[#cfe3d9] bg-white px-4 py-3 md:col-span-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+                Company logo
+              </span>
+              <input
+                type="file"
+                name="logo"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                className="mt-2 w-full text-xs text-[#10231d] file:mr-3 file:border file:border-[#cfe3d9] file:bg-[#f5f8f6] file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-[#0e2a23] hover:file:bg-[#e8f1ec]"
+              />
+              <span className="mt-2 text-[11px] leading-snug text-[#5a7d70]">
+                PNG, JPG, SVG, or WebP. Up to 2 MB. A horizontal lockup or
+                square mark both work — we render it at ~64px tall on the
+                header bar.
+              </span>
+              {branding.logoUrl ? (
+                <label className="mt-2 inline-flex items-center gap-2 text-[11px] text-[#5a7d70]">
+                  <input type="checkbox" name="remove_logo" value="1" />
+                  Remove current logo
+                </label>
+              ) : null}
+            </label>
+            <Field
+              name="website"
+              label="Website"
+              defaultValue={branding.website ?? ""}
+              placeholder="yourcompany.com"
+              helper="Shown on the SSP and affirmation header."
+            />
+            <Field
+              name="phone"
+              label="Phone"
+              defaultValue={branding.phone ?? ""}
+              placeholder="(555) 123-4567"
+              helper="Public point-of-contact line for primes."
+            />
+            <Field
+              name="customer_facing_email"
+              label="Public email"
+              defaultValue={branding.email ?? ""}
+              placeholder="contracts@yourcompany.com"
+              helper="Where primes should reach you about this attestation."
+            />
+            <Field
+              name="street_address"
+              label="Street address"
+              defaultValue={branding.addressLine1 ?? ""}
+              placeholder="100 Federal Plaza"
+            />
+            <Field
+              name="street_address_2"
+              label="Street address 2"
+              defaultValue={branding.addressLine2 ?? ""}
+              placeholder="Suite 400"
+            />
+            <Field
+              name="city"
+              label="City"
+              defaultValue={branding.city ?? ""}
+              placeholder="Pittsburgh"
+            />
+            <Field
+              name="state"
+              label="State"
+              defaultValue={branding.state ?? ""}
+              placeholder="PA"
+            />
+            <Field
+              name="zip"
+              label="ZIP"
+              defaultValue={branding.zip ?? ""}
+              placeholder="15222"
+            />
+          </div>
+        </div>
 
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>

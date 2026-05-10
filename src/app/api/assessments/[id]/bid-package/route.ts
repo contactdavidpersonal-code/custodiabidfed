@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import { NextResponse } from "next/server";
 import {
   getAssessmentForUser,
+  getBusinessProfile,
   listEvidenceForAssessment,
   listRemediationPlansForAssessment,
   listResponsesForAssessment,
@@ -13,6 +14,11 @@ import {
   type RemediationPlanRow,
 } from "@/lib/assessment";
 import { controlDomains, playbook } from "@/lib/playbook";
+import {
+  resolveOrgBranding,
+  displayUrl,
+  type OrgBranding,
+} from "@/lib/org-branding";
 import {
   auditContextFromRequest,
   recordAuditEvent,
@@ -52,15 +58,20 @@ export async function GET(
     );
   }
 
-  const [responses, evidence, remediationPlans] = await Promise.all([
+  const [responses, evidence, remediationPlans, profile] = await Promise.all([
     listResponsesForAssessment(id),
     listEvidenceForAssessment(id),
     listRemediationPlansForAssessment(id),
+    getBusinessProfile(ctx.organization.id),
   ]);
 
   const zip = new JSZip();
   const org = ctx.organization;
   const a = ctx.assessment;
+  const branding = resolveOrgBranding(
+    org,
+    (profile?.data ?? {}) as Record<string, unknown>,
+  );
   const generatedAt = new Date().toISOString();
 
   zip.file(
@@ -69,11 +80,18 @@ export async function GET(
   );
   zip.file(
     "01-SSP.html",
-    buildSspHtml({ org, assessment: a, responses, evidence, generatedAt }),
+    buildSspHtml({
+      org,
+      assessment: a,
+      responses,
+      evidence,
+      generatedAt,
+      branding,
+    }),
   );
   zip.file(
     "02-Affirmation.html",
-    buildAffirmationHtml({ org, assessment: a, generatedAt }),
+    buildAffirmationHtml({ org, assessment: a, generatedAt, branding }),
   );
   zip.file("03-controls.csv", buildControlsCsv(responses, evidence));
   zip.file("04-evidence-inventory.csv", buildEvidenceCsv(evidence));
@@ -213,8 +231,9 @@ function buildSspHtml(input: {
   responses: ControlResponseRow[];
   evidence: EvidenceArtifactRow[];
   generatedAt: string;
+  branding: OrgBranding;
 }): string {
-  const { org, assessment, responses, evidence, generatedAt } = input;
+  const { org, assessment, responses, evidence, generatedAt, branding } = input;
   const responseByControl = new Map(responses.map((r) => [r.control_id, r]));
   const evidenceByControl = new Map<string, EvidenceArtifactRow[]>();
   for (const e of evidence) {
@@ -292,7 +311,7 @@ function buildSspHtml(input: {
 </head>
 <body>
 <article>
-  ${BRAND_BAR}
+  ${renderBrandBar(branding, assessment)}
   <div class="doc-body">
   <header class="doc-head">
     <div class="eyebrow">System Security Plan</div>
@@ -339,8 +358,9 @@ function buildAffirmationHtml(input: {
   org: OrganizationRow;
   assessment: AssessmentRow;
   generatedAt: string;
+  branding: OrgBranding;
 }): string {
-  const { org, assessment, generatedAt } = input;
+  const { org, assessment, generatedAt, branding } = input;
   const affirmDate = assessment.affirmed_at
     ? new Date(assessment.affirmed_at).toLocaleDateString()
     : null;
@@ -353,7 +373,7 @@ function buildAffirmationHtml(input: {
 </head>
 <body>
 <article class="affirmation">
-  ${BRAND_BAR}
+  ${renderBrandBar(branding, assessment)}
   <div class="doc-body">
   <header class="doc-head centered">
     <div class="eyebrow">Annual Affirmation of Compliance</div>
@@ -521,10 +541,14 @@ const BID_PACKAGE_CSS = `
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #10231d; background: #f5f8f6; margin: 0; padding: 40px 20px; line-height: 1.55; }
   article { max-width: 820px; margin: 0 auto; background: white; border: 1px solid #cfe3d9; padding: 0; }
   .brand-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 48px; background: #0a1814; color: #ffffff; border-bottom: 4px solid #f59e0b; }
-  .brand-bar .wordmark { font-family: Georgia, "Iowan Old Style", "Source Serif Pro", serif; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
-  .brand-bar .wordmark .dot { color: #f59e0b; }
-  .brand-bar .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: #f59e0b; }
-  .brand-bar .pill::before { content: ""; display: inline-block; width: 6px; height: 6px; background: #f59e0b; border-radius: 999px; }
+  .brand-bar .bb-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .brand-bar img.bb-logo { height: 44px; width: auto; background: #ffffff; padding: 4px; }
+  .brand-bar .bb-name { font-family: Georgia, "Iowan Old Style", "Source Serif Pro", serif; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.15; }
+  .brand-bar .bb-meta { margin-top: 4px; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.16em; color: #cfe3d9; }
+  .brand-bar .bb-right { text-align: right; }
+  .brand-bar .bb-verifier { display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: #f59e0b; }
+  .brand-bar .bb-verifier::before { content: ""; display: inline-block; width: 6px; height: 6px; background: #f59e0b; border-radius: 999px; }
+  .brand-bar .bb-id { margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10px; color: #cfe3d9; }
   .doc-body { padding: 40px 48px 48px; }
   h1, h2, h3 { font-family: Georgia, "Iowan Old Style", "Source Serif Pro", serif; color: #10231d; }
   h1 { font-size: 30px; margin: 6px 0 0; letter-spacing: -0.015em; line-height: 1.15; }
@@ -570,4 +594,41 @@ const BID_PACKAGE_CSS = `
   }
 `;
 
-const BRAND_BAR = `<div class="brand-bar"><div class="wordmark">Custodia<span class="dot">.</span></div><div class="pill">CMMC Level 1 · Verified</div></div>`;
+/**
+ * Render the customer-branded header bar used at the top of the SSP and the
+ * affirmation memo. The customer's logo + company info appear on the left;
+ * a "Verified by Custodia · {verification id}" pill anchors the right so
+ * primes can vet the document at /verified/{slug}.
+ */
+function renderBrandBar(
+  branding: OrgBranding,
+  assessment: AssessmentRow,
+): string {
+  const metaLine = [
+    branding.locationLine,
+    displayUrl(branding.website),
+    branding.phone,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  const logo = branding.logoUrl
+    ? `<img class="bb-logo" src="${esc(branding.logoUrl)}" alt="${esc(branding.companyName)} logo" />`
+    : "";
+  const meta = metaLine ? `<div class="bb-meta">${esc(metaLine)}</div>` : "";
+  const verificationId = assessment.custodia_verification_id
+    ? `<div class="bb-id">${esc(assessment.custodia_verification_id)}</div>`
+    : "";
+  return `<div class="brand-bar">
+    <div class="bb-left">
+      ${logo}
+      <div>
+        <div class="bb-name">${esc(branding.companyName)}</div>
+        ${meta}
+      </div>
+    </div>
+    <div class="bb-right">
+      <div class="bb-verifier">CMMC Level 1 · Verified by Custodia</div>
+      ${verificationId}
+    </div>
+  </div>`;
+}
