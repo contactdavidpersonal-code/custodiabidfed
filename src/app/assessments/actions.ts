@@ -23,6 +23,7 @@ import {
   setResponseCarryStatus,
   tagArtifactPractice,
   untagArtifactPractice,
+  updateBusinessProfile,
   upsertRemediationPlan,
 } from "@/lib/assessment";
 import { stampFreshnessOnInsert } from "@/lib/freshness";
@@ -1663,4 +1664,72 @@ export async function decideCarryForwardArtifactAction(formData: FormData) {
   revalidatePath(`/assessments/${assessmentId}`);
   revalidatePath(`/assessments/${assessmentId}/controls/${owner[0].control_id}`);
   revalidatePath(`/assessments/${assessmentId}/sign`);
+}
+
+
+/**
+ * Manual edit of the business profile + locked org fields from the
+ * /assessments/[id]/profile page. Lets a user override what the AI captured
+ * during onboarding -- legal name, entity type, scoped systems, and the
+ * free-form profile fields (what they do, customers, team size, workspace,
+ * IT identity, where data lives).
+ */
+export async function updateBusinessProfileManualAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "").trim();
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Assessment not found");
+
+  const legalName = String(formData.get("legalName") ?? "").trim();
+  const entityType = String(formData.get("entityType") ?? "").trim();
+  const scopedSystems = String(formData.get("scopedSystems") ?? "").trim();
+
+  const profileFields = [
+    "what_they_do",
+    "customers",
+    "team_size",
+    "physical_workspace",
+    "it_identity",
+    "data_location",
+  ] as const;
+
+  const existing = (await getBusinessProfile(ctx.organization.id))?.data ?? {};
+  const merged: Record<string, unknown> = { ...existing };
+  for (const k of profileFields) {
+    const v = String(formData.get(k) ?? "").trim();
+    if (v) merged[k] = v;
+    else delete merged[k];
+  }
+
+  const captured = [
+    legalName,
+    entityType,
+    scopedSystems,
+    ...profileFields.map((k) => String(merged[k] ?? "")),
+  ].filter((v) => v.trim().length > 0).length;
+  const completeness = Math.min(100, Math.round((captured / 9) * 100));
+
+  const sql = getSql();
+  await sql`
+    UPDATE organizations
+    SET name = ${legalName || ctx.organization.name},
+        entity_type = ${entityType || null},
+        scoped_systems = ${scopedSystems || null},
+        updated_at = NOW()
+    WHERE id = ${ctx.organization.id}
+  `;
+
+  await updateBusinessProfile(
+    ctx.organization.id,
+    merged,
+    completeness,
+    "user",
+  );
+
+  revalidatePath("/assessments");
+  revalidatePath(`/assessments/${assessmentId}`);
+  revalidatePath(`/assessments/${assessmentId}/profile`);
+  revalidatePath(`/assessments/${assessmentId}/ssp`);
+  revalidatePath(`/assessments/${assessmentId}/affirmation`);
+  redirect(`/assessments/${assessmentId}/profile?saved=1`);
 }

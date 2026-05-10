@@ -5,6 +5,7 @@ import {
   getAssessmentForUser,
   getBusinessProfile,
 } from "@/lib/assessment";
+import { updateBusinessProfileManualAction } from "../../actions";
 
 export default async function ProfilePage(
   props: PageProps<"/assessments/[id]/profile">,
@@ -19,51 +20,72 @@ export default async function ProfilePage(
   const profile = await getBusinessProfile(ctx.organization.id);
   const data = (profile?.data ?? {}) as Record<string, unknown>;
   const completeness = profile?.completeness_score ?? 0;
+  const sp = (await props.searchParams) as Record<string, string | string[] | undefined>;
+  const justSaved = sp?.saved === "1";
 
-  const rows: Array<{ label: string; value: string | null }> = [
+  const legalName =
+    ctx.organization.name !== "My Organization" ? ctx.organization.name : "";
+  const entityType = ctx.organization.entity_type ?? "";
+  const scopedSystems = ctx.organization.scoped_systems ?? "";
+
+  const fields: Array<{
+    name: string;
+    label: string;
+    aliases: string[];
+    helper?: string;
+    multiline?: boolean;
+  }> = [
     {
-      label: "Legal name",
-      value:
-        ctx.organization.name !== "My Organization" ? ctx.organization.name : null,
-    },
-    { label: "Entity type", value: ctx.organization.entity_type },
-    {
+      name: "what_they_do",
       label: "What you do",
-      value: stringField(data, "what_they_do") ?? stringField(data, "what_we_do"),
+      aliases: ["what_they_do", "what_we_do"],
+      helper: "One sentence — used on capability statements and the SSP intro.",
+      multiline: true,
     },
     {
+      name: "customers",
       label: "Customers",
-      value:
-        stringField(data, "customers") ??
-        stringField(data, "primary_customers") ??
-        stringField(data, "target_customers"),
+      aliases: ["customers", "primary_customers", "target_customers"],
+      helper: "Who you sell to (agencies, primes, sectors).",
+      multiline: true,
     },
     {
+      name: "team_size",
       label: "Team size",
-      value: stringField(data, "team_size"),
+      aliases: ["team_size"],
+      helper: "Headcount + roles — feeds the authorized-user roster.",
+      multiline: true,
     },
     {
+      name: "physical_workspace",
       label: "Physical workspace",
-      value:
-        stringField(data, "physical_workspace") ??
-        stringField(data, "workspace") ??
-        stringField(data, "physical_location"),
+      aliases: ["physical_workspace", "workspace", "physical_location"],
+      helper: "Office, home offices, co-working — drives physical-protection scope.",
+      multiline: true,
     },
     {
+      name: "it_identity",
       label: "IT identity",
-      value:
-        stringField(data, "it_identity") ??
-        stringField(data, "identity_provider") ??
-        stringField(data, "tech_stack"),
+      aliases: ["it_identity", "identity_provider", "tech_stack"],
+      helper: "Identity provider, endpoints, MDM, primary SaaS in scope.",
+      multiline: true,
     },
     {
+      name: "data_location",
       label: "Where data lives",
-      value:
-        stringField(data, "data_location") ??
-        stringField(data, "fci_location") ??
-        stringField(data, "where_data_lives"),
+      aliases: ["data_location", "fci_location", "where_data_lives"],
+      helper: "Where FCI is processed/stored/transmitted.",
+      multiline: true,
     },
   ];
+
+  const valueFor = (aliases: string[]): string => {
+    for (const k of aliases) {
+      const v = data[k];
+      if (typeof v === "string" && v.trim()) return v;
+    }
+    return "";
+  };
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-10">
@@ -75,14 +97,25 @@ export default async function ProfilePage(
           Your business profile
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-[#5a7d70]">
-          Captured conversationally through your compliance officer. Everything
-          here flows into your SSP, affirmation memo, and the per-practice
-          narratives. Refine anything by chatting with the officer on the
-          right or by re-running onboarding.
+          Edit anything directly below or refine conversationally with your
+          compliance officer. Everything here flows into your SSP, affirmation
+          memo, and the per-practice narratives.
         </p>
       </header>
 
-      <section className="mb-6  border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+      {justSaved ? (
+        <div className="mb-6 border border-emerald-300 bg-emerald-50 p-4 text-sm text-emerald-900">
+          Profile saved. The SSP and affirmation memo will reflect your edits
+          the next time you open them.
+        </div>
+      ) : null}
+
+      <form
+        action={updateBusinessProfileManualAction}
+        className="mb-6 border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04)]"
+      >
+        <input type="hidden" name="assessmentId" value={id} />
+
         <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="font-serif text-lg font-bold text-[#10231d]">
@@ -92,55 +125,80 @@ export default async function ProfilePage(
               Profile completeness: {completeness}%
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <Link
+            href="/onboard"
+            className="border border-[#cfe3d9] bg-white px-3 py-1.5 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
+          >
+            Refine with officer
+          </Link>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field
+            name="legalName"
+            label="Legal name"
+            defaultValue={legalName}
+            placeholder="Custodia, LLC"
+          />
+          <Field
+            name="entityType"
+            label="Entity type"
+            defaultValue={entityType}
+            placeholder="LLC"
+            helper="LLC, S-Corp, C-Corp, sole prop, etc."
+          />
+
+          {fields.map((f) => (
+            <Field
+              key={f.name}
+              name={f.name}
+              label={f.label}
+              defaultValue={valueFor(f.aliases)}
+              helper={f.helper}
+              multiline={f.multiline}
+              className={f.name === "what_they_do" ? "md:col-span-2" : ""}
+            />
+          ))}
+
+          <Field
+            name="scopedSystems"
+            label="Systems in scope"
+            defaultValue={scopedSystems}
+            helper="Free-form paragraph — copied verbatim into the SSP and the affirmation memo."
+            multiline
+            rows={6}
+            className="md:col-span-2"
+          />
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-[#cfe3d9] pt-5">
+          <p className="text-xs text-[#5a7d70]">
+            Saved edits flow into every downstream artifact automatically.
+          </p>
+          <div className="flex gap-2">
             <Link
-              href="/onboard"
-              className=" border border-[#cfe3d9] bg-white px-3 py-1.5 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
+              href={`/assessments/${id}`}
+              className="border border-[#cfe3d9] bg-white px-4 py-2 text-xs font-bold text-[#0e2a23] hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
             >
-              Refine with officer
+              Cancel
             </Link>
+            <button
+              type="submit"
+              className="bg-[#0e2a23] px-5 py-2 text-xs font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
+            >
+              Save changes
+            </button>
           </div>
         </div>
-        <dl className="grid gap-4 md:grid-cols-2">
-          {rows.map((r) => (
-            <div
-              key={r.label}
-              className=" border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3"
-            >
-              <dt className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
-                {r.label}
-              </dt>
-              <dd className="mt-1 text-sm font-semibold text-[#10231d]">
-                {r.value ? (
-                  r.value
-                ) : (
-                  <span className="font-normal italic text-[#7a9c90]">
-                    Not captured yet
-                  </span>
-                )}
-              </dd>
-            </div>
-          ))}
-          <div className=" border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3 md:col-span-2">
-            <dt className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
-              Systems in scope
-            </dt>
-            <dd className="mt-1 whitespace-pre-wrap text-sm text-[#10231d]">
-              {ctx.organization.scoped_systems ?? (
-                <span className="italic text-[#7a9c90]">Not captured yet</span>
-              )}
-            </dd>
-          </div>
-        </dl>
-      </section>
+      </form>
 
-      <div className="flex flex-wrap items-center justify-between gap-3  border border-dashed border-[#cfe3d9] bg-white px-5 py-4 text-sm text-[#5a7d70]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border border-dashed border-[#cfe3d9] bg-white px-5 py-4 text-sm text-[#5a7d70]">
         <span>
           Profile drives every downstream artifact &mdash; keep it accurate.
         </span>
         <Link
           href={`/assessments/${id}/registration`}
-          className=" bg-[#0e2a23] px-4 py-2 text-xs font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
+          className="bg-[#0e2a23] px-4 py-2 text-xs font-bold tracking-tight text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
         >
           Continue to federal registration &rarr;
         </Link>
@@ -149,8 +207,54 @@ export default async function ProfilePage(
   );
 }
 
-function stringField(data: Record<string, unknown>, key: string): string | null {
-  const v = data[key];
-  if (typeof v === "string" && v.trim()) return v.trim();
-  return null;
+function Field({
+  name,
+  label,
+  defaultValue,
+  helper,
+  placeholder,
+  multiline,
+  rows,
+  className,
+}: {
+  name: string;
+  label: string;
+  defaultValue: string;
+  helper?: string;
+  placeholder?: string;
+  multiline?: boolean;
+  rows?: number;
+  className?: string;
+}) {
+  return (
+    <label
+      className={`flex min-w-0 flex-col border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3 ${className ?? ""}`}
+    >
+      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+        {label}
+      </span>
+      {multiline ? (
+        <textarea
+          name={name}
+          defaultValue={defaultValue}
+          placeholder={placeholder}
+          rows={rows ?? 3}
+          className="mt-2 w-full resize-y border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none focus:ring-2 focus:ring-[#2f8f6d]/20"
+        />
+      ) : (
+        <input
+          type="text"
+          name={name}
+          defaultValue={defaultValue}
+          placeholder={placeholder}
+          className="mt-2 w-full border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] focus:border-[#2f8f6d] focus:outline-none focus:ring-2 focus:ring-[#2f8f6d]/20"
+        />
+      )}
+      {helper ? (
+        <span className="mt-2 text-[11px] leading-snug text-[#5a7d70]">
+          {helper}
+        </span>
+      ) : null}
+    </label>
+  );
 }
