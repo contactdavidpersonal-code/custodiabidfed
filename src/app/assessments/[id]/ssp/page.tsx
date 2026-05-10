@@ -84,22 +84,35 @@ export default async function SystemSecurityPlanPage(
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
           href={`/assessments/${id}`}
-          className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-900"
+          className="text-sm font-medium text-[#5a7d70] transition-colors hover:text-[#10231d]"
         >
           &larr; Back to overview
         </Link>
         <PrintButton label="Print / save as PDF" />
       </div>
 
-      <article className="print-document  border border-slate-200 bg-white p-10 shadow-sm print:border-0 print:p-0 print:shadow-none">
-        <header className="mb-10 border-b border-slate-200 pb-8">
-          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+      <article className="print-document border border-[#cfe3d9] bg-white shadow-sm print:border-0 print:shadow-none">
+        {/* Branded header bar — mirrors the public Verified page and the
+            zipped HTML deliverables so primes recognize the Custodia document
+            chain at a glance. */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b-4 border-[#f59e0b] bg-[#0a1814] px-10 py-4 text-white print:px-0">
+          <div className="font-serif text-lg font-bold tracking-tight">
+            Custodia<span className="text-[#f59e0b]">.</span>
+          </div>
+          <div className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#f59e0b]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#f59e0b]" />
+            CMMC Level 1 · Verified
+          </div>
+        </div>
+        <div className="p-10 print:p-0">
+        <header className="mb-10 border-b border-[#cfe3d9] pb-8">
+          <div className="text-xs font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
             System Security Plan
           </div>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="mt-2 font-serif text-3xl font-bold tracking-tight text-[#10231d]">
             {org.name}
           </h1>
-          <p className="mt-2 text-sm text-slate-700">
+          <p className="mt-2 text-sm text-[#5a7d70]">
             CMMC Level 1 Self-Assessment · FAR 52.204-21
           </p>
           <dl className="mt-6 grid grid-cols-2 gap-4 text-sm md:grid-cols-4">
@@ -125,21 +138,21 @@ export default async function SystemSecurityPlanPage(
         </header>
 
         <section className="mb-10">
-          <h2 className="text-lg font-bold tracking-tight text-slate-900">
+          <h2 className="border-l-4 border-[#10231d] pl-3 font-serif text-lg font-bold tracking-tight text-[#10231d]">
             1. System description and scope
           </h2>
-          <p className="mt-3 text-sm leading-relaxed text-slate-800 whitespace-pre-wrap">
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-[#10231d]">
             {org.scoped_systems ??
               "No scope description provided. Complete the business profile before finalizing."}
           </p>
         </section>
 
         <section className="mb-10">
-          <h2 className="text-lg font-bold tracking-tight text-slate-900">
+          <h2 className="border-l-4 border-[#10231d] pl-3 font-serif text-lg font-bold tracking-tight text-[#10231d]">
             2. Senior official affirmation
           </h2>
           {a.affirmed_at && a.affirmed_by_name ? (
-            <div className="mt-3  border border-slate-200 bg-slate-50 p-4 text-sm text-slate-800">
+            <div className="mt-3 border border-[#cfe3d9] border-l-4 border-l-[#2f8f6d] bg-[#f5f8f6] p-4 text-sm text-[#10231d]">
               <p>
                 <strong>{a.affirmed_by_name}</strong>
                 {a.affirmed_by_title ? `, ${a.affirmed_by_title}` : ""} affirmed
@@ -155,17 +168,17 @@ export default async function SystemSecurityPlanPage(
               </p>
             </div>
           ) : (
-            <p className="mt-3 text-sm italic text-slate-600">
+            <p className="mt-3 text-sm italic text-[#5a7d70]">
               This plan has not yet been signed by a senior official.
             </p>
           )}
         </section>
 
         <section>
-          <h2 className="text-lg font-bold tracking-tight text-slate-900">
+          <h2 className="border-l-4 border-[#10231d] pl-3 font-serif text-lg font-bold tracking-tight text-[#10231d]">
             3. Implementation of the 15 safeguarding requirements
           </h2>
-          <p className="mt-2 text-sm text-slate-600">
+          <p className="mt-2 text-sm text-[#5a7d70]">
             For each requirement, the narrative below describes how{" "}
             {org.name} implements the practice, with supporting evidence on
             file.
@@ -176,7 +189,7 @@ export default async function SystemSecurityPlanPage(
               const practices = playbook.filter((p) => p.domain === domain);
               return (
                 <div key={domain}>
-                  <h3 className="text-base font-bold text-slate-900">
+                  <h3 className="font-serif text-base font-bold text-[#10231d]">
                     {domain} · {domainLabels[domain]}
                   </h3>
                   <div className="mt-3 space-y-5">
@@ -187,43 +200,43 @@ export default async function SystemSecurityPlanPage(
                       return (
                         <div
                           key={practice.id}
-                          className=" border border-slate-200 p-4"
+                          className="border border-[#cfe3d9] border-l-4 border-l-[#2f8f6d] bg-white p-4"
                         >
                           <div className="flex flex-wrap items-baseline justify-between gap-2">
                             <div>
-                              <div className="font-mono text-xs text-slate-500">
+                              <div className="font-mono text-[11px] text-[#5a7d70]">
                                 {practice.id} · {practice.farReference}
                               </div>
-                              <div className="mt-1 text-sm font-bold text-slate-900">
+                              <div className="mt-1 font-serif text-base font-bold text-[#10231d]">
                                 {practice.shortName}
                               </div>
                             </div>
-                            <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700">
+                            <span className="border border-[#cfe3d9] bg-[#e8f1ec] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#0e2a23]">
                               {statusText[r?.status ?? "unanswered"]}
                             </span>
                           </div>
-                          <p className="mt-2 text-xs text-slate-600 italic">
+                          <p className="mt-2 text-xs italic text-[#5a7d70]">
                             {practice.title}
                           </p>
                           <div className="mt-3">
-                            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                            <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#5a7d70]">
                               Implementation
                             </div>
-                            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
+                            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#10231d]">
                               {r?.narrative ??
                                 "No narrative provided for this practice."}
                             </p>
                           </div>
                           {arts.length > 0 && (
                             <div className="mt-3">
-                              <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                              <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#5a7d70]">
                                 Evidence on file
                               </div>
-                              <ul className="mt-1 list-disc pl-5 text-sm text-slate-800">
+                              <ul className="mt-1 list-disc pl-5 text-sm text-[#10231d]">
                                 {arts.map((e) => (
                                   <li key={e.id}>
                                     {e.filename}{" "}
-                                    <span className="text-xs text-slate-500">
+                                    <span className="text-xs text-[#5a7d70]">
                                       ({new Date(e.captured_at).toLocaleDateString()})
                                     </span>
                                   </li>
@@ -232,15 +245,15 @@ export default async function SystemSecurityPlanPage(
                             </div>
                           )}
                           {exc && (
-                            <div className="mt-3 border-l-4 border-amber-400 bg-amber-50 px-3 py-2">
-                              <div className="text-xs font-semibold uppercase tracking-wider text-amber-800">
+                            <div className="mt-3 border-l-4 border-[#f59e0b] bg-[#fff8eb] px-3 py-2">
+                              <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8a5a00]">
                                 {exc.type === "enduring"
                                   ? "Enduring Exception"
                                   : "Temporary Deficiency"}
                                 {" · scores MET per CMMC AG v2.13"}
                               </div>
                               {exc.notes && (
-                                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-800">
+                                <p className="mt-1 whitespace-pre-wrap text-sm text-[#10231d]">
                                   {exc.notes}
                                 </p>
                               )}
@@ -256,11 +269,12 @@ export default async function SystemSecurityPlanPage(
           </div>
         </section>
 
-        <footer className="mt-10 border-t border-slate-200 pt-6 text-xs text-slate-500">
+        <footer className="mt-10 border-t border-[#cfe3d9] pt-6 text-xs text-[#5a7d70]">
           Generated by Custodia on {generatedDate}. This System Security Plan
           is based on the self-assessment conducted by {org.name} against the
           15 CMMC Level 1 safeguarding requirements defined in FAR 52.204-21(b)(1)(i)–(xv).
         </footer>
+        </div>
       </article>
     </main>
   );
@@ -269,10 +283,10 @@ export default async function SystemSecurityPlanPage(
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+      <dt className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#5a7d70]">
         {label}
       </dt>
-      <dd className="mt-1 text-sm font-semibold text-slate-900">{value}</dd>
+      <dd className="mt-1 text-sm font-bold text-[#10231d]">{value}</dd>
     </div>
   );
 }
