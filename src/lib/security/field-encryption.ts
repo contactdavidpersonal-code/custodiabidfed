@@ -96,7 +96,21 @@ function getKmsClient(): KMSClient {
   if (!_kmsClient) {
     const region =
       (process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || "us-east-2").trim();
-    _kmsClient = new KMSClient({ region });
+    const accessKeyId = process.env.AWS_ACCESS_KEY_ID?.trim();
+    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY?.trim();
+    const sessionToken = process.env.AWS_SESSION_TOKEN?.trim();
+    _kmsClient = new KMSClient({
+      region,
+      ...(accessKeyId && secretAccessKey
+        ? {
+            credentials: {
+              accessKeyId,
+              secretAccessKey,
+              ...(sessionToken ? { sessionToken } : {}),
+            },
+          }
+        : {}),
+    });
   }
   return _kmsClient;
 }
