@@ -9,7 +9,7 @@ import {
 } from "@/lib/bid-profile";
 import { loadBidProfile } from "@/lib/bid-profile-server";
 import { PrintButton } from "../PrintButton";
-import { SprsFilingPromptCard } from "../SprsFilingPrompt";
+import { SprsFilingPromptCard, SprsFilingReceiptCard } from "../SprsFilingPrompt";
 
 export const dynamic = "force-dynamic";
 
@@ -108,6 +108,17 @@ export default async function BidPacketPage(
           <SprsFilingPromptCard
             assessmentId={id}
             fiscalYear={a.fiscal_year}
+          />
+        </div>
+      ) : null}
+
+      {attested && sprsFiled && a.sprs_filed_at && a.sprs_confirmation_number ? (
+        <div className="mb-8 print:hidden">
+          <SprsFilingReceiptCard
+            assessmentId={id}
+            fiscalYear={a.fiscal_year}
+            sprsFiledAt={a.sprs_filed_at}
+            sprsConfirmationNumber={a.sprs_confirmation_number}
           />
         </div>
       ) : null}

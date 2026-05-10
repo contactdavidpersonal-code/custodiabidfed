@@ -1282,18 +1282,40 @@ export async function recordSprsFilingAction(formData: FormData) {
     );
   }
   if (ctx.assessment.sprs_filed_at) {
-    // Idempotent: re-submitting with the same number is a no-op; changing
-    // the number after filing is a legal-record edit we don't allow inline.
+    // Idempotent re-save: same number is a no-op.
     if (
       ctx.assessment.sprs_confirmation_number?.toUpperCase() ===
       confirmationNumber
     ) {
       revalidatePath(`/assessments/${assessmentId}`);
+      revalidatePath(`/assessments/${assessmentId}/bid-packet`);
       return;
     }
-    throw new Error(
-      "This filing is already on record. Contact support to amend.",
-    );
+    // Amend the saved confirmation number — small-business contractors
+    // occasionally mistype on first paste. We log the change in the audit
+    // trail (old + new) so the legal record is still defensible.
+    const sql = getSql();
+    const previous = ctx.assessment.sprs_confirmation_number;
+    await sql`
+      UPDATE assessments
+      SET sprs_confirmation_number = ${confirmationNumber},
+          updated_at = NOW()
+      WHERE id = ${assessmentId}
+    `;
+    await recordAuditEvent({
+      action: "assessment.sprs_filing_amended",
+      userId,
+      organizationId: ctx.organization.id,
+      resourceType: "assessment",
+      resourceId: assessmentId,
+      metadata: {
+        previousConfirmationNumber: previous,
+        newConfirmationNumber: confirmationNumber,
+      },
+    });
+    revalidatePath(`/assessments/${assessmentId}`);
+    revalidatePath(`/assessments/${assessmentId}/bid-packet`);
+    return;
   }
 
   const filedAt = new Date();
