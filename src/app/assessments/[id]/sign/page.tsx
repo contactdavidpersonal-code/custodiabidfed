@@ -17,7 +17,7 @@ import {
   validateBoundary,
 } from "@/lib/cmmc/boundary";
 import { BoundaryDocument, BOUNDARY_CSS, BoundaryPreviewModal } from "@/components/boundary";
-import { submitAffirmationAction } from "../../actions";
+import { AffirmForm } from "./AffirmForm";
 
 export default async function SignPage(
   props: PageProps<"/assessments/[id]/sign">,
@@ -156,12 +156,14 @@ export default async function SignPage(
       </header>
 
       {submitError && (
-        <div className="mb-8 border border-rose-300 bg-rose-50 p-5">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-rose-800">
-            Couldn&rsquo;t sign
-          </h2>
-          <p className="mt-2 text-sm text-rose-900">{submitError}</p>
-        </div>
+        <noscript>
+          <div className="mb-8 border border-rose-300 bg-rose-50 p-5">
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-rose-800">
+              Couldn&rsquo;t sign
+            </h2>
+            <p className="mt-2 text-sm text-rose-900">{submitError}</p>
+          </div>
+        </noscript>
       )}
 
       {!ready && (
@@ -460,111 +462,12 @@ export default async function SignPage(
         </section>
       )}
 
-      <form
-        action={submitAffirmationAction}
-        className="space-y-6  border border-slate-200 bg-white p-6 shadow-sm"
-      >
-        <input type="hidden" name="assessmentId" value={id} />
-
-        <div>
-          <h2 className="text-lg font-bold tracking-tight text-slate-900">
-            Affirming Official
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Per 32 CFR § 170.22, the Affirming Official must be a senior
-            officer of the organization with authority to bind it. Their name,
-            title, email, and the affirmation date are submitted to SPRS and
-            visible to contracting officers under DFARS 252.204-7021.
-          </p>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-900">
-              Full legal name
-            </span>
-            <input
-              type="text"
-              name="signerName"
-              required
-              placeholder="Jane Doe"
-              className="w-full  border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
-            />
-          </label>
-          <label className="block">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-900">
-              Title
-            </span>
-            <input
-              type="text"
-              name="signerTitle"
-              required
-              placeholder="Chief Executive Officer"
-              className="w-full  border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
-            />
-          </label>
-          <label className="block md:col-span-2">
-            <span className="mb-1.5 block text-sm font-semibold text-slate-900">
-              Work email
-            </span>
-            <input
-              type="email"
-              name="affirmingOfficialEmail"
-              required
-              placeholder="ceo@yourcompany.com"
-              className="w-full  border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
-            />
-            <span className="mt-1.5 block text-xs text-slate-500">
-              Used for the SPRS submission record and renewal reminders. Must
-              match the Affirming Official, not a generic inbox.
-            </span>
-          </label>
-        </div>
-
-        <div className=" border border-slate-200 bg-slate-50 p-5">
-          <h3 className="text-sm font-semibold text-slate-900">
-            Affirmation statement
-          </h3>
-          <p className="mt-2 text-sm leading-relaxed text-slate-700">
-            I affirm that <strong>{ctx.organization.name}</strong> implements
-            all 15 CMMC Level 1 basic safeguarding requirements (FAR 52.204-21(b)(1)(i)–(b)(1)(xv)) as described in the
-            accompanying System Security Plan, and that the information
-            provided is accurate and complete as of today. I understand that
-            this affirmation is a material representation of fact upon which
-            the Government relies and that knowingly false statements may
-            subject me and the organization to criminal and civil penalties
-            under the False Claims Act and 18 U.S.C. § 1001.
-          </p>
-          <label className="mt-4 flex gap-3 text-sm">
-            <input
-              type="checkbox"
-              name="acknowledged"
-              required
-              className="mt-0.5 h-4 w-4 flex-none accent-slate-900"
-            />
-            <span className="text-slate-800">
-              I have read the statement above and am authorized to affirm on
-              behalf of <strong>{ctx.organization.name}</strong>.
-            </span>
-          </label>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-6">
-          <button
-            type="submit"
-            disabled={!ready}
-            className=" bg-amber-400 px-5 py-3 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Sign and affirm &rarr;
-          </button>
-          <Link
-            href={`/assessments/${id}`}
-            className=" border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-50"
-          >
-            Cancel
-          </Link>
-        </div>
-      </form>
+      <AffirmForm
+        assessmentId={id}
+        organizationName={ctx.organization.name}
+        disabled={!ready}
+        submitError={submitError}
+      />
     </main>
   );
 }
