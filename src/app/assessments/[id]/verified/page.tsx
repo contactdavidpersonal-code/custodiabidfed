@@ -6,6 +6,7 @@ import { setAsideLabels } from "@/lib/bid-profile";
 import { loadBidProfile } from "@/lib/bid-profile-server";
 import { loadTrustPageForOrg } from "@/lib/trust-page";
 import { ensureDbReady, getSql } from "@/lib/db";
+import { CopyButton } from "@/components/CopyButton";
 import {
   publishVerifiedPageAction,
   unpublishVerifiedPageAction,
@@ -318,8 +319,11 @@ export default async function VerifiedOwnerPanel(
 function CodeBlock({ label, code }: { label: string; code: string }) {
   return (
     <div className="mt-3">
-      <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-        {label}
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          {label}
+        </div>
+        <CopyButton code={code} />
       </div>
       <pre className="mt-1 overflow-x-auto  border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800">
         <code>{code}</code>

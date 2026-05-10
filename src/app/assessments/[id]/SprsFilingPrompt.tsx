@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { publishVerifiedPageAction, recordSprsFilingAction } from "../actions";
+import { CopyButton } from "@/components/CopyButton";
 
 /**
  * Post-filing receipt card with an editable confirmation number — small
@@ -484,8 +485,11 @@ export function SprsFilingPointer({ assessmentId }: { assessmentId: string }) {
 function EmbedSnippet({ label, code }: { label: string; code: string }) {
   return (
     <div className="mt-3">
-      <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
-        {label}
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+          {label}
+        </div>
+        <CopyButton code={code} />
       </div>
       <pre className="mt-1 max-h-32 overflow-auto border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] leading-relaxed text-slate-800">
         <code>{code}</code>
