@@ -238,7 +238,7 @@ export default async function VerifiedOwnerPanel(
               href={publicUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-2 inline-flex flex-col items-center gap-2 border border-slate-200 bg-[#0a1814] p-6"
+              className="mt-2 inline-flex flex-col items-center gap-2 border border-slate-200 bg-white p-6"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -248,7 +248,7 @@ export default async function VerifiedOwnerPanel(
                 height={144}
                 className="h-28 w-auto"
               />
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#f59e0b]">
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#10231d]">
                 CMMC Level 1 · Verified
               </div>
             </a>

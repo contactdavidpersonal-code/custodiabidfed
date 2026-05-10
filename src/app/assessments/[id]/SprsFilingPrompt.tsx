@@ -219,7 +219,7 @@ export function VerifiedPageOfferCard({
               href={publicUrl}
               target="_blank"
               rel="noreferrer"
-              className="mt-3 flex flex-col items-center gap-2 border border-slate-200 bg-[#0a1814] p-5 transition-shadow hover:shadow-md"
+              className="mt-3 flex flex-col items-center gap-2 border border-slate-200 bg-white p-5 transition-shadow hover:shadow-md"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -229,7 +229,7 @@ export function VerifiedPageOfferCard({
                 height={115}
                 className="h-24 w-auto"
               />
-              <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#f59e0b]">
+              <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#10231d]">
                 CMMC Level 1 · Verified
               </div>
             </a>
