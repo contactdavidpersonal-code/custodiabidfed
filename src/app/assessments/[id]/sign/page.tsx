@@ -12,6 +12,11 @@ import {
   listResponsesForAssessment,
 } from "@/lib/assessment";
 import { computeExceptionCoverage } from "@/lib/cmmc/objectives";
+import {
+  assembleBoundaryView,
+  validateBoundary,
+} from "@/lib/cmmc/boundary";
+import { BoundaryDocument, BOUNDARY_CSS } from "@/components/boundary";
 import { submitAffirmationAction } from "../../actions";
 
 export default async function SignPage(
@@ -35,6 +40,24 @@ export default async function SignPage(
     listRemediationPlansForAssessment(id),
   ]);
   const progress = computeProgress(responses);
+
+  // CMMC L1 v2.13 + DFARS final: every affirmation must be backed by a
+  // documented FCI boundary (SSP § 1.2). We assemble the read-only view
+  // here so the official sees exactly what they're signing for.
+  const boundaryView =
+    ctx.assessment.framework === "cmmc_l1"
+      ? await assembleBoundaryView({
+          organizationId: ctx.organization.id,
+          legalEntity: {
+            id: ctx.organization.id,
+            name: ctx.organization.name,
+            cage: ctx.organization.cage_code ?? null,
+            uei: ctx.organization.sam_uei ?? null,
+            naics: ctx.organization.naics_codes ?? [],
+          },
+        })
+      : null;
+  const boundaryFindings = boundaryView ? validateBoundary(boundaryView) : [];
   // v2.13: legacy not-met/partial answers are still affirmation-eligible if
   // the practice has a documented Enduring Exception or a Temporary Deficiency
   // with at least one operational POA&M milestone. Mirror the gate the
@@ -293,6 +316,46 @@ export default async function SignPage(
           Deficiencies (with milestones) score as MET.
         </p>
       </section>
+
+      {boundaryView && (
+        <section className="mb-8 border border-[#cfe3d9] bg-white p-6 shadow-sm">
+          <style dangerouslySetInnerHTML={{ __html: BOUNDARY_CSS }} />
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
+                SSP § 1.2 · FCI Boundary
+              </div>
+              <h2 className="font-serif text-xl font-bold tracking-tight text-[#10231d]">
+                What&rsquo;s in scope, what&rsquo;s out, and who signs
+              </h2>
+              <p className="mt-1 max-w-2xl text-sm text-[#456c5f]">
+                This is the boundary diagram and inventory that ships with your
+                System Security Plan. Review it before affirming &mdash; the
+                contracting officer will see this exact page in your packet.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Link
+                href="/assessments/boundary"
+                className="inline-flex items-center gap-2 border border-[#cfe3d9] bg-white px-3 py-2 text-xs font-bold uppercase tracking-wider text-[#10231d] hover:bg-[#f1f6f3]"
+              >
+                Edit boundary
+              </Link>
+              <a
+                href="/api/boundary/render"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 border border-[#0e2a23] bg-[#0e2a23] px-3 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#10231d]"
+              >
+                Open standalone HTML
+              </a>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <BoundaryDocument view={boundaryView} findings={boundaryFindings} />
+          </div>
+        </section>
+      )}
 
       <form
         action={submitAffirmationAction}
