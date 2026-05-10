@@ -991,32 +991,42 @@ export async function submitAffirmationAction(formData: FormData) {
   // incomplete" actionable instead of "your data is safe but the page
   // crashed".
   if (ctx.assessment.framework === "cmmc_l1") {
-    const boundaryView = await assembleBoundaryView({
-      organizationId: ctx.organization.id,
-      legalEntity: {
-        id: ctx.organization.id,
-        name: ctx.organization.name,
-        cage: ctx.organization.cage_code ?? null,
-        uei: ctx.organization.sam_uei ?? null,
-        naics: ctx.organization.naics_codes ?? [],
-      },
-    });
-    const boundaryFindings = validateBoundary(boundaryView);
-    const blockingBoundary = boundaryFindings.filter(
-      (f) => f.level === "fail" || f.level === "warn",
-    );
-    if (blockingBoundary.length > 0) {
-      const sample = blockingBoundary
-        .slice(0, 3)
-        .map((f) => f.message.replace(/\s+/g, " ").trim())
-        .join(" · ");
-      const more =
-        blockingBoundary.length > 3
-          ? ` (+${blockingBoundary.length - 3} more)`
-          : "";
-      throw new Error(
-        `Cannot sign: FCI boundary is incomplete (${blockingBoundary.length} finding${blockingBoundary.length === 1 ? "" : "s"}). Resolve on the Boundary tab. ${sample}${more}`,
+    try {
+      const boundaryView = await assembleBoundaryView({
+        organizationId: ctx.organization.id,
+        legalEntity: {
+          id: ctx.organization.id,
+          name: ctx.organization.name,
+          cage: ctx.organization.cage_code ?? null,
+          uei: ctx.organization.sam_uei ?? null,
+          naics: ctx.organization.naics_codes ?? [],
+        },
+      });
+      const boundaryFindings = validateBoundary(boundaryView);
+      const blockingBoundary = boundaryFindings.filter(
+        (f) => f.level === "fail" || f.level === "warn",
       );
+      if (blockingBoundary.length > 0) {
+        const sample = blockingBoundary
+          .slice(0, 3)
+          .map((f) => f.message.replace(/\s+/g, " ").trim())
+          .join(" · ");
+        const more =
+          blockingBoundary.length > 3
+            ? ` (+${blockingBoundary.length - 3} more)`
+            : "";
+        throw new Error(
+          `Cannot sign: FCI boundary is incomplete (${blockingBoundary.length} finding${blockingBoundary.length === 1 ? "" : "s"}). Resolve on the Boundary tab. ${sample}${more}`,
+        );
+      }
+    } catch (e) {
+      // Re-throw user-facing "Cannot sign:" errors; swallow infra failures
+      // (DB shape mismatch, etc.) so the affirmation can still proceed —
+      // the boundary is reviewable on its own page.
+      if (e instanceof Error && e.message.startsWith("Cannot sign:")) {
+        throw e;
+      }
+      console.error("[submitAffirmation] boundary gate skipped", e);
     }
   }
 

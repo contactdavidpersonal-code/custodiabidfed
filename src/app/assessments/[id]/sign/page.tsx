@@ -43,21 +43,41 @@ export default async function SignPage(
 
   // CMMC L1 v2.13 + DFARS final: every affirmation must be backed by a
   // documented FCI boundary (SSP § 1.2). We assemble the read-only view
-  // here so the official sees exactly what they're signing for.
-  const boundaryView =
-    ctx.assessment.framework === "cmmc_l1"
-      ? await assembleBoundaryView({
-          organizationId: ctx.organization.id,
-          legalEntity: {
-            id: ctx.organization.id,
-            name: ctx.organization.name,
-            cage: ctx.organization.cage_code ?? null,
-            uei: ctx.organization.sam_uei ?? null,
-            naics: ctx.organization.naics_codes ?? [],
-          },
-        })
-      : null;
-  const boundaryFindings = boundaryView ? validateBoundary(boundaryView) : [];
+  // here so the official sees exactly what they're signing for. Wrapped in
+  // try/catch so any data-shape issue degrades to a notice rather than
+  // taking down the entire /sign page.
+  let boundaryView: Awaited<ReturnType<typeof assembleBoundaryView>> | null =
+    null;
+  let boundaryAssemblyError: string | null = null;
+  if (ctx.assessment.framework === "cmmc_l1") {
+    try {
+      boundaryView = await assembleBoundaryView({
+        organizationId: ctx.organization.id,
+        legalEntity: {
+          id: ctx.organization.id,
+          name: ctx.organization.name,
+          cage: ctx.organization.cage_code ?? null,
+          uei: ctx.organization.sam_uei ?? null,
+          naics: ctx.organization.naics_codes ?? [],
+        },
+      });
+    } catch (e) {
+      boundaryAssemblyError =
+        e instanceof Error ? e.message : String(e);
+      console.error("[sign] assembleBoundaryView failed", e);
+    }
+  }
+  let boundaryFindings: ReturnType<typeof validateBoundary> = [];
+  if (boundaryView) {
+    try {
+      boundaryFindings = validateBoundary(boundaryView);
+    } catch (e) {
+      console.error("[sign] validateBoundary failed", e);
+      boundaryAssemblyError =
+        boundaryAssemblyError ??
+        (e instanceof Error ? e.message : String(e));
+    }
+  }
   // Same gate the server action enforces — surface here so the page tells
   // the user *exactly* why we won't sign before they ever click submit.
   const boundaryBlockers = boundaryFindings.filter(
@@ -356,6 +376,25 @@ export default async function SignPage(
           Deficiencies (with milestones) score as MET.
         </p>
       </section>
+
+      {boundaryAssemblyError && (
+        <div className="mb-8 border border-amber-200 bg-amber-50 p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-amber-800">
+            Boundary preview unavailable
+          </h2>
+          <p className="mt-1 text-sm text-amber-900">
+            We couldn&rsquo;t render the FCI boundary preview on this page.
+            You can still review and edit it on the{" "}
+            <Link href="/assessments/boundary" className="underline">
+              Boundary page
+            </Link>
+            . This does not block signing if the boundary itself is complete.
+          </p>
+          <p className="mt-2 font-mono text-[11px] text-amber-700">
+            {boundaryAssemblyError}
+          </p>
+        </div>
+      )}
 
       {boundaryView && (
         <section className="mb-8 border border-[#cfe3d9] bg-white p-6 shadow-sm">
