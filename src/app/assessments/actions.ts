@@ -37,6 +37,10 @@ import {
   controlsBlockingAffirmation,
   syncLegacyStatusToObjectives,
 } from "@/lib/cmmc/objectives";
+import {
+  assembleBoundaryView,
+  validateBoundary,
+} from "@/lib/cmmc/boundary";
 import { reviewEvidenceArtifact } from "@/lib/ai/evidence-review";
 import {
   appendMessage,
@@ -973,6 +977,47 @@ export async function submitAffirmationAction(formData: FormData) {
     throw new Error(
       `Practices marked Met need at least one passing artifact (or a 200+ char narrative explaining why none applies): ${ids}${more}`,
     );
+  }
+
+  // FCI Boundary gate (CMMC L1 v2.13 + DFARS final): the affirmation memo
+  // packages the boundary diagram, inventory, flows, out-of-scope items,
+  // and Affirming-Official acknowledgement. Block on any `fail`-level
+  // finding (missing AO, AO not acknowledged, public-sharing on FCI assets,
+  // missing entity name) AND on the structural `warn`-level findings the
+  // contracting officer will see in the rendered SSP § 1.2 page (no
+  // inbound/outbound flow, empty out-of-scope list, no ESPs, no people
+  // or storage in scope). The dashboard already surfaces these — refusing
+  // here makes "I can't sign because the affirmation memo would be
+  // incomplete" actionable instead of "your data is safe but the page
+  // crashed".
+  if (ctx.assessment.framework === "cmmc_l1") {
+    const boundaryView = await assembleBoundaryView({
+      organizationId: ctx.organization.id,
+      legalEntity: {
+        id: ctx.organization.id,
+        name: ctx.organization.name,
+        cage: ctx.organization.cage_code ?? null,
+        uei: ctx.organization.sam_uei ?? null,
+        naics: ctx.organization.naics_codes ?? [],
+      },
+    });
+    const boundaryFindings = validateBoundary(boundaryView);
+    const blockingBoundary = boundaryFindings.filter(
+      (f) => f.level === "fail" || f.level === "warn",
+    );
+    if (blockingBoundary.length > 0) {
+      const sample = blockingBoundary
+        .slice(0, 3)
+        .map((f) => f.message.replace(/\s+/g, " ").trim())
+        .join(" · ");
+      const more =
+        blockingBoundary.length > 3
+          ? ` (+${blockingBoundary.length - 3} more)`
+          : "";
+      throw new Error(
+        `Cannot sign: FCI boundary is incomplete (${blockingBoundary.length} finding${blockingBoundary.length === 1 ? "" : "s"}). Resolve on the Boundary tab. ${sample}${more}`,
+      );
+    }
   }
 
   // CMMC L1 affirmation is binary: all 15 v2.13 requirements MET, yes/no.

@@ -58,6 +58,11 @@ export default async function SignPage(
         })
       : null;
   const boundaryFindings = boundaryView ? validateBoundary(boundaryView) : [];
+  // Same gate the server action enforces — surface here so the page tells
+  // the user *exactly* why we won't sign before they ever click submit.
+  const boundaryBlockers = boundaryFindings.filter(
+    (f) => f.level === "fail" || f.level === "warn",
+  );
   // v2.13: legacy not-met/partial answers are still affirmation-eligible if
   // the practice has a documented Enduring Exception or a Temporary Deficiency
   // with at least one operational POA&M milestone. Mirror the gate the
@@ -94,7 +99,8 @@ export default async function SignPage(
     blockingPartial === 0 &&
     evidenceBlockers.length === 0 &&
     missingEvidence.length === 0 &&
-    pendingCarryForward.length === 0;
+    pendingCarryForward.length === 0 &&
+    boundaryBlockers.length === 0;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 md:px-6 md:py-10">
@@ -239,6 +245,40 @@ export default async function SignPage(
                     ? ` +${missingEvidence.length - 5} more`
                     : ""}
                 </span>
+              </li>
+            )}
+            {boundaryBlockers.length > 0 && (
+              <li>
+                FCI boundary is incomplete &mdash; {boundaryBlockers.length}{" "}
+                finding{boundaryBlockers.length === 1 ? "" : "s"} on the SSP
+                §&nbsp;1.2 page (the contracting officer sees this exact
+                page):
+                <ul className="mt-1 list-disc pl-5 space-y-0.5">
+                  {boundaryBlockers.slice(0, 4).map((f) => (
+                    <li key={f.code} className="text-xs">
+                      <span className="font-bold">
+                        {f.level === "fail" ? "BLOCKER" : "MISSING"}
+                      </span>{" "}
+                      &mdash; {f.message}
+                      {f.control_refs && f.control_refs.length > 0 && (
+                        <span className="ml-1 text-[10px] text-rose-700">
+                          ({f.control_refs.join(", ")})
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                  {boundaryBlockers.length > 4 && (
+                    <li className="text-xs italic">
+                      +{boundaryBlockers.length - 4} more
+                    </li>
+                  )}
+                </ul>
+                <Link
+                  href="/assessments/boundary"
+                  className="mt-2 inline-block text-xs font-bold uppercase tracking-wider text-rose-900 underline hover:text-rose-700"
+                >
+                  Fix on the Boundary page &rarr;
+                </Link>
               </li>
             )}
           </ul>

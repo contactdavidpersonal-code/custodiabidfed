@@ -194,6 +194,37 @@ async function main() {
   for (const e of ESPS) await sql`INSERT INTO esp_registry (organization_id, name, vendor, services, cmmc_status, contact_email) VALUES (${a.organization_id}::uuid, ${e.name}, ${e.vendor}, ${e.services}, ${e.cmmcStatus}, ${e.contactEmail}) ON CONFLICT DO NOTHING`;
   console.log("  ✓ esp_registry");
 
+  console.log("Writing scope_profile (flows + out-of-scope + AO acknowledgement)...");
+  // Mirrors lib/cmmc/boundary.ts ScopeProfile shape exactly. Two inbound, one
+  // outbound, one internal flow + three out-of-scope items + a fully
+  // acknowledged Affirming Official so validateBoundary() returns no warns
+  // and the sign-time gate clears.
+  const scopeProfile = {
+    version: 1,
+    flows: [
+      { id: "flow-inbound-email", direction: "inbound", channel: "email", description: "Prime contractor sends contract specs and FCI documents to daniel@custodia.dev (mailbox lives in M365 with Defender ATP, conditional access, and FIDO2 MFA).", counterparty: "Prime contractor (Lockheed Martin / RTX / etc.)", touches_scope_item_ids: [] },
+      { id: "flow-inbound-portal", direction: "inbound", channel: "prime_portal", description: "Custodia downloads SOWs and CDRLs from PIEE / Exostar via authenticated browser session on Intune-managed laptops.", counterparty: "DoD prime portals (PIEE, Exostar)", touches_scope_item_ids: [] },
+      { id: "flow-internal-onedrive", direction: "internal", channel: "internal_sync", description: "FCI is staged in a SharePoint site restricted to the 'fci-handlers' group (5 users). OneDrive sync to Intune-managed laptops only; Conditional Access blocks unmanaged devices.", counterparty: "internal", touches_scope_item_ids: [] },
+      { id: "flow-outbound-portal", direction: "outbound", channel: "prime_portal", description: "Deliverables uploaded to the prime's PIEE / Exostar workspace from an Intune-managed laptop using SSO + MFA. No FCI ever leaves via personal email or unmanaged channels.", counterparty: "DoD prime portals (PIEE, Exostar)", touches_scope_item_ids: [] },
+    ],
+    out_of_scope: [
+      { id: "oos-marketing", asset: "Public marketing website (custodia.dev)", reason: "Marketing-only Next.js site; never receives, processes, or stores FCI.", segregation: "Hosted on a separate Vercel project with no shared environment variables and no access to the FCI tenant. No analytics events or contact-form submissions ever contain FCI." },
+      { id: "oos-byod", asset: "Personal phones and tablets (BYOD)", reason: "Personal devices are not enrolled in Intune and cannot reach FCI.", segregation: "Entra Conditional Access policy 'Require compliant device' blocks unmanaged devices from M365, Vercel SSO, AWS, and Neon. FCI never lands on personal devices." },
+      { id: "oos-accounting", asset: "QuickBooks Online (accounting)", reason: "QBO holds invoices and 1099s only; no FCI data is ever copied into it.", segregation: "Separate browser profile, separate SSO; QBO has no integration with the FCI SharePoint site or AWS account." },
+    ],
+    affirming_official: {
+      name: "Daniel Salvatori",
+      title: "Owner / Senior Official",
+      email: "daniel@custodia.dev",
+      acknowledged_at: new Date().toISOString(),
+    },
+    narrative:
+      "Custodia, LLC is a 5-person remote-first software firm. FCI enters through prime contractor email and prime portals (PIEE / Exostar), is staged on a SharePoint site restricted to the 5 employees in the 'fci-handlers' group, and exits back to the prime via the same portals. All FCI-touching identity, storage, and compute live in Microsoft 365 (Entra/Exchange/OneDrive/SharePoint/Intune), AWS us-east-1 (KMS + S3 via Vercel Blob), Vercel, and Neon — all SOC 2 / FedRAMP-attested ESPs with signed agreements. Marketing, BYOD, and accounting are explicitly out of scope and segregated by separate tenants and Conditional Access policies.",
+    generated_at: new Date().toISOString(),
+  };
+  await sql`UPDATE organizations SET scope_profile = ${JSON.stringify(scopeProfile)}::jsonb, updated_at = NOW() WHERE id = ${a.organization_id}`;
+  console.log("  ✓ scope_profile");
+
   console.log("Uploading evidence artifacts (one per required slot)...");
   let totalUploaded = 0;
   for (const controlId of cmmcL1Practices) {
