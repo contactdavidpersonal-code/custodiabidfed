@@ -871,6 +871,15 @@ export async function untagArtifactPracticeAction(formData: FormData) {
 export async function submitAffirmationAction(formData: FormData) {
   const userId = await requireUserId();
   const assessmentId = String(formData.get("assessmentId") ?? "");
+  // bail() returns the user back to the sign page with an inline error
+  // instead of crashing into error.tsx. Next 16 server actions surface any
+  // thrown Error as an opaque 500 with a digest — useless to the user. We
+  // never want validation failures to look like "the platform broke".
+  const bail = (msg: string): never => {
+    redirect(
+      `/assessments/${assessmentId}/sign?error=${encodeURIComponent(msg)}`,
+    );
+  };
   const signerName = String(formData.get("signerName") ?? "").trim();
   const signerTitle = String(formData.get("signerTitle") ?? "").trim();
   const affirmingOfficialEmail = String(
@@ -880,23 +889,23 @@ export async function submitAffirmationAction(formData: FormData) {
     .toLowerCase();
   const acknowledged = formData.get("acknowledged") === "on";
 
-  if (!signerName) throw new Error("Signer name is required");
-  if (!signerTitle) throw new Error("Signer title is required");
+  if (!signerName) bail("Signer name is required");
+  if (!signerTitle) bail("Signer title is required");
   if (
     affirmingOfficialEmail &&
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(affirmingOfficialEmail)
   ) {
-    throw new Error("Affirming Official email is not a valid address");
+    bail("Affirming Official email is not a valid address");
   }
   if (!acknowledged) {
-    throw new Error("You must acknowledge the affirmation statement");
+    bail("You must acknowledge the affirmation statement");
   }
 
   const ctx = await getAssessmentForUser(assessmentId, userId);
-  if (!ctx) throw new Error("Not found");
+  if (!ctx) bail("Assessment not found");
 
   if (!ctx.organization.scoped_systems) {
-    throw new Error("Complete your business profile before signing");
+    bail("Complete your business profile before signing");
   }
 
   const responses = await listResponsesForAssessment(assessmentId);
@@ -910,7 +919,7 @@ export async function submitAffirmationAction(formData: FormData) {
   ).length;
 
   if (unanswered > 0) {
-    throw new Error("Answer every practice before signing");
+    bail("Answer every practice before signing");
   }
 
   // CMMC AG v2.13: Not Met / Partial practices are acceptable when covered
@@ -926,12 +935,12 @@ export async function submitAffirmationAction(formData: FormData) {
         .join("; ");
       const more =
         blockers.length > 3 ? ` (+${blockers.length - 3} more)` : "";
-      throw new Error(
+      bail(
         `Cannot sign: ${blockers.length} practice${blockers.length === 1 ? "" : "s"} still block the affirmation. ${sample}${more}`,
       );
     }
   } else if (notMet > 0 || partial > 0) {
-    throw new Error(
+    bail(
       "All practices must be Met or N/A before signing. Fix any Not met or Partial answers first.",
     );
   }
@@ -942,7 +951,7 @@ export async function submitAffirmationAction(formData: FormData) {
     (r) => r.carry_forward_status === "pending_review",
   );
   if (pendingResponses.length > 0) {
-    throw new Error(
+    bail(
       `Review last year's imported answers first — ${pendingResponses.length} practice${pendingResponses.length === 1 ? "" : "s"} still pending review.`,
     );
   }
@@ -959,7 +968,7 @@ export async function submitAffirmationAction(formData: FormData) {
       .map((b) => `${b.filename} — ${b.reason}`)
       .join("; ");
     const more = blockers.length > 3 ? ` (+${blockers.length - 3} more)` : "";
-    throw new Error(
+    bail(
       `Evidence review not complete. Resolve these before signing: ${sample}${more}`,
     );
   }
@@ -974,7 +983,7 @@ export async function submitAffirmationAction(formData: FormData) {
       .join(", ");
     const more =
       missingEvidence.length > 5 ? ` (+${missingEvidence.length - 5} more)` : "";
-    throw new Error(
+    bail(
       `Practices marked Met need at least one passing artifact (or a 200+ char narrative explaining why none applies): ${ids}${more}`,
     );
   }
@@ -1015,15 +1024,16 @@ export async function submitAffirmationAction(formData: FormData) {
           blockingBoundary.length > 3
             ? ` (+${blockingBoundary.length - 3} more)`
             : "";
-        throw new Error(
+        bail(
           `Cannot sign: FCI boundary is incomplete (${blockingBoundary.length} finding${blockingBoundary.length === 1 ? "" : "s"}). Resolve on the Boundary tab. ${sample}${more}`,
         );
       }
     } catch (e) {
-      // Re-throw user-facing "Cannot sign:" errors; swallow infra failures
-      // (DB shape mismatch, etc.) so the affirmation can still proceed —
-      // the boundary is reviewable on its own page.
-      if (e instanceof Error && e.message.startsWith("Cannot sign:")) {
+      // bail() throws NEXT_REDIRECT — must propagate. Anything else (DB
+      // shape mismatch, etc.) is swallowed so the affirmation can still
+      // proceed; the boundary is reviewable on its own page.
+      const digest = (e as { digest?: string } | null)?.digest;
+      if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
         throw e;
       }
       console.error("[submitAffirmation] boundary gate skipped", e);
@@ -1049,11 +1059,17 @@ export async function submitAffirmationAction(formData: FormData) {
 
   const sql = getSql();
 
-  // Per-artifact byte-level fingerprint. Captured at sign time so the
-  // canonical payload is tamper-evident even if a blob is later replaced
-  // or rotated. Failure to fetch any artifact aborts the affirmation —
-  // we will not sign over an incomplete fingerprint set.
-  const liveEvidence = evidence.filter(
+  // Post-validation infra block: blob fingerprinting, encryption, DB write.
+  // Any failure here is an infrastructure issue (blob 403, KMS down,
+  // Postgres timeout) — we route the user back to the sign page with a
+  // friendly message rather than crashing the route. The signed redirect
+  // at the very end is outside this try (its NEXT_REDIRECT must propagate).
+  try {
+    // Per-artifact byte-level fingerprint. Captured at sign time so the
+    // canonical payload is tamper-evident even if a blob is later replaced
+    // or rotated. Failure to fetch any artifact aborts the affirmation —
+    // we will not sign over an incomplete fingerprint set.
+    const liveEvidence = evidence.filter(
     (e) => e.carry_forward_status !== "removed",
   );
   const evidenceFingerprints = await Promise.all(
@@ -1197,6 +1213,19 @@ export async function submitAffirmationAction(formData: FormData) {
       responseCount: responses.length,
     },
   });
+  } catch (e) {
+    // Bubble up redirects (NEXT_REDIRECT digest) so success/bail still
+    // navigate. Anything else is an infrastructure failure — log it and
+    // bail to /sign?error=... rather than crashing into error.tsx.
+    const digest = (e as { digest?: string } | null)?.digest;
+    if (typeof digest === "string" && digest.startsWith("NEXT_REDIRECT")) {
+      throw e;
+    }
+    console.error("[submitAffirmation] infra failure", e);
+    bail(
+      `Couldn't complete the affirmation: ${e instanceof Error ? e.message : "unknown error"}. Try again or contact support.`,
+    );
+  }
 
   revalidatePath(`/assessments/${assessmentId}`);
   revalidatePath("/assessments");

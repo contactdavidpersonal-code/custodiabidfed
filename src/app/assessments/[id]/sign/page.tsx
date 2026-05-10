@@ -34,6 +34,13 @@ export default async function SignPage(
     redirect(`/assessments/${id}`);
   }
 
+  const search = await props.searchParams;
+  const submitError = (() => {
+    const e = search?.error;
+    if (Array.isArray(e)) return e[0] ?? null;
+    return typeof e === "string" ? e : null;
+  })();
+
   const [responses, evidence, remediationPlans] = await Promise.all([
     listResponsesForAssessment(id),
     listEvidenceForAssessment(id),
@@ -147,6 +154,15 @@ export default async function SignPage(
           and affirmation immediately after.
         </p>
       </header>
+
+      {submitError && (
+        <div className="mb-8 border border-rose-300 bg-rose-50 p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-rose-800">
+            Couldn&rsquo;t sign
+          </h2>
+          <p className="mt-2 text-sm text-rose-900">{submitError}</p>
+        </div>
+      )}
 
       {!ready && (
         <div className="mb-8  border border-rose-200 bg-rose-50 p-5">
