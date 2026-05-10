@@ -17,7 +17,7 @@ import { BoundaryDocument, BOUNDARY_CSS } from "@/components/boundary";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: Request) {
   const { userId, orgId } = await auth();
   if (!userId) return new Response("Unauthorized", { status: 401 });
   const org = orgId
@@ -40,6 +40,12 @@ export async function GET() {
     <BoundaryDocument view={view} findings={findings} />,
   );
 
+  const url = new URL(req.url);
+  const autoPrint = url.searchParams.get("print") === "1";
+  const printScript = autoPrint
+    ? `<script>window.addEventListener("load",()=>setTimeout(()=>window.print(),250));window.addEventListener("afterprint",()=>{ /* leave window for user */ });</script>`
+    : "";
+
   const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -47,8 +53,9 @@ export async function GET() {
 <title>FCI Boundary — ${escapeHtml(view.legal_entity.name)}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>${BOUNDARY_CSS}</style>
+<style>@media print { @page { size: Letter landscape; margin: 0.4in; } body { background: #fff; } }</style>
 </head>
-<body>${body}</body>
+<body>${body}${printScript}</body>
 </html>`;
 
   return new Response(html, {

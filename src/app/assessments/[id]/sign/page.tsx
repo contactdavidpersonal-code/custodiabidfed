@@ -16,7 +16,7 @@ import {
   assembleBoundaryView,
   validateBoundary,
 } from "@/lib/cmmc/boundary";
-import { BoundaryDocument, BOUNDARY_CSS } from "@/components/boundary";
+import { BoundaryDocument, BOUNDARY_CSS, BoundaryPreviewModal } from "@/components/boundary";
 import { submitAffirmationAction } from "../../actions";
 
 export default async function SignPage(
@@ -342,6 +342,14 @@ export default async function SignPage(
                 Edit boundary
               </Link>
               <a
+                href="/api/boundary/render?print=1"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 border border-[#2f8f6d] bg-[#2f8f6d] px-3 py-2 text-xs font-bold uppercase tracking-wider text-white hover:bg-[#247a5b]"
+              >
+                Download PDF
+              </a>
+              <a
                 href="/api/boundary/render"
                 target="_blank"
                 rel="noreferrer"
@@ -351,9 +359,9 @@ export default async function SignPage(
               </a>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <BoundaryPreviewModal>
             <BoundaryDocument view={boundaryView} findings={boundaryFindings} />
-          </div>
+          </BoundaryPreviewModal>
         </section>
       )}
 
