@@ -1229,7 +1229,7 @@ export async function submitAffirmationAction(formData: FormData) {
 
   revalidatePath(`/assessments/${assessmentId}`);
   revalidatePath("/assessments");
-  redirect(`/assessments/${assessmentId}?signed=1`);
+  redirect(`/assessments/${assessmentId}/bid-packet?signed=1`);
 }
 
 /**
