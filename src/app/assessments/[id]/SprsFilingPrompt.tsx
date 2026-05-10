@@ -15,8 +15,8 @@ export function SprsFilingPromptCard({
 }) {
   return (
     <div className="border border-amber-300 bg-amber-50/60 p-6 shadow-sm">
-      <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        <div>
+      <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+        <div className="min-w-0">
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
             Final step · File in SPRS
           </div>
@@ -63,7 +63,7 @@ export function SprsFilingPromptCard({
         </div>
         <form
           action={recordSprsFilingAction}
-          className="border border-amber-200 bg-white p-5 shadow-sm"
+          className="min-w-0 border border-amber-200 bg-white p-5 shadow-sm"
         >
           <input type="hidden" name="assessmentId" value={assessmentId} />
           <label
@@ -81,13 +81,12 @@ export function SprsFilingPromptCard({
             spellCheck={false}
             maxLength={64}
             pattern="[A-Za-z0-9_\-]+"
-            placeholder="e.g. CMMC-AFF-XXXXXX"
-            className="mt-2 w-full border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+            placeholder="CMMC-AFF-XXXXXX"
+            className="mt-2 block w-full min-w-0 border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
           />
-          <p className="mt-2 text-xs text-slate-500">
-            Letters, numbers, dashes, underscores. Recorded as the legal
-            artifact of your federal filing — please paste exactly what SPRS
-            returned.
+          <p className="mt-2 text-xs leading-snug text-slate-500">
+            Letters, numbers, dashes, underscores. Paste exactly what SPRS
+            returned — it&rsquo;s the legal artifact of your federal filing.
           </p>
           <button
             type="submit"
