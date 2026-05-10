@@ -184,7 +184,10 @@ export default async function CourseLayout(
       subtitle: attested
         ? "Capability statement, past performance"
         : "Unlocks after you sign",
-      status: attested ? "available" : "locked",
+      // Bid-ready has no separate completion gate — once the user has
+      // signed, the packet is generated and ready. Mark it complete so the
+      // sidebar shows the filled check when the user moves on to step 7.
+      status: attested ? "complete" : "locked",
       match: "prefix",
     },
     {
