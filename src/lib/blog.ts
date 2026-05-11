@@ -50,12 +50,22 @@ import sprsScore from "@/app/blog/posts/sprs-score-explained";
 import frameworksCompared from "@/app/blog/posts/far-vs-nist-vs-cmmc";
 import cmmcCost from "@/app/blog/posts/cmmc-level-1-cost";
 import l1vsL2 from "@/app/blog/posts/cmmc-level-1-vs-level-2";
+import whatIsFci from "@/app/blog/posts/what-is-fci-federal-contract-information";
+import primeSprs from "@/app/blog/posts/prime-asking-for-sprs-score-level-1-response";
+import l1Binary from "@/app/blog/posts/cmmc-level-1-binary-no-score";
+import sbirPhase1 from "@/app/blog/posts/cmmc-for-sbir-phase-1-winners";
+import needCmmc from "@/app/blog/posts/do-i-need-cmmc-decision-tree";
 
 /**
  * Registered blog posts, ordered newest first. The order here is the order
  * they appear on /blog and in the sitemap.
  */
 export const POSTS: BlogPost[] = [
+  needCmmc,
+  sbirPhase1,
+  l1Binary,
+  primeSprs,
+  whatIsFci,
   l1vsL2,
   cmmcSeventeen,
   sprsScore,
