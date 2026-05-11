@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { ensureDbReady, getSql } from "@/lib/db";
+import { getAllPosts } from "@/lib/blog";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 600;
@@ -11,10 +12,29 @@ const APP_URL = (
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = [
     { url: `${APP_URL}/`, changeFrequency: "weekly", priority: 1 },
+    { url: `${APP_URL}/blog`, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${APP_URL}/pricing`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${APP_URL}/sprs-check`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${APP_URL}/cmmc-check`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${APP_URL}/regulations`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${APP_URL}/bid-digest`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${APP_URL}/for-msps`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${APP_URL}/sam-guide`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${APP_URL}/audit-support`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${APP_URL}/meet-charlie`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${APP_URL}/onboard`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${APP_URL}/upgrade`, changeFrequency: "monthly", priority: 0.5 },
   ];
+
+  // Blog posts — static at build/request time from the in-memory registry.
+  const blogEntries: MetadataRoute.Sitemap = getAllPosts().map((post) => ({
+    url: `${APP_URL}/blog/${post.meta.slug}`,
+    lastModified: new Date(
+      `${post.meta.dateModified ?? post.meta.datePublished}T12:00:00Z`,
+    ),
+    changeFrequency: "monthly" as const,
+    priority: 0.85,
+  }));
 
   let publishedEntries: MetadataRoute.Sitemap = [];
   try {
@@ -41,5 +61,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.warn("[sitemap] failed to load trust pages:", err);
   }
 
-  return [...staticEntries, ...publishedEntries];
+  return [...staticEntries, ...blogEntries, ...publishedEntries];
 }

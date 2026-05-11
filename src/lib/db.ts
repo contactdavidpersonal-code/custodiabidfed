@@ -172,6 +172,23 @@ async function runInitDdl() {
     )
   `;
 
+  // Monday Bid Digest — weekly SAM.gov opportunities email list for the
+  // top-of-funnel AEO/SEO blog audience. Double-opt-in: rows are created
+  // unconfirmed; confirmed_at is set when the recipient clicks the link.
+  await sql`
+    CREATE TABLE IF NOT EXISTS bid_digest_subscribers (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      naics_codes TEXT[] NOT NULL DEFAULT '{}',
+      source TEXT,
+      confirm_token TEXT NOT NULL UNIQUE,
+      unsubscribe_token TEXT NOT NULL UNIQUE,
+      confirmed_at TIMESTAMPTZ,
+      unsubscribed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
   await sql`
     CREATE TABLE IF NOT EXISTS clients (
       id SERIAL PRIMARY KEY,

@@ -21,6 +21,7 @@ const meta = {
   excerpt:
     "DIY says it's free. The consultant quote was $18,000. The SaaS bill is $449/mo. Here's the real math on each path through CMMC Level 1.",
   datePublished: "2026-05-03",
+  dateModified: "2026-05-11",
   category: "Cost & Budget",
   keywords: [
     "cmmc level 1 cost",

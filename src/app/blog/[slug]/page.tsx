@@ -76,14 +76,28 @@ export default async function BlogPostPage(
     datePublished: post.meta.datePublished,
     dateModified: post.meta.dateModified ?? post.meta.datePublished,
     keywords: post.meta.keywords.join(", "),
+    inLanguage: "en-US",
     author: {
-      "@type": "Organization",
+      "@type": "Person",
       name: post.meta.author.name,
+      jobTitle: post.meta.author.title,
+      worksFor: {
+        "@type": "Organization",
+        name: "Custodia",
+        url: APP_URL,
+      },
+      ...(post.meta.author.sameAs && post.meta.author.sameAs.length > 0
+        ? { sameAs: post.meta.author.sameAs }
+        : {}),
     },
     publisher: {
       "@type": "Organization",
       name: "Custodia",
       url: APP_URL,
+      logo: {
+        "@type": "ImageObject",
+        url: `${APP_URL}/custodia-logo.png`,
+      },
     },
     isAccessibleForFree: true,
   };
@@ -113,6 +127,26 @@ export default async function BlogPostPage(
     ],
   };
 
+  // FAQPage JSON-LD — only emitted when the post opts in via meta.faq.
+  // AI search engines (Google AI Overviews, Perplexity, ChatGPT search)
+  // extract these answers verbatim, so the FAQ text must be self-contained
+  // and primary-source-aligned.
+  const faqJsonLd =
+    post.meta.faq && post.meta.faq.length > 0
+      ? {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: post.meta.faq.map((entry) => ({
+            "@type": "Question",
+            name: entry.question,
+            acceptedAnswer: {
+              "@type": "Answer",
+              text: entry.answer,
+            },
+          })),
+        }
+      : null;
+
   const Body = post.Body;
 
   return (
@@ -125,7 +159,12 @@ export default async function BlogPostPage(
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-
+      {faqJsonLd ? (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+        />
+      ) : null}
       {/* Article header */}
       <header className="relative overflow-hidden bg-[#08201a] px-6 py-16 text-white md:py-20">
         <div

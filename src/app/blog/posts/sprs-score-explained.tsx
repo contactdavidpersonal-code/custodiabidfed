@@ -21,6 +21,7 @@ const meta = {
   excerpt:
     "Your prime just asked for your SPRS score. Here's what to send by Monday — including the exact email template and the math behind the number.",
   datePublished: "2026-05-03",
+  dateModified: "2026-05-11",
   category: "SPRS",
   keywords: [
     "sprs score",

@@ -19,6 +19,7 @@ const meta = {
   excerpt:
     "Every CMMC Level 1 safeguarding requirement, in language a non-cybersecurity founder can act on \u2014 what each control means, what evidence satisfies it, and where teams trip up.",
   datePublished: "2026-05-03",
+  dateModified: "2026-05-11",
   category: "CMMC Level 1",
   keywords: [
     "cmmc level 1 practices",

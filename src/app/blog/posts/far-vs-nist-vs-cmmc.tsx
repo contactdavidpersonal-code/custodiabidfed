@@ -22,6 +22,7 @@ const meta = {
   excerpt:
     "Four overlapping frameworks, one decision: which one do you actually have to comply with? A side-by-side comparison for small DoD contractors.",
   datePublished: "2026-05-03",
+  dateModified: "2026-05-11",
   category: "Frameworks",
   keywords: [
     "far 52.204-21 vs nist 800-171",
