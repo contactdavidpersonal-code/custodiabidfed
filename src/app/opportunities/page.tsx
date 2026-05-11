@@ -221,6 +221,7 @@ function DiscoverCardItem({ card }: { card: DiscoverCard }) {
         {card.title}
       </h3>
 
+      <L1VerdictBlock card={card} />
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         {card.type ? (
           <span className="inline-block bg-[#eaf3ee] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-[#0e5c41]">
@@ -308,5 +309,50 @@ function DiscoverCardItem({ card }: { card: DiscoverCard }) {
         )}
       </div>
     </li>
+  );
+}
+
+/**
+ * Per-card CMMC L1 fitness block. `safe` shows a green check pill with a
+ * short reason. `review` shows an amber warning pill, the matched trigger,
+ * and (when available) a snippet of the notice text quoting the trigger so
+ * the user can verify it themselves before opening SAM.gov.
+ */
+function L1VerdictBlock({ card }: { card: DiscoverCard }) {
+  const isReview = card.l1Verdict === "review";
+  if (isReview) {
+    return (
+      <div className="mt-2 border-l-2 border-[#a06b1a] bg-[#fff7eb] px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            title="Soft trigger detected — read the notice before bidding"
+            className="inline-flex items-center gap-1 bg-[#a06b1a] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white"
+          >
+            ⚠ L1 review
+          </span>
+          <span className="text-[11px] font-semibold text-[#7a4f12]">
+            {card.l1Reason}
+          </span>
+        </div>
+        {card.l1Evidence ? (
+          <p className="mt-1 font-mono text-[11px] leading-snug text-[#7a4f12]">
+            &ldquo;{card.l1Evidence}&rdquo;
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2">
+      <span
+        title="No CUI, DFARS 252.204-7012, or CMMC L2/L3 markers detected in this notice. FAR 52.204-21 basic safeguarding is the typical floor — what your L1 attestation already covers."
+        className="inline-flex items-center gap-1 bg-[#0e5c41] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white"
+      >
+        ✓ L1-safe
+      </span>
+      <span className="text-[11px] font-medium text-[#456c5f]">
+        {card.l1Reason}
+      </span>
+    </div>
   );
 }

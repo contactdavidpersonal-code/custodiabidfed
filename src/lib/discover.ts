@@ -33,6 +33,20 @@ const PER_NAICS_FETCH = 30;
 /** Posted-within window to bias toward recent activity. */
 const POSTED_WITHIN_DAYS = 30;
 
+/**
+ * CMMC L1 fitness verdict surfaced on every card.
+ *
+ *  - `safe`   — no L2/L3 / CUI / DFARS 7012 markers found in the notice.
+ *               Card represents work an attested L1 contractor can pursue
+ *               without contractual scope creep.
+ *  - `review` — soft triggers found (export-controlled, NIST 800-171, FedRAMP,
+ *               security clearance, "sensitive but unclassified", etc.).
+ *               Not a hard exclude, but the user should read the notice before
+ *               investing time. Hard L2/L3/CUI hits are filtered out upstream
+ *               and never reach the card.
+ */
+export type L1Verdict = "safe" | "review";
+
 export type DiscoverCard = {
   noticeId: string;
   title: string;
@@ -49,6 +63,12 @@ export type DiscoverCard = {
   samUrl: string | null;
   /** Plain-text excerpt of the description; null if not available. */
   excerpt: string | null;
+  /** L1 fitness classification (see {@link L1Verdict}). */
+  l1Verdict: L1Verdict;
+  /** One-line plain-English explanation of the verdict. */
+  l1Reason: string;
+  /** Matched phrase from the notice (for `review`); null otherwise. */
+  l1Evidence: string | null;
 };
 
 export type DiscoverResult = {
@@ -88,6 +108,73 @@ function isCmmcL1Friendly(o: SamOpportunity): boolean {
   return !L1_EXCLUDE_PATTERNS.some((p) => p.test(haystack));
 }
 
+/**
+ * Soft triggers — work that *might* be L1-friendly but warrants a manual
+ * read before bidding. Matching one of these flips the card to `review`
+ * status rather than hiding it.
+ *
+ * Labels are user-facing and intentionally short — they render inside a
+ * verdict pill on the card.
+ */
+const L1_REVIEW_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
+  { pattern: /\bNIST\s*SP?\s*800[-\s]*171\b/i, label: "NIST 800-171 referenced" },
+  { pattern: /\bNIST\s*SP?\s*800[-\s]*53\b/i, label: "NIST 800-53 referenced" },
+  { pattern: /\bFedRAMP\b/i, label: "FedRAMP referenced" },
+  { pattern: /\bcontrolled\s+technical\s+data\b/i, label: "Controlled technical data" },
+  { pattern: /\bexport[\s-]?controlled?\b/i, label: "Export-controlled" },
+  { pattern: /\bITAR\b/, label: "ITAR" },
+  { pattern: /\bEAR\s+controlled\b/i, label: "EAR-controlled" },
+  { pattern: /\bsensitive\s+but\s+unclassified\b/i, label: "Sensitive but unclassified" },
+  { pattern: /\bsecurity\s+clearance\b/i, label: "Security clearance required" },
+  { pattern: /\b(?:secret|top\s+secret)\s+clearance\b/i, label: "Clearance required" },
+  { pattern: /\bFCI\b/, label: "FCI handling" },
+];
+
+/**
+ * Classify an opportunity's L1 fitness. The hard exclude list runs first
+ * (in {@link isCmmcL1Friendly}); anything that reaches here is at minimum
+ * `safe`. Matching a {@link L1_REVIEW_PATTERNS} entry downgrades to `review`
+ * and attaches the matched phrase as evidence so the UI can show the user
+ * exactly why.
+ */
+function classifyL1Fit(o: SamOpportunity): {
+  verdict: L1Verdict;
+  reason: string;
+  evidence: string | null;
+} {
+  const haystack = [o.title, o.description].filter(Boolean).join(" ");
+  if (haystack) {
+    for (const { pattern, label } of L1_REVIEW_PATTERNS) {
+      const m = haystack.match(pattern);
+      if (m) {
+        return {
+          verdict: "review",
+          reason: label,
+          evidence: snippetAround(haystack, m.index ?? 0, m[0].length),
+        };
+      }
+    }
+  }
+  return {
+    verdict: "safe",
+    reason: "No CUI, DFARS 252.204-7012, or L2/L3 markers detected.",
+    evidence: null,
+  };
+}
+
+/** Pull ~80 chars of context around a regex match for display as evidence. */
+function snippetAround(text: string, index: number, length: number): string {
+  const clean = stripHtml(text);
+  // Re-find the match in the cleaned text; HTML stripping can shift indices.
+  const matched = text.slice(index, index + length);
+  const ci = clean.toLowerCase().indexOf(matched.toLowerCase());
+  const start = Math.max(0, (ci >= 0 ? ci : 0) - 40);
+  const end = Math.min(clean.length, start + 160);
+  const prefix = start > 0 ? "…" : "";
+  const suffix = end < clean.length ? "…" : "";
+  return `${prefix}${clean.slice(start, end).trim()}${suffix}`;
+}
+
 /* ---------------------------------------------------------------------- */
 /* Description excerpt (plain text only, no AI calls)                      */
 /* ---------------------------------------------------------------------- */
@@ -116,6 +203,7 @@ function excerpt(raw: string | null, max = 240): string | null {
 }
 
 function toCard(o: SamOpportunity): DiscoverCard {
+  const fit = classifyL1Fit(o);
   return {
     noticeId: o.noticeId,
     title: o.title,
@@ -130,6 +218,9 @@ function toCard(o: SamOpportunity): DiscoverCard {
     awardAmount: o.awardAmount,
     samUrl: o.samUrl,
     excerpt: excerpt(o.description),
+    l1Verdict: fit.verdict,
+    l1Reason: fit.reason,
+    l1Evidence: fit.evidence,
   };
 }
 
@@ -151,7 +242,18 @@ async function readCachedForNaics(
     FROM sam_naics_daily
     WHERE naics_code = ${naics} AND fetched_for_date = ${date}
   `) as Array<{ payload: DiscoverCard[] }>;
-  return rows[0]?.payload ?? null;
+  const payload = rows[0]?.payload;
+  if (!payload) return null;
+  // Pre-verdict cached rows are missing l1Verdict; backfill defensively so
+  // the UI never sees an undefined verdict. Today's cache will repopulate
+  // with real values on the next refresh.
+  return payload.map((c) => ({
+    ...c,
+    l1Verdict: c.l1Verdict ?? "safe",
+    l1Reason:
+      c.l1Reason ?? "No CUI, DFARS 252.204-7012, or L2/L3 markers detected.",
+    l1Evidence: c.l1Evidence ?? null,
+  }));
 }
 
 async function writeCachedForNaics(
