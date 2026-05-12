@@ -6,6 +6,7 @@ import { useState } from "react";
 type CheckoutOpener = (props: {
   planId: string;
   planPeriod?: "month" | "annual";
+  for?: "user" | "organization";
   newSubscriptionRedirectUrl?: string;
 }) => void;
 
@@ -53,19 +54,35 @@ export function TrialCheckoutButton({
         return;
       }
 
-      // Resolve the slug → cplan_xxx id Clerk expects.
+      // Resolve the slug → cplan_xxx id Clerk expects. Clerk's checkout
+      // is scoped per-payer (user vs organization), so we must request the
+      // user-scoped plans here — that is the scope our `user:` plan checks
+      // and trial subscriptions live under. Without `for: "user"` Clerk
+      // defaults to organization scope and reports "Plan not found".
       let resolvedId: string | undefined;
+      let availableSlugs: string[] = [];
       try {
         const plans = await clerk.billing?.getPlans({ for: "user" });
+        availableSlugs = plans?.data?.map((p) => p.slug).filter(Boolean) ?? [];
         const match = plans?.data?.find((p) => p.slug === planSlug);
-        resolvedId = match?.id ?? planSlug;
+        resolvedId = match?.id;
       } catch {
-        resolvedId = planSlug;
+        // fall through — resolvedId stays undefined
+      }
+
+      if (!resolvedId) {
+        const detail = availableSlugs.length
+          ? ` (available: ${availableSlugs.join(", ")})`
+          : "";
+        throw new Error(
+          `Plan \"${planSlug}\" is not available on your account${detail}. Please contact support@custodia.dev.`,
+        );
       }
 
       clerk.__internal_openCheckout({
         planId: resolvedId,
         planPeriod: "month",
+        for: "user",
         // Always land on /onboard after the trial activates. For solo users
         // this runs onboarding then redirects to /assessments. For MSPs it
         // prompts them to create their first client business org.

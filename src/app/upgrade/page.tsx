@@ -66,7 +66,6 @@ const PLAN_CONFIG: Record<
       "Bid-ready package per client: SSP, affirmation, evidence",
       "Year-round M365/Google monitoring across every client",
       "Annual SPRS re-affirmation handled per client",
-      "Officer-reviewed before any client submits",
       "BONUS: Daily Discover (SAM.gov bids matched to each client's NAICS)",
       "BONUS: Monday Bid Digest emailed weekly",
     ],
@@ -85,7 +84,6 @@ const PLAN_CONFIG: Record<
       "Everything in Squad, scaled to a full client roster",
       "Year-round M365/Google monitoring across every client",
       "Annual SPRS re-affirmation handled per client",
-      "Officer-reviewed before any client submits",
       "Priority support",
       "BONUS: Daily Discover per client",
       "BONUS: Monday Bid Digest emailed weekly",
@@ -202,7 +200,7 @@ export default async function UpgradePage({
           </h1>
           <p className="mx-auto mt-2 max-w-2xl text-sm leading-snug text-[#4a7164]">
             {isMsp
-              ? "Full Custodia MSP workspace — multi-tenant, vCO-walked, officer-reviewed. No card until day 14, only if you stay."
+              ? "Full Custodia MSP workspace — multi-tenant, vCO-walked. No card until day 14, only if you stay."
               : "Full Custodia workspace — CMMC Level 1 build, freshness alerts, Charlie on call. No card until day 14, only if you stay."}
           </p>
         </div>

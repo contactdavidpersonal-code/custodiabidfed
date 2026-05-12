@@ -38,7 +38,6 @@ const SOLO_COPY: PlanCopy = {
     { strong: "Bid-ready package generated", rest: " — SSP, affirmation memo, evidence" },
     { strong: "Year-round monitoring", rest: " via M365 or Google Workspace" },
     { strong: "Annual SPRS re-affirmation", rest: " handled on autopilot" },
-    { strong: "Officer-reviewed", rest: " — no DIY guesswork" },
   ],
   compare: [
     { label: "DIY", body: "3–6 mo, $5k+, stale fast" },
@@ -57,7 +56,7 @@ const SQUAD_COPY: PlanCopy = {
   sub: "Squad gives you a multi-tenant control room — every client gets their own SSP, affirmation, evidence, and SPRS record, all walked by Charlie. 14 days free. No card until day 14.",
   whyTitle: "Why MSPs pick Squad",
   whyBody:
-    "Stop juggling spreadsheets per client. One workspace, five tenants, officer-reviewed before any client submits.",
+    "Stop juggling spreadsheets per client. One workspace, five tenants, all walked by Charlie before any client submits.",
   bullets: [
     { strong: "Up to 5 client businesses", rest: " managed from one MSP login" },
     { strong: "Per-client SSP + affirmation + evidence", rest: " generated automatically" },
@@ -83,7 +82,7 @@ const PLATOON_COPY: PlanCopy = {
   sub: "Platoon scales the MSP control room to a full client roster. 14 days free. No card until day 14.",
   whyTitle: "Why MSPs pick Platoon",
   whyBody:
-    "When five tenants is the floor, not the ceiling. Same officer-reviewed workflow, scaled to your whole book.",
+    "When five tenants is the floor, not the ceiling. Same Charlie-walked workflow, scaled to your whole book.",
   bullets: [
     { strong: "Up to 20 client businesses", rest: " managed from one MSP login" },
     { strong: "Everything in Squad", rest: ", scaled across the roster" },
