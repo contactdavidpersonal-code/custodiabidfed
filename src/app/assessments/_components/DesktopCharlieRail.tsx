@@ -16,8 +16,10 @@ const ComplianceOfficerRail = dynamic(
  * On mobile/tablet the MobileCharlieFAB sheet handles chat instead, so
  * skipping the mount avoids the duplicate /api/chat history fetch.
  */
-export function DesktopCharlieRail() {
+export function DesktopCharlieRail({
+  officerEnabled = false,
+}: { officerEnabled?: boolean } = {}) {
   const bp = useBreakpoint();
   if (bp !== "desktop") return null;
-  return <ComplianceOfficerRail />;
+  return <ComplianceOfficerRail officerEnabled={officerEnabled} />;
 }

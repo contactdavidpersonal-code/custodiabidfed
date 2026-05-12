@@ -4,6 +4,9 @@ import Link from "next/link";
 const ALLOWED_PLANS = new Set([
   "custodia_squad",
   "msp_platoon_20",
+  "bidfedcmmc_self_service",
+  "bidfedcmmc_self_service_custodia_officer",
+  // Legacy plan slug kept for grandfathered links.
   "cmmc_lv1_full_access",
 ]);
 
@@ -40,7 +43,7 @@ const SOLO_COPY: PlanCopy = {
   compare: [
     { label: "DIY", body: "3–6 mo, $5k+, stale fast" },
     { label: "Audit firm", body: "$25k+, no monitoring" },
-    { label: "Custodia", body: "Days, $449/mo, watched", emphasis: true },
+    { label: "Custodia", body: "Days, $149/mo, watched", emphasis: true },
   ],
   backHref: "/",
   backLabel: "← Back to home",
@@ -95,9 +98,35 @@ const PLATOON_COPY: PlanCopy = {
   ],
 };
 
+const OFFICER_COPY: PlanCopy = {
+  eyebrow: "+ Custodia Officer · 14-day trial · No credit card",
+  headlinePrefix: "Get bid-ready for ",
+  headlineHighlight: "CMMC Level 1",
+  headlineSuffix: " — with a human Compliance Officer on call.",
+  sub: "The full Self Service platform plus unlimited access to a credentialed Custodia Compliance Officer. Open a ticket anytime; replies thread back into the platform. 14 days free, no credit card.",
+  whyTitle: "Why add a human officer",
+  whyBody:
+    "Charlie handles 95% of CMMC L1. The other 5% — odd boundaries, prime asks, audit chatter — is where a credentialed human earns their keep.",
+  bullets: [
+    { strong: "Everything in Self Service", rest: " — Charlie, evidence, SPRS, monitoring" },
+    { strong: "Unlimited officer tickets", rest: " — written replies inside the platform" },
+    { strong: "Officer-led audit support", rest: " — same-day prep + evidence pack" },
+    { strong: "Officer review", rest: " before you submit or affirm" },
+    { strong: "Priority escalation", rest: " when Charlie flags something complex" },
+  ],
+  compare: [
+    { label: "DIY", body: "3–6 mo, $5k+, stale fast" },
+    { label: "Audit firm", body: "$25k+, no monitoring" },
+    { label: "Custodia + Officer", body: "Days, $297/mo, human-backed", emphasis: true },
+  ],
+  backHref: "/pricing",
+  backLabel: "← Back to pricing",
+};
+
 function copyFor(plan: string | null): PlanCopy {
   if (plan === "custodia_squad") return SQUAD_COPY;
   if (plan === "msp_platoon_20") return PLATOON_COPY;
+  if (plan === "bidfedcmmc_self_service_custodia_officer") return OFFICER_COPY;
   return SOLO_COPY;
 }
 

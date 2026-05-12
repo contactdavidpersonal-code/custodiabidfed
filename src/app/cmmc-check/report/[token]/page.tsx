@@ -214,7 +214,7 @@ function Report({ result }: { result: CmmcCheckResult }) {
                 Continue with Custodia →
               </Link>
               <span className="text-xs text-emerald-100 print:text-slate-700">
-                14-day free trial · No credit card · <strong>$449/mo</strong>{" "}
+                14-day free trial · No credit card · <strong>$149/mo</strong>{" "}
                 locked through {fyEnd} for arrivals from this Check.
               </span>
             </div>

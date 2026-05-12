@@ -36,7 +36,13 @@ type CapStatus = {
   ok: boolean;
   limit: number;
   current: number;
-  plan: "msp_platoon_20" | "custodia_squad" | "cmmc_lv1_full_access" | "free";
+  plan:
+    | "msp_platoon_20"
+    | "custodia_squad"
+    | "bidfedcmmc_self_service_custodia_officer"
+    | "bidfedcmmc_self_service"
+    | "cmmc_lv1_full_access"
+    | "free";
 };
 
 export function OrgSwitcher({ className, hideUntilJoined = false }: Props) {

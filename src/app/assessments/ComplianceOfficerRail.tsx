@@ -54,6 +54,8 @@ const STORAGE_WIDTH_KEY = "custodia.chat.width";
 type Props = {
   /** When true, render as a flush full-height panel for use inside a mobile Sheet. Skips sticky chrome, resize handle, and the closed-state collapsed tab. */
   mobile?: boolean;
+  /** When true, show the "Talk to a Custodia Compliance Officer" CTA. Off for Self-Service ($149) accounts. */
+  officerEnabled?: boolean;
 };
 
 /**
@@ -61,7 +63,10 @@ type Props = {
  * layout so it survives page navigation. State (open/closed, width) is
  * persisted to localStorage.
  */
-export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
+export function ComplianceOfficerRail({
+  mobile = false,
+  officerEnabled = false,
+}: Props = {}) {
   const [open, setOpen] = useState(true);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -583,13 +588,23 @@ export function ComplianceOfficerRail({ mobile = false }: Props = {}) {
         <p className="mt-1.5 px-1 text-[10px] leading-tight text-[#7a9c90]">
 AI virtual Compliance Officer grounded in FAR 52.204-21 / NIST SP 800-171 r2 — informational, not legal advice. For binding decisions, prime-audit defense, or anything materially changing your posture, talk to your assigned Custodia Compliance Officer below.
         </p>
-        <Link
-          href="/assessments/tickets/new"
-          className="mt-2 inline-flex w-full items-center justify-center gap-1.5  border border-[#cfe3d9] bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-[#2f8f6d]" />
-          Talk to a Custodia Compliance Officer
-        </Link>
+        {officerEnabled ? (
+          <Link
+            href="/assessments/tickets/new"
+            className="mt-2 inline-flex w-full items-center justify-center gap-1.5  border border-[#cfe3d9] bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-[#2f8f6d]" />
+            Talk to a Custodia Compliance Officer
+          </Link>
+        ) : (
+          <Link
+            href="/upgrade?plan=bidfedcmmc_self_service_custodia_officer"
+            className="mt-2 inline-flex w-full items-center justify-center gap-1.5  border border-[#cfe3d9] bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-[#a06b1a]" />
+            Add a human officer — $297/mo
+          </Link>
+        )}
       </form>
 
       {mobile ? null : (

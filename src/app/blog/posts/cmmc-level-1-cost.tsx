@@ -19,7 +19,7 @@ const meta = {
   description:
     "What CMMC Level 1 actually costs a small defense contractor in 2026 — DIY founder time, vCISO consultants, and modern SaaS platforms compared on real dollars, real hours, and real risk.",
   excerpt:
-    "DIY says it's free. The consultant quote was $18,000. The SaaS bill is $449/mo. Here's the real math on each path through CMMC Level 1.",
+    "DIY says it's free. The consultant quote was $18,000. The SaaS bill is $149/mo (was $197). Here's the real math on each path through CMMC Level 1.",
   datePublished: "2026-05-03",
   dateModified: "2026-05-11",
   category: "Cost & Budget",
@@ -89,7 +89,7 @@ function Body() {
           ],
           [
             "<strong>Custodia SaaS</strong>",
-            "$5,388 ($449 × 12)",
+            "$1,788 ($149 × 12)",
             "10&ndash;20 hours",
             "$5,388 + 5 hours",
             "Low &mdash; officer-backed",
@@ -196,7 +196,7 @@ function Body() {
       <H3>What it actually costs (Custodia)</H3>
       <UL>
         <li>
-          <strong>Cash:</strong> $449/mo flat. $5,388/year. 14-day free
+          <strong>Cash:</strong> $149/mo Self Service (was $197, Fiscal-Year Compliance Special). $1,788/year. 14-day free
           trial, no credit card to start.
         </li>
         <li>
@@ -299,7 +299,7 @@ function Body() {
         <li>You handle FCI on a DoD contract or sub.</li>
         <li>You want to be bid-ready in a week, not a quarter.</li>
         <li>You want year-round posture monitoring and annual re-affirmation handled.</li>
-        <li>You&apos;d rather spend $449/mo than $200/hr.</li>
+        <li>You&apos;d rather spend $149/mo than $200/hr.</li>
       </UL>
       <P>
         Start with the{" "}
@@ -323,7 +323,7 @@ function Body() {
 
       <H3>Does CMMC Level 1 cost more in year 2?</H3>
       <P>
-        With Custodia: no &mdash; same $449/mo. With a consultant: usually
+        With Custodia: no &mdash; same $149/mo Self Service. With a consultant: usually
         a $3K&ndash;$8K retainer. DIY: about 30 hours of your time.
       </P>
 

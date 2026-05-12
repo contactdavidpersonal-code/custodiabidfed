@@ -18,7 +18,9 @@ const ComplianceOfficerRail = dynamic(
  * officer chat in a full-height bottom sheet. Hidden on desktop (where the
  * persistent right rail handles this).
  */
-export function MobileCharlieFAB() {
+export function MobileCharlieFAB({
+  officerEnabled = false,
+}: { officerEnabled?: boolean } = {}) {
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -44,7 +46,7 @@ export function MobileCharlieFAB() {
         </svg>
       </FloatingButton>
       <Sheet open={open} onClose={() => setOpen(false)} height="full">
-        <ComplianceOfficerRail mobile />
+        <ComplianceOfficerRail mobile officerEnabled={officerEnabled} />
       </Sheet>
     </>
   );

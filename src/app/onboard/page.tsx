@@ -8,6 +8,7 @@ import {
   getBusinessProfile,
   isOnboardingComplete,
 } from "@/lib/assessment";
+import { hasMspAccess, hasSoloAccess } from "@/lib/billing/plans";
 import { ensureWelcomeEmailSent } from "@/lib/email/welcome";
 import { OnboardingChat } from "./OnboardingChat";
 
@@ -17,9 +18,8 @@ export default async function OnboardPage() {
   const { userId, has, orgId } = await auth();
   if (!userId) redirect("/sign-in");
 
-  const isMsp =
-    has({ plan: "user:custodia_squad" }) || has({ plan: "user:msp_platoon_20" });
-  const isSolo = has({ plan: "user:cmmc_lv1_full_access" });
+  const isMsp = hasMspAccess(has);
+  const isSolo = hasSoloAccess(has);
 
   // No active plan/trial → upgrade gate.
   if (!isMsp && !isSolo) redirect("/upgrade");

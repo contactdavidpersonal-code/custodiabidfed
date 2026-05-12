@@ -2,6 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ensureOrgForUser } from "@/lib/assessment";
+import { hasOfficerFeature } from "@/lib/billing/plans";
+import { UpgradeToOfficerCard } from "../UpgradeToOfficerCard";
 import {
   listAllEscalationsForOrg,
   type EscalationWithCounts,
@@ -30,10 +32,32 @@ const URGENCY_TONE: Record<EscalationWithCounts["urgency"], string> = {
 };
 
 export default async function TicketsIndexPage() {
-  const { userId } = await auth();
+  const { userId, has } = await auth();
   if (!userId) redirect("/sign-in");
+  const officerEnabled = hasOfficerFeature(has);
   const org = await ensureOrgForUser(userId);
-  const tickets = await listAllEscalationsForOrg(org.id);
+  const tickets = officerEnabled ? await listAllEscalationsForOrg(org.id) : [];
+
+  if (!officerEnabled) {
+    return (
+      <main className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-10">
+        <header className="mb-8">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
+            Officer support
+          </p>
+          <h1 className="mt-2 font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-4xl">
+            Officer tickets
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-[#5a7d70]">
+            Self Service handles CMMC L1 day-to-day with Charlie. For written
+            help from a credentialed human Custodia Compliance Officer, add
+            the officer tier or book a security-consulting engagement.
+          </p>
+        </header>
+        <UpgradeToOfficerCard />
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-10">

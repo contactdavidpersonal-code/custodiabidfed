@@ -5,9 +5,13 @@
  *   - custodia_squad     — up to 5 client businesses
  *   - msp_platoon_20  — up to 20 client businesses
  *
- * Solo customers are on `cmmc_lv1_full_access` (1 business). Free tier = 0.
+ * Solo customers are on one of:
+ *   - bidfedcmmc_self_service                  (new $149/mo)
+ *   - bidfedcmmc_self_service_custodia_officer (new $297/mo)
+ *   - cmmc_lv1_full_access                     (legacy $449, grandfathered)
+ * Each grants a single managed business. Free tier = 0.
  *
- * Each plan has a matching feature key by the same name. We use Clerk's
+ * Each MSP plan has a matching feature key by the same name. We use Clerk's
  * `auth().has({ feature })` to determine the cap, then count the user's
  * Clerk org memberships to see if they have headroom.
  *
@@ -18,6 +22,11 @@
  */
 
 import { auth, clerkClient } from "@clerk/nextjs/server";
+import {
+  PLAN_LEGACY_FULL_ACCESS,
+  PLAN_SELF_SERVICE,
+  PLAN_SELF_SERVICE_OFFICER,
+} from "./plans";
 
 export type ManagedOrgsStatus = {
   /** True if the user can add at least one more managed business. */
@@ -27,7 +36,13 @@ export type ManagedOrgsStatus = {
   /** Current count of Clerk org memberships. Personal account NOT counted. */
   current: number;
   /** Which plan/feature granted the cap, for telemetry + nag copy. */
-  plan: "msp_platoon_20" | "custodia_squad" | "cmmc_lv1_full_access" | "free";
+  plan:
+    | "msp_platoon_20"
+    | "custodia_squad"
+    | "bidfedcmmc_self_service_custodia_officer"
+    | "bidfedcmmc_self_service"
+    | "cmmc_lv1_full_access"
+    | "free";
 };
 
 export async function getManagedOrgsLimit(): Promise<{
@@ -39,8 +54,14 @@ export async function getManagedOrgsLimit(): Promise<{
 
   if (has({ feature: "msp_platoon_20" })) return { limit: 20, plan: "msp_platoon_20" };
   if (has({ feature: "custodia_squad" })) return { limit: 5, plan: "custodia_squad" };
-  if (has({ feature: "cmmc_lv1_full_access" })) {
-    return { limit: 1, plan: "cmmc_lv1_full_access" };
+  if (has({ plan: `user:${PLAN_SELF_SERVICE_OFFICER}` })) {
+    return { limit: 1, plan: PLAN_SELF_SERVICE_OFFICER };
+  }
+  if (has({ plan: `user:${PLAN_SELF_SERVICE}` })) {
+    return { limit: 1, plan: PLAN_SELF_SERVICE };
+  }
+  if (has({ plan: `user:${PLAN_LEGACY_FULL_ACCESS}` })) {
+    return { limit: 1, plan: PLAN_LEGACY_FULL_ACCESS };
   }
   return { limit: 0, plan: "free" };
 }

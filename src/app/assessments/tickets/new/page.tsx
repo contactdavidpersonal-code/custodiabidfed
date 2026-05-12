@@ -1,7 +1,37 @@
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
+import { hasOfficerFeature } from "@/lib/billing/plans";
+import { UpgradeToOfficerCard } from "../../UpgradeToOfficerCard";
 import { createTicketAction } from "../actions";
 
-export default function NewTicketPage() {
+export default async function NewTicketPage() {
+  const { has } = await auth();
+  const officerEnabled = hasOfficerFeature(has);
+
+  if (!officerEnabled) {
+    return (
+      <main className="mx-auto max-w-2xl px-4 py-6 md:px-6 md:py-10">
+        <Link
+          href="/assessments"
+          className="text-xs font-bold uppercase tracking-[0.2em] text-[#5a7d70] hover:text-[#10231d]"
+        >
+          ← Back to assessments
+        </Link>
+        <h1 className="mt-4 font-serif text-3xl font-bold tracking-tight text-[#10231d]">
+          Officer tickets aren&apos;t on your plan yet
+        </h1>
+        <p className="mt-2 text-sm text-[#5a7d70]">
+          Self Service comes with Charlie for the day-to-day. To open written
+          tickets with a credentialed Custodia Compliance Officer, add the
+          officer tier or book a security-consulting engagement.
+        </p>
+        <div className="mt-6">
+          <UpgradeToOfficerCard />
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-6 md:px-6 md:py-10">
       <Link

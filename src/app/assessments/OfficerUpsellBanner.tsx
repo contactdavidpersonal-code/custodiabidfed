@@ -23,15 +23,25 @@ const urgencyTone: Record<
 };
 
 /**
- * Shown on /assessments when the AI officer has escalated something to a real
- * Custodia officer. Surfaces the Bootcamp ($5K 1-week officer-led) and Command
- * ($1K–1.5K/mo retainer) offers as the path from "AI flagged this" to "book a
- * human." See user_custodia.md for offer context.
+ * Shown on /assessments when Charlie has escalated something to a real
+ * Custodia Compliance Officer. Two paths off the banner:
+ *   1. Add Custodia Officer ($297/mo) — full self-service + written officer
+ *      tickets + audit support, the right call when CMMC L1 work is going
+ *      to keep happening.
+ *   2. Security consulting — scoped engagement with a credentialed officer
+ *      for needs beyond L1 (L2/DFARS 7012, FedRAMP prep, prime audits,
+ *      incident response, etc.).
+ *
+ * For accounts that already have the officer feature (legacy plan or
+ * $297 tier) the cards collapse to a single "Talk to your officer" CTA.
  */
 export function OfficerUpsellBanner({
   escalations,
+  officerEnabled = false,
 }: {
   escalations: EscalationRow[];
+  /** Account already has `custodia_officer` feature. */
+  officerEnabled?: boolean;
 }) {
   if (escalations.length === 0) return null;
 
@@ -52,7 +62,7 @@ export function OfficerUpsellBanner({
               {tone.label}
             </span>
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-600">
-              Your officer flagged this for a human
+              Charlie flagged this for a human
             </span>
           </div>
           <h2 className="mt-2 text-xl font-bold tracking-tight text-slate-900 md:text-2xl">
@@ -79,22 +89,34 @@ export function OfficerUpsellBanner({
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
+        {officerEnabled ? (
+          <UpsellCard
+            tier="Open an officer ticket"
+            price="Included"
+            cadence="with your plan"
+            pitch="Your account already has Custodia Officer. Open a written ticket and a credentialed officer will reply inside the platform — routine within 1 business day, priority in 4h, urgent in 1h."
+            cta="Open a ticket"
+            href="/assessments/tickets/new"
+            accent="amber"
+          />
+        ) : (
+          <UpsellCard
+            tier="Add Custodia Officer"
+            price="$297"
+            cadence="per month"
+            pitch="Self Service + a credentialed human officer. Unlimited tickets, officer-led audit support, pre-submission review. The right call if CMMC L1 work is going to keep happening — or if you want a human on call for the awkward 5%."
+            cta="Upgrade my plan"
+            href="/upgrade?plan=bidfedcmmc_self_service_custodia_officer"
+            accent="amber"
+          />
+        )}
         <UpsellCard
-          tier="Bootcamp"
-          price="$5,000"
-          cadence="one week, flat fee"
-          pitch="An officer walks your team through L1 live for a week. Best for service-trade teams or anyone who wants translation, not a wizard."
-          cta="Book a Bootcamp officer"
-          href="mailto:officers@custodia.us?subject=Bootcamp%20for%20my%20L1%20escalation"
-          accent="amber"
-        />
-        <UpsellCard
-          tier="Command"
-          price="$1,000–1,500"
-          cadence="per month"
-          pitch="Fractional officer on retainer. We watch for drift, own your SPRS renewal, and resolve anything the Platform flags."
-          cta="Start a Command retainer"
-          href="mailto:officers@custodia.us?subject=Command%20retainer%20for%20my%20L1"
+          tier="Security consulting"
+          price="Scoped"
+          cadence="fixed-fee engagement"
+          pitch="Need help beyond CMMC L1? Talk to a credentialed Custodia officer about L2 / DFARS 7012, FedRAMP prep, prime audit defense, incident response, or custom security work. Scoped engagements that move you forward."
+          cta="Book a scoping call"
+          href="mailto:officers@custodia.us?subject=Security%20consulting%20%E2%80%94%20%20continued%20federal%20compliance"
           accent="slate"
         />
       </div>

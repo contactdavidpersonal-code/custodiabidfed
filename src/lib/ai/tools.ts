@@ -1101,6 +1101,21 @@ async function handleEscalateToOfficer(
   input: Record<string, unknown>,
   ctx: ToolContext,
 ): Promise<ToolResult> {
+  // Officer escalations require the `custodia_officer` feature. The Self
+  // Service ($149) plan doesn't grant it; in that case we don't insert a
+  // ticket — we hand back a message Charlie can use to point the user at
+  // the $297 upgrade or a security-consulting engagement.
+  const { auth } = await import("@clerk/nextjs/server");
+  const { hasOfficerFeature } = await import("@/lib/billing/plans");
+  const { has } = await auth();
+  if (!hasOfficerFeature(has)) {
+    return {
+      ok: false,
+      error:
+        "Officer tickets aren't on this account's plan. Tell the user: \"Live tickets with a human Custodia Compliance Officer are part of the Self Service + Custodia Officer plan ($297/mo). On Self Service ($149/mo) I'll keep helping here, but for written officer help — or anything past CMMC L1 like L2/DFARS, FedRAMP, or audit defense — they can upgrade at /upgrade?plan=bidfedcmmc_self_service_custodia_officer or email officers@custodia.us for scoped security consulting.\"",
+    };
+  }
+
   const topic = typeof input.topic === "string" ? input.topic.trim() : "";
   const summary = typeof input.summary === "string" ? input.summary.trim() : "";
   const urgency =

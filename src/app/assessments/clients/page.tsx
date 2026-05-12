@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { ensureOrgForUser, getActiveOrgFromAuth } from "@/lib/assessment";
+import { hasMspAccess } from "@/lib/billing/plans";
 import {
   inviteUrl,
   listIntakeInvitationsForOrg,
@@ -13,8 +14,7 @@ export const dynamic = "force-dynamic";
 export default async function ClientsPage() {
   const { userId, has, orgId } = await auth();
   if (!userId) redirect("/sign-in");
-  const isMsp =
-    has({ plan: "user:custodia_squad" }) || has({ plan: "user:msp_platoon_20" });
+  const isMsp = hasMspAccess(has);
   if (!isMsp) redirect("/assessments");
 
   const org = orgId

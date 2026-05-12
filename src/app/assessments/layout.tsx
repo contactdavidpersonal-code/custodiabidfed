@@ -4,6 +4,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getActiveOrgFromAuth } from "@/lib/assessment";
 import { countUnreadOfficerRepliesForOrg } from "@/lib/escalations";
+import {
+  hasMspAccess,
+  hasOfficerFeature,
+  hasWorkspaceAccess,
+} from "@/lib/billing/plans";
 import { AdminLink } from "@/components/AdminLink";
 import { OrgSwitcher } from "@/components/OrgSwitcher";
 import { WorkspaceBottomNav } from "./_components/WorkspaceBottomNav";
@@ -17,15 +22,17 @@ export default async function AssessmentsLayout({
 }) {
   const { userId, has } = await auth();
   if (!userId) redirect("/sign-in");
-  // Allow solo CMMC plan or either MSP tier through the workspace gate.
-  const hasAccess =
-    has({ plan: "user:cmmc_lv1_full_access" }) ||
-    has({ plan: "user:custodia_squad" }) ||
-    has({ plan: "user:msp_platoon_20" });
-  if (!hasAccess) redirect("/upgrade");
+  // Allow either self-service solo plan, the legacy full-access plan, or
+  // either MSP tier through the workspace gate.
+  if (!hasWorkspaceAccess(has)) redirect("/upgrade");
 
+  const officerEnabled = hasOfficerFeature(has);
   const org = (await getActiveOrgFromAuth())!;
-  const unreadOfficerReplies = await countUnreadOfficerRepliesForOrg(org.id);
+  // Only count officer replies if the account actually has officer access;
+  // otherwise the Tickets badge would surface a feature they can't use.
+  const unreadOfficerReplies = officerEnabled
+    ? await countUnreadOfficerRepliesForOrg(org.id)
+    : 0;
 
   return (
     <div className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
@@ -73,8 +80,7 @@ export default async function AssessmentsLayout({
             >
               Boundary
             </Link>
-            {(has({ plan: "user:custodia_squad" }) ||
-              has({ plan: "user:msp_platoon_20" })) && (
+            {hasMspAccess(has) && (
               <Link
                 href="/assessments/clients"
                 className=" px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
@@ -82,17 +88,19 @@ export default async function AssessmentsLayout({
                 Clients
               </Link>
             )}
-            <Link
-              href="/assessments/tickets"
-              className="relative  px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
-            >
-              Tickets
-              {unreadOfficerReplies > 0 && (
-                <span className="ml-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  {unreadOfficerReplies}
-                </span>
-              )}
-            </Link>
+            {officerEnabled && (
+              <Link
+                href="/assessments/tickets"
+                className="relative  px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
+              >
+                Tickets
+                {unreadOfficerReplies > 0 && (
+                  <span className="ml-1 inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                    {unreadOfficerReplies}
+                  </span>
+                )}
+              </Link>
+            )}
             <Link
               href="/"
               className=" px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
@@ -135,12 +143,12 @@ export default async function AssessmentsLayout({
           {children}
         </div>
         {/* Compliance officer rail — desktop only. Below lg the workspace gets a bottom nav instead. */}
-        <DesktopCharlieRail />
+        <DesktopCharlieRail officerEnabled={officerEnabled} />
       </div>
       {/* Mobile/tablet bottom tab bar */}
       <WorkspaceBottomNav unreadTickets={unreadOfficerReplies} />
       {/* Mobile/tablet Charlie FAB → bottom sheet */}
-      <MobileCharlieFAB />
+      <MobileCharlieFAB officerEnabled={officerEnabled} />
     </div>
   );
 }

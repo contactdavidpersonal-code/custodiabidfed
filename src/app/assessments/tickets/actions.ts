@@ -4,6 +4,7 @@ import { auth, clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ensureOrgForUser } from "@/lib/assessment";
+import { hasOfficerFeature } from "@/lib/billing/plans";
 import {
   appendMessage,
   createUserEscalation,
@@ -50,7 +51,16 @@ async function resolveSender(userId: string): Promise<{
 
 /** Open a new ticket from the platform. Sends mail to support@custodia.dev. */
 export async function createTicketAction(formData: FormData): Promise<void> {
-  const userId = await requireUserId();
+  const { userId, has } = await auth();
+  if (!userId) throw new Error("Unauthorized");
+  if (!hasOfficerFeature(has)) {
+    // Self-service ($149) accounts don't include human-officer tickets.
+    // We surface upgrade UI on the form route; this is the belt-and-
+    // suspenders server check.
+    throw new Error(
+      "Officer tickets aren't on your plan. Upgrade to Self Service + Custodia Officer ($297/mo) to send tickets.",
+    );
+  }
   const org = await ensureOrgForUser(userId);
 
   const topic = String(formData.get("topic") ?? "").trim().slice(0, MAX_TOPIC);

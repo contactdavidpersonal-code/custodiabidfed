@@ -244,7 +244,7 @@ Open an officer ticket if you want to introduce yourself: ${c.ticketUrl}
 Day 12. Two days left.
 
 What happens on day 14:
-  • Your trial ends. If you add a card, you continue at $449/month — the locked-in Summer Federal Cash Incentive price for the next 100 customers (list price is $749).
+  • Your trial ends. If you add a card, you continue at $149/month on Self Service — the Fiscal-Year Compliance Special, locked through fiscal-year end (Sept 30). List price is $197/month. If you want a credentialed human Custodia Compliance Officer on call too, the Self Service + Custodia Officer plan is $297/month.
   • If you don't add a card, your access pauses. The CMMC L1 package you built stays exported in the bid-package ZIP you already generated — you keep it.
 
 What you keep by paying:
@@ -262,7 +262,7 @@ Lock in the launch tier here: ${c.billingUrl}
         ...c,
         kicker: "Day 12 of 14",
         title: "Two days left. Here is what changes on day 14.",
-        intro: `If you add a card you continue at <b>$449/month</b> — the locked-in launch price for the next 100 customers (list is $749). If you do not, your access pauses and the CMMC L1 package you already built stays exported. You keep what you built either way.`,
+        intro: `If you add a card you continue at <b>$149/month</b> on Self Service — the Fiscal-Year Compliance Special, locked through fiscal-year end (Sept 30; list price is $197/month). If you want a credentialed human Compliance Officer on call too, that's <b>$297/month</b>. If you do not add a card, your access pauses and the CMMC L1 package you already built stays exported. You keep what you built either way.`,
         bullets: [
           "Your assigned Compliance Officer, on call year-round.",
           "Continuous M365 / Google monitoring for evidence freshness.",
@@ -278,13 +278,13 @@ Lock in the launch tier here: ${c.billingUrl}
   {
     key: "day_13_tomorrow",
     dayOffset: 13,
-    subject: "Tomorrow your $449/mo seat opens",
+    subject: "Tomorrow your $149/mo seat opens",
     preheader: "Last day of the trial. The Success Guarantee starts when you do.",
     text: (c) => `${c.greeting}
 
 Day 13. The trial ends tomorrow.
 
-If you want to keep going — and keep your assigned officer — add a card today. $449/month, no contract, cancel any time inside the platform. The Custodia CMMC L1 Success Guarantee turns on the day your subscription begins.
+If you want to keep going, add a card today. $149/month on Self Service (Fiscal-Year Compliance Special, locked through Sept 30 — was $197 list), or $297/month if you want a credentialed human Custodia Compliance Officer on call. No contract, cancel any time inside the platform. The Custodia CMMC L1 Success Guarantee turns on the day your subscription begins.
 
 Add a card: ${c.billingUrl}
 
@@ -297,10 +297,11 @@ If you have a question that the difference between yes and no hinges on — pric
       renderShell({
         ...c,
         kicker: "Day 13 of 14",
-        title: "Tomorrow your $449 / month seat opens.",
-        intro: `Add a card today and your assigned officer stays with you. $449/month, no contract, cancel any time. The Custodia CMMC L1 Success Guarantee turns on the day your subscription begins.`,
+        title: "Tomorrow your $149 / month seat opens.",
+        intro: `Add a card today and the Custodia CMMC L1 Success Guarantee turns on the day your subscription begins. $149/month on Self Service (Fiscal-Year Compliance Special, locked through Sept 30 — was $197 list), or $297/month if you want a credentialed human Custodia Compliance Officer on call. No contract, cancel any time.`,
         bullets: [
-          "$449/month — locked-in launch pricing for the next 100 seats.",
+          "$149/month — Self Service, Fiscal-Year Compliance Special (was $197 list).",
+          "$297/month — Self Service + Custodia Compliance Officer if you want a human on call.",
           "Cancel any time, inside the platform, two clicks.",
           "Reply to this email if a question is the difference between yes and no — a human reads every reply.",
         ],
@@ -335,7 +336,7 @@ Add a card: ${c.billingUrl}
         title: "Your trial ends today.",
         intro: `If you stay, your assigned officer stays with you and the Success Guarantee starts now. If you don't, the bid-package ZIP you generated is yours and your account remains so you can come back. Either way — thank you for trying Custodia.`,
         bullets: [
-          "Stay: $449/month, officer assigned, guarantee active.",
+          "Stay: $149/mo Self Service (Fiscal-Year Special) or $297/mo with a human Compliance Officer. Guarantee active either way.",
           "Pause: keep your exported package, account stays open.",
           "Reply to this email any time. A human reads every reply.",
         ],

@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Custodia | Guided CMMC Level 1 Compliance",
   description:
-    "Federal compliance for small contractors, in plain English. Charlie — your AI compliance officer — walks you through CMMC Level 1 in 7 days. $449/month, flat. 14-day free trial. No credit card required.",
+    "Federal compliance for small contractors, in plain English. Charlie — your AI compliance officer — walks you through CMMC Level 1 in 7 days. $149/month Self Service (was $197, Fiscal-Year Compliance Special), or $297/month with a credentialed human Compliance Officer on call. 14-day free trial. No credit card required.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Custodia | Guided CMMC Level 1 Compliance",
     description:
-      "Federal bid-ready in 7 days. $449/month, flat. 14-day free trial. No credit card required. Built by Carnegie Mellon-trained information security engineers.",
+      "Federal bid-ready in 7 days. $149/month Self Service (was $197, Fiscal-Year Special) or $297/month with a human Compliance Officer. 14-day free trial. No credit card required. Built by Carnegie Mellon-trained information security engineers.",
     type: "website",
   },
 };

@@ -116,7 +116,7 @@ export function BlogTrialCTA() {
           </Link>
         </div>
         <p className="mt-4 text-xs text-[#7aab98]">
-          14-day free trial &middot; No credit card required &middot; $449/mo flat
+          14-day free trial &middot; No credit card required &middot; $149/mo Self Service (was $197)
         </p>
       </div>
     </section>
