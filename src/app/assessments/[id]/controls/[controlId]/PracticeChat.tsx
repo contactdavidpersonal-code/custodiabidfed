@@ -224,7 +224,13 @@ export function PracticeChat(props: Props) {
           connectedProviders={props.connectedProviders}
           uploadEvidenceAction={props.uploadEvidenceAction}
           reReviewEvidenceAction={props.reReviewEvidenceAction}
-          disabled={locked}
+          // Evidence collection is a living document. Even after the practice
+          // is signed/locked, users keep their packet current year-round:
+          // new hires, retired devices, refreshed rosters. The signed
+          // narrative + transcript stay frozen (audit trail); evidence keeps
+          // evolving. So we never disable the panel.
+          disabled={false}
+          locked={locked}
         />
         <LockPanel
           allCovered={allCovered}
@@ -308,8 +314,10 @@ function CharliePrompt({ locked, controlId }: { locked: boolean; controlId: stri
   if (locked) {
     return (
       <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-        This practice is locked as MET. The conversation transcript and
-        evidence below are a frozen snapshot the assessor can read end-to-end.
+        This practice is locked as <strong>MET</strong>. The conversation
+        transcript and the signed narrative are a frozen snapshot the assessor
+        can read end-to-end. Evidence below stays editable so your packet
+        keeps up with the business year-round.
       </div>
     );
   }
@@ -402,6 +410,7 @@ function EvidencePanel({
   uploadEvidenceAction,
   reReviewEvidenceAction,
   disabled,
+  locked = false,
 }: {
   spec: PracticeSpec;
   evidence: ClientEvidenceRow[];
@@ -410,7 +419,14 @@ function EvidencePanel({
   connectedProviders: ConnectorProvider[];
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
+  /** When true, suppresses upload / replace / re-review affordances. Today
+   * this is always false from the practice page; reserved for read-only
+   * audit-share views in the future. */
   disabled: boolean;
+  /** When true, the practice itself is locked as MET. Evidence stays
+   * editable (living document), but we show a banner explaining that the
+   * signed snapshot is preserved separately. */
+  locked?: boolean;
 }) {
   // Bucket every artifact tagged to this practice into the slot it satisfies.
   // Anything we can't pin to a specific slot (legacy uploads from before the
@@ -446,6 +462,35 @@ function EvidencePanel({
         </div>
         <ProgressDots filled={filledCount} total={totalRequired} />
       </div>
+
+      {locked && (
+        <div className="mb-3 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="mt-0.5 shrink-0"
+            aria-hidden
+          >
+            <path d="M21 12a9 9 0 1 1-6.2-8.55" />
+            <path d="M21 4v6h-6" />
+          </svg>
+          <div className="min-w-0">
+            <div className="font-semibold">Keep your packet current</div>
+            <p className="mt-0.5">
+              This practice is signed and locked as MET — that snapshot is
+              preserved for the assessor. Evidence here stays editable: as you
+              hire, retire devices, or refresh accounts, upload a new version
+              and we&apos;ll review it. Your current packet always reflects today.
+            </p>
+          </div>
+        </div>
+      )}
 
       <ul className="space-y-3">
         {spec.evidenceSlots.map((slot, idx) => (
@@ -872,8 +917,11 @@ function LockPanel({
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
         <div className="font-semibold">Practice locked as MET</div>
         <p className="mt-1 text-emerald-800">
-          The chat transcript and evidence are a frozen snapshot. The assessor
-          can read this end-to-end as proof of how each objective was satisfied.
+          The chat transcript and the signed narrative are a frozen snapshot
+          — the assessor reads this end-to-end as proof of how each objective
+          was satisfied. Evidence above stays a living document: refresh your
+          rosters, devices, and accounts whenever the business changes, and
+          your current packet stays accurate.
         </p>
       </div>
     );
