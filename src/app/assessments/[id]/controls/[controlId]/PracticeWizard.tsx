@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
@@ -163,8 +163,60 @@ export function PracticeWizard(props: Props) {
     props.response.status !== "unanswered" &&
     (props.response.narrative ?? "").trim().length >= 20;
 
+  // Sticky compact header: show only after the in-document header scrolls
+  // out of view, so users always know which practice (and progress) they're
+  // working on while deep in the evidence section.
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const obs = new IntersectionObserver(
+      ([entry]) => setStuck(!entry.isIntersecting),
+      { threshold: 0, rootMargin: "-1px 0px 0px 0px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  const stickyStatusLabel = isLocked
+    ? STATUS_LABELS[props.response.status] ?? "In progress"
+    : "In progress";
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-8">
+      {/* Sticky compact header — visible only after main header scrolls away */}
+      <div
+        aria-hidden={!stuck}
+        className={
+          "pointer-events-none fixed inset-x-0 z-20 transition-all duration-200 " +
+          (stuck
+            ? "pointer-events-auto translate-y-0 opacity-100"
+            : "-translate-y-2 opacity-0")
+        }
+        style={{ top: "calc(var(--safe-top, 0px) + 56px)" }}
+      >
+        <div className="border-b border-[#cfe3d9] bg-white/95 shadow-[0_4px_18px_-12px_rgba(14,42,35,0.35)] backdrop-blur">
+          <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-2.5 md:px-6">
+            <span className="shrink-0 bg-[#0e2a23] px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[#bdf2cf]">
+              {props.practice.domain}
+            </span>
+            <span className="shrink-0 font-mono text-[11px] font-semibold text-[#5a7d70]">
+              {props.practice.id}
+            </span>
+            <span className="truncate font-serif text-sm font-bold text-[#10231d]">
+              {props.practice.shortName}
+            </span>
+            <span className="ml-auto hidden shrink-0 text-[11px] font-medium text-[#5a7d70] md:inline">
+              Practice {props.currentIdx + 1} of {props.total}
+            </span>
+            <span className="shrink-0 rounded-full border border-[#cfe3d9] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#10231d]">
+              {stickyStatusLabel}
+            </span>
+          </div>
+        </div>
+      </div>
+
       <div className="mb-5 flex items-center justify-between gap-4 text-sm">
         <Link
           href={`/assessments/${props.assessmentId}`}
@@ -203,6 +255,9 @@ export function PracticeWizard(props: Props) {
           </p>
         )}
       </header>
+
+      {/* Sentinel: when this scrolls out of view, the sticky header appears. */}
+      <div ref={sentinelRef} aria-hidden className="h-px w-full" />
 
       {isLocked && !wholeNa && (
         <div className="mb-6  border border-[#2f8f6d] bg-[#f7fcf9] p-4">
