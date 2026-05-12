@@ -471,11 +471,19 @@ export function ComplianceOfficerRail({
       <button
         type="button"
         onClick={toggle}
-        aria-label="Open Charlie, your vCO"
-        className="fixed right-0 top-1/2 z-30 flex -translate-y-1/2 rotate-90 origin-bottom-right items-center gap-2  border border-b-0 border-[#cfe3d9] bg-white px-4 py-2 text-xs font-bold uppercase tracking-[0.2em] text-[#0e2a23] shadow-md transition-colors hover:bg-[#eaf3ee] print:hidden"
+        aria-label="Open Charlie, your virtual compliance officer"
+        title="Open Charlie"
+        className="group fixed bottom-6 right-6 z-40 flex h-14 items-center gap-2 rounded-full border border-[#0e2a23] bg-[#0f2f26] pl-3 pr-5 font-bold text-white shadow-[0_12px_30px_-6px_rgba(15,47,38,0.55)] transition-all hover:bg-[#10231d] hover:shadow-[0_16px_40px_-6px_rgba(15,47,38,0.7)] print:hidden"
       >
-        <span className="h-1.5 w-1.5  bg-[#2f8f6d]" />
-        Charlie · vCO
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2f8f6d] text-white">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z" />
+            <circle cx="9" cy="12" r="0.8" fill="currentColor" />
+            <circle cx="13" cy="12" r="0.8" fill="currentColor" />
+            <circle cx="17" cy="12" r="0.8" fill="currentColor" />
+          </svg>
+        </span>
+        <span className="text-sm tracking-tight">Open Charlie</span>
       </button>
     );
   }
