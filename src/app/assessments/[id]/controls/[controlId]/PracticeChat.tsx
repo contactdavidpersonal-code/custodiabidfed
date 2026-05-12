@@ -165,7 +165,13 @@ export function PracticeChat(props: Props) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-4 md:px-6 md:py-6">
-      <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
+      {/* Sticky practice header: stays pinned just below the workspace nav
+          as the user scrolls into the evidence section so they always know
+          which practice they're working on. */}
+      <header
+        className="sticky z-20 -mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#cfe3d9] bg-[#f7f7f3]/95 px-4 pt-4 pb-4 shadow-[0_8px_24px_-18px_rgba(14,42,35,0.4)] backdrop-blur md:-mx-6 md:px-6"
+        style={{ top: "calc(var(--safe-top, 0px) + 64px)" }}
+      >
         <div>
           <Link
             href={`/assessments/${props.assessmentId}`}
