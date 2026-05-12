@@ -277,8 +277,8 @@ export default function Home() {
               <div className="w-[54px]" aria-hidden />
             </div>
             <Image
-              src="/demo_practices1.png"
-              alt="Custodia platform — Charlie walking a user through CMMC Level 1 practice AC.L1-3.1.1 with the bid-ready journey on the left and the virtual compliance officer chat on the right"
+              src="/home1.png"
+              alt="Custodia platform — AC.L1-3.1.1 Authorized Access Control walkthrough with the bid-ready journey on the left and the virtual compliance officer chat on the right"
               width={1600}
               height={1000}
               priority
