@@ -90,7 +90,7 @@ const PLAN_CONFIG: Record<
     ],
     hasFeatureKey: PLAN_PLATOON,
   },
-  bidfedcmmc_self_service: {
+  [PLAN_SELF_SERVICE]: {
     slug: PLAN_SELF_SERVICE,
     title: "CMMC Level 1 — Self Service",
     badge: "Solo · Self Service",
@@ -102,7 +102,7 @@ const PLAN_CONFIG: Record<
     bullets: SELF_SERVICE_BULLETS,
     hasFeatureKey: PLAN_SELF_SERVICE,
   },
-  bidfedcmmc_self_service_custodia_officer: {
+  [PLAN_SELF_SERVICE_OFFICER]: {
     slug: PLAN_SELF_SERVICE_OFFICER,
     title: "CMMC Level 1 — Self Service + Custodia Officer",
     badge: "Solo · + Custodia Officer",
@@ -132,7 +132,15 @@ export default async function UpgradePage({
   const { userId, has } = await auth();
   if (!userId) redirect("/sign-in");
 
-  const { plan: planParam } = await searchParams;
+  const { plan: rawPlanParam } = await searchParams;
+  // Backward-compat: older links use slugs without the trailing underscore
+  // that the Clerk plan slugs actually carry.
+  const planParam =
+    rawPlanParam === "bidfedcmmc_self_service"
+      ? PLAN_SELF_SERVICE
+      : rawPlanParam === "bidfedcmmc_self_service_custodia_officer"
+        ? PLAN_SELF_SERVICE_OFFICER
+        : rawPlanParam;
   const planKey: PlanKey = isPlanKey(planParam) ? planParam : PLAN_SELF_SERVICE;
   const cfg = PLAN_CONFIG[planKey];
 

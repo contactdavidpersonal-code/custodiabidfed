@@ -606,7 +606,7 @@ AI virtual Compliance Officer grounded in FAR 52.204-21 / NIST SP 800-171 r2 —
           </Link>
         ) : (
           <Link
-            href="/upgrade?plan=bidfedcmmc_self_service_custodia_officer"
+            href="/upgrade?plan=bidfedcmmc_self_service_custodia_officer_"
             className="mt-2 inline-flex w-full items-center justify-center gap-1.5  border border-[#cfe3d9] bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f7fcf9]"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[#a06b1a]" />

@@ -1112,7 +1112,7 @@ async function handleEscalateToOfficer(
     return {
       ok: false,
       error:
-        "Officer tickets aren't on this account's plan. Tell the user: \"Live tickets with a human Custodia Compliance Officer are part of the Self Service + Custodia Officer plan ($297/mo). On Self Service ($149/mo) I'll keep helping here, but for written officer help — or anything past CMMC L1 like L2/DFARS, FedRAMP, or audit defense — they can upgrade at /upgrade?plan=bidfedcmmc_self_service_custodia_officer or email officers@custodia.us for scoped security consulting.\"",
+        "Officer tickets aren't on this account's plan. Tell the user: \"Live tickets with a human Custodia Compliance Officer are part of the Self Service + Custodia Officer plan ($297/mo). On Self Service ($149/mo) I'll keep helping here, but for written officer help — or anything past CMMC L1 like L2/DFARS, FedRAMP, or audit defense — they can upgrade at /upgrade?plan=bidfedcmmc_self_service_custodia_officer_ or email officers@custodia.us for scoped security consulting.\"",
     };
   }
 

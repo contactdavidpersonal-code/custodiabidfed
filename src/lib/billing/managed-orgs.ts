@@ -39,8 +39,8 @@ export type ManagedOrgsStatus = {
   plan:
     | "msp_platoon_20"
     | "custodia_squad"
-    | "bidfedcmmc_self_service_custodia_officer"
-    | "bidfedcmmc_self_service"
+    | "bidfedcmmc_self_service_custodia_officer_"
+    | "bidfedcmmc_self_service_"
     | "cmmc_lv1_full_access"
     | "free";
 };

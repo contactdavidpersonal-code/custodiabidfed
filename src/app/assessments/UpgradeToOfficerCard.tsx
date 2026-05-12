@@ -44,7 +44,7 @@ export function UpgradeToOfficerCard({
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <Link
-          href="/upgrade?plan=bidfedcmmc_self_service_custodia_officer"
+          href="/upgrade?plan=bidfedcmmc_self_service_custodia_officer_"
           className="group flex flex-col gap-1 border border-[#1d6a4a] bg-[#0e2a23] p-4 text-[#bdf2cf] transition-colors hover:bg-[#10342a]"
         >
           <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8dd2b1]">

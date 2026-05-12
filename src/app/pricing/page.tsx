@@ -86,7 +86,7 @@ export default function PricingPage() {
               Fiscal-Year Compliance Special &mdash; locked through FY end (Sept 30).
             </div>
             <Link
-              href="/sign-up?plan=bidfedcmmc_self_service"
+              href="/sign-up?plan=bidfedcmmc_self_service_"
               className="mb-3 block w-full  bg-amber-400 px-4 py-3 text-center text-sm font-bold text-slate-900 hover:bg-amber-300"
             >
               Start 14-day free trial
@@ -127,7 +127,7 @@ export default function PricingPage() {
               A credentialed human on call for the awkward 5%.
             </div>
             <Link
-              href="/sign-up?plan=bidfedcmmc_self_service_custodia_officer"
+              href="/sign-up?plan=bidfedcmmc_self_service_custodia_officer_"
               className="mb-3 block w-full  bg-amber-400 px-4 py-3 text-center text-sm font-bold text-slate-900 hover:bg-amber-300"
             >
               Start 14-day free trial

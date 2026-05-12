@@ -4,8 +4,8 @@ import Link from "next/link";
 const ALLOWED_PLANS = new Set([
   "custodia_squad",
   "msp_platoon_20",
-  "bidfedcmmc_self_service",
-  "bidfedcmmc_self_service_custodia_officer",
+  "bidfedcmmc_self_service_",
+  "bidfedcmmc_self_service_custodia_officer_",
   // Legacy plan slug kept for grandfathered links.
   "cmmc_lv1_full_access",
 ]);
@@ -125,7 +125,7 @@ const OFFICER_COPY: PlanCopy = {
 function copyFor(plan: string | null): PlanCopy {
   if (plan === "custodia_squad") return SQUAD_COPY;
   if (plan === "msp_platoon_20") return PLATOON_COPY;
-  if (plan === "bidfedcmmc_self_service_custodia_officer") return OFFICER_COPY;
+  if (plan === "bidfedcmmc_self_service_custodia_officer_") return OFFICER_COPY;
   return SOLO_COPY;
 }
 
@@ -134,7 +134,14 @@ export default async function SignUpPage({
 }: {
   searchParams: Promise<{ plan?: string }>;
 }) {
-  const { plan } = await searchParams;
+  const { plan: rawPlan } = await searchParams;
+  // Backward-compat: older links omit the trailing underscore in the slug.
+  const plan =
+    rawPlan === "bidfedcmmc_self_service"
+      ? "bidfedcmmc_self_service_"
+      : rawPlan === "bidfedcmmc_self_service_custodia_officer"
+        ? "bidfedcmmc_self_service_custodia_officer_"
+        : rawPlan;
   const safePlan = plan && ALLOWED_PLANS.has(plan) ? plan : null;
   const redirectAfter = safePlan ? `/upgrade?plan=${safePlan}` : "/assessments";
   const signInHref = safePlan ? `/sign-in?plan=${safePlan}` : "/sign-in";

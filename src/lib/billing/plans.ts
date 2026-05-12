@@ -20,9 +20,9 @@
 
 import type { auth } from "@clerk/nextjs/server";
 
-export const PLAN_SELF_SERVICE = "bidfedcmmc_self_service" as const;
+export const PLAN_SELF_SERVICE = "bidfedcmmc_self_service_" as const;
 export const PLAN_SELF_SERVICE_OFFICER =
-  "bidfedcmmc_self_service_custodia_officer" as const;
+  "bidfedcmmc_self_service_custodia_officer_" as const;
 export const PLAN_LEGACY_FULL_ACCESS = "cmmc_lv1_full_access" as const;
 export const PLAN_SQUAD = "custodia_squad" as const;
 export const PLAN_PLATOON = "msp_platoon_20" as const;
