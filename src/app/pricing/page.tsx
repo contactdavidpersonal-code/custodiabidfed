@@ -53,7 +53,7 @@ export default function PricingPage() {
         </div>
 
         <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] text-amber-900">
-          Fiscal-Year Compliance Special &middot; Locked through Sept 30
+          Federal Compliance Grant &middot; Locked through Sept 30
         </div>
 
         <h1 className="mb-2 font-serif text-4xl text-slate-900">
@@ -83,7 +83,7 @@ export default function PricingPage() {
               Or $139/mo billed annually ($1,668/yr).
             </div>
             <div className="mb-4 text-xs font-semibold text-amber-900">
-              Fiscal-Year Compliance Special &mdash; locked through FY end (Sept 30).
+              Federal Compliance Grant &mdash; locked through FY end (Sept 30).
             </div>
             <Link
               href="/sign-up?plan=bidfedcmmc_self_service_"

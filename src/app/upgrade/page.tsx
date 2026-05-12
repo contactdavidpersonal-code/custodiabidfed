@@ -161,11 +161,20 @@ export default async function UpgradePage({
   const isMsp = planKey === PLAN_SQUAD || planKey === PLAN_PLATOON;
   const isSoloSelfService = planKey === PLAN_SELF_SERVICE;
   const isSoloOfficer = planKey === PLAN_SELF_SERVICE_OFFICER;
+  const isSolo = isSoloSelfService || isSoloOfficer;
+
+  // For solo flows we stack a second card with the "other" solo plan.
+  // MSP flows stay compact (one card, small links).
+  const secondaryCfg = isSoloSelfService
+    ? PLAN_CONFIG[PLAN_SELF_SERVICE_OFFICER]
+    : isSoloOfficer
+      ? PLAN_CONFIG[PLAN_SELF_SERVICE]
+      : null;
 
   return (
-    <div className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
-      <header className="border-b border-[#cfe3d9] bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-2.5">
+    <div className="min-h-screen bg-[#052e22] text-[#f6f4ec]">
+      <header className="border-b border-white/10 bg-[#052e22]">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
           <Link href="/" className="flex items-center gap-2.5">
             <img
               src="/custodia-logo.png"
@@ -173,104 +182,65 @@ export default async function UpgradePage({
               className="h-7 w-auto"
             />
             <div className="leading-tight">
-              <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#8dd2b1]">
                 Custodia
               </div>
-              <div className="font-serif text-xs font-bold text-[#10231d]">
+              <div className="font-serif text-xs font-semibold text-white">
                 {isMsp ? "MSP control room" : "CMMC Level 1 workspace"}
               </div>
             </div>
           </Link>
           <Link
             href={isMsp ? "/for-msps" : "/pricing"}
-            className="text-xs font-medium text-[#456c5f] transition-colors hover:text-[#10231d]"
+            className="text-xs font-medium text-[#a8cfc0] transition-colors hover:text-white"
           >
             ← Back
           </Link>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-6 py-8">
-        <div className="mb-5 text-center">
-          <div className="mb-2 inline-flex items-center gap-2 border border-[#bdf2cf] bg-[#eaf7ef] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#1d6a4a]">
+      <main className="mx-auto max-w-3xl px-6 py-12 md:py-16">
+        <div className="mb-8 text-center">
+          <div className="mb-4 inline-flex items-center gap-2 border border-[#bdf2cf]/40 bg-[#063f2e]/60 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf]">
             <span
               aria-hidden
-              className="inline-block h-1.5 w-1.5 rounded-full bg-[#1d6a4a]"
+              className="inline-block h-1.5 w-1.5 rounded-full bg-[#bef4be]"
             />
             {isSoloSelfService
-              ? "Fiscal-Year Compliance Special · 14 days free, no card"
+              ? "Federal Compliance Grant · 14 days free, no card"
               : "14 days free · No credit card required"}
           </div>
-          <h1 className="font-serif text-2xl font-bold tracking-tight text-[#10231d] md:text-3xl">
+          <h1 className="font-serif text-3xl font-bold leading-[1.1] tracking-tight text-white md:text-5xl">
             {isMsp
-              ? "Start your Custodia MSP trial. Onboard your first client business in minutes."
-              : "Start your 14-day free trial. Get bid-ready without paying a cent."}
+              ? "Start your Custodia MSP trial."
+              : "Start your 14-day free trial."}
           </h1>
-          <p className="mx-auto mt-2 max-w-2xl text-sm leading-snug text-[#4a7164]">
+          <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[#a8cfc0]">
             {isMsp
               ? "Full Custodia MSP workspace — multi-tenant, vCO-walked. No card until day 14, only if you stay."
               : "Full Custodia workspace — CMMC Level 1 build, freshness alerts, Charlie on call. No card until day 14, only if you stay."}
           </p>
         </div>
 
-        <div className="border border-[#cfe3d9] bg-white p-5 shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.08)]">
-          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#a06b1a]">
-            {cfg.badge}
-          </div>
-          <div className="mt-1 flex items-baseline gap-2 flex-wrap">
-            {cfg.strikePrice && (
-              <span className="font-serif text-lg text-[#5a7f72] line-through decoration-[#c4543a] decoration-2">
-                {cfg.strikePrice}
-              </span>
-            )}
-            <span className="font-serif text-3xl font-bold text-[#10231d]">
-              {cfg.price}
-            </span>
-            <span className="text-xs text-[#5a7f72]">{cfg.priceSuffix}</span>
-            <span className="ml-auto text-[11px] font-semibold text-[#1d6a4a]">
-              {cfg.capLine}
-            </span>
-          </div>
-          {isSoloSelfService && (
-            <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#c4543a]">
-              Fiscal-Year Compliance Special — locked through FY end (Sept 30)
-            </p>
-          )}
-          <p className="mt-2 text-sm font-semibold text-[#10231d]">
-            {cfg.title}
-          </p>
-
-          <ul className="mt-3 grid grid-cols-1 gap-x-4 gap-y-1 text-[12.5px] text-[#2c4940] sm:grid-cols-2">
-            {cfg.bullets.map((b) => (
-              <li key={b} className="flex items-start gap-2">
-                <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">
-                  &#10003;
-                </span>
-                <span>{b}</span>
-              </li>
-            ))}
-          </ul>
-
-          <div className="mt-4">
-            <TrialCheckoutButton
-              planId={cfg.slug}
-              className="group flex w-full items-center justify-center gap-2 bg-[#0e2a23] px-5 py-3 text-sm font-bold text-[#bdf2cf] shadow-[0_10px_30px_-10px_rgba(14,42,35,0.6)] transition-colors hover:bg-[#10342a]"
-            >
-              {cfg.ctaText}
-              <span
-                aria-hidden
-                className="text-base transition-transform group-hover:translate-x-0.5"
+        {isSolo ? (
+          <div className="space-y-5">
+            <PlanCard cfg={cfg} primary highlight={isSoloSelfService} />
+            {secondaryCfg ? (
+              <PlanCard cfg={secondaryCfg} primary={false} />
+            ) : null}
+            <p className="pt-2 text-center text-[11px] text-[#7fae9c]">
+              Manage multiple clients?{" "}
+              <Link
+                href="/for-msps"
+                className="font-medium text-[#bdf2cf] underline underline-offset-2 hover:text-white"
               >
-                &rarr;
-              </span>
-            </TrialCheckoutButton>
-            <p className="mt-1.5 text-center text-[11px] text-[#5a7f72]">
-              No charge for 14 days &middot; Cancel anytime
+                See MSP plans
+              </Link>
             </p>
           </div>
-
-          {isMsp && (
-            <p className="mt-4 border-t border-[#e3eee7] pt-3 text-center text-[11px] text-[#5a7f72]">
+        ) : (
+          <PlanCard cfg={cfg} primary compact>
+            <p className="mt-4 border-t border-[#e3dcc7] pt-3 text-center text-[11px] text-[#5a7f72]">
               Want the solo plan instead?{" "}
               <Link
                 href={`/upgrade?plan=${PLAN_SELF_SERVICE}`}
@@ -286,55 +256,118 @@ export default async function UpgradePage({
                 + Custodia Officer — $297/mo
               </Link>
             </p>
-          )}
+          </PlanCard>
+        )}
 
-          {isSoloSelfService && (
-            <p className="mt-4 border-t border-[#e3eee7] pt-3 text-center text-[11px] text-[#5a7f72]">
-              Want a credentialed human Compliance Officer on call?{" "}
-              <Link
-                href={`/upgrade?plan=${PLAN_SELF_SERVICE_OFFICER}`}
-                className="font-medium text-[#20684f] underline underline-offset-2 hover:text-[#174f3c]"
-              >
-                Add Custodia Officer — $297/mo
-              </Link>
-            </p>
-          )}
-
-          {isSoloOfficer && (
-            <p className="mt-4 border-t border-[#e3eee7] pt-3 text-center text-[11px] text-[#5a7f72]">
-              Just need the platform without a human officer?{" "}
-              <Link
-                href={`/upgrade?plan=${PLAN_SELF_SERVICE}`}
-                className="font-medium text-[#20684f] underline underline-offset-2 hover:text-[#174f3c]"
-              >
-                Self Service — $149/mo
-              </Link>
-            </p>
-          )}
-
-          {!isMsp && (
-            <p className="mt-2 text-center text-[11px] text-[#5a7f72]">
-              Manage multiple clients?{" "}
-              <Link
-                href="/for-msps"
-                className="font-medium text-[#20684f] underline underline-offset-2 hover:text-[#174f3c]"
-              >
-                See MSP plans
-              </Link>
-            </p>
-          )}
-        </div>
-
-        <p className="mt-4 text-center text-[11px] text-[#5a7f72]">
+        <p className="mt-6 text-center text-[11px] text-[#7fae9c]">
           Questions before you start?{" "}
           <a
             href="mailto:support@custodia.dev"
-            className="font-medium text-[#20684f] underline underline-offset-2 hover:text-[#174f3c]"
+            className="font-medium text-[#bdf2cf] underline underline-offset-2 hover:text-white"
           >
             support@custodia.dev
           </a>
         </p>
       </main>
+    </div>
+  );
+}
+
+function PlanCard({
+  cfg,
+  primary,
+  highlight = false,
+  compact = false,
+  children,
+}: {
+  cfg: (typeof PLAN_CONFIG)[PlanKey];
+  primary: boolean;
+  highlight?: boolean;
+  compact?: boolean;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div
+      className={
+        "relative border bg-[#f7f4ea] p-6 md:p-8 shadow-[0_2px_0_rgba(5,46,34,0.06),0_30px_80px_-20px_rgba(0,0,0,0.55)] " +
+        (primary ? "border-[#d9d2bd]" : "border-[#d9d2bd]/70")
+      }
+    >
+      {highlight && (
+        <div className="absolute -top-3 left-6 inline-flex items-center gap-1.5 border border-[#a06b1a]/40 bg-[#1a1108] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.22em] text-[#e7c98a]">
+          <span
+            aria-hidden
+            className="inline-block h-1 w-1 rounded-full bg-[#e7c98a]"
+          />
+          Federal Compliance Grant
+        </div>
+      )}
+      <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#a06b1a]">
+        {cfg.badge}
+      </div>
+      <div className="mt-2 flex items-baseline gap-2 flex-wrap">
+        {cfg.strikePrice && (
+          <span className="font-serif text-xl text-[#7a8a82] line-through decoration-[#a06b1a] decoration-2">
+            {cfg.strikePrice}
+          </span>
+        )}
+        <span className="font-serif text-4xl font-bold tracking-tight text-[#0e2a23] md:text-5xl">
+          {cfg.price}
+        </span>
+        <span className="text-xs text-[#5a7f72]">{cfg.priceSuffix}</span>
+        <span className="ml-auto text-[11px] font-semibold text-[#1d6a4a]">
+          {cfg.capLine}
+        </span>
+      </div>
+      {highlight && (
+        <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a06b1a]">
+          Locked through FY end (Sept 30)
+        </p>
+      )}
+      <p className="mt-3 font-serif text-lg font-semibold text-[#0e2a23]">
+        {cfg.title}
+      </p>
+
+      <ul
+        className={
+          "mt-4 grid grid-cols-1 gap-x-5 gap-y-1.5 text-[13px] text-[#2c4940] " +
+          (compact ? "" : "sm:grid-cols-2")
+        }
+      >
+        {cfg.bullets.map((b) => (
+          <li key={b} className="flex items-start gap-2">
+            <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">
+              &#10003;
+            </span>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-6">
+        <TrialCheckoutButton
+          planId={cfg.slug}
+          className={
+            "group flex w-full items-center justify-center gap-2 px-6 py-4 text-sm font-bold transition-colors " +
+            (primary
+              ? "bg-[#bef4be] text-[#063f2e] shadow-[0_15px_40px_-10px_rgba(190,244,190,0.45)] hover:bg-[#a8e6c0]"
+              : "border border-[#0e2a23] bg-transparent text-[#0e2a23] hover:bg-[#0e2a23] hover:text-[#bef4be]")
+          }
+        >
+          {cfg.ctaText}
+          <span
+            aria-hidden
+            className="text-base transition-transform group-hover:translate-x-0.5"
+          >
+            &rarr;
+          </span>
+        </TrialCheckoutButton>
+        <p className="mt-2 text-center text-[11px] text-[#5a7f72]">
+          No charge for 14 days &middot; Cancel anytime
+        </p>
+      </div>
+
+      {children}
     </div>
   );
 }

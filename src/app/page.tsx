@@ -92,11 +92,11 @@ const GUARANTEES = [
 const FAQ_ITEMS = [
   {
     q: "How does the 14-day free trial work?",
-    a: "Sign up with just an email &mdash; no credit card required. You get the full platform free for 14 days: Charlie (your vCO) walks you through CMMC Level 1, generates your bid-ready package, sources opportunities from SAM.gov on demand, and runs the officer chat. Most users complete their initial CMMC L1 package in 3&ndash;5 business days, well inside the trial. If you stay past day 14, you add your card and start at $149/mo on Self Service (down from $197 &mdash; Fiscal-Year Compliance Special, locked through FY end on September 30), or $297/mo if you want a credentialed human Custodia Compliance Officer on call too. The Custodia Success Guarantee continues for the life of your membership: if your package isn&apos;t defensible to standard, we rebuild it with you until it is &mdash; and on the Officer plan, that&apos;s done by an assigned credentialed officer.",
+    a: "Sign up with just an email &mdash; no credit card required. You get the full platform free for 14 days: Charlie (your vCO) walks you through CMMC Level 1, generates your bid-ready package, sources opportunities from SAM.gov on demand, and runs the officer chat. Most users complete their initial CMMC L1 package in 3&ndash;5 business days, well inside the trial. If you stay past day 14, you add your card and start at $149/mo on Self Service (down from $197 &mdash; Federal Compliance Grant, locked through FY end on September 30), or $297/mo if you want a credentialed human Custodia Compliance Officer on call too. The Custodia Success Guarantee continues for the life of your membership: if your package isn&apos;t defensible to standard, we rebuild it with you until it is &mdash; and on the Officer plan, that&apos;s done by an assigned credentialed officer.",
   },
   {
     q: "Why $149 instead of $197? What's the catch?",
-    a: "No catch. We&apos;re running a Fiscal-Year Compliance Special: $149/mo on Self Service, locked through fiscal-year end (September 30). After that the list price returns to $197/mo. The math: $149/mo &times; 12 = $1,788/yr &mdash; less than the profit on a single micro-purchase contract. If you want a credentialed human Custodia Compliance Officer on call too, that&apos;s $297/mo. Both plans include the same platform; the difference is whether there&apos;s a human in the loop on tickets, audit prep, and pre-submission review.",
+    a: "No catch. We&apos;re running a Federal Compliance Grant: $149/mo on Self Service, locked through fiscal-year end (September 30). After that the list price returns to $197/mo. The math: $149/mo &times; 12 = $1,788/yr &mdash; less than the profit on a single micro-purchase contract. If you want a credentialed human Custodia Compliance Officer on call too, that&apos;s $297/mo. Both plans include the same platform; the difference is whether there&apos;s a human in the loop on tickets, audit prep, and pre-submission review.",
   },
   {
     q: "How do you keep my FCI secure?",
@@ -1289,7 +1289,7 @@ export default function Home() {
               You, bidding with a defensible package &mdash; and watched all year.
             </h3>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#cce5da]">
-              All 8 steps happen inside your 14-day free trial. Steps 1&ndash;6 (build to bid-ready) typically wrap up in week 1. Steps 7&ndash;8 are where membership earns its keep: continuous monitoring through your M365 or Google Workspace tenant, freshness alerts, year-round vCO, and your annual SPRS re-affirmation. $149/mo Self Service (was $197 &mdash; Fiscal-Year Compliance Special) only kicks in if you stay past day 14, or $297/mo if you want a human Custodia Compliance Officer on call too.
+              All 8 steps happen inside your 14-day free trial. Steps 1&ndash;6 (build to bid-ready) typically wrap up in week 1. Steps 7&ndash;8 are where membership earns its keep: continuous monitoring through your M365 or Google Workspace tenant, freshness alerts, year-round vCO, and your annual SPRS re-affirmation. $149/mo Self Service (was $197 &mdash; Federal Compliance Grant) only kicks in if you stay past day 14, or $297/mo if you want a human Custodia Compliance Officer on call too.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Show when="signed-out">
@@ -1317,7 +1317,7 @@ export default function Home() {
               </Show>
             </div>
             <p className="mt-4 text-xs text-[#7aab98]">
-              14-day free trial &middot; No credit card required &middot; $149/mo after (Fiscal-Year Compliance Special, locked through Sept 30)
+              14-day free trial &middot; No credit card required &middot; $149/mo after (Federal Compliance Grant, locked through Sept 30)
             </p>
           </div>
         </div>
@@ -1462,7 +1462,7 @@ export default function Home() {
               Every capability above is included in your 14-day free trial &mdash; the build, Charlie&apos;s opportunity sourcing, the bid generator, year-round monitoring, and the officer.
             </p>
             <p className="mt-3 text-sm text-[#5a7d70]">
-              Sign up with email &mdash; no credit card required. Build your CMMC Level 1 package in week 1, connect M365 or Google Workspace for continuous monitoring, and let Charlie surface matched opportunities. $149/mo Self Service (was $197 &mdash; Fiscal-Year Compliance Special) only kicks in if you stay past day 14.
+              Sign up with email &mdash; no credit card required. Build your CMMC Level 1 package in week 1, connect M365 or Google Workspace for continuous monitoring, and let Charlie surface matched opportunities. $149/mo Self Service (was $197 &mdash; Federal Compliance Grant) only kicks in if you stay past day 14.
             </p>
           </div>
         </div>
@@ -1551,7 +1551,7 @@ export default function Home() {
                   $149/mo
                 </div>
                 <div className="mt-1 text-sm text-[#a8cfc0]">
-                  $1,788/year &middot; Fiscal-Year Compliance Special &middot; cancel anytime
+                  $1,788/year &middot; Federal Compliance Grant &middot; cancel anytime
                 </div>
               </div>
 
@@ -1590,7 +1590,7 @@ export default function Home() {
           {/* Scarcity banner */}
           <div className="mb-8 flex flex-col items-center gap-2 border border-[#a06b1a] bg-[#fff8e8] px-6 py-4 text-center md:flex-row md:justify-center md:gap-4">
             <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#a06b1a]">
-              ⚡ Fiscal-Year Compliance Special
+              ⚡ Federal Compliance Grant
             </span>
             <span className="text-sm font-semibold text-[#5d4f30]">
               Lock in <span className="font-black text-[#10231d]">$149/mo</span> Self Service &mdash; through fiscal-year end (Sept 30). After that: $197/mo list. Add a human Compliance Officer for $297/mo.
@@ -1704,7 +1704,7 @@ export default function Home() {
 
                 <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
                   <div className="text-base font-bold text-[#10231d]">
-                    Your Fiscal-Year Compliance Special price (through Sept 30)
+                    Your Federal Compliance Grant price (through Sept 30)
                   </div>
                   <div className="font-serif text-4xl font-bold text-[#2f8f6d] md:text-5xl">
                     $149<span className="text-lg font-normal text-[#5a7d70]">/mo</span>
@@ -1751,7 +1751,7 @@ export default function Home() {
                   14-day free trial &middot; No credit card required &middot; Cancel anytime &middot; CMMC L1 Success Guarantee
                 </p>
                 <p className="text-center text-[11px] italic text-[#a06b1a]">
-                  After fiscal-year end (Sept 30), the Fiscal-Year Compliance Special is gone. Self Service returns to $197/mo list.
+                  After fiscal-year end (Sept 30), the Federal Compliance Grant is gone. Self Service returns to $197/mo list.
                 </p>
               </div>
             </div>
@@ -2143,7 +2143,7 @@ export default function Home() {
           <div className="mb-12 flex flex-col items-start justify-between gap-4  border border-[#cfe3d9] bg-white p-6 md:flex-row md:items-center">
             <div>
               <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#a06b1a]">
-                Fiscal-Year Compliance Special &middot; Locked through Sept 30
+                Federal Compliance Grant &middot; Locked through Sept 30
               </div>
               <div className="mt-1 font-serif text-lg font-bold text-[#0f2f26]">
                 14 days free, no credit card &mdash; $149/mo after

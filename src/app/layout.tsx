@@ -30,7 +30,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Custodia | Guided CMMC Level 1 Compliance",
   description:
-    "Federal compliance for small contractors, in plain English. Charlie — your AI compliance officer — walks you through CMMC Level 1 in 7 days. $149/month Self Service (was $197, Fiscal-Year Compliance Special), or $297/month with a credentialed human Compliance Officer on call. 14-day free trial. No credit card required.",
+    "Federal compliance for small contractors, in plain English. Charlie — your AI compliance officer — walks you through CMMC Level 1 in 7 days. $149/month Self Service (was $197, Federal Compliance Grant), or $297/month with a credentialed human Compliance Officer on call. 14-day free trial. No credit card required.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,

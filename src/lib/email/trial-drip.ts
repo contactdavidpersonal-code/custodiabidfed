@@ -244,7 +244,7 @@ Open an officer ticket if you want to introduce yourself: ${c.ticketUrl}
 Day 12. Two days left.
 
 What happens on day 14:
-  • Your trial ends. If you add a card, you continue at $149/month on Self Service — the Fiscal-Year Compliance Special, locked through fiscal-year end (Sept 30). List price is $197/month. If you want a credentialed human Custodia Compliance Officer on call too, the Self Service + Custodia Officer plan is $297/month.
+  • Your trial ends. If you add a card, you continue at $149/month on Self Service — the Federal Compliance Grant, locked through fiscal-year end (Sept 30). List price is $197/month. If you want a credentialed human Custodia Compliance Officer on call too, the Self Service + Custodia Officer plan is $297/month.
   • If you don't add a card, your access pauses. The CMMC L1 package you built stays exported in the bid-package ZIP you already generated — you keep it.
 
 What you keep by paying:
@@ -262,7 +262,7 @@ Lock in the launch tier here: ${c.billingUrl}
         ...c,
         kicker: "Day 12 of 14",
         title: "Two days left. Here is what changes on day 14.",
-        intro: `If you add a card you continue at <b>$149/month</b> on Self Service — the Fiscal-Year Compliance Special, locked through fiscal-year end (Sept 30; list price is $197/month). If you want a credentialed human Compliance Officer on call too, that's <b>$297/month</b>. If you do not add a card, your access pauses and the CMMC L1 package you already built stays exported. You keep what you built either way.`,
+        intro: `If you add a card you continue at <b>$149/month</b> on Self Service — the Federal Compliance Grant, locked through fiscal-year end (Sept 30; list price is $197/month). If you want a credentialed human Compliance Officer on call too, that's <b>$297/month</b>. If you do not add a card, your access pauses and the CMMC L1 package you already built stays exported. You keep what you built either way.`,
         bullets: [
           "Your assigned Compliance Officer, on call year-round.",
           "Continuous M365 / Google monitoring for evidence freshness.",
@@ -284,7 +284,7 @@ Lock in the launch tier here: ${c.billingUrl}
 
 Day 13. The trial ends tomorrow.
 
-If you want to keep going, add a card today. $149/month on Self Service (Fiscal-Year Compliance Special, locked through Sept 30 — was $197 list), or $297/month if you want a credentialed human Custodia Compliance Officer on call. No contract, cancel any time inside the platform. The Custodia CMMC L1 Success Guarantee turns on the day your subscription begins.
+If you want to keep going, add a card today. $149/month on Self Service (Federal Compliance Grant, locked through Sept 30 — was $197 list), or $297/month if you want a credentialed human Custodia Compliance Officer on call. No contract, cancel any time inside the platform. The Custodia CMMC L1 Success Guarantee turns on the day your subscription begins.
 
 Add a card: ${c.billingUrl}
 
@@ -298,9 +298,9 @@ If you have a question that the difference between yes and no hinges on — pric
         ...c,
         kicker: "Day 13 of 14",
         title: "Tomorrow your $149 / month seat opens.",
-        intro: `Add a card today and the Custodia CMMC L1 Success Guarantee turns on the day your subscription begins. $149/month on Self Service (Fiscal-Year Compliance Special, locked through Sept 30 — was $197 list), or $297/month if you want a credentialed human Custodia Compliance Officer on call. No contract, cancel any time.`,
+        intro: `Add a card today and the Custodia CMMC L1 Success Guarantee turns on the day your subscription begins. $149/month on Self Service (Federal Compliance Grant, locked through Sept 30 — was $197 list), or $297/month if you want a credentialed human Custodia Compliance Officer on call. No contract, cancel any time.`,
         bullets: [
-          "$149/month — Self Service, Fiscal-Year Compliance Special (was $197 list).",
+          "$149/month — Self Service, Federal Compliance Grant (was $197 list).",
           "$297/month — Self Service + Custodia Compliance Officer if you want a human on call.",
           "Cancel any time, inside the platform, two clicks.",
           "Reply to this email if a question is the difference between yes and no — a human reads every reply.",

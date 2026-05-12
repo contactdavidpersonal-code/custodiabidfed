@@ -196,7 +196,7 @@ function Body() {
       <H3>What it actually costs (Custodia)</H3>
       <UL>
         <li>
-          <strong>Cash:</strong> $149/mo Self Service (was $197, Fiscal-Year Compliance Special). $1,788/year. 14-day free
+          <strong>Cash:</strong> $149/mo Self Service (was $197, Federal Compliance Grant). $1,788/year. 14-day free
           trial, no credit card to start.
         </li>
         <li>
