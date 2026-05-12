@@ -599,6 +599,41 @@ export default function Home() {
         </div>
       </RevealSection>
 
+      {/* 5.5 — See it in action: onboarding chat */}
+      <RevealSection className="bg-[#f7f7f3] px-6 py-24">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-12 grid items-end gap-8 md:grid-cols-[1.1fr_1fr]">
+            <div>
+              <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
+                see it in action
+              </div>
+              <h2 className="font-serif text-4xl font-bold leading-[1.05] tracking-tight text-[#10231d] md:text-5xl">
+                Step 1 is a conversation, not a 200-question form.
+              </h2>
+            </div>
+            <p className="text-base leading-relaxed text-[#44695c] md:text-lg">
+              Charlie &mdash; your compliance officer &mdash; learns your business in plain English and fills in the profile on the right as you talk. By the time you&apos;re done, your CMMC scope is captured, the right artifacts are queued, and the bid-ready package is already taking shape.
+            </p>
+          </div>
+
+          <figure className="overflow-hidden border border-[#cfe3d9] bg-white shadow-[0_30px_80px_-30px_rgba(14,48,37,0.35)]">
+            <img
+              src="/demo_onboardingchat.png"
+              alt="Custodia onboarding: Charlie, your compliance officer, captures your business profile in a chat while the right rail fills in 9 of 10 key facts about the company."
+              className="block h-auto w-full"
+              width={2400}
+              height={1600}
+              loading="lazy"
+            />
+            <figcaption className="border-t border-[#cfe3d9] bg-[#f7fcf9] px-5 py-3 text-xs leading-relaxed text-[#44695c]">
+              Real screen from the platform. The chat is on the left, what
+              Charlie has learned about your business is on the right &mdash;
+              update-as-you-talk, never a black box.
+            </figcaption>
+          </figure>
+        </div>
+      </RevealSection>
+
       {/* 6 — Stakes + Custodia Shield */}
       <RevealSection className="bg-[#f7f7f3] px-6 py-24">
         <div className="mx-auto max-w-6xl">
