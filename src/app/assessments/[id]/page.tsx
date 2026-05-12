@@ -451,7 +451,7 @@ function NextStepBanner({
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-amber-200 bg-amber-50 p-5">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-            Action needed Â· Step 1 of 8
+            Action needed · Step 1 of 8
           </div>
           <h2 className="mt-1 text-lg font-bold text-slate-900">
             Finish telling the officer about your business
@@ -476,7 +476,7 @@ function NextStepBanner({
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-[#cfe3d9] bg-[#f1f9f4] p-5">
         <div>
           <div className="text-xs font-semibold uppercase tracking-wider text-[#2f8f6d]">
-            Step 4 of 8 Â· You are here
+            Step 4 of 8 · You are here
           </div>
           <h2 className="mt-1 text-lg font-bold text-[#10231d]">
             Answer the 15 requirements
@@ -505,7 +505,7 @@ function NextStepBanner({
     <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-[#10231d] bg-[#10231d] p-5 text-white">
       <div>
         <div className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
-          Ready for step 5 Â· Sign &amp; affirm
+          Ready for step 5 · Sign &amp; affirm
         </div>
         <h2 className="mt-1 text-lg font-bold">
           {hasBlockers
