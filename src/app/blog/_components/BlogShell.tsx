@@ -37,7 +37,7 @@ export function BlogShell({ children }: { children: ReactNode }) {
               Free SPRS quiz
             </Link>
             <Link
-              href="/pricing"
+              href="/upgrade"
               className="hidden transition-colors hover:text-white sm:inline"
             >
               Pricing
@@ -69,7 +69,7 @@ export function BlogShell({ children }: { children: ReactNode }) {
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
             <Link href="/" className="hover:text-[#10231d]">Home</Link>
             <Link href="/blog" className="hover:text-[#10231d]">Blog</Link>
-            <Link href="/pricing" className="hover:text-[#10231d]">Pricing</Link>
+            <Link href="/upgrade" className="hover:text-[#10231d]">Pricing</Link>
             <Link href="/sprs-check" className="hover:text-[#10231d]">SPRS quiz</Link>
             <Link href="/privacy" className="hover:text-[#10231d]">Privacy</Link>
             <Link href="/terms" className="hover:text-[#10231d]">Terms</Link>

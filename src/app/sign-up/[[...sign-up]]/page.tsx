@@ -118,7 +118,7 @@ const OFFICER_COPY: PlanCopy = {
     { label: "Audit firm", body: "$25k+, no monitoring" },
     { label: "Custodia + Officer", body: "Days, $297/mo, human-backed", emphasis: true },
   ],
-  backHref: "/pricing",
+  backHref: "/upgrade",
   backLabel: "← Back to pricing",
 };
 

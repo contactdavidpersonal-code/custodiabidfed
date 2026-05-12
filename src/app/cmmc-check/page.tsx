@@ -21,7 +21,7 @@ export default function CmmcCheckPage() {
             Custodia
           </Link>
           <nav className="flex items-center gap-4 text-sm text-white/70">
-            <Link href="/pricing" className="hover:text-white">
+            <Link href="/upgrade" className="hover:text-white">
               Pricing
             </Link>
             <Link href="/meet-charlie" className="hidden hover:text-white sm:block">

@@ -215,7 +215,7 @@ function Body() {
         signed SPRS-ready artifact pack, year-round posture monitoring,
         weekly SAM.gov opportunity radar, in-app Custodia Compliance Officer
         escalation, annual re-affirmation, public Trust Page primes can
-        verify. <Link href="/pricing" className="font-semibold underline underline-offset-2">Full breakdown on the pricing page.</Link>
+        verify. <Link href="/upgrade" className="font-semibold underline underline-offset-2">Full breakdown on the pricing page.</Link>
       </Callout>
 
       <H3>What about the $97/mo checklist tools?</H3>

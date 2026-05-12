@@ -107,7 +107,7 @@ export default function AuditSupportPage() {
             knocks. Cancel any time.
           </p>
           <Link
-            href="/pricing"
+            href="/upgrade"
             className="inline-flex  bg-amber-400 px-6 py-3 text-sm font-bold text-slate-900 hover:bg-amber-300"
           >
             See pricing

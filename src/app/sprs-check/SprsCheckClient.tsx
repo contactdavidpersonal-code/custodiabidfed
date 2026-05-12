@@ -681,7 +681,7 @@ function ResultView({
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Link
-            href="/pricing"
+            href="/upgrade"
             className="inline-flex items-center justify-center gap-2 bg-[#0a2620] px-6 py-3 text-xs font-bold uppercase tracking-[0.2em] text-[#c4f0b8] transition-colors hover:bg-[#0d2e25]"
           >
             Start my 14-day free trial

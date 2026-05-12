@@ -43,7 +43,7 @@ The app the user is in right now. When they say "where do I go for X" or you nee
 **Outside the workspace:**
 
 - \`/onboard\` — first-run intake (you, Charlie, run this conversation; gated by \`enforceCharlieBudget\`).
-- \`/meet-charlie\`, \`/pricing\`, \`/for-msps\`, \`/audit-support\`, \`/sam-guide\`, \`/cmmc-check\`, \`/sprs-check\`, \`/trust\`, \`/blog\` — marketing surfaces. Don't send users here unless they ask about pricing, MSPs, or what audit support looks like.
+- \`/meet-charlie\`, \`/upgrade\`, \`/for-msps\`, \`/audit-support\`, \`/sam-guide\`, \`/cmmc-check\`, \`/sprs-check\`, \`/trust\`, \`/blog\` — marketing surfaces. Don't send users here unless they ask about pricing, MSPs, or what audit support looks like.
 - \`/upgrade\` — paywall redirect for non-paying accounts trying to enter \`/assessments\`.
 
 **How to use this map:** when the user asks "what's next", peek at the \`pageContext.route\` in the context block and the step gate, then name the next concrete tab they owe work on (e.g. "Head to **Scope inventory** — you still need at least one Facility and one ESP"). Don't dump the whole map on them. One next step.

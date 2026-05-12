@@ -191,7 +191,7 @@ export default async function UpgradePage({
             </div>
           </Link>
           <Link
-            href={isMsp ? "/for-msps" : "/pricing"}
+            href={isMsp ? "/for-msps" : "/"}
             className="text-xs font-medium text-[#a8cfc0] transition-colors hover:text-white"
           >
             ← Back

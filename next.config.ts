@@ -95,6 +95,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // The standalone /pricing marketing page was retired in favor of the
+  // in-flow /upgrade checkout drawer (one screen, trial-start CTA, Clerk
+  // Checkout). Permanent redirect so any inbound link — emails, Google
+  // results, old blog posts — lands on the live flow.
+  async redirects() {
+    return [
+      { source: "/pricing", destination: "/upgrade", permanent: true },
+    ];
+  },
 };
 
 // Wrap with Sentry. The Vercel integration injects SENTRY_AUTH_TOKEN /

@@ -456,7 +456,7 @@ async function sendStep(
     greeting,
     workspaceUrl: `${base}/assessments`,
     billingUrl: `${base}/upgrade`,
-    pricingUrl: `${base}/pricing`,
+    pricingUrl: `${base}/upgrade`,
     ticketUrl: `${base}/assessments/tickets/new`,
   };
 

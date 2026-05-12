@@ -24,7 +24,7 @@ const PUBLIC_ALLOW = [
   "/blog/",
   "/sprs-check",
   "/cmmc-check",
-  "/pricing",
+  "/upgrade",
   "/regulations",
   "/regulations/",
   "/verified/",
