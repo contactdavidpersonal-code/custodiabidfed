@@ -51,7 +51,10 @@ export function UpgradeToOfficerCard({
             Add Custodia Officer
           </span>
           <span className="font-serif text-2xl font-bold text-white">
-            $297<span className="text-sm font-normal text-[#8dd2b1]">/mo</span>
+            +$148<span className="text-sm font-normal text-[#8dd2b1]">/mo</span>
+          </span>
+          <span className="text-[11px] text-[#8dd2b1]">
+            on top of your $149 Self Service plan ($297/mo total)
           </span>
           <span className="text-xs text-[#bdf2cf]">
             Unlimited officer tickets · audit support · pre-submission review

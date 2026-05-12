@@ -102,8 +102,8 @@ export function OfficerUpsellBanner({
         ) : (
           <UpsellCard
             tier="Add Custodia Officer"
-            price="$297"
-            cadence="per month"
+            price="+$148"
+            cadence="per month on top of your $149 plan ($297/mo total)"
             pitch="Self Service + a credentialed human officer. Unlimited tickets, officer-led audit support, pre-submission review. The right call if CMMC L1 work is going to keep happening — or if you want a human on call for the awkward 5%."
             cta="Upgrade my plan"
             href="/upgrade?plan=bidfedcmmc_self_service_custodia_officer_"
