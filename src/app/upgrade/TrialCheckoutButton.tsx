@@ -79,14 +79,22 @@ export function TrialCheckoutButton({
         );
       }
 
+      // Where to land the user once Clerk activates the subscription.
+      // Officer upgrades almost always come from someone trying to open a
+      // ticket — drop them straight on the ticket composer so the next
+      // click is the one they were trying to make before they hit the
+      // paywall. Everyone else goes through /onboard (which handles solo
+      // setup and MSP first-client provisioning).
+      const isOfficerUpgrade = planSlug.includes("officer");
+      const redirectUrl = isOfficerUpgrade
+        ? "/assessments/tickets/new"
+        : "/onboard";
+
       clerk.__internal_openCheckout({
         planId: resolvedId,
         planPeriod: "month",
         for: "user",
-        // Always land on /onboard after the trial activates. For solo users
-        // this runs onboarding then redirects to /assessments. For MSPs it
-        // prompts them to create their first client business org.
-        newSubscriptionRedirectUrl: "/onboard",
+        newSubscriptionRedirectUrl: redirectUrl,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not open checkout");
