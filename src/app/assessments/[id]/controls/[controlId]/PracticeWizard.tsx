@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type {
@@ -163,101 +163,62 @@ export function PracticeWizard(props: Props) {
     props.response.status !== "unanswered" &&
     (props.response.narrative ?? "").trim().length >= 20;
 
-  // Sticky compact header: show only after the in-document header scrolls
-  // out of view, so users always know which practice (and progress) they're
-  // working on while deep in the evidence section.
-  const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const [stuck, setStuck] = useState(false);
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const obs = new IntersectionObserver(
-      ([entry]) => setStuck(!entry.isIntersecting),
-      { threshold: 0, rootMargin: "-1px 0px 0px 0px" },
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
   const stickyStatusLabel = isLocked
     ? STATUS_LABELS[props.response.status] ?? "In progress"
     : "In progress";
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-8">
-      {/* Sticky compact header — visible only after main header scrolls away */}
+      {/* Sticky practice header: stays pinned just below the workspace nav
+          as the user scrolls into the evidence section so they always know
+          which practice they're working on. Includes the back link, title,
+          plain-English description, progress, and current status. */}
       <div
-        aria-hidden={!stuck}
-        className={
-          "pointer-events-none fixed inset-x-0 z-20 transition-all duration-200 " +
-          (stuck
-            ? "pointer-events-auto translate-y-0 opacity-100"
-            : "-translate-y-2 opacity-0")
-        }
-        style={{ top: "calc(var(--safe-top, 0px) + 56px)" }}
+        className="sticky z-20 -mx-4 mb-6 border-b border-[#cfe3d9] bg-[#f7f7f3]/95 px-4 pt-4 pb-4 shadow-[0_8px_24px_-18px_rgba(14,42,35,0.4)] backdrop-blur md:-mx-6 md:px-6"
+        style={{ top: "calc(var(--safe-top, 0px) + 64px)" }}
       >
-        <div className="border-b border-[#cfe3d9] bg-white/95 shadow-[0_4px_18px_-12px_rgba(14,42,35,0.35)] backdrop-blur">
-          <div className="mx-auto flex max-w-4xl items-center gap-3 px-4 py-2.5 md:px-6">
-            <span className="shrink-0 bg-[#0e2a23] px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-[#bdf2cf]">
+        <div className="mb-3 flex items-center justify-between gap-4 text-sm">
+          <Link
+            href={`/assessments/${props.assessmentId}`}
+            className="font-medium text-[#5a7d70] transition-colors hover:text-[#10231d]"
+          >
+            &larr; Back to overview
+          </Link>
+          <span className="font-medium text-[#5a7d70]">
+            Practice {props.currentIdx + 1} of {props.total}
+          </span>
+        </div>
+
+        <header>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className=" bg-[#0e2a23] px-2 py-0.5 text-[11px] font-bold tracking-wider text-[#bdf2cf]">
               {props.practice.domain}
             </span>
-            <span className="shrink-0 font-mono text-[11px] font-semibold text-[#5a7d70]">
+            <span className="font-mono text-xs font-semibold text-[#5a7d70]">
               {props.practice.id}
             </span>
-            <span className="truncate font-serif text-sm font-bold text-[#10231d]">
-              {props.practice.shortName}
+            <span className="text-[#cfe3d9]">&middot;</span>
+            <span className="text-xs font-medium text-[#5a7d70]">
+              {props.practice.farReference}
             </span>
-            <span className="ml-auto hidden shrink-0 text-[11px] font-medium text-[#5a7d70] md:inline">
-              Practice {props.currentIdx + 1} of {props.total}
-            </span>
-            <span className="shrink-0 rounded-full border border-[#cfe3d9] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#10231d]">
+            <span className="ml-auto shrink-0 rounded-full border border-[#cfe3d9] bg-white px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-[#10231d]">
               {stickyStatusLabel}
             </span>
           </div>
-        </div>
-      </div>
-
-      <div className="mb-5 flex items-center justify-between gap-4 text-sm">
-        <Link
-          href={`/assessments/${props.assessmentId}`}
-          className="font-medium text-[#5a7d70] transition-colors hover:text-[#10231d]"
-        >
-          &larr; Back to overview
-        </Link>
-        <span className="font-medium text-[#5a7d70]">
-          Practice {props.currentIdx + 1} of {props.total}
-        </span>
-      </div>
-
-      <header className="mb-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className=" bg-[#0e2a23] px-2 py-0.5 text-[11px] font-bold tracking-wider text-[#bdf2cf]">
-            {props.practice.domain}
-          </span>
-          <span className="font-mono text-xs font-semibold text-[#5a7d70]">
-            {props.practice.id}
-          </span>
-          <span className="text-[#cfe3d9]">&middot;</span>
-          <span className="text-xs font-medium text-[#5a7d70]">
-            {props.practice.farReference}
-          </span>
-        </div>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight text-[#10231d] md:text-[34px]">
-          {props.practice.shortName}
-        </h1>
-        <p className="mt-2 text-base leading-relaxed text-[#10231d]/85">
-          {props.practice.plainEnglish}
-        </p>
-        {props.practice.whyItMatters && (
-          <p className="mt-2 text-sm leading-relaxed text-[#5a7d70]">
-            <span className="font-semibold text-[#a06b1a]">Why: </span>
-            {props.practice.whyItMatters}
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-[#10231d] md:text-3xl">
+            {props.practice.shortName}
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-[#10231d]/85 md:text-base">
+            {props.practice.plainEnglish}
           </p>
-        )}
-      </header>
-
-      {/* Sentinel: when this scrolls out of view, the sticky header appears. */}
-      <div ref={sentinelRef} aria-hidden className="h-px w-full" />
+          {props.practice.whyItMatters && (
+            <p className="mt-2 text-sm leading-relaxed text-[#5a7d70]">
+              <span className="font-semibold text-[#a06b1a]">Why: </span>
+              {props.practice.whyItMatters}
+            </p>
+          )}
+        </header>
+      </div>
 
       {isLocked && !wholeNa && (
         <div className="mb-6  border border-[#2f8f6d] bg-[#f7fcf9] p-4">
