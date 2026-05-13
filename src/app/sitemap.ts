@@ -12,18 +12,24 @@ const APP_URL = (
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = [
     { url: `${APP_URL}/`, changeFrequency: "weekly", priority: 1 },
+    { url: `${APP_URL}/cmmc-level-1`, changeFrequency: "weekly", priority: 0.95 },
     { url: `${APP_URL}/blog`, changeFrequency: "weekly", priority: 0.9 },
-    { url: `${APP_URL}/upgrade`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${APP_URL}/bid-digest`, changeFrequency: "weekly", priority: 0.85 },
     { url: `${APP_URL}/sprs-check`, changeFrequency: "monthly", priority: 0.8 },
     { url: `${APP_URL}/cmmc-check`, changeFrequency: "monthly", priority: 0.8 },
-    { url: `${APP_URL}/regulations`, changeFrequency: "monthly", priority: 0.7 },
-    { url: `${APP_URL}/bid-digest`, changeFrequency: "weekly", priority: 0.8 },
+    { url: `${APP_URL}/upgrade`, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${APP_URL}/regulations`, changeFrequency: "monthly", priority: 0.85 },
+    { url: `${APP_URL}/regulations/ScopingGuideL1v2.pdf`, changeFrequency: "yearly", priority: 0.75 },
+    { url: `${APP_URL}/regulations/AssessmentGuideL1v2.pdf`, changeFrequency: "yearly", priority: 0.75 },
+    { url: `${APP_URL}/regulations/ModelOverviewv2.pdf`, changeFrequency: "yearly", priority: 0.75 },
+    { url: `${APP_URL}/sprs-guide`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${APP_URL}/sam-guide`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${APP_URL}/cmmc/templates`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${APP_URL}/for-msps`, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${APP_URL}/sam-guide`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${APP_URL}/audit-support`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${APP_URL}/meet-charlie`, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${APP_URL}/onboard`, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${APP_URL}/upgrade`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${APP_URL}/privacy`, changeFrequency: "yearly", priority: 0.3 },
+    { url: `${APP_URL}/terms`, changeFrequency: "yearly", priority: 0.3 },
   ];
 
   // Blog posts — static at build/request time from the in-memory registry.

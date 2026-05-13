@@ -115,21 +115,31 @@ const SOURCES: { group: string; items: Source[] }[] = [
       {
         short: "DoD CMMC Scoping Guide — Level 1",
         title: "CMMC Scoping Guide — Level 1 (v2.13, September 2024)",
-        cite: "OUSD(A&S), CMMC PMO, Sept. 2024",
+        cite: "OUSD(A&S), CMMC PMO, Sept. 2024 — DoD-CIO-00005 (ZRIN 0790-ZA21)",
         what:
-          "The DoD's official guide for determining what's in scope for a Level 1 self-assessment. Confirms the 15 safeguarding requirements count and explains how to draw the boundary around the systems that handle FCI.",
+          "The DoD's official guide for determining what's in scope for a Level 1 self-assessment. Confirms the 15 safeguarding requirements count and explains how to draw the boundary around the systems that handle FCI. Mirrored on this site under DoD Distribution Statement A.",
         applies: "Every CMMC Level 1 contractor.",
-        href: "https://dodcio.defense.gov/Portals/0/Documents/CMMC/ScopingGuideL1v2.pdf",
+        href: "/regulations/ScopingGuideL1v2.pdf",
         publisher: "DoD CIO",
       },
       {
         short: "CMMC Assessment Guide — Level 1",
-        title: "CMMC Assessment Guide — Level 1",
-        cite: "OUSD(A&S), CMMC PMO",
+        title: "CMMC Assessment Guide — Level 1 (v2.13, September 2024)",
+        cite: "OUSD(A&S), CMMC PMO, Sept. 2024 — DoD-CIO-00002 (ZRIN 0790-ZA18)",
         what:
-          "The official walkthrough of every Level 1 practice. This is the guide that splits some FAR requirements into multiple sub-practice IDs (hence the '17' you see in older articles — the regulatory count remains 15).",
+          "The official walkthrough of every Level 1 practice with assessment objectives, examine/interview/test methods, and example evidence. This is the guide that splits some FAR requirements into multiple sub-practice IDs (hence the '17' you see in older articles — the regulatory count remains 15). Mirrored on this site under DoD Distribution Statement A.",
         applies: "Every CMMC Level 1 contractor and assessor.",
-        href: "https://dodcio.defense.gov/Portals/0/Documents/CMMC/AssessmentGuideL1.pdf",
+        href: "/regulations/AssessmentGuideL1v2.pdf",
+        publisher: "DoD CIO",
+      },
+      {
+        short: "DoD CMMC Model Overview",
+        title: "Cybersecurity Maturity Model Certification (CMMC) Model Overview (v2.13, September 2024)",
+        cite: "OUSD(A&S), CMMC PMO, Sept. 2024 — DoD-CIO-00001 (ZRIN 0790-ZA17)",
+        what:
+          "The DoD's top-level explainer of the CMMC model: the three levels, the 14 domains, and the full matrix of every practice across Levels 1, 2, and 3 with FAR / NIST source mappings. Useful for understanding where Level 1 sits in the larger model. Mirrored on this site under DoD Distribution Statement A.",
+        applies: "Every CMMC contractor — Level 1 contractors use the Level 1 column.",
+        href: "/regulations/ModelOverviewv2.pdf",
         publisher: "DoD CIO",
       },
       {
@@ -207,7 +217,7 @@ const itemListJsonLd = {
       "@type": "Legislation",
       name: s.title,
       legislationIdentifier: s.cite,
-      url: s.href,
+      url: s.href.startsWith("http") ? s.href : `${APP_URL}${s.href}`,
       legislationJurisdiction: "United States",
     },
   })),
@@ -270,6 +280,110 @@ export default function RegulationsPage() {
             and the 0&ndash;110 SPRS score apply at Level 2 only.
           </p>
         </div>
+
+        {/* Mirrored official DoD CMMC documents — hosted on this site for fast access */}
+        <section className="mb-14 border-2 border-[#2f8f6d] bg-[#f4faf6] p-6 md:p-8">
+          <div className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+            Official DoD documents · mirrored on this site
+          </div>
+          <h2 className="font-serif text-2xl font-bold tracking-tight text-[#10231d] md:text-3xl">
+            The three official CMMC Level 1 PDFs, downloadable here
+          </h2>
+          <p className="mt-3 text-[15px] leading-relaxed text-[#1d3a30]">
+            These are the DoD Chief Information Officer&apos;s authoritative
+            documents for CMMC Level 1. Released September 2024, version
+            2.13, &ldquo;DISTRIBUTION STATEMENT A. Approved for public
+            release. Distribution is unlimited.&rdquo; We mirror them here
+            byte-for-byte so a small contractor can read the real source
+            without hunting through dodcio.defense.gov.
+          </p>
+          <ul className="mt-6 space-y-3">
+            <li className="flex flex-col gap-1 border border-[#cfe3d9] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <a
+                  href="/regulations/ScopingGuideL1v2.pdf"
+                  target="_blank"
+                  rel="noopener"
+                  className="font-serif text-lg font-bold text-[#10231d] hover:text-[#2f8f6d]"
+                >
+                  CMMC Scoping Guide — Level 1 (v2.13)
+                </a>
+                <div className="text-xs text-[#5a7d70]">
+                  DoD-CIO-00005 · Sept 2024 · 6 pages · What&apos;s in scope for a Level 1 self-assessment
+                </div>
+              </div>
+              <a
+                href="/regulations/ScopingGuideL1v2.pdf"
+                target="_blank"
+                rel="noopener"
+                className="shrink-0 bg-[#08201a] px-4 py-2 text-center text-xs font-bold text-[#bdf2cf] hover:bg-[#0c2a22]"
+              >
+                Download PDF
+              </a>
+            </li>
+            <li className="flex flex-col gap-1 border border-[#cfe3d9] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <a
+                  href="/regulations/AssessmentGuideL1v2.pdf"
+                  target="_blank"
+                  rel="noopener"
+                  className="font-serif text-lg font-bold text-[#10231d] hover:text-[#2f8f6d]"
+                >
+                  CMMC Assessment Guide — Level 1 (v2.13)
+                </a>
+                <div className="text-xs text-[#5a7d70]">
+                  DoD-CIO-00002 · Sept 2024 · 53 pages · Per-practice assessment objectives + evidence examples
+                </div>
+              </div>
+              <a
+                href="/regulations/AssessmentGuideL1v2.pdf"
+                target="_blank"
+                rel="noopener"
+                className="shrink-0 bg-[#08201a] px-4 py-2 text-center text-xs font-bold text-[#bdf2cf] hover:bg-[#0c2a22]"
+              >
+                Download PDF
+              </a>
+            </li>
+            <li className="flex flex-col gap-1 border border-[#cfe3d9] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <a
+                  href="/regulations/ModelOverviewv2.pdf"
+                  target="_blank"
+                  rel="noopener"
+                  className="font-serif text-lg font-bold text-[#10231d] hover:text-[#2f8f6d]"
+                >
+                  CMMC Model Overview (v2.13)
+                </a>
+                <div className="text-xs text-[#5a7d70]">
+                  DoD-CIO-00001 · Sept 2024 · 46 pages · Full model: 3 levels, 14 domains, every practice mapped to FAR / NIST
+                </div>
+              </div>
+              <a
+                href="/regulations/ModelOverviewv2.pdf"
+                target="_blank"
+                rel="noopener"
+                className="shrink-0 bg-[#08201a] px-4 py-2 text-center text-xs font-bold text-[#bdf2cf] hover:bg-[#0c2a22]"
+              >
+                Download PDF
+              </a>
+            </li>
+          </ul>
+          <p className="mt-5 text-xs leading-relaxed text-[#5a7d70]">
+            Source: U.S. Department of Defense, Office of the Chief
+            Information Officer. Documents reproduced under DoD Distribution
+            Statement A. Custodia is not affiliated with or endorsed by the
+            Department of Defense. For the authoritative DoD copy, visit{" "}
+            <a
+              href="https://dodcio.defense.gov/CMMC/Documentation/"
+              target="_blank"
+              rel="noopener nofollow"
+              className="underline hover:text-[#2f8f6d]"
+            >
+              dodcio.defense.gov/CMMC/Documentation
+            </a>
+            .
+          </p>
+        </section>
 
         {SOURCES.map((group) => (
           <section key={group.group} className="mb-12">

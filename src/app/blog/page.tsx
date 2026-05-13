@@ -112,6 +112,32 @@ export default function BlogIndexPage() {
         </div>
       </section>
 
+      {/* Pillar callout — drives Google-intent traffic from /blog into the cornerstone */}
+      <section className="border-b border-[#cfe3d9] bg-[#f4faf6] px-6 py-10">
+        <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+          <div>
+            <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+              Start here
+            </div>
+            <h2 className="mt-2 font-serif text-2xl font-bold text-[#10231d] md:text-3xl">
+              CMMC Level 1: The Complete Plain-English Guide (2026)
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-[#44695c]">
+              The 15 FAR 52.204-21 safeguarding requirements, who needs
+              CMMC Level 1, the SPRS annual affirmation, real 2026 costs,
+              and a 7-day path to bid-ready &mdash; all on one page, with
+              primary sources cited.
+            </p>
+          </div>
+          <Link
+            href="/cmmc-level-1"
+            className="bg-[#08201a] px-5 py-3 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#0c2a22]"
+          >
+            Read the guide &rarr;
+          </Link>
+        </div>
+      </section>
+
       {/* Post grid */}
       <section className="px-6 py-16 md:py-20">
         <div className="mx-auto max-w-5xl">

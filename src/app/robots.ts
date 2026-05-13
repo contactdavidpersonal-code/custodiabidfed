@@ -20,6 +20,7 @@ const APP_URL = (
  */
 const PUBLIC_ALLOW = [
   "/",
+  "/cmmc-level-1",
   "/blog",
   "/blog/",
   "/sprs-check",
@@ -32,8 +33,10 @@ const PUBLIC_ALLOW = [
   "/trust",
   "/for-msps",
   "/sam-guide",
+  "/sprs-guide",
   "/audit-support",
   "/meet-charlie",
+  "/cmmc/templates",
   "/llms.txt",
 ];
 

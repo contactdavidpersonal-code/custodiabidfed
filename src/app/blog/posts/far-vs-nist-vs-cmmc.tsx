@@ -37,6 +37,33 @@ const meta = {
     name: "Custodia Compliance Team",
     title: "Carnegie Mellon-trained information security engineers",
   },
+  faq: [
+    {
+      question: "What is the difference between FAR 52.204-21 and NIST 800-171?",
+      answer:
+        "FAR 52.204-21 is a 15-requirement government-wide safeguarding clause that applies to any federal contractor handling Federal Contract Information (FCI). NIST SP 800-171 is a 110-control standard for protecting Controlled Unclassified Information (CUI) in non-federal systems. FAR's 15 requirements are a basic subset of NIST 800-171; if you handle CUI you need all 110 controls, not just the 15.",
+    },
+    {
+      question: "What is the difference between NIST 800-171 and CMMC?",
+      answer:
+        "NIST SP 800-171 is the underlying technical standard. CMMC (Cybersecurity Maturity Model Certification) is the DoD-specific program that turns that standard into a tiered assessment regime: Level 1 = the 15 FAR safeguards (self-attested), Level 2 = all 110 NIST 800-171 controls (third-party assessed for most contracts), Level 3 = NIST 800-171 plus selected NIST 800-172 controls (DoD-assessed). CMMC is enforced through DFARS clause 252.204-7021.",
+    },
+    {
+      question: "Do I need CMMC Level 1 or CMMC Level 2?",
+      answer:
+        "Level 1 if the only sensitive data you receive from a DoD contract is Federal Contract Information (FCI) — contract details, schedules, delivery information that isn't public but isn't marked CUI. Level 2 if you receive any Controlled Unclassified Information (CUI), which includes technical drawings, ITAR-controlled data, export-controlled information, or anything explicitly marked CUI by the contracting officer.",
+    },
+    {
+      question: "Does FAR 52.204-21 apply to civilian agency contracts?",
+      answer:
+        "Yes. FAR 52.204-21 is a Federal Acquisition Regulation clause, so it applies to civilian-agency contracts (GSA, DHS, HHS, etc.) as well as DoD. The difference is that civilian contracts do not currently require a CMMC affirmation in SPRS — just compliance with the 15 safeguards. The pending FAR CUI Rule (RIN 9000-AN56) may extend assessment requirements to civilian agencies in future years.",
+    },
+    {
+      question: "Can I bid on a Level 2 contract with only Level 1?",
+      answer:
+        "No. If a solicitation incorporates DFARS 252.204-7021 at CMMC Level 2, you must have a current Level 2 assessment status in SPRS (self-assessment for some contracts, C3PAO assessment for most) at the time of award. A Level 1 affirmation does not satisfy a Level 2 requirement.",
+    },
+  ],
 };
 
 const TOC_ITEMS = [

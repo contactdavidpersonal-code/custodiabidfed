@@ -31,6 +31,12 @@ export function BlogShell({ children }: { children: ReactNode }) {
           </Link>
           <div className="flex items-center gap-6 text-sm font-medium text-[#cce5da]">
             <Link
+              href="/cmmc-level-1"
+              className="hidden transition-colors hover:text-white sm:inline"
+            >
+              CMMC Level 1 guide
+            </Link>
+            <Link
               href="/sprs-check"
               className="hidden transition-colors hover:text-white sm:inline"
             >
@@ -68,6 +74,7 @@ export function BlogShell({ children }: { children: ReactNode }) {
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs">
             <Link href="/" className="hover:text-[#10231d]">Home</Link>
+            <Link href="/cmmc-level-1" className="hover:text-[#10231d]">CMMC Level 1</Link>
             <Link href="/blog" className="hover:text-[#10231d]">Blog</Link>
             <Link href="/upgrade" className="hover:text-[#10231d]">Pricing</Link>
             <Link href="/sprs-check" className="hover:text-[#10231d]">SPRS quiz</Link>

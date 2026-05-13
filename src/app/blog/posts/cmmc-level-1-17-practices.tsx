@@ -34,6 +34,38 @@ const meta = {
     name: "Custodia Compliance Team",
     title: "Carnegie Mellon-trained information security engineers",
   },
+  faq: [
+    {
+      question:
+        "How many requirements are in CMMC Level 1 — 15 or 17?",
+      answer:
+        "The authoritative count is 15, taken directly from FAR 52.204-21(b)(1)(i)–(xv). The CMMC Assessment Guide splits one FAR requirement into multiple sub-practices, which is why older industry articles cite 17. For your SPRS affirmation, the 15 FAR safeguarding requirements are the controlling list, mapped to 17 CMMC practice IDs across six families (AC, IA, MP, PE, SC, SI).",
+    },
+    {
+      question:
+        "Do I need to document evidence for every CMMC Level 1 requirement?",
+      answer:
+        "Yes. CMMC Level 1 is self-attested, but the annual self-assessment requires you to show that each of the 15 safeguarding requirements is implemented. Auditors at CMMC Level 2, primes performing supplier reviews, and DoD IG/DIBCAC spot-checks will ask for evidence. Acceptable evidence includes a System Security Plan (SSP), screenshots of configurations (MFA, antivirus, account lockout), policy documents, training rosters, visitor logs, and media-disposal records.",
+    },
+    {
+      question:
+        "Which CMMC Level 1 practice families exist?",
+      answer:
+        "Six families: Access Control (AC), Identification and Authentication (IA), Media Protection (MP), Physical Protection (PE), System and Communications Protection (SC), and System and Information Integrity (SI). The 17 CMMC practice IDs distribute across these families and map back to the 15 FAR 52.204-21 requirements.",
+    },
+    {
+      question:
+        "How long does it take to implement all 15 CMMC Level 1 requirements?",
+      answer:
+        "A small contractor using a modern cloud stack (Microsoft 365 Business Premium or Google Workspace Business Plus) typically completes implementation in 3–5 business days of focused work. Most controls (MFA, antivirus, account lockout, boundary protection) are already enabled in default tenant configurations and only need to be documented. The longer items are the physical-protection log routines and media-sanitization procedure.",
+    },
+    {
+      question:
+        "Is CMMC Level 1 the same as NIST 800-171?",
+      answer:
+        "No. CMMC Level 1 corresponds to the 15 FAR 52.204-21 basic safeguarding requirements. NIST SP 800-171 has 110 controls and corresponds to CMMC Level 2. Level 1 is the subset that applies when you handle only Federal Contract Information (FCI); Level 2 is required when you handle Controlled Unclassified Information (CUI).",
+    },
+  ],
 };
 
 const TOC_ITEMS = [

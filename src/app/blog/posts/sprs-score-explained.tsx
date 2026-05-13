@@ -37,6 +37,34 @@ const meta = {
     name: "Custodia Compliance Team",
     title: "Carnegie Mellon-trained information security engineers",
   },
+  faq: [
+    {
+      question: "What is an SPRS score?",
+      answer:
+        "SPRS (Supplier Performance Risk System) is the DoD's central system for supplier risk data. The 'SPRS score' commonly refers to the NIST SP 800-171 Basic Assessment score — a number from –203 to 110 that reflects how many of the 110 NIST 800-171 controls a contractor has implemented. It is only required at CMMC Level 2. CMMC Level 1 contractors do not have a numeric score; they post a binary affirmation (MET / NOT MET) in SPRS instead.",
+    },
+    {
+      question: "How is the SPRS score calculated?",
+      answer:
+        "You start at 110 (full implementation of all 110 NIST 800-171 controls). For each unimplemented control, you subtract its weighted value — 1, 3, or 5 points depending on the control's security impact, per the DoD NIST SP 800-171 Assessment Methodology v1.2.1. The lowest possible score is –203. The score is self-reported and the contractor affirms its accuracy through a senior official affirmation in SPRS.",
+    },
+    {
+      question:
+        "My prime asked for my SPRS score and I'm Level 1. What do I send?",
+      answer:
+        "At Level 1 you do not have a numeric SPRS score — you have a current SPRS affirmation (MET) for the 15 FAR 52.204-21 safeguarding requirements. Send the prime: (1) your CAGE code, (2) the date of your most recent annual affirmation, (3) the assessment scope ('Level 1, all FCI-handling assets'), and (4) confirmation that the affirmation is current in SPRS. They can verify directly in SPRS.",
+    },
+    {
+      question: "Where do I find my SPRS score?",
+      answer:
+        "Log into the Procurement Integrated Enterprise Environment (PIEE) at piee.eb.mil, then open the SPRS module. Your Cyber Reports and Cyber Risk Assessment pages show your assessment record, score, and affirmation status. Only authorized roles (e.g., Contractor SPRS Cyber Vendor User) can view assessment data for your CAGE code.",
+    },
+    {
+      question: "What happens if my SPRS affirmation is false?",
+      answer:
+        "A false SPRS affirmation is a federal false statement under 18 U.S.C. § 1001 and a potential False Claims Act violation under 31 U.S.C. § 3729. The senior official who signs the affirmation is personally on the hook. The DOJ has already prosecuted multiple FCA cases against contractors for misrepresenting NIST 800-171 / CMMC posture — settlements have ranged from $300,000 to $9 million.",
+    },
+  ],
 };
 
 const TOC_ITEMS = [

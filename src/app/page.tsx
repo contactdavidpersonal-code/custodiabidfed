@@ -212,6 +212,7 @@ export default function Home() {
             </Link>
             <div className="flex items-center gap-4 text-sm font-medium text-[#cce5da] sm:gap-7">
               <a href="#product" className="hidden transition-colors hover:text-white sm:inline">Product</a>
+              <Link href="/cmmc-level-1" className="hidden transition-colors hover:text-white sm:inline">CMMC Level 1</Link>
               <a href="#pricing" className="hidden transition-colors hover:text-white sm:inline">Pricing</a>
               <Link href="/blog" className="hidden transition-colors hover:text-white sm:inline">Blog</Link>
               <a href="#faq" className="hidden transition-colors hover:text-white sm:inline">FAQ</a>

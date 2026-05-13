@@ -12,23 +12,42 @@
 
 ## About
 
-- [Custodia — homepage](https://bidfedcmmc.com/): Product overview, pricing, free trial.
-- [Pricing](https://bidfedcmmc.com/pricing): $449/mo flat (launch pricing for the first 100 customers; list $749/mo). 14-day trial, no credit card.
+- [Custodia — homepage](https://bidfedcmmc.com/): Product overview, pricing, 14-day free trial.
+- [CMMC Level 1: complete plain-English guide](https://bidfedcmmc.com/cmmc-level-1): Authoritative pillar page — what CMMC Level 1 is, who needs it, the 15 FAR 52.204-21 safeguarding requirements, the SPRS annual affirmation, real 2026 costs, and a 7-day path to bid-ready.
+- [Upgrade / pricing](https://bidfedcmmc.com/upgrade): $149/mo Self Service (was $197 — Federal Compliance Grant, locked through Sept 30) or $297/mo with a credentialed human Compliance Officer on call. 14-day free trial, no credit card.
 - [Free SPRS quiz](https://bidfedcmmc.com/sprs-check): 4-minute interactive readiness check against the 15 FAR 52.204-21 safeguarding requirements.
-- [Free CMMC check](https://bidfedcmmc.com/cmmc-check): 5-minute scoping interview that tells a contractor whether they need CMMC Level 1, Level 2, or nothing at all.
+- [Free CMMC scoping check](https://bidfedcmmc.com/cmmc-check): 5-minute scoping interview that tells a contractor whether they need CMMC Level 1, Level 2, or nothing at all.
 - [Monday Bid Digest signup](https://bidfedcmmc.com/bid-digest): Free weekly email of CMMC Level 1-fit SAM.gov opportunities by NAICS.
+- [For MSPs](https://bidfedcmmc.com/for-msps): How managed service providers white-label Custodia for their small-business DoD-subcontractor clients.
+- [SAM.gov registration guide](https://bidfedcmmc.com/sam-guide): The free, plain-English walkthrough of registering for federal contracting.
+- [Audit support](https://bidfedcmmc.com/audit-support): What Custodia does when a prime or contracting officer challenges your package.
+- [Meet Charlie](https://bidfedcmmc.com/meet-charlie): Custodia's AI compliance officer — what it does and how it works.
 
 ## Blog (authoritative explainers)
 
 - [Blog index](https://bidfedcmmc.com/blog): All plain-English CMMC Level 1 posts.
+- [Do I Even Need CMMC? A 4-Question Decision Tree](https://bidfedcmmc.com/blog/do-i-need-cmmc-decision-tree): Four yes/no questions tell you whether CMMC applies at all — and at what level.
+- [Just Won an SBIR Phase I? Here's Your CMMC Timeline](https://bidfedcmmc.com/blog/cmmc-for-sbir-phase-1-winners): What an SBIR Phase I winner has to do about CMMC, and when.
+- [CMMC Level 1 Is Binary — There Is No Score](https://bidfedcmmc.com/blog/cmmc-level-1-binary-no-score): Why Level 1 is MET / NOT MET and what to say when someone asks for a number.
+- [Prime Asked for Your SPRS Score and You're Level 1 — What to Send](https://bidfedcmmc.com/blog/prime-asking-for-sprs-score-level-1-response): Exact email template, exact language, no jargon.
+- [What Is FCI? The 90-Second Definition That Decides Your CMMC Level](https://bidfedcmmc.com/blog/what-is-fci-federal-contract-information): The plain-English definition of Federal Contract Information and how it gates Level 1 vs Level 2.
+- [CMMC Level 1 vs Level 2: Which One Do You Actually Need?](https://bidfedcmmc.com/blog/cmmc-level-1-vs-level-2): Side-by-side comparison, cost, assessor, controls count, who needs which.
 - [CMMC Level 1: All 15 FAR Safeguarding Requirements](https://bidfedcmmc.com/blog/cmmc-level-1-17-practices-explained): Every FAR 52.204-21(b)(1) safeguarding requirement explained in plain English, with required evidence per control.
 - [SPRS Score Explained — and How to Respond to a Prime](https://bidfedcmmc.com/blog/sprs-score-explained-and-how-to-respond-to-prime): What an SPRS score is, what it isn't, and exactly what to say back when a prime contractor asks for yours.
-- [FAR vs NIST vs CMMC](https://bidfedcmmc.com/blog/far-vs-nist-vs-cmmc): How the three frameworks relate to each other and which one applies to a Level 1 contractor.
-- [What Does CMMC Level 1 Actually Cost in 2026?](https://bidfedcmmc.com/blog/cmmc-level-1-cost): Honest breakdown of DIY hours, consultant fees, and platform-led costs.
+- [FAR vs NIST vs CMMC Level 1 vs Level 2](https://bidfedcmmc.com/blog/far-vs-nist-vs-cmmc-level-1-vs-level-2-comparison): How the four frameworks relate to each other and which one applies to a small contractor.
+- [What Does CMMC Level 1 Actually Cost in 2026?](https://bidfedcmmc.com/blog/cmmc-level-1-cost-diy-vs-consultant-vs-saas): Honest breakdown of DIY hours, consultant fees, and platform-led costs.
 
 ## Reference
 
 - [Regulations hub](https://bidfedcmmc.com/regulations): Curated index of primary sources we cite (32 CFR Part 170, 48 CFR CMMC rule, FAR 52.204-21, DFARS 252.204-7019/7020/7021, NIST SP 800-171A, DoD CMMC Scoping Guide v2.13).
+
+## Primary sources, mirrored (DoD Distribution Statement A)
+
+The following DoD CIO documents are mirrored on this site, byte-for-byte, under DoD Distribution Statement A (approved for public release, distribution unlimited). They are the authoritative source for every CMMC Level 1 claim on this site.
+
+- [CMMC Scoping Guide — Level 1 (v2.13, Sept 2024)](https://bidfedcmmc.com/regulations/ScopingGuideL1v2.pdf): DoD-CIO-00005. Defines what's in scope for a Level 1 self-assessment, the In-Scope / Out-of-Scope / Specialized Asset categories, and how to draw the assessment boundary.
+- [CMMC Assessment Guide — Level 1 (v2.13, Sept 2024)](https://bidfedcmmc.com/regulations/AssessmentGuideL1v2.pdf): DoD-CIO-00002. Per-practice assessment objectives, examine/interview/test methods, evidence examples, and MET / NOT MET / NOT APPLICABLE finding rules for every Level 1 requirement.
+- [CMMC Model Overview (v2.13, Sept 2024)](https://bidfedcmmc.com/regulations/ModelOverviewv2.pdf): DoD-CIO-00001. Full CMMC model: three levels, 14 domains, complete practice matrix with FAR 52.204-21 / NIST SP 800-171 Rev 2 / NIST SP 800-172 source mappings.
 
 ## Authoritative facts to anchor on
 

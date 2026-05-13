@@ -36,6 +36,33 @@ const meta = {
     name: "Custodia Compliance Team",
     title: "Carnegie Mellon-trained information security engineers",
   },
+  faq: [
+    {
+      question: "How much does CMMC Level 1 cost in 2026?",
+      answer:
+        "For a typical small DoD contractor in 2026, CMMC Level 1 costs roughly $0–$1,500 in software (cloud productivity suite, antivirus, password manager), 20–40 hours of founder/admin time if DIY, $6,000–$18,000 if you hire a vCISO consultant, or $149–$297/month with a guided SaaS platform like Custodia (Federal Compliance Grant pricing through Sept 30, 2026). There is no government fee for a Level 1 self-assessment — it is self-attested and posted in SPRS at no cost.",
+    },
+    {
+      question: "Is there a fee to file my CMMC Level 1 affirmation in SPRS?",
+      answer:
+        "No. SPRS submission is free. The DoD does not charge contractors to post a CMMC Level 1 affirmation. The only required cost is the time and tooling needed to actually implement the 15 FAR 52.204-21 safeguarding requirements before you affirm.",
+    },
+    {
+      question: "How much do CMMC consultants charge?",
+      answer:
+        "Independent consultants and vCISOs typically charge $150–$300/hour, with full Level 1 engagements quoted at $6,000–$18,000 depending on scope and document quality. Registered Practitioner Organizations (RPOs) and C3PAOs targeting Level 2 charge more but most do not bother with Level 1 because the unit economics are poor for them.",
+    },
+    {
+      question: "Can I do CMMC Level 1 myself for free?",
+      answer:
+        "You can do it for nearly free in cash if you already use a tenant like Microsoft 365 Business Premium or Google Workspace Business Plus (both include the security features needed). The cost is your time — typically 20–40 hours over a week or two — plus the risk of misinterpreting a requirement and posting a false affirmation. The DOJ has prosecuted False Claims Act cases against contractors for self-attestation errors.",
+    },
+    {
+      question: "What is the cheapest defensible way to get CMMC Level 1?",
+      answer:
+        "The cheapest defensible path is a modern cloud tenant ($22–$28 per user per month, which you likely already pay) plus a guided platform that walks you through each control with templates and evidence checklists. That keeps your time investment under 10 hours and replaces a $10,000+ consultant engagement.",
+    },
+  ],
 };
 
 const TOC_ITEMS = [
