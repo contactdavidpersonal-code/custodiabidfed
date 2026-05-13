@@ -2027,7 +2027,7 @@ export default function Home() {
       </RevealSection>
 
 
-      {/* 13.5 — The Custodia Guarantee: your assigned Compliance Officer */}
+      {/* 13.5 — Upgrade: add a human Custodia Compliance Officer */}
       <RevealSection className="relative overflow-hidden bg-[#f5efe3] px-4 py-20 sm:px-6 sm:py-28">
         {/* subtle parchment texture via layered gradients */}
         <div
@@ -2040,45 +2040,47 @@ export default function Home() {
         />
         <div className="relative mx-auto max-w-6xl">
           <div className="mb-10 text-center sm:mb-14">
-            <div className="text-[10px] font-black uppercase tracking-[0.28em] text-[#2f8f6d]">
-              The Custodia Guarantee
+            <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-[#2f8f6d]">
+              <span className="bg-[#2f8f6d] px-2 py-1 text-white">Upgrade</span>
+              Self Service + Custodia Officer &middot; $297/mo
             </div>
             <h2 className="mx-auto mt-4 max-w-3xl font-serif text-3xl font-bold leading-[1.1] text-[#10231d] sm:text-4xl md:text-5xl">
-              A Custodia Compliance Officer on call. Year&#8209;round. <span className="italic text-[#2f8f6d]">Personally.</span>
+              Add a credentialed human officer. <span className="italic text-[#2f8f6d]">Assigned to you.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#3d5a4f] sm:text-lg">
-              We&apos;re a cybersecurity firm first &mdash; not just a web app. The platform automates the paperwork, but a credentialed Custodia Compliance Officer guarantees you get this done to standard. If anything comes up, anytime, we help you ourselves.
+              Self Service ($149/mo) gets you Charlie, the platform, and the bid-ready package. Upgrade to <span className="font-bold text-[#10231d]">Self Service + Custodia Officer ($297/mo)</span> and a credentialed human Compliance Officer is assigned to your business &mdash; on call for anything CMMC Level 1 throws at you, year&#8209;round.
             </p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-5">
-            {/* Officer card */}
+            {/* Officer profile card */}
             <div className="md:col-span-2 border-2 border-[#10231d]/15 bg-white p-7 shadow-[0_25px_60px_-30px_rgba(16,35,29,0.45)] sm:p-8">
               <div className="text-[10px] font-black uppercase tracking-[0.22em] text-[#2f8f6d]">
-                Assigned at enrollment
+                Who you get
               </div>
               <div className="mt-4 flex items-center gap-4">
                 <div
                   aria-hidden
-                  className="flex h-16 w-16 flex-none items-center justify-center bg-gradient-to-br from-[#10231d] to-[#1d4a3d] font-serif text-2xl font-bold text-[#bdf2cf]"
+                  className="flex h-16 w-16 flex-none items-center justify-center bg-gradient-to-br from-[#10231d] to-[#1d4a3d] font-serif text-lg font-bold text-[#bdf2cf]"
                 >
-                  vCO
+                  CCO
                 </div>
                 <div className="min-w-0">
                   <div className="font-serif text-xl font-bold text-[#10231d]">
-                    Your Compliance Officer
+                    Your Custodia Compliance Officer
                   </div>
                   <div className="mt-1 text-sm text-[#3d5a4f]">
-                    Master&apos;s educated &middot; Highly credentialed
+                    Master&apos;s educated &middot; Industry-credentialed &middot; Federally seasoned
                   </div>
                 </div>
               </div>
               <ul className="mt-6 space-y-3 text-sm leading-relaxed text-[#10231d]">
                 {[
-                  "MS in cybersecurity, information assurance, or related field",
-                  "CMMC&#8209;aligned credentials (CISSP, CCP, CCA, or equivalent)",
-                  "Years of federal compliance experience &mdash; not a chatbot, not a ticket queue",
-                  "Knows your package, your tenant, and your bid posture by name",
+                  "MS in cybersecurity, information assurance, or a closely related field",
+                  "CMMC&#8209;aligned credentials &mdash; CISSP, CCP, CCA, or equivalent",
+                  "Years of hands&#8209;on federal compliance work &mdash; FAR 52.204-21, NIST SP 800-171, SPRS, DFARS 7012",
+                  "Vetted, background&#8209;checked, U.S.&#8209;based &mdash; not a tier&#8209;1 agent reading a script",
+                  "Knows your tenant, your scope, your primes, and your bid posture by name",
                 ].map((line, i) => (
                   <li key={i} className="flex gap-3">
                     <span aria-hidden className="mt-[7px] h-1.5 w-1.5 flex-none bg-[#2f8f6d]" />
@@ -2086,26 +2088,37 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
+              <div className="mt-7 border-t border-[#10231d]/10 pt-5 text-[11px] leading-relaxed text-[#3d5a4f]">
+                Charlie (your vCO) handles the workflow on every plan. The Officer upgrade adds a credentialed <em>human</em> in the loop &mdash; the one who signs off when stakes are real.
+              </div>
             </div>
 
-            {/* What they do */}
+            {/* What your officer does */}
             <div className="md:col-span-3 grid gap-4 sm:grid-cols-2">
               {[
                 {
-                  title: "Anytime, year&#8209;round",
-                  body: "Stuck on a control? Prime asking for evidence? Sub&#8209;contract clause you don&apos;t recognize? Your officer is a message away &mdash; not a tier&#8209;1 agent reading a script.",
+                  title: "Anything CMMC L1, anytime",
+                  body: "Stuck on a control? Prime asking for evidence? DFARS 7012 clause you don&apos;t recognize? Your officer is one message away &mdash; same business day, year&#8209;round, no ticket queue.",
+                },
+                {
+                  title: "Pre-submission review",
+                  body: "Before you affirm in SPRS, your officer reviews the entire package &mdash; objective by objective &mdash; and signs off. If it&apos;s not defensible to standard, it doesn&apos;t go out.",
+                },
+                {
+                  title: "Prime &amp; CO challenges, handled",
+                  body: "If a prime or contracting officer questions your posture, your officer steps in &mdash; including direct comms with the prime &mdash; until your package is accepted. That&apos;s the Custodia Guarantee, in person.",
+                },
+                {
+                  title: "Audit prep &amp; evidence defense",
+                  body: "Your officer walks you through what an assessor will actually ask for, rehearses the hard questions, and stands behind every artifact you submit.",
                 },
                 {
                   title: "Personal, not pooled",
-                  body: "You get assigned. Same officer. They learn your environment, your contracts, your risk profile &mdash; and defend your package if it&apos;s ever challenged.",
-                },
-                {
-                  title: "CMMC success guarantee",
-                  body: "If your Level 1 package isn&apos;t defensible to standard, that&apos;s on us. We rebuild it with you, on our time, until it is. The posture is ours.",
+                  body: "You get assigned. Same officer every time. They learn your environment, your contracts, your risk profile &mdash; and stay with you across re&#8209;affirmation cycles.",
                 },
                 {
                   title: "Cybersecurity firm first",
-                  body: "Custodia is staffed by security professionals, not SaaS support. The web app is the leverage. The officer is the guarantee.",
+                  body: "Custodia is staffed by security professionals, not SaaS support. The web app is leverage. The officer is the guarantee.",
                 },
               ].map((card, i) => (
                 <div
@@ -2125,14 +2138,22 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Pull quote */}
-          <div className="mx-auto mt-12 max-w-3xl border-l-4 border-[#2f8f6d] bg-white/60 px-7 py-6 sm:mt-16">
-            <p className="font-serif text-lg italic leading-[1.55] text-[#10231d] sm:text-xl">
-              &ldquo;The bidding is yours. The posture is ours. And if anything ever goes sideways &mdash; a prime challenge, a missing artifact, a control you don&apos;t understand &mdash; you get a credentialed human, not a help center.&rdquo;
-            </p>
-            <div className="mt-4 text-[11px] font-black uppercase tracking-[0.22em] text-[#2f8f6d]">
-              &mdash; The Custodia Guarantee
+          {/* Upgrade CTA */}
+          <div className="mx-auto mt-12 flex max-w-3xl flex-col items-center gap-4 border-l-4 border-[#2f8f6d] bg-white/70 px-7 py-7 sm:mt-16 sm:flex-row sm:justify-between sm:gap-8">
+            <div className="min-w-0">
+              <div className="text-[11px] font-black uppercase tracking-[0.22em] text-[#2f8f6d]">
+                Upgrade anytime
+              </div>
+              <p className="mt-2 font-serif text-lg leading-[1.45] text-[#10231d] sm:text-xl">
+                Self Service + Custodia Officer &mdash; <span className="font-black">$297/mo</span>. Add a credentialed human to your bid-ready posture. Cancel anytime.
+              </p>
             </div>
+            <Link
+              href="/upgrade?plan=bidfedcmmc_self_service_custodia_officer_"
+              className="inline-flex flex-none items-center justify-center bg-[#10231d] px-7 py-3.5 text-sm font-black uppercase tracking-[0.18em] text-[#bdf2cf] transition-colors hover:bg-[#1d4a3d]"
+            >
+              Upgrade to Officer &rarr;
+            </Link>
           </div>
         </div>
       </RevealSection>
