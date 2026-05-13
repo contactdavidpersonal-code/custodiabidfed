@@ -2237,7 +2237,7 @@ export default function Home() {
                   <li><Link href="/sign-up" className="transition-colors hover:text-[#0f2f26]">Start free trial</Link></li>
                   <li><Link href="/sign-in" className="transition-colors hover:text-[#0f2f26]">Sign in</Link></li>
                   <li><Link href="/dashboard" className="transition-colors hover:text-[#0f2f26]">Dashboard</Link></li>
-                  <li><Link href="/for-msps" className="font-semibold text-[#0f2f26] transition-colors hover:text-[#2f8f6d]">For MSPs &rarr;</Link></li>
+                  <li><Link href="/for-msps" className="font-semibold text-[#0f2f26] transition-colors hover:text-[#2f8f6d]">Do you do CMMC lv 1 for others? &rarr;</Link></li>
                 </ul>
               </div>
               <div>
