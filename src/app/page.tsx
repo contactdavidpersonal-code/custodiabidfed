@@ -208,10 +208,10 @@ export default function Home() {
               />
               <span className="flex flex-col leading-none [text-shadow:0_0_18px_rgba(0,0,0,0.9),0_2px_6px_rgba(0,0,0,0.75)]">
                 <span className="font-serif text-sm font-medium tracking-tight text-white/85 sm:text-base">
-                  Custodia<span className="text-[#8dd2b1]">.</span>
+                  Custodia
                 </span>
                 <span className="font-serif text-2xl font-bold tracking-tight text-white sm:text-3xl">
-                  BidFedCMMC
+                  BidFedCMMC<span className="text-[#8dd2b1]">.</span>
                 </span>
               </span>
             </Link>
