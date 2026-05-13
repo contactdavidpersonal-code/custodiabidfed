@@ -914,72 +914,60 @@ export default function CmmcLevel1PillarPage() {
           <ul className="mt-5 space-y-3 not-prose">
             <li className="flex flex-col gap-1 border border-[#cfe3d9] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <a
-                  href="/regulations/ScopingGuideL1v2.pdf"
-                  target="_blank"
-                  rel="noopener"
+                <Link
+                  href="/regulations/scoping-guide-level-1"
                   className="font-serif text-base font-bold text-[#10231d] hover:text-[#2f8f6d]"
                 >
                   CMMC Scoping Guide — Level 1 (v2.13)
-                </a>
+                </Link>
                 <div className="text-xs text-[#5a7d70]">
                   How to draw the boundary around your in-scope systems · 6 pages
                 </div>
               </div>
-              <a
-                href="/regulations/ScopingGuideL1v2.pdf"
-                target="_blank"
-                rel="noopener"
+              <Link
+                href="/regulations/scoping-guide-level-1"
                 className="shrink-0 bg-[#08201a] px-4 py-2 text-center text-xs font-bold text-[#bdf2cf] hover:bg-[#0c2a22]"
               >
-                Download PDF
-              </a>
+                Read the PDF
+              </Link>
             </li>
             <li className="flex flex-col gap-1 border border-[#cfe3d9] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <a
-                  href="/regulations/AssessmentGuideL1v2.pdf"
-                  target="_blank"
-                  rel="noopener"
+                <Link
+                  href="/regulations/assessment-guide-level-1"
                   className="font-serif text-base font-bold text-[#10231d] hover:text-[#2f8f6d]"
                 >
                   CMMC Assessment Guide — Level 1 (v2.13)
-                </a>
+                </Link>
                 <div className="text-xs text-[#5a7d70]">
                   Per-practice objectives, evidence examples, MET/NOT MET rules · 53 pages
                 </div>
               </div>
-              <a
-                href="/regulations/AssessmentGuideL1v2.pdf"
-                target="_blank"
-                rel="noopener"
+              <Link
+                href="/regulations/assessment-guide-level-1"
                 className="shrink-0 bg-[#08201a] px-4 py-2 text-center text-xs font-bold text-[#bdf2cf] hover:bg-[#0c2a22]"
               >
-                Download PDF
-              </a>
+                Read the PDF
+              </Link>
             </li>
             <li className="flex flex-col gap-1 border border-[#cfe3d9] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <a
-                  href="/regulations/ModelOverviewv2.pdf"
-                  target="_blank"
-                  rel="noopener"
+                <Link
+                  href="/regulations/model-overview"
                   className="font-serif text-base font-bold text-[#10231d] hover:text-[#2f8f6d]"
                 >
                   CMMC Model Overview (v2.13)
-                </a>
+                </Link>
                 <div className="text-xs text-[#5a7d70]">
                   Full model: 3 levels, 14 domains, complete practice matrix · 46 pages
                 </div>
               </div>
-              <a
-                href="/regulations/ModelOverviewv2.pdf"
-                target="_blank"
-                rel="noopener"
+              <Link
+                href="/regulations/model-overview"
                 className="shrink-0 bg-[#08201a] px-4 py-2 text-center text-xs font-bold text-[#bdf2cf] hover:bg-[#0c2a22]"
               >
-                Download PDF
-              </a>
+                Read the PDF
+              </Link>
             </li>
           </ul>
           <p className="mt-5 text-xs leading-relaxed text-[#5a7d70]">
