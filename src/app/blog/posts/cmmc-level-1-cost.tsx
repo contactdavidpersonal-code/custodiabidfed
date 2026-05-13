@@ -34,7 +34,7 @@ const meta = {
   readingMinutes: 10,
   author: {
     name: "Custodia Compliance Team",
-    title: "Carnegie Mellon-trained information security engineers",
+    title: "Information security engineers, Custodia",
   },
   faq: [
     {
