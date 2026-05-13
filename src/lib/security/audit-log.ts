@@ -38,7 +38,11 @@ export type AuditAction =
   | "exception.declared"
   | "exception.cleared"
   | "milestone.added"
-  | "milestone.deleted";
+  | "milestone.deleted"
+  | "organization.sam_uei_validated"
+  | "assessment.material_change_reviewed"
+  | "evidence.method_set"
+  | "evidence.marked_final";
 
 export type AuditEvent = {
   action: AuditAction;

@@ -259,6 +259,27 @@ export default async function ProfilePage(
             helper="LLC, S-Corp, C-Corp, sole prop, etc."
           />
 
+          {/* Optional ISSM (Information System Security Manager). Distinct
+              from the Affirming Official: ISSM is the day-to-day security
+              POC primes ask for on intake questionnaires; AO is the
+              senior official who signs the annual affirmation. Optional
+              for L1 — not required by SPRS — but high-leverage to capture
+              now for the SSP "Roles & Responsibilities" table. */}
+          <Field
+            name="issm_name"
+            label="ISSM name (optional)"
+            defaultValue={typeof data.issm_name === "string" ? data.issm_name : ""}
+            placeholder="Jane Smith"
+            helper="Information System Security Manager — the day-to-day security POC. Distinct from the Affirming Official."
+          />
+          <Field
+            name="issm_email"
+            label="ISSM email (optional)"
+            defaultValue={typeof data.issm_email === "string" ? data.issm_email : ""}
+            placeholder="security@yourcompany.com"
+            helper="Where primes can reach your ISSM on a compliance question."
+          />
+
           {fields.map((f) => (
             <Field
               key={f.name}

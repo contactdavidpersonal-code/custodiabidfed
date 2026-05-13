@@ -15,6 +15,11 @@ import {
 } from "@/lib/assessment";
 import { controlDomains, playbook } from "@/lib/playbook";
 import {
+  computeExceptionCoverage,
+  listObjectivesForAssessment,
+  type ObjectiveResponseRow,
+} from "@/lib/cmmc/objectives";
+import {
   resolveOrgBranding,
   displayUrl,
   type OrgBranding,
@@ -58,12 +63,23 @@ export async function GET(
     );
   }
 
-  const [responses, evidence, remediationPlans, profile] = await Promise.all([
+  const [responses, evidence, remediationPlans, profile, objectives, coverage] = await Promise.all([
     listResponsesForAssessment(id),
     listEvidenceForAssessment(id),
     listRemediationPlansForAssessment(id),
     getBusinessProfile(ctx.organization.id),
+    listObjectivesForAssessment(id),
+    computeExceptionCoverage(id),
   ]);
+
+  // EE/TD coverage tally for the SSP top-line disclosure (AG L1 v2.13).
+  let eeCount = 0;
+  let tdCount = 0;
+  for (const [, c] of coverage) {
+    if (c.exceptionType === "enduring" && c.covered) eeCount++;
+    else if (c.exceptionType === "temporary" && c.covered) tdCount++;
+  }
+  const coverageSummary = { eeCount, tdCount };
 
   const zip = new JSZip();
   const org = ctx.organization;
@@ -76,7 +92,7 @@ export async function GET(
 
   zip.file(
     "00-README.md",
-    buildReadme({ org, assessment: a, generatedAt, draft: forceDraft }),
+    buildReadme({ org, assessment: a, generatedAt, draft: forceDraft, coverageSummary }),
   );
   zip.file(
     "01-SSP.html",
@@ -85,6 +101,9 @@ export async function GET(
       assessment: a,
       responses,
       evidence,
+      objectives,
+      coverageSummary,
+      profileData: (profile?.data ?? {}) as Record<string, unknown>,
       generatedAt,
       branding,
     }),
@@ -158,15 +177,21 @@ function buildReadme(input: {
   assessment: AssessmentRow;
   generatedAt: string;
   draft: boolean;
+  coverageSummary: { eeCount: number; tdCount: number };
 }): string {
-  const { org, assessment, generatedAt, draft } = input;
+  const { org, assessment, generatedAt, draft, coverageSummary } = input;
   const signedLine = assessment.affirmed_at
     ? `Affirmed ${new Date(assessment.affirmed_at).toISOString().slice(0, 10)} by ${assessment.affirmed_by_name} (${assessment.affirmed_by_title}).`
     : "NOT YET SIGNED — this is a draft preview. Do not submit.";
   const implementsAll = assessment.implements_all_17 === true;
+  const { eeCount, tdCount } = coverageSummary;
+  const coverageDisclosure =
+    eeCount + tdCount === 0
+      ? ""
+      : ` (including ${eeCount} requirement${eeCount === 1 ? "" : "s"} covered by documented Enduring Exception${eeCount === 1 ? "" : "s"} and ${tdCount} covered by Temporary Deficiencies tracked in an operational plan of action with milestones — see Section 4 of the SSP)`;
   const outcomeLine = assessment.affirmed_at
     ? implementsAll
-      ? "**Affirmation outcome:** Implements all 15 CMMC Level 1 basic safeguarding requirements (FAR 52.204-21(b)(1)(i)–(b)(1)(xv); 59 NIST SP 800-171A assessment objectives per Assessment Guide v2.13 / 32 CFR § 170.24). CMMC Status: Final Level 1 (Self). Eligible to file a positive affirmation in SPRS and to represent compliance under DFARS 252.204-7025."
+      ? `**Affirmation outcome:** Implements all 15 CMMC Level 1 basic safeguarding requirements (FAR 52.204-21(b)(1)(i)–(b)(1)(xv); 59 NIST SP 800-171A assessment objectives per Assessment Guide v2.13 / 32 CFR § 170.24)${coverageDisclosure}. CMMC Status: Final Level 1 (Self). Eligible to file a positive affirmation in SPRS and to represent compliance under DFARS 252.204-7025.`
       : "**Affirmation outcome:** Does NOT implement all 15 CMMC Level 1 basic safeguarding requirements. Do not file a positive affirmation until remediation closes the gap."
     : "**Affirmation outcome:** Pending — not yet signed.";
 
@@ -190,22 +215,30 @@ ${outcomeLine}
 | 02-Affirmation.html | Senior Official Annual Affirmation memo (per 32 CFR § 170.22). Print + sign + file. |
 | 03-controls.csv | Per-practice status + narrative (17 rows). Handy for a prime's compliance questionnaire. |
 | 04-evidence-inventory.csv | Every artifact on file with its Platform review verdict + summary. |
-| 05-remediation-plans.csv | Open and closed remediation plans (POA&M-style record for prime questionnaires). |
+| 05-remediation-plans.csv | Operational notes on any remediation work the user tracked. Informational only — see note below. |
 | evidence/ | All the uploaded evidence files, organized by control ID. |
+
+> **About \`05-remediation-plans.csv\` — important nuance for L1.** CMMC Level 1 affirmation is binary (MET / NOT MET) and **has no POA&M**. Per CMMC Assessment Guide L1 v2.13 (SEP 2024) p. 4, an "operational plan of action" is **not** the same as a POA&M associated with an assessment — and Level 1 has no open items at sign time. This CSV is included for primes whose intake questionnaires still ask for "any remediation plans"; if you have none, an empty file is the correct answer.
 
 ## How to submit your annual affirmation in SPRS
 
-CMMC Level 1 affirmations are filed in the **Supplier Performance Risk System (SPRS)** at https://www.sprs.csd.disa.mil.
+CMMC Level 1 affirmations are filed in the **Supplier Performance Risk System (SPRS)** via PIEE at https://piee.eb.mil. Per the SPRS CMMC Quick Entry Guide v4.0 (DEC 2024):
 
-1. Log in to SPRS with your PIEE account. Your CAGE code on file: **${org.cage_code ?? "[not yet issued — complete SAM.gov registration first]"}**.
-2. Navigate to the **CMMC Assessments** module (NOT the "NIST SP 800-171 Assessments" module — that one is for L2/DFARS-7012).
-3. Start a new **CMMC Level 1 (Self) Affirmation** entry.
-4. Enter the affirmation date from this package: ${assessment.affirmed_at ? new Date(assessment.affirmed_at).toISOString().slice(0, 10) : "[pending affirmation]"}.
-5. Enter the affirming official's name and title: ${assessment.affirmed_by_name ?? "[pending]"} / ${assessment.affirmed_by_title ?? "[pending]"}.
-6. Affirm: ${implementsAll ? "**YES** — implements all 15 CMMC Level 1 basic safeguarding requirements at FAR 52.204-21(b)(1)(i)–(b)(1)(xv); CMMC Status: Final Level 1 (Self)" : "[Do NOT affirm yes until all 15 requirements are MET]"}.
-7. Submit. SPRS will generate a posting date that primes can look up.
+1. **PIEE access prerequisite:** your account must hold the **\`SPRS Cyber Vendor User\`** role on your CAGE (the \`Contractor/Vendor (Support Role)\` is view-only — it cannot file). New role requests are activated by your company's Contractor Account Manager (CAM); plan 1–5 business days. If you are the only CAM, email \`disa.global.servicedesk.mbx.eb-ticket-requests@mail.mil\` to request self-activation.
+2. Log in at https://piee.eb.mil → click the **SPRS** tile → click **Cyber Reports**. Your CAGE code on file: **${org.cage_code ?? "[not yet issued — complete SAM.gov registration first]"}**.
+3. Select your HLO from the hierarchy dropdown (SAM imports this automatically). An asterisk next to a CAGE means your privileged role is active there.
+4. Open the **CMMC Assessments** tab → click **Add New Level 1 CMMC Self-Assessment** (NOT the "NIST SP 800-171 Assessments" module — that one is for L2 / DFARS-7012).
+5. Enter assessment details. Custodia's values to copy:
+    - **Assessment Date:** ${(assessment.self_assessment_completed_at ?? assessment.affirmed_at) ? new Date(assessment.self_assessment_completed_at ?? assessment.affirmed_at!).toISOString().slice(0, 10) : "[pending affirmation]"}
+    - **Assessment Scope:** Enterprise (or Enclave — match what you documented on the Scope step)
+    - **Affirming Official Name:** ${assessment.affirmed_by_name ?? "[pending]"}
+    - **Affirming Official Title:** ${assessment.affirmed_by_title ?? "[pending]"}
+    - **CAGE:** ${org.cage_code ?? "[not yet issued]"}
+    - **Compliance status:** ${implementsAll ? "YES — implements all 15 FAR 52.204-21(b)(1)(i)–(xv) basic safeguarding requirements; target CMMC Status: **Final Level 1 (Self)**" : "[Do NOT proceed until all 15 requirements are MET or N/A]"}
+6. Click **Continue to Affirmation**. If you ARE the Affirming Official, click **Affirm**. Otherwise enter the AO's email and click **Transfer to AO** — SPRS emails them to come affirm.
+7. The record is published with a **CMMC Status Date** and status type **\`Final Level 1 Self-Assessment\`** (the only status visible to government personnel). SPRS does NOT issue a separate confirmation number — the CMMC Status Date IS your federal artifact.
 
-Your affirmation is valid for **one year** from the posting date (32 CFR § 170.15(c)(2)). Custodia will remind you when FY${assessment.fiscal_year + 1} re-affirmation is due.
+Your affirmation is valid for **one year** from the CMMC Status Date (32 CFR § 170.15(c)(2)). Custodia will remind you when FY${assessment.fiscal_year + 1} re-affirmation is due.
 
 ## What a prime will typically ask for
 
@@ -213,7 +246,7 @@ Your affirmation is valid for **one year** from the posting date (32 CFR § 170.
 - A copy of **02-Affirmation.html** (printed, signed, scanned).
 - Occasional follow-up on specific evidence — everything is in evidence/ keyed by practice ID (e.g. evidence/AC.L1-3.1.1/).
 - Your SAM UEI (**${org.sam_uei ?? "[not provided]"}**) and CAGE (**${org.cage_code ?? "[not provided]"}**).
-- A POA&M / remediation roadmap if any practices were ever marked Partial or Not met. See 05-remediation-plans.csv.
+- An operational plan of action / remediation roadmap if any practices were ever marked Partial or Not met. See 05-remediation-plans.csv. (CMMC L1 itself has no POA&M — see the note above the file table.)
 
 ## Legal notice
 
@@ -230,10 +263,13 @@ function buildSspHtml(input: {
   assessment: AssessmentRow;
   responses: ControlResponseRow[];
   evidence: EvidenceArtifactRow[];
+  objectives: ObjectiveResponseRow[];
+  coverageSummary: { eeCount: number; tdCount: number };
+  profileData: Record<string, unknown>;
   generatedAt: string;
   branding: OrgBranding;
 }): string {
-  const { org, assessment, responses, evidence, generatedAt, branding } = input;
+  const { org, assessment, responses, evidence, objectives, coverageSummary, profileData, generatedAt, branding } = input;
   const responseByControl = new Map(responses.map((r) => [r.control_id, r]));
   const evidenceByControl = new Map<string, EvidenceArtifactRow[]>();
   for (const e of evidence) {
@@ -257,6 +293,51 @@ function buildSspHtml(input: {
     not_applicable: "Not applicable",
   };
 
+  // AG L1 v2.13 p. 8: assessments are conducted at the objective level (one
+  // NOT MET objective fails the parent requirement). Render a per-objective
+  // rollup under each requirement so primes can see the determination at the
+  // assessment-objective granularity, not just the requirement rollup.
+  const objectivesByControl = new Map<string, ObjectiveResponseRow[]>();
+  for (const o of objectives) {
+    const arr = objectivesByControl.get(o.control_id) ?? [];
+    arr.push(o);
+    objectivesByControl.set(o.control_id, arr);
+  }
+  const objectiveStatusLabel: Record<string, string> = {
+    met: "MET",
+    not_met: "NOT MET",
+    not_applicable: "N/A (MET-equivalent)",
+    unanswered: "Not answered",
+  };
+  const renderObjectiveTable = (controlId: string): string => {
+    const rows = (objectivesByControl.get(controlId) ?? []).sort((a, b) =>
+      a.objective_letter.localeCompare(b.objective_letter),
+    );
+    if (rows.length === 0) return "";
+    const body = rows
+      .map((o) => {
+        const eff =
+          o.status === "met" || o.status === "not_applicable"
+            ? "met"
+            : o.status === "not_met" &&
+                (o.exception_type === "enduring" ||
+                  o.exception_type === "temporary")
+              ? "met"
+              : o.status;
+        const note =
+          o.exception_type === "enduring"
+            ? " — Enduring Exception"
+            : o.exception_type === "temporary"
+              ? " — Temporary Deficiency (operational plan of action)"
+              : o.esp_inherited_from
+                ? ` — Covered by ESP: ${esc(o.esp_inherited_from)}`
+                : "";
+        return `<tr><td class="mono">(${esc(o.objective_letter)})</td><td>${esc(objectiveStatusLabel[eff] ?? eff)}${note}</td></tr>`;
+      })
+      .join("");
+    return `<div class="label">Per-objective determination (NIST SP 800-171A)</div><table class="objectives"><tbody>${body}</tbody></table>`;
+  };
+
   const domainSections = controlDomains
     .map((domain) => {
       const practices = playbook.filter((p) => p.domain === domain);
@@ -268,12 +349,28 @@ function buildSspHtml(input: {
             arts.length === 0
               ? ""
               : `<div class="label">Evidence on file</div><ul>${arts
-                  .map(
-                    (e) =>
-                      `<li>${esc(e.filename)} <span class="muted">(${new Date(
-                        e.captured_at,
-                      ).toLocaleDateString()})</span></li>`,
-                  )
+                  .map((e) => {
+                    const methodTag = e.assessment_method
+                      ? `<span class="pill">${esc(
+                          e.assessment_method.charAt(0).toUpperCase() +
+                            e.assessment_method.slice(1),
+                        )}</span> `
+                      : "";
+                    const finalTag = e.is_final_policy
+                      ? ` <span class="muted">— Final policy adopted ${
+                          e.final_adopted_at
+                            ? new Date(e.final_adopted_at).toLocaleDateString()
+                            : "—"
+                        }${
+                          e.final_adopted_by
+                            ? ` by ${esc(e.final_adopted_by)}`
+                            : ""
+                        }</span>`
+                      : "";
+                    return `<li>${methodTag}${esc(e.filename)} <span class="muted">(${new Date(
+                      e.captured_at,
+                    ).toLocaleDateString()})</span>${finalTag}</li>`;
+                  })
                   .join("")}</ul>`;
           return `
             <div class="practice">
@@ -287,6 +384,7 @@ function buildSspHtml(input: {
               <p class="practice-desc"><em>${esc(practice.title)}</em></p>
               <div class="label">Implementation</div>
               <p class="narrative">${esc(r?.narrative ?? "No narrative provided for this practice.")}</p>
+              ${renderObjectiveTable(practice.id)}
               ${evidenceHtml}
             </div>
           `;
@@ -299,7 +397,7 @@ function buildSspHtml(input: {
   const affirmedLine = assessment.affirmed_at
     ? `<p><strong>${esc(assessment.affirmed_by_name ?? "")}</strong>${assessment.affirmed_by_title ? `, ${esc(assessment.affirmed_by_title)}` : ""} affirmed on ${new Date(
         assessment.affirmed_at,
-      ).toISOString().slice(0, 10)} that the information in this plan is accurate and that ${esc(org.name)} implements all 15 CMMC Level 1 safeguarding requirements (FAR 52.204-21(b)(1)(i)–(xv)) as described.</p>`
+      ).toISOString().slice(0, 10)} that the information in this plan is accurate and that ${esc(org.name)} implements all 15 CMMC Level 1 safeguarding requirements (FAR 52.204-21(b)(1)(i)–(xv)) as described${coverageSummary.eeCount + coverageSummary.tdCount > 0 ? `, including ${coverageSummary.eeCount} requirement${coverageSummary.eeCount === 1 ? "" : "s"} covered by documented Enduring Exception${coverageSummary.eeCount === 1 ? "" : "s"} and ${coverageSummary.tdCount} covered by Temporary Deficiencies tracked in an operational plan of action with milestones, all as described in Section 4` : ""}.</p>`
     : `<p><em>This plan has not yet been signed by a senior official.</em></p>`;
 
   return `<!doctype html>
@@ -333,6 +431,8 @@ function buildSspHtml(input: {
     <h2>1. System description and scope</h2>
     <p class="scope">${esc(org.scoped_systems ?? "No scope description provided.")}</p>
   </section>
+
+  ${renderRolesTable(org, assessment, profileData)}
 
   <section>
     <h2>2. Senior official affirmation</h2>
@@ -469,6 +569,10 @@ function buildEvidenceCsv(evidence: EvidenceArtifactRow[]): string {
       "ai_verdict",
       "ai_summary",
       "ai_reviewed_at",
+      "assessment_method",
+      "is_final_policy",
+      "final_adopted_at",
+      "final_adopted_by",
     ],
   ];
   for (const e of evidence) {
@@ -482,6 +586,10 @@ function buildEvidenceCsv(evidence: EvidenceArtifactRow[]): string {
       e.ai_review_verdict ?? "",
       e.ai_review_summary ?? "",
       e.ai_reviewed_at ?? "",
+      e.assessment_method ?? "",
+      e.is_final_policy ? "true" : "false",
+      e.final_adopted_at ?? "",
+      e.final_adopted_by ?? "",
     ]);
   }
   return rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
@@ -535,6 +643,47 @@ function field(label: string, value: string): string {
   return `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`;
 }
 
+/**
+ * Roles & Responsibilities section for the SSP. CMMC L1 does not require
+ * a named ISSM (Information System Security Manager), but primes frequently
+ * ask for one on intake questionnaires. When the business profile captured
+ * an ISSM, render the section; otherwise emit nothing so the SSP stays
+ * tight for solo-operator shops.
+ */
+function renderRolesTable(
+  org: OrganizationRow,
+  assessment: AssessmentRow,
+  profileData: Record<string, unknown>,
+): string {
+  const issmName = typeof profileData.issm_name === "string" ? profileData.issm_name.trim() : "";
+  const issmEmail = typeof profileData.issm_email === "string" ? profileData.issm_email.trim() : "";
+  const aoName = assessment.affirmed_by_name?.trim() ?? "";
+  const aoTitle = assessment.affirmed_by_title?.trim() ?? "";
+  const hasIssm = issmName.length > 0 || issmEmail.length > 0;
+  const hasAo = aoName.length > 0;
+  if (!hasIssm && !hasAo) return "";
+  const rows: string[] = [];
+  if (hasAo) {
+    rows.push(
+      `<tr><td>Affirming Official</td><td>${esc(aoName)}${aoTitle ? ` — ${esc(aoTitle)}` : ""}</td><td>Signs the annual SPRS affirmation under 32 CFR § 170.22.</td></tr>`,
+    );
+  }
+  if (hasIssm) {
+    const contact = [issmName, issmEmail].filter((s) => s.length > 0).join(" — ");
+    rows.push(
+      `<tr><td>Information System Security Manager (ISSM)</td><td>${esc(contact)}</td><td>Day-to-day security point of contact for ${esc(org.name)}. Primary contact for prime compliance questionnaires.</td></tr>`,
+    );
+  }
+  return `
+  <section>
+    <h2>1a. Roles and responsibilities</h2>
+    <table class="objectives">
+      <thead><tr><th>Role</th><th>Name / contact</th><th>Responsibility</th></tr></thead>
+      <tbody>${rows.join("")}</tbody>
+    </table>
+  </section>`;
+}
+
 const BID_PACKAGE_CSS = `
   @page { size: letter; margin: 0.75in; }
   * { box-sizing: border-box; }
@@ -586,6 +735,9 @@ const BID_PACKAGE_CSS = `
   .sign-line { border-bottom: 1.5px solid #10231d; height: 32px; margin-bottom: 8px; }
   .strong { font-weight: 700; font-size: 13px; color: #10231d; }
   code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; background: #f5f8f6; border: 1px solid #cfe3d9; padding: 1px 5px; }
+  table.objectives { border-collapse: collapse; margin: 6px 0 8px; width: 100%; font-size: 12px; }
+  table.objectives td { padding: 3px 8px; border-bottom: 1px dotted #cfe3d9; vertical-align: top; }
+  table.objectives td:first-child { width: 40px; color: #5a7d70; }
   @media print {
     body { background: white; padding: 0; }
     article { border: 0; max-width: 100%; }

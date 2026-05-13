@@ -12,7 +12,7 @@
  *     (the cycle that owns it) AND denormalized onto `trust_pages` so the
  *     public page renderer can show it without a join.
  *
- * The SPRS confirmation number is NEVER part of either public artifact.
+ * Neither the CMMC Status Date nor any internal reference the user logged is part of either public artifact.
  * The HMAC seed mixes (organization_id || assessment_id || sprs_filed_at)
  * which makes the IDs deterministic for a given filing but reveals
  * nothing private if disclosed. Rotation: change the seed by setting a

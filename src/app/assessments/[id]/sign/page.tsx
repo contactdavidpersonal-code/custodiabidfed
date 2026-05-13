@@ -17,6 +17,7 @@ import {
   validateBoundary,
 } from "@/lib/cmmc/boundary";
 import { BoundaryDocument, BOUNDARY_CSS, BoundaryPreviewModal } from "@/components/boundary";
+import { getSamEntityStatus, summarizeSamStatus } from "@/lib/sam-entity";
 import { AffirmForm } from "./AffirmForm";
 
 export default async function SignPage(
@@ -51,6 +52,23 @@ export default async function SignPage(
     listRemediationPlansForAssessment(id),
   ]);
   const progress = computeProgress(responses);
+
+  // SAM Entity freshness — soft, cached lookup. We surface a warning
+  // banner when the user's SAM registration is inactive/not found so
+  // they don't sign a CMMC affirmation that primes can't find in SPRS.
+  // Never blocks the sign button; the action records the snapshot in
+  // audit metadata as well.
+  let samWarning: string | null = null;
+  if (ctx.organization.sam_uei?.trim()) {
+    try {
+      const samStatus = await getSamEntityStatus(
+        ctx.organization.sam_uei.trim(),
+      );
+      samWarning = summarizeSamStatus(samStatus);
+    } catch (err) {
+      console.error("[sign] SAM freshness lookup failed (non-blocking)", err);
+    }
+  }
 
   // CMMC L1 v2.13 + DFARS final: every affirmation must be backed by a
   // documented FCI boundary (SSP § 1.2). We assemble the read-only view
@@ -501,6 +519,29 @@ export default async function SignPage(
             <BoundaryDocument view={boundaryView} findings={boundaryFindings} />
           </BoundaryPreviewModal>
         </section>
+      )}
+
+      {samWarning && (
+        <div className="mb-8 border border-amber-300 bg-amber-50 p-5">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-amber-800">
+            SAM registration warning
+          </h2>
+          <p className="mt-2 text-sm text-amber-900">{samWarning}</p>
+          <p className="mt-2 text-xs text-amber-800">
+            This is a heads-up, not a block — you can still sign. But primes
+            looking you up in SPRS by CAGE/UEI will see &ldquo;Inactive&rdquo; until you
+            renew at{" "}
+            <a
+              href="https://sam.gov"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              sam.gov
+            </a>
+            .
+          </p>
+        </div>
       )}
 
       <AffirmForm

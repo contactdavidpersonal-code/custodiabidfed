@@ -9,7 +9,8 @@ import { PrintButton } from "../PrintButton";
  * summarizes the org's CMMC Level 1 self-attestation for the current cycle.
  * Defensible language only: this is NOT a third-party certificate. It cites
  * FAR 52.204-21 + 32 CFR Part 170, references the signed annual affirmation
- * memo, and quotes the SPRS confirmation number.
+ * memo, and quotes the CMMC Status Date SPRS posted on the assessment
+ * record.
  *
  * Renders only after the user has (a) signed their affirmation memo and
  * (b) recorded their SPRS filing via `recordSprsFilingAction`. Until then
@@ -29,11 +30,13 @@ export default async function StatementOfCompliancePage(
 
   // Only available after both the affirmation is signed AND SPRS filing is
   // recorded. We send users back to the overview page (where the SPRS
-  // capture form lives) if either step is missing.
+  // capture form lives) if either step is missing. Legacy filings that pre-
+  // date the CMMC Status Date column may only have the legacy internal
+  // reference set — either is enough to unlock this page.
   if (
     ctx.assessment.status !== "attested" ||
     !ctx.assessment.sprs_filed_at ||
-    !ctx.assessment.sprs_confirmation_number
+    (!ctx.assessment.sprs_status_date && !ctx.assessment.sprs_confirmation_number)
   ) {
     redirect(`/assessments/${id}`);
   }
@@ -152,10 +155,16 @@ export default async function StatementOfCompliancePage(
             </div>
             <div>
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                SPRS confirmation #
+                CMMC Status Date
               </div>
-              <div className="mt-1 font-mono text-base font-semibold text-emerald-800">
-                {a.sprs_confirmation_number}
+              <div className="mt-1 text-base font-semibold text-emerald-800">
+                {a.sprs_status_date
+                  ? new Date(`${a.sprs_status_date}T00:00:00Z`).toLocaleDateString(undefined, {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })
+                  : (a.sprs_confirmation_number ?? "[Pending]")}
               </div>
             </div>
             <div>
@@ -179,8 +188,9 @@ export default async function StatementOfCompliancePage(
               authority to act on behalf of the organization has signed the
               annual affirmation memo, and the resulting affirmation has been
               filed in the U.S. Department of Defense Supplier Performance
-              Risk System (&ldquo;SPRS&rdquo;) and assigned the confirmation
-              number shown above. The organization maintains a System
+              Risk System (&ldquo;SPRS&rdquo;); the SPRS record is posted as
+              &ldquo;Final Level 1 Self-Assessment&rdquo; with the CMMC Status
+              Date shown above. The organization maintains a System
               Security Plan describing how each requirement is implemented,
               together with supporting evidence, and will produce both upon
               request from a Government contracting officer.
@@ -209,7 +219,9 @@ export default async function StatementOfCompliancePage(
               Compliance is a customer-prepared summary intended to
               accompany prime-contractor questionnaires, capability
               statements, and supplier onboarding packets. The authoritative
-              federal record is the SPRS confirmation referenced above.
+              federal record is the SPRS posting (status &ldquo;Final Level 1
+              Self-Assessment&rdquo; with the CMMC Status Date shown above)
+              — verifiable directly in SPRS by CAGE / UEI.
             </p>
           </div>
         </section>

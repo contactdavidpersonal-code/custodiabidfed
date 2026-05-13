@@ -33,6 +33,28 @@ export default async function RegistrationPage(
   // blocking the next step.
   const cagePending = hasUei && !hasCage;
 
+  // Soft SAM Entity validation warning (set by saveFederalRegistrationAction
+  // when the live SAM lookup disagrees with what was entered). Non-blocking.
+  const sp = (await props.searchParams) as Record<string, string | string[] | undefined>;
+  const samWarningRaw = typeof sp?.sam_warning === "string" ? sp.sam_warning : null;
+  const samWarning: { title: string; body: string } | null =
+    samWarningRaw === "not_found"
+      ? {
+          title: "We couldn't find that UEI on SAM.gov",
+          body: "Double-check the 12-character Unique Entity ID against your SAM.gov workspace. If it's brand-new, SAM can take a few hours to publish it — try again later.",
+        }
+      : samWarningRaw === "inactive"
+        ? {
+            title: "SAM.gov says your registration is inactive",
+            body: "Your CMMC affirmation will still be saved here, but primes searching SPRS will see your entity as inactive until you re-register at sam.gov.",
+          }
+        : samWarningRaw === "name_mismatch"
+          ? {
+              title: "Heads-up: the legal name on SAM doesn't match your business profile",
+              body: "We looked up your UEI on SAM.gov and the registered legal business name doesn't match the company name on file in your profile. Make sure they line up — primes cross-check both before awarding contracts.",
+            }
+          : null;
+
   return (
     <main className="mx-auto max-w-4xl px-6 py-10">
       <header className="mb-8">
@@ -56,6 +78,16 @@ export default async function RegistrationPage(
           we&apos;ll remind you to add it when it arrives.
         </p>
       </header>
+
+      {samWarning ? (
+        <div className="mb-6 flex items-start gap-3 border border-[#f3c5a0] bg-[#fdf3e9] px-4 py-3 text-xs leading-relaxed text-[#6a3a13]">
+          <span aria-hidden className="mt-0.5 text-base">⚠</span>
+          <div>
+            <p className="font-bold text-[#5a3210]">{samWarning.title}</p>
+            <p className="mt-1">{samWarning.body}</p>
+          </div>
+        </div>
+      ) : null}
 
       {cagePending && (
         <div className="mb-6 flex items-start gap-3 border border-[#e6d3a8] bg-[#fdf6e3] px-4 py-3 text-xs leading-relaxed text-[#5c4a1d]">

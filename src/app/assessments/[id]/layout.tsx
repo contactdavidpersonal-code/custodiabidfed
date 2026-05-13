@@ -81,7 +81,17 @@ export default async function CourseLayout(
       ? "complete"
       : "in_progress";
 
-  const practicesStatus: SectionStatus = !profileComplete || !registrationComplete
+  // Material-change interview only applies to carried-forward cycles
+  // (Scoping Guide L1 v2.13 § 170.19 p. 4). Fresh cycles skip it entirely.
+  const isCarryForward = Boolean(ctx.assessment.carried_forward_from);
+  const materialChangeReviewed = gate.materialChangeReviewed;
+  const materialChangeStatus: SectionStatus = !registrationComplete
+    ? "locked"
+    : materialChangeReviewed
+      ? "complete"
+      : "in_progress";
+
+  const practicesStatus: SectionStatus = !profileComplete || !registrationComplete || (isCarryForward && !materialChangeReviewed)
     ? "locked"
     : practicesAllResolved
       ? "complete"
@@ -114,6 +124,23 @@ export default async function CourseLayout(
       status: registrationStatus,
       match: "exact",
     },
+    ...(isCarryForward
+      ? [
+          {
+            id: "material-change",
+            step: 2,
+            href: `/assessments/${id}/material-change`,
+            title: "Material-change review",
+            subtitle: materialChangeReviewed
+              ? ctx.assessment.material_change_required_reassessment
+                ? "Fresh walk required this year"
+                : "No material change — annual affirmation only"
+              : "Required before re-affirmation",
+            status: materialChangeStatus,
+            match: "prefix",
+          } satisfies CourseSection,
+        ]
+      : []),
     {
       id: "scope",
       step: 3,

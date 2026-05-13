@@ -40,11 +40,44 @@ export type AssessmentRow = {
   affirmed_at: string | null;
   affirmed_by_name: string | null;
   affirmed_by_title: string | null;
+  /**
+   * SPRS "Affirming Official Email" — required at sign time for CMMC L1.
+   * Persisted in plaintext (used for renewal reminders + visible to the
+   * AO in the sealed attestation packet); not considered sensitive PII
+   * because it's the same address SPRS publishes on the Cyber Reports
+   * filing record under DFARS 252.204-7021.
+   */
+  affirming_official_email: string | null;
+  /**
+   * Day the self-assessment work itself was completed. May differ from
+   * `affirmed_at` (the AO signature day) when the AO signs later. SPRS
+   * "Add New Level 1 CMMC Self-Assessment" expects this as a discrete
+   * date field; defaults to affirmation day when the user doesn't
+   * specify.
+   */
+  self_assessment_completed_at: string | null;
   sprs_score: number | null;
   implements_all_17: boolean | null;
   carried_forward_from: string | null;
+  /**
+   * Material-change interview state for carry-forward cycles. Scoping
+   * Guide L1 v2.13 § 170.19 p. 4 requires a fresh assessment when there
+   * are significant architectural or boundary changes since the prior
+   * cycle. We surface a short interview on first entry to a carried
+   * cycle and persist the outcome here.
+   *
+   * - `material_change_reviewed_at` — timestamp of the interview
+   *   submission. Null = interview not yet completed.
+   * - `material_change_required_reassessment` — true when any answer was
+   *   "yes" (carry-forward was wiped; user is re-walking the practices).
+   * - `material_change_details` — raw answers + free-text rationale.
+   */
+  material_change_reviewed_at: string | null;
+  material_change_required_reassessment: boolean | null;
+  material_change_details: Record<string, unknown> | null;
   sprs_filed_at: string | null;
   sprs_confirmation_number: string | null;
+  sprs_status_date: string | null;
   sprs_attestation_hash: string | null;
   custodia_verification_id: string | null;
   created_at: string;
@@ -355,8 +388,11 @@ export async function listAssessmentsForOrg(
   const rows = (await sql`
     SELECT id, organization_id, cycle_label, status, framework, fiscal_year,
            submitted_at, affirmed_at, affirmed_by_name, affirmed_by_title,
+           affirming_official_email, self_assessment_completed_at,
            sprs_score, implements_all_17, carried_forward_from,
-           sprs_filed_at, sprs_confirmation_number,
+           material_change_reviewed_at, material_change_required_reassessment,
+           material_change_details,
+           sprs_filed_at, sprs_confirmation_number, sprs_status_date,
            sprs_attestation_hash, custodia_verification_id,
            created_at, updated_at
     FROM assessments
@@ -379,8 +415,14 @@ export async function listAssessmentsWithProgress(
   const rows = (await sql`
     SELECT a.id, a.organization_id, a.cycle_label, a.status, a.framework,
            a.fiscal_year, a.submitted_at, a.affirmed_at, a.affirmed_by_name,
-           a.affirmed_by_title, a.sprs_score, a.implements_all_17,
-           a.carried_forward_from, a.sprs_filed_at, a.sprs_confirmation_number,
+           a.affirmed_by_title, a.affirming_official_email,
+           a.self_assessment_completed_at,
+           a.sprs_score, a.implements_all_17,
+           a.carried_forward_from,
+           a.material_change_reviewed_at, a.material_change_required_reassessment,
+           a.material_change_details,
+           a.sprs_filed_at, a.sprs_confirmation_number,
+           a.sprs_status_date,
            a.sprs_attestation_hash, a.custodia_verification_id,
            a.created_at, a.updated_at,
            COUNT(cr.*) FILTER (WHERE cr.status != 'unanswered')::int AS answered,
@@ -415,8 +457,11 @@ export async function createAssessmentForOrg(
     VALUES (${organizationId}, ${cycleLabel}, 'in_progress', ${framework}, ${fiscalYear})
     RETURNING id, organization_id, cycle_label, status, framework, fiscal_year,
               submitted_at, affirmed_at, affirmed_by_name, affirmed_by_title,
+              affirming_official_email, self_assessment_completed_at,
               sprs_score, implements_all_17, carried_forward_from,
-              sprs_filed_at, sprs_confirmation_number,
+              material_change_reviewed_at, material_change_required_reassessment,
+              material_change_details,
+              sprs_filed_at, sprs_confirmation_number, sprs_status_date,
               sprs_attestation_hash, custodia_verification_id,
               created_at, updated_at
   `) as AssessmentRow[];
@@ -465,8 +510,11 @@ export async function createAssessmentWithCarryForward(
        ${fiscalYear}, ${priorAssessmentId}::uuid)
     RETURNING id, organization_id, cycle_label, status, framework, fiscal_year,
               submitted_at, affirmed_at, affirmed_by_name, affirmed_by_title,
+              affirming_official_email, self_assessment_completed_at,
               sprs_score, implements_all_17, carried_forward_from,
-              sprs_filed_at, sprs_confirmation_number,
+              material_change_reviewed_at, material_change_required_reassessment,
+              material_change_details,
+              sprs_filed_at, sprs_confirmation_number, sprs_status_date,
               sprs_attestation_hash, custodia_verification_id,
               created_at, updated_at
   `) as AssessmentRow[];
@@ -538,6 +586,69 @@ export async function createAssessmentWithCarryForward(
   return assessment;
 }
 
+/**
+ * Material-change interview (Scoping Guide L1 v2.13 § 170.19 p. 4). The four
+ * canonical questions. If any answer is "yes" the prior cycle's responses
+ * MUST be re-walked from scratch; an annual affirmation alone cannot
+ * paper over a boundary change.
+ */
+export const materialChangeQuestionKeys = [
+  "new_facilities",
+  "merger_or_acquisition",
+  "major_it_migration",
+  "fci_handling_change",
+] as const;
+export type MaterialChangeQuestionKey =
+  (typeof materialChangeQuestionKeys)[number];
+
+export type MaterialChangeAnswers = Record<MaterialChangeQuestionKey, boolean>;
+
+/**
+ * Persist the material-change interview outcome on a carried-forward
+ * assessment. When `requiredReassessment` is true (any "yes" answer) we
+ * also wipe carried responses + carried evidence back to a clean slate so
+ * the user must re-walk every requirement. When false (all "no") we record
+ * the timestamp and rationale only — the carried draft stands.
+ */
+export async function recordMaterialChangeReview(args: {
+  assessmentId: string;
+  answers: MaterialChangeAnswers;
+  rationale: string | null;
+  requiredReassessment: boolean;
+}): Promise<void> {
+  const sql = getSql();
+  const details = {
+    answers: args.answers,
+    rationale: args.rationale,
+    recordedAt: new Date().toISOString(),
+  };
+  await sql`
+    UPDATE assessments
+    SET material_change_reviewed_at = NOW(),
+        material_change_required_reassessment = ${args.requiredReassessment},
+        material_change_details = ${JSON.stringify(details)}::jsonb
+    WHERE id = ${args.assessmentId}::uuid
+  `;
+  if (args.requiredReassessment) {
+    // Wipe carried responses back to unanswered and mark every carried
+    // evidence artifact as needing replacement. A material change resets
+    // the assessment-objective evidence baseline (32 CFR § 170.15).
+    await sql`
+      UPDATE control_responses
+      SET status = 'unanswered',
+          narrative = NULL,
+          carry_forward_status = 'needs_replacement'
+      WHERE assessment_id = ${args.assessmentId}::uuid
+    `;
+    await sql`
+      UPDATE evidence_artifacts
+      SET carry_forward_status = 'needs_replacement'
+      WHERE assessment_id = ${args.assessmentId}::uuid
+        AND carry_forward_status != 'removed'
+    `;
+  }
+}
+
 export async function getAssessmentForUser(
   assessmentId: string,
   userId: string,
@@ -553,8 +664,11 @@ export async function getAssessmentForUser(
     SELECT a.id AS a_id, a.organization_id, a.cycle_label, a.status AS a_status,
            a.framework, a.fiscal_year,
            a.submitted_at, a.affirmed_at, a.affirmed_by_name, a.affirmed_by_title,
+           a.affirming_official_email, a.self_assessment_completed_at,
            a.sprs_score, a.implements_all_17, a.carried_forward_from,
-           a.sprs_filed_at, a.sprs_confirmation_number,
+           a.material_change_reviewed_at, a.material_change_required_reassessment,
+           a.material_change_details,
+           a.sprs_filed_at, a.sprs_confirmation_number, a.sprs_status_date,
            a.sprs_attestation_hash, a.custodia_verification_id,
            a.created_at AS a_created_at, a.updated_at AS a_updated_at,
            o.id AS o_id, o.owner_user_id, o.name AS o_name, o.entity_type,
@@ -592,11 +706,21 @@ export async function getAssessmentForUser(
       affirmed_at: r.affirmed_at as string | null,
       affirmed_by_name: decAffirmedName,
       affirmed_by_title: decAffirmedTitle,
+      affirming_official_email: r.affirming_official_email as string | null,
+      self_assessment_completed_at:
+        r.self_assessment_completed_at as string | null,
       sprs_score: r.sprs_score as number | null,
       implements_all_17: r.implements_all_17 as boolean | null,
       carried_forward_from: r.carried_forward_from as string | null,
+      material_change_reviewed_at:
+        r.material_change_reviewed_at as string | null,
+      material_change_required_reassessment:
+        r.material_change_required_reassessment as boolean | null,
+      material_change_details:
+        (r.material_change_details as Record<string, unknown> | null) ?? null,
       sprs_filed_at: r.sprs_filed_at as string | null,
       sprs_confirmation_number: r.sprs_confirmation_number as string | null,
+      sprs_status_date: r.sprs_status_date as string | null,
       sprs_attestation_hash: r.sprs_attestation_hash as string | null,
       custodia_verification_id: r.custodia_verification_id as string | null,
       created_at: r.a_created_at as string,
@@ -649,6 +773,16 @@ export type EvidenceArtifactRow = {
   ai_review_model: string | null;
   prior_artifact_id: string | null;
   carry_forward_status: CarryForwardStatus;
+  /** Final-policy adoption (CMMC AG L1 v2.13 p. 7 "final forms" rule). When
+   *  is_final_policy is true, the artifact is treated as MET regardless of
+   *  the AI vision verdict, and the SSP renders an adoption disclosure. */
+  is_final_policy: boolean;
+  final_adopted_at: string | null;
+  final_adopted_by: string | null;
+  /** CMMC AG L1 v2.13 §§ 5–7: which assessment method this artifact
+   *  satisfies (examine = policy/screenshot/config; interview = role
+   *  attestation / Q&A; test = demo / screen recording). Optional. */
+  assessment_method: "examine" | "interview" | "test" | null;
   /**
    * NIST 800-171A objective letters this artifact is tagged to FOR THE
    * CURRENT QUERY's practice. Empty array means "tagged to the practice as
@@ -685,6 +819,8 @@ export async function listEvidenceForControl(
            a.ai_review_verdict, a.ai_review_summary, a.ai_review_mapped_controls,
            a.ai_reviewed_at, a.ai_review_model,
            a.prior_artifact_id, a.carry_forward_status,
+           a.is_final_policy, a.final_adopted_at, a.final_adopted_by,
+           a.assessment_method,
            a.source_provider, a.source_kind, a.source_run_id,
            a.data_hash, a.synced_at,
            COALESCE(eap.objectives, '{}'::text[]) AS tagged_objectives
@@ -712,6 +848,8 @@ export async function listEvidenceForAssessment(
            ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
            ai_reviewed_at, ai_review_model,
            prior_artifact_id, carry_forward_status,
+           is_final_policy, final_adopted_at, final_adopted_by,
+           assessment_method,
            source_provider, source_kind, source_run_id,
            data_hash, synced_at,
            '{}'::text[] AS tagged_objectives
@@ -791,6 +929,8 @@ export async function getReuseCandidates(
            a.ai_review_verdict, a.ai_review_summary, a.ai_review_mapped_controls,
            a.ai_reviewed_at, a.ai_review_model,
            a.prior_artifact_id, a.carry_forward_status,
+           a.is_final_policy, a.final_adopted_at, a.final_adopted_by,
+           a.assessment_method,
            a.source_provider, a.source_kind, a.source_run_id,
            a.data_hash, a.synced_at,
            '{}'::text[] AS tagged_objectives,
@@ -826,6 +966,11 @@ export async function getReuseCandidates(
  * for an officer to manually clear them).
  */
 export function isEvidencePassing(row: EvidenceArtifactRow): boolean {
+  // Final-policy override (CMMC AG L1 v2.13 p. 7): the user has formally
+  // adopted this artifact as a policy of record, naming the adopter and
+  // adoption date. This is the documented escape hatch from the AI vision
+  // gate — a draft that has been promoted to final "counts."
+  if (row.is_final_policy) return true;
   if (row.ai_review_verdict === "sufficient") return true;
   if (row.ai_review_verdict === "unclear" && row.ai_review_model !== "none") {
     return true;
@@ -917,6 +1062,69 @@ export function controlsMissingEvidence(
     });
   }
   return missing;
+}
+
+/**
+ * Practices marked `not_applicable` that lack a written justification.
+ *
+ * CMMC AG L1 v2.13 p. 8 frames N/A this way:
+ *   "SC.L1-b.1.xi might be N/A if there are no publicly accessible systems
+ *   within the CMMC Assessment Scope. During an assessment, an assessment
+ *   objective assessed as N/A is equivalent to the same assessment
+ *   objective being assessed as MET."
+ *
+ * The SSP must therefore justify each N/A — otherwise a contracting
+ * officer can't tell "MET via N/A" from "the user clicked the wrong
+ * radio." Require a narrative of at least 120 chars on every N/A response
+ * before allowing sign-time.
+ *
+ * 120 chars is shorter than the `no artifact` justification threshold
+ * (200 chars) because the N/A reason is typically a single environmental
+ * fact ("no publicly accessible systems in scope") rather than an
+ * affirmative claim that needs evidence-equivalent description.
+ */
+export function controlsMissingNaJustification(
+  responses: ControlResponseRow[],
+): Array<{ control_id: string; reason: string }> {
+  const out: Array<{ control_id: string; reason: string }> = [];
+  for (const r of responses) {
+    if (r.status !== "not_applicable") continue;
+    const narrative = (r.narrative ?? "").trim();
+    if (narrative.length >= 120) continue;
+    out.push({
+      control_id: r.control_id,
+      reason:
+        "Marked Not Applicable but the justification is too short. Write at least 120 characters explaining why this requirement doesn't apply to your CMMC Assessment Scope (CMMC AG L1 v2.13 p. 8).",
+    });
+  }
+  return out;
+}
+
+/**
+ * Suggested N/A justifications. CMMC AG L1 v2.13 p. 8 requires every N/A
+ * to carry a narrative — but the universe of plausible reasons is tiny
+ * and well-known. Surface a starter sentence the user can edit instead
+ * of staring at an empty box. Returns null when the control has no
+ * canonical N/A pattern (force the user to write from scratch).
+ */
+export function suggestedNaJustification(controlId: string): string | null {
+  const map: Record<string, string> = {
+    // SC.L1-b.1.xi — Public-access boundary. Many small shops have no
+    // public-facing systems in scope (no website that holds FCI, no
+    // public ingress to FCI-bearing systems).
+    "SC.L1-b.1.xi":
+      "No publicly accessible systems are within the CMMC Assessment Scope. Federal Contract Information (FCI) is processed and stored only in private, authenticated systems; the company has no public-facing application, web portal, or self-service interface that holds, transmits, or receives FCI. Public marketing pages (e.g., the company website) are operationally and logically separated from any FCI-bearing system.",
+    // PE.L1-b.1.ix — Visitor escort / physical access logs. Common for
+    // 100% remote / no-office shops with no employer-controlled facility.
+    "PE.L1-b.1.ix":
+      "The company operates as a fully remote organization with no employer-controlled physical facility where Federal Contract Information (FCI) is processed, stored, or transmitted. There is no office, server room, or shared workspace that hosts FCI-bearing systems, and therefore no facility-level visitor population to escort or log. Endpoint physical security at remote worker locations is addressed under PE.L1-b.1.viii.",
+    // PE.L1-b.1.viii — Physical access controls to facilities. Same
+    // remote-only rationale; endpoints carry the physical-protection
+    // weight at the individual worker location.
+    "PE.L1-b.1.viii":
+      "The company operates as a fully remote organization with no employer-controlled physical facility containing FCI-bearing systems. Physical protection is enforced at the endpoint level: company-issued laptops are full-disk-encrypted, screen-locked when unattended, and stored securely at remote worker locations. There is no facility access control system because there is no facility within the assessment scope.",
+  };
+  return map[controlId] ?? null;
 }
 
 /**
@@ -1064,6 +1272,8 @@ export async function listCarryForwardPending(
            ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
            ai_reviewed_at, ai_review_model,
            prior_artifact_id, carry_forward_status,
+           is_final_policy, final_adopted_at, final_adopted_by,
+           assessment_method,
            source_provider, source_kind, source_run_id,
            data_hash, synced_at,
            '{}'::text[] AS tagged_objectives
@@ -1148,6 +1358,7 @@ export function computeProgress(responses: ControlResponseRow[]): ProgressBreakd
 export type AssessmentStep =
   | "profile"
   | "registration"
+  | "material-change"
   | "practices"
   | "sign"
   | "attested";
@@ -1155,6 +1366,7 @@ export type AssessmentStep =
 const STEP_ORDER: AssessmentStep[] = [
   "profile",
   "registration",
+  "material-change",
   "practices",
   "sign",
   "attested",
@@ -1163,6 +1375,12 @@ const STEP_ORDER: AssessmentStep[] = [
 export type StepGate = {
   profileComplete: boolean;
   registrationComplete: boolean;
+  /**
+   * For carry-forward cycles: true once the Senior Official has answered
+   * the Scoping Guide § 170.19 material-change interview. Always true on
+   * a fresh (non-carried) assessment.
+   */
+  materialChangeReviewed: boolean;
   practicesComplete: boolean;
   attested: boolean;
   /** The earliest step the user has not finished. Where they should go next. */
@@ -1213,6 +1431,12 @@ export function getStepGate(
 ): StepGate {
   const profileComplete = isProfileStepComplete(org, profile);
   const registrationComplete = isRegistrationStepComplete(org);
+  // Carry-forward cycles require an explicit "material change" interview
+  // (Scoping Guide L1 v2.13 § 170.19 p. 4) before the user can walk the
+  // carried responses. Fresh assessments skip this step entirely.
+  const materialChangeReviewed =
+    assessment.carried_forward_from === null ||
+    assessment.material_change_reviewed_at !== null;
   const progress = computeProgress(responses);
   const blockingPartial = responses.filter(
     (r) =>
@@ -1228,12 +1452,14 @@ export function getStepGate(
   let currentStep: AssessmentStep = "attested";
   if (!profileComplete) currentStep = "profile";
   else if (!registrationComplete) currentStep = "registration";
+  else if (!materialChangeReviewed) currentStep = "material-change";
   else if (!practicesComplete) currentStep = "practices";
   else if (!attested) currentStep = "sign";
 
   return {
     profileComplete,
     registrationComplete,
+    materialChangeReviewed,
     practicesComplete,
     attested,
     currentStep,
@@ -1250,6 +1476,8 @@ export function stepHref(assessmentId: string, step: AssessmentStep): string {
       return `/assessments/${assessmentId}/profile`;
     case "registration":
       return `/assessments/${assessmentId}/registration`;
+    case "material-change":
+      return `/assessments/${assessmentId}/material-change`;
     case "practices":
       return `/assessments/${assessmentId}`;
     case "sign":

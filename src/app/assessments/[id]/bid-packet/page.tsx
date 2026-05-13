@@ -15,6 +15,7 @@ import {
   SprsFilingReceiptCard,
   VerifiedPageOfferCard,
 } from "../SprsFilingPrompt";
+import { SprsCopyPasteCard } from "../SprsCopyPasteCard";
 
 export const dynamic = "force-dynamic";
 
@@ -119,7 +120,7 @@ export default async function BidPacketPage(
             >
               come back to the overview
             </Link>{" "}
-            and paste the SPRS confirmation number to mark your filing complete.
+            and paste the CMMC Status Date SPRS returned to mark your filing complete.
           </p>
         </div>
       ) : null}
@@ -133,13 +134,32 @@ export default async function BidPacketPage(
         </div>
       ) : null}
 
-      {attested && sprsFiled && a.sprs_filed_at && a.sprs_confirmation_number ? (
+      {attested && !sprsFiled ? (
+        <div className="mb-8 print:hidden">
+          <SprsCopyPasteCard
+            cageCode={org.cage_code}
+            samUei={org.sam_uei}
+            organizationName={org.name}
+            scopedSystems={org.scoped_systems}
+            affirmedAtIso={a.affirmed_at}
+            selfAssessmentCompletedAtIso={a.self_assessment_completed_at}
+            affirmingOfficialName={a.affirmed_by_name}
+            affirmingOfficialTitle={a.affirmed_by_title}
+            affirmingOfficialEmail={a.affirming_official_email}
+            fiscalYear={a.fiscal_year}
+            assessmentId={id}
+          />
+        </div>
+      ) : null}
+
+      {attested && sprsFiled && a.sprs_filed_at && (a.sprs_status_date || a.sprs_confirmation_number) ? (
         <div className="mb-8 print:hidden">
           <SprsFilingReceiptCard
             assessmentId={id}
             fiscalYear={a.fiscal_year}
             sprsFiledAt={a.sprs_filed_at}
-            sprsConfirmationNumber={a.sprs_confirmation_number}
+            sprsStatusDate={a.sprs_status_date}
+            sprsInternalReference={a.sprs_confirmation_number}
             custodiaVerificationId={a.custodia_verification_id}
           />
         </div>

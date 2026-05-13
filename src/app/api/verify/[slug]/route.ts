@@ -25,7 +25,8 @@ type VerifyRow = {
 /**
  * Public verification JSON — used by primes, partners, and machine clients
  * to confirm the live state of a Verified page without scraping HTML.
- * Rate-limited per IP. Never exposes the SPRS confirmation number.
+ * Rate-limited per IP. Never exposes the CMMC Status Date or any internal
+ * reference the user logged — those stay private to the customer's workspace.
  */
 export async function GET(
   req: Request,
@@ -84,7 +85,7 @@ export async function GET(
       nextReaffirmDue: row.next_reaffirm_due,
       health: row.health ?? "gray",
       lastVerifiedAt: row.last_computed_at,
-      // SPRS confirmation number is intentionally NEVER returned.
+      // CMMC Status Date and any internal reference are intentionally NEVER returned.
     },
     {
       headers: {

@@ -486,7 +486,7 @@ export default async function VerifiedPublicPage(
             cybersecurity firm based in Pittsburgh, PA. Custodia attests that
             this organization has implemented all 15 FAR 52.204-21 basic
             safeguarding requirements on the Custodia platform and that the
-            SPRS confirmation referenced was filed by an authenticated user of
+            SPRS posting referenced was filed by an authenticated user of
             the platform on the date shown.
           </p>
           <p className="mb-3 text-sm leading-relaxed text-[#cfe3d9]">

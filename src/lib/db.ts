@@ -473,12 +473,23 @@ async function runInitDdl() {
       ADD COLUMN IF NOT EXISTS carried_forward_from UUID REFERENCES assessments(id) ON DELETE SET NULL
   `;
 
-  // SPRS filing confirmation — the user's self-reported moment of truth. After
-  // they sign their affirmation we walk them to https://piee.eb.mil → SPRS,
-  // they paste the resulting SPRS confirmation number back into the platform,
-  // and we record the filing. This is the milestone that flips the org to
-  // "bid-eligible" and triggers the confirmation email + Statement of
-  // Compliance artifact. Never auto-set — must come from the user explicitly.
+  // SPRS filing record — the user's self-reported moment of truth. After
+  // they sign their affirmation we walk them to https://piee.eb.mil → SPRS
+  // → Cyber Reports → CMMC Assessments tab → "Add New Level 1 CMMC
+  // Self-Assessment" (SPRS CMMC Quick Entry Guide v4.0, DEC 2024). SPRS
+  // posts the record with a CMMC Status Date and the visible status type
+  // "Final Level 1 Self-Assessment". It does NOT issue a separate
+  // confirmation number — the CMMC Status Date IS the federal artifact.
+  // The user pastes that posting date back into the platform. This is the
+  // milestone that flips the org to "bid-eligible" and triggers the
+  // confirmation email + Statement of Compliance artifact. Never auto-set
+  // — must come from the user explicitly.
+  //
+  // Schema history: `sprs_confirmation_number` (TEXT) is retained as a
+  // legacy free-form internal reference field. New filings populate
+  // `sprs_status_date` (DATE) as the authoritative federal-record value;
+  // confirmation_number becomes optional and is treated as an internal
+  // tracking string only.
   await sql`
     ALTER TABLE assessments
       ADD COLUMN IF NOT EXISTS sprs_filed_at TIMESTAMPTZ
@@ -487,13 +498,62 @@ async function runInitDdl() {
     ALTER TABLE assessments
       ADD COLUMN IF NOT EXISTS sprs_confirmation_number TEXT
   `;
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS sprs_status_date DATE
+  `;
+
+  // CMMC L1 v2.13 distinguishes the *self-assessment completion date*
+  // (the day the user finished walking the 15 requirements / 59
+  // objectives) from the *affirmation date* (the day the Senior
+  // Official signed the affirmation memo). SPRS's "Add New Level 1
+  // CMMC Self-Assessment" form asks for the assessment date as its
+  // own field — it is not always the same as the affirmation date,
+  // especially when the AO has to be tracked down after the work is
+  // done. We capture it explicitly. Defaults to the affirmation
+  // timestamp at sign time when the user doesn't override, so legacy
+  // single-day workflows still produce a value.
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS self_assessment_completed_at TIMESTAMPTZ
+  `;
+  await sql`
+    UPDATE assessments
+    SET self_assessment_completed_at = affirmed_at
+    WHERE affirmed_at IS NOT NULL
+      AND self_assessment_completed_at IS NULL
+  `;
+
+  // CMMC Scoping Guide L1 v2.13 § 170.19 p. 4: "A new assessment is required
+  // if there are significant architectural or boundary changes to the
+  // previous CMMC Assessment Scope. Examples include, but are not limited
+  // to, expansions of networks or mergers and acquisitions." At annual
+  // re-affirmation time we surface a 4-question material-change interview
+  // BEFORE allowing the user to walk through a carried-forward assessment.
+  // If any answer is "yes" we wipe carry-forward and force a fresh walk;
+  // if all "no" we record the reviewed_at timestamp and let the user
+  // re-affirm operational continuity. material_change_details holds the
+  // raw answers + free-text rationale for audit.
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS material_change_reviewed_at TIMESTAMPTZ
+  `;
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS material_change_required_reassessment BOOLEAN
+  `;
+  await sql`
+    ALTER TABLE assessments
+      ADD COLUMN IF NOT EXISTS material_change_details JSONB
+  `;
 
   // Custodia Verified — public-facing identifiers. Derived deterministically
   // from (org, assessment, filing timestamp) by `src/lib/trust-page.ts`.
   // The `sprs_attestation_hash` is the full HMAC kept as an internal join
   // key; the `custodia_verification_id` is the human-friendly CUST-V-XXXXXX
-  // shown on badges and emails. The SPRS confirmation number itself is never
-  // mixed into the HMAC seed — these IDs reveal nothing private.
+  // shown on badges and emails. No federal-record detail (CMMC Status Date
+  // or internal reference) is ever mixed into the HMAC seed — these IDs
+  // reveal nothing private.
   await sql`
     ALTER TABLE assessments
       ADD COLUMN IF NOT EXISTS sprs_attestation_hash TEXT
@@ -589,6 +649,28 @@ async function runInitDdl() {
     ALTER TABLE evidence_artifacts
       ADD COLUMN IF NOT EXISTS carry_forward_status TEXT NOT NULL DEFAULT 'kept'
         CHECK (carry_forward_status IN ('pending_review','kept','needs_replacement','removed'))
+  `;
+
+  // CMMC AG L1 v2.13 p. 7 + § 170.24: evidence "must be in final form."
+  // Charlie-drafted markdown / DOCX policies fail the AI vision gate
+  // (verdict 'unclear' + model 'none') by design. The "Mark as final"
+  // override lets a user formally adopt a draft as a policy of record:
+  // they enter the adopter name + adoption date, the artifact is then
+  // accepted as MET regardless of the vision verdict, and the SSP renders
+  // a "Final policy adopted YYYY-MM-DD by <name>" disclosure. This is the
+  // documented escape hatch from the auto-block rule (plan #17 + #23).
+  await sql`ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS is_final_policy BOOLEAN NOT NULL DEFAULT FALSE`;
+  await sql`ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS final_adopted_at TIMESTAMPTZ`;
+  await sql`ALTER TABLE evidence_artifacts ADD COLUMN IF NOT EXISTS final_adopted_by TEXT`;
+
+  // CMMC AG L1 v2.13 pp. 5–7 defines three assessment methods. Tagging
+  // each artifact at upload time makes the SSP substantially more
+  // defensible when a prime asks "show me the test evidence for X."
+  // Optional — defaults to NULL when the user hasn't picked one yet.
+  await sql`
+    ALTER TABLE evidence_artifacts
+      ADD COLUMN IF NOT EXISTS assessment_method TEXT
+        CHECK (assessment_method IN ('examine','interview','test'))
   `;
 
   // Per-objective evidence tagging. CMMC L1 evaluates each practice against

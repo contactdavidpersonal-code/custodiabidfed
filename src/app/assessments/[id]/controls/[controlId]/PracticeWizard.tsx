@@ -48,6 +48,13 @@ type Props = {
   response: ControlResponseRow;
   evidence: ClientEvidenceRow[];
   remediationPlan: RemediationPlanRow | null;
+  /**
+   * Pre-filled N/A justification when the requirement has a well-known
+   * blanket reason (e.g. SC.L1-b.1.xi → "no publicly accessible systems";
+   * PE.L1-b.1.ix → "100% remote, no facility"). Null when no canonical
+   * pattern exists for this control. CMMC AG L1 v2.13 p. 8.
+   */
+  suggestedNa: string | null;
   prevId: string | null;
   nextId: string | null;
   currentIdx: number;
@@ -59,6 +66,10 @@ type Props = {
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
   tagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
   untagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
+  markEvidenceAsFinalAction: (
+    formData: FormData,
+  ) => Promise<{ error: string } | void> | { error: string } | void;
+  setEvidenceMethodAction: (formData: FormData) => Promise<void> | void;
   useSuggestedNarrativeAction: (formData: FormData) => Promise<void> | void;
   upsertRemediationPlanAction: (formData: FormData) => Promise<void> | void;
 };
@@ -268,6 +279,8 @@ export function PracticeWizard(props: Props) {
           reReviewEvidenceAction={props.reReviewEvidenceAction}
           tagArtifactPracticeAction={props.tagArtifactPracticeAction}
           untagArtifactPracticeAction={props.untagArtifactPracticeAction}
+          markEvidenceAsFinalAction={props.markEvidenceAsFinalAction}
+          setEvidenceMethodAction={props.setEvidenceMethodAction}
           recommendation={evidenceRecommendation(props.practice)}
         />
       )}
@@ -290,13 +303,24 @@ export function PracticeWizard(props: Props) {
                 Use sparingly. Briefly explain why &mdash; auditors will read it.
               </p>
               {wholeNa && (
-                <textarea
-                  value={naReason}
-                  onChange={(e) => setNaReason(e.target.value)}
-                  rows={2}
-                  placeholder="E.g. We have no physical office; all staff work remotely on cloud-only systems."
-                  className="mt-2 w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] outline-none transition-colors focus:border-[#0e2a23]"
-                />
+                <>
+                  <textarea
+                    value={naReason}
+                    onChange={(e) => setNaReason(e.target.value)}
+                    rows={4}
+                    placeholder="E.g. We have no physical office; all staff work remotely on cloud-only systems."
+                    className="mt-2 w-full  border border-[#cfe3d9] bg-white px-3 py-2 text-sm text-[#10231d] outline-none transition-colors focus:border-[#0e2a23]"
+                  />
+                  {props.suggestedNa && naReason.trim().length === 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setNaReason(props.suggestedNa ?? "")}
+                      className="mt-2 border border-[#cfe3d9] bg-[#f5f8f6] px-3 py-1.5 text-[11px] font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#eaf3ed]"
+                    >
+                      Use suggested justification for {props.controlId}
+                    </button>
+                  ) : null}
+                </>
               )}
             </div>
           </label>
@@ -457,6 +481,8 @@ function EvidenceArea({
   reReviewEvidenceAction,
   tagArtifactPracticeAction,
   untagArtifactPracticeAction,
+  markEvidenceAsFinalAction,
+  setEvidenceMethodAction,
   recommendation,
 }: {
   assessmentId: string;
@@ -469,6 +495,10 @@ function EvidenceArea({
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
   tagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
   untagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
+  markEvidenceAsFinalAction: (
+    formData: FormData,
+  ) => Promise<{ error: string } | void> | { error: string } | void;
+  setEvidenceMethodAction: (formData: FormData) => Promise<void> | void;
   recommendation: string | null;
 }) {
   return (
@@ -511,6 +541,8 @@ function EvidenceArea({
               deleteEvidenceAction={deleteEvidenceAction}
               reReviewEvidenceAction={reReviewEvidenceAction}
               untagArtifactPracticeAction={untagArtifactPracticeAction}
+              markEvidenceAsFinalAction={markEvidenceAsFinalAction}
+              setEvidenceMethodAction={setEvidenceMethodAction}
             />
           ))}
         </ul>
@@ -632,6 +664,8 @@ function EvidenceRow({
   deleteEvidenceAction,
   reReviewEvidenceAction,
   untagArtifactPracticeAction,
+  markEvidenceAsFinalAction,
+  setEvidenceMethodAction,
 }: {
   artifact: ClientEvidenceRow;
   assessmentId: string;
@@ -639,6 +673,10 @@ function EvidenceRow({
   deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
   untagArtifactPracticeAction: (formData: FormData) => Promise<void> | void;
+  markEvidenceAsFinalAction: (
+    formData: FormData,
+  ) => Promise<{ error: string } | void> | { error: string } | void;
+  setEvidenceMethodAction: (formData: FormData) => Promise<void> | void;
 }) {
   const verdictTone =
     a.ai_review_verdict === "sufficient"
@@ -803,7 +841,256 @@ function EvidenceRow({
           {a.ai_review_summary}
         </p>
       )}
+      <FinalPolicyOverride
+        artifact={a}
+        assessmentId={assessmentId}
+        controlId={controlId}
+        markEvidenceAsFinalAction={markEvidenceAsFinalAction}
+      />
+      <MethodPicker
+        artifact={a}
+        assessmentId={assessmentId}
+        controlId={controlId}
+        setEvidenceMethodAction={setEvidenceMethodAction}
+      />
     </li>
+  );
+}
+
+function FinalPolicyOverride({
+  artifact: a,
+  assessmentId,
+  controlId,
+  markEvidenceAsFinalAction,
+}: {
+  artifact: ClientEvidenceRow;
+  assessmentId: string;
+  controlId: string;
+  markEvidenceAsFinalAction: (
+    formData: FormData,
+  ) => Promise<{ error: string } | void> | { error: string } | void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [adoptedBy, setAdoptedBy] = useState("");
+  const [adoptedAt, setAdoptedAt] = useState(
+    new Date().toISOString().slice(0, 10),
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  if (a.is_final_policy) {
+    const adoptedDate = a.final_adopted_at
+      ? new Date(a.final_adopted_at).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "—";
+    return (
+      <div className="mt-2  border border-[#bdf2cf] bg-[#f3fbf6] px-3 py-2 text-xs leading-relaxed text-[#10231d]">
+        <span className="mr-2 inline-flex items-center  bg-[#0e2a23] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#bdf2cf]">
+          Final policy
+        </span>
+        Adopted {adoptedDate}
+        {a.final_adopted_by ? ` by ${a.final_adopted_by}` : ""}.
+      </div>
+    );
+  }
+
+  // Only offer the override when the AI couldn't actually evaluate the
+  // artifact (text/markdown formats → unclear+none, or never reviewed at
+  // all). Suppress when the AI actively flagged it bad — those need a
+  // replacement, not a stamp.
+  const overrideEligible =
+    a.ai_review_verdict === null ||
+    (a.ai_review_verdict === "unclear" &&
+      (a.ai_review_model === null || a.ai_review_model === "none"));
+
+  if (!overrideEligible) return null;
+
+  const submit = async () => {
+    setError(null);
+    if (adoptedBy.trim().length < 2) {
+      setError("Adopter name is required.");
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(adoptedAt)) {
+      setError("Adoption date must be YYYY-MM-DD.");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.set("assessmentId", assessmentId);
+      fd.set("controlId", controlId);
+      fd.set("artifactId", a.id);
+      fd.set("adoptedBy", adoptedBy.trim());
+      fd.set("adoptedAt", adoptedAt);
+      const result = await Promise.resolve(markEvidenceAsFinalAction(fd));
+      if (result && "error" in result) {
+        setError(result.error);
+      } else {
+        setOpen(false);
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <div className="mt-2 flex items-center justify-between gap-2  border border-[#cfe3d9] bg-[#fbfdfb] px-3 py-2">
+        <p className="text-[11px] leading-snug text-[#5a7d70]">
+          This format isn&rsquo;t auto-reviewable. If this is your final
+          adopted policy, stamp it so it counts as MET in your SSP.
+        </p>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex-none border border-[#0e2a23] bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#0e2a23] transition-colors hover:bg-[#f7fcf9]"
+        >
+          Mark as final
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2  border border-[#cfe3d9] bg-[#fbfdfb] px-3 py-3">
+      <p className="mb-2 text-[11px] leading-snug text-[#5a7d70]">
+        Per CMMC AG L1 v2.13 p. 7, evidence must be in final form. Naming
+        the senior official who adopted this policy and the adoption date
+        creates the audit trail your SSP needs.
+      </p>
+      <div className="grid gap-2 sm:grid-cols-[2fr_1fr_auto]">
+        <input
+          type="text"
+          value={adoptedBy}
+          onChange={(e) => setAdoptedBy(e.target.value)}
+          placeholder="Adopter (e.g. Jane Doe, AO)"
+          className=" border border-[#cfe3d9] bg-white px-2 py-1 text-xs text-[#10231d] focus:border-[#0e2a23] focus:outline-none"
+        />
+        <input
+          type="date"
+          value={adoptedAt}
+          onChange={(e) => setAdoptedAt(e.target.value)}
+          className=" border border-[#cfe3d9] bg-white px-2 py-1 text-xs text-[#10231d] focus:border-[#0e2a23] focus:outline-none"
+        />
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={submit}
+            disabled={submitting}
+            className=" border border-[#0e2a23] bg-[#0e2a23] px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-wait disabled:opacity-60"
+          >
+            {submitting ? "Saving\u2026" : "Confirm"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              setError(null);
+            }}
+            className=" px-2 py-1 text-[11px] font-semibold text-[#5a7d70] hover:text-[#10231d]"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+      {error && (
+        <p className="mt-2 text-[11px] font-semibold text-[#b03a2e]">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ====================== METHOD PICKER (Examine/Interview/Test) =========== */
+
+/**
+ * Per-artifact assessment method tag — CMMC AG L1 v2.13 §§ 5–7.
+ * Examine = read the artifact (most policies, screenshots).
+ * Interview = talked to the responsible person (rare for L1).
+ * Test = operated the control (e.g. ran an MFA login).
+ * Optional metadata; rendered in the SSP per artifact so a prime can see
+ * the method mix at a glance.
+ */
+function MethodPicker({
+  artifact: a,
+  assessmentId,
+  controlId,
+  setEvidenceMethodAction,
+}: {
+  artifact: ClientEvidenceRow;
+  assessmentId: string;
+  controlId: string;
+  setEvidenceMethodAction: (formData: FormData) => Promise<void> | void;
+}) {
+  const [pending, startTransition] = useTransition();
+  const current = a.assessment_method ?? null;
+
+  const choose = (method: "examine" | "interview" | "test" | "") => {
+    const fd = new FormData();
+    fd.set("assessmentId", assessmentId);
+    fd.set("controlId", controlId);
+    fd.set("artifactId", a.id);
+    fd.set("method", method);
+    startTransition(async () => {
+      await setEvidenceMethodAction(fd);
+    });
+  };
+
+  const opts: Array<{
+    key: "examine" | "interview" | "test";
+    label: string;
+    title: string;
+  }> = [
+    {
+      key: "examine",
+      label: "Examine",
+      title: "Examine: assessor read this artifact (CMMC AG L1 v2.13 §§ 5–7).",
+    },
+    {
+      key: "interview",
+      label: "Interview",
+      title: "Interview: assessor confirmed by talking to the responsible person.",
+    },
+    {
+      key: "test",
+      label: "Test",
+      title: "Test: assessor operated the control (e.g. attempted login).",
+    },
+  ];
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-[#5a7d70]">
+      <span className="font-semibold uppercase tracking-wider">Method:</span>
+      {opts.map((o) => {
+        const active = current === o.key;
+        return (
+          <button
+            key={o.key}
+            type="button"
+            disabled={pending}
+            title={o.title}
+            onClick={() => choose(active ? "" : o.key)}
+            className={
+              active
+                ? " border border-[#0e2a23] bg-[#0e2a23] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#bdf2cf] transition-colors disabled:opacity-60"
+                : " border border-[#cfe3d9] bg-white px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#5a7d70] transition-colors hover:border-[#0e2a23] hover:text-[#0e2a23] disabled:opacity-60"
+            }
+          >
+            {o.label}
+          </button>
+        );
+      })}
+      {current && (
+        <span className="ml-1 text-[10px] italic text-[#5a7d70]">
+          Click again to clear
+        </span>
+      )}
+    </div>
   );
 }
 

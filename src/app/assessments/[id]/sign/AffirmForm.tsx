@@ -40,7 +40,7 @@ const STEPS: ReadonlyArray<{
   {
     label: "Verifying Affirming Official",
     detail: "Name, title, work email, acknowledgement.",
-    matchers: ["signer", "affirming official", "acknowledge", "business profile"],
+    matchers: ["signer", "affirming official", "acknowledge", "business profile", "piee", "sprs cyber vendor"],
   },
   {
     label: "Checking every practice",
@@ -223,10 +223,89 @@ export function AffirmForm({
               className="w-full border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
             />
             <span className="mt-1.5 block text-xs text-slate-500">
-              Used for the SPRS submission record and renewal reminders. Must
-              match the Affirming Official, not a generic inbox.
+              Required. SPRS routes the affirmation to this address when you
+              click <strong>Transfer to AO</strong>, and it appears on the
+              signed attestation memo. Must be the senior official&rsquo;s
+              personal work address — not <code>info@</code>, <code>hello@</code>,
+              or any shared inbox.
             </span>
           </label>
+          <label className="block md:col-span-2">
+            <span className="mb-1.5 block text-sm font-semibold text-slate-900">
+              Assessment completion date{" "}
+              <span className="font-normal text-slate-500">(optional)</span>
+            </span>
+            <input
+              type="date"
+              name="selfAssessmentCompletedAt"
+              className="w-full border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition-colors placeholder:text-slate-400 focus:border-slate-900 focus:ring-1 focus:ring-slate-900"
+            />
+            <span className="mt-1.5 block text-xs text-slate-500">
+              The day you finished walking the 15 requirements. SPRS asks for
+              this separately from the affirmation date. Leave blank if you
+              completed the work today.
+            </span>
+          </label>
+        </div>
+
+        <div className="border border-slate-200 bg-slate-50 p-5">
+          <h3 className="text-sm font-semibold text-slate-900">
+            PIEE &amp; SPRS readiness
+          </h3>
+          <p className="mt-1 text-sm text-slate-600">
+            We can&rsquo;t see your PIEE account, so please confirm these three
+            facts about your SPRS access before signing. If any is{" "}
+            <em>no</em>, head to{" "}
+            <Link
+              href="/sprs-guide"
+              className="font-medium underline decoration-amber-400 underline-offset-2"
+            >
+              the SPRS walkthrough
+            </Link>{" "}
+            first.
+          </p>
+          <div className="mt-3 space-y-2.5 text-sm text-slate-800">
+            <label className="flex gap-3">
+              <input
+                type="checkbox"
+                name="pieeAcct"
+                required
+                className="mt-0.5 h-4 w-4 flex-none accent-slate-900"
+              />
+              <span>
+                I have a PIEE account at{" "}
+                <code className="bg-white px-1 py-0.5 text-[12px]">
+                  piee.eb.mil
+                </code>
+                .
+              </span>
+            </label>
+            <label className="flex gap-3">
+              <input
+                type="checkbox"
+                name="pieeRole"
+                required
+                className="mt-0.5 h-4 w-4 flex-none accent-slate-900"
+              />
+              <span>
+                My PIEE account has the{" "}
+                <strong>SPRS Cyber Vendor User</strong> role (or I&rsquo;ve
+                submitted the request and my CAM has activated it).
+              </span>
+            </label>
+            <label className="flex gap-3">
+              <input
+                type="checkbox"
+                name="pieeSeesCage"
+                required
+                className="mt-0.5 h-4 w-4 flex-none accent-slate-900"
+              />
+              <span>
+                I&rsquo;ve logged into SPRS &rarr; Cyber Reports and I can see
+                my CAGE in the hierarchy dropdown.
+              </span>
+            </label>
+          </div>
         </div>
 
         <div className="border border-slate-200 bg-slate-50 p-5">

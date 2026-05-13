@@ -3,21 +3,27 @@ import { publishVerifiedPageAction, recordSprsFilingAction } from "../actions";
 import { CopyButton } from "@/components/CopyButton";
 
 /**
- * Post-filing receipt card with an editable confirmation number — small
- * businesses occasionally mistype on first paste, so the form stays available
- * and the server action audits any amendment.
+ * Post-filing receipt card. The CMMC Status Date SPRS posted is the
+ * authoritative federal artifact; the optional internal reference is a
+ * free-form customer-side note (ticket #, screenshot ID, PIEE handle).
+ * Both fields stay editable in case of a typo on first paste, and every
+ * change is audit-logged on the server.
  */
 export function SprsFilingReceiptCard({
   assessmentId,
   fiscalYear,
   sprsFiledAt,
-  sprsConfirmationNumber,
+  sprsStatusDate,
+  sprsInternalReference,
   custodiaVerificationId,
 }: {
   assessmentId: string;
   fiscalYear: number;
   sprsFiledAt: string;
-  sprsConfirmationNumber: string;
+  /** ISO yyyy-mm-dd from the DATE column. May be null for legacy filings. */
+  sprsStatusDate: string | null;
+  /** Legacy/internal reference string. May be null. */
+  sprsInternalReference: string | null;
   custodiaVerificationId: string | null;
 }) {
   const filed = new Date(sprsFiledAt).toLocaleDateString(undefined, {
@@ -25,6 +31,16 @@ export function SprsFilingReceiptCard({
     day: "numeric",
     year: "numeric",
   });
+  // Display the CMMC Status Date prominently. For legacy filings that
+  // pre-date this column we fall back to showing the user's old reference
+  // string in the same slot so existing records still render meaningfully.
+  const statusDateDisplay = sprsStatusDate
+    ? new Date(`${sprsStatusDate}T00:00:00Z`).toLocaleDateString(undefined, {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
   const nextDue = new Date(
     Date.UTC((fiscalYear ?? new Date().getUTCFullYear()) + 1, 8, 30),
   ).toLocaleDateString(undefined, {
@@ -59,10 +75,10 @@ export function SprsFilingReceiptCard({
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
-                SPRS confirmation #
+                CMMC Status Date
               </dt>
-              <dd className="mt-1 break-all font-mono text-base font-semibold text-emerald-900">
-                {sprsConfirmationNumber}
+              <dd className="mt-1 font-semibold text-emerald-900">
+                {statusDateDisplay ?? sprsInternalReference ?? "\u2014"}
               </dd>
             </div>
             <div>
@@ -100,38 +116,55 @@ export function SprsFilingReceiptCard({
         className="mt-6 border-t border-emerald-200 pt-5"
       >
         <input type="hidden" name="assessmentId" value={assessmentId} />
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="min-w-0 flex-1">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="min-w-0">
+            <label
+              htmlFor="statusDate"
+              className="block text-xs font-semibold uppercase tracking-wider text-slate-700"
+            >
+              CMMC Status Date
+            </label>
+            <input
+              id="statusDate"
+              name="statusDate"
+              type="date"
+              required
+              defaultValue={sprsStatusDate ?? ""}
+              className="mt-2 block w-full min-w-0 border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+            />
+          </div>
+          <div className="min-w-0">
             <label
               htmlFor="confirmationNumber"
               className="block text-xs font-semibold uppercase tracking-wider text-slate-700"
             >
-              Edit SPRS confirmation number
+              Internal reference{" "}
+              <span className="font-normal normal-case text-slate-500">(optional)</span>
             </label>
             <input
               id="confirmationNumber"
               name="confirmationNumber"
               type="text"
-              required
               autoComplete="off"
               spellCheck={false}
               maxLength={64}
               pattern="[A-Za-z0-9_\-]+"
-              defaultValue={sprsConfirmationNumber}
+              defaultValue={sprsInternalReference ?? ""}
               className="mt-2 block w-full min-w-0 border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
             />
           </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <button
             type="submit"
             className="bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-emerald-800"
           >
             Save changes
           </button>
+          <p className="text-xs leading-snug text-slate-500">
+            SPRS does not issue a confirmation number — the CMMC Status Date is the federal artifact. Use the internal reference for your own tracking. Every change is audit-logged.
+          </p>
         </div>
-        <p className="mt-2 text-xs leading-snug text-slate-500">
-          Use only to correct a typo from your original paste. Every change is
-          audit-logged.
-        </p>
       </form>
     </div>
   );
@@ -141,8 +174,9 @@ export function SprsFilingReceiptCard({
  * Custodia Verified offer card — only shown on the bid-packet page (step 6)
  * after the user has filed in SPRS. Two states: not-yet-published (offer +
  * benefits + Publish button) and published (live page receipt + manage link).
- * The customer's SPRS confirmation number is NEVER shown on the public page;
- * the public identifier is the human-friendly Custodia Verification ID.
+ * The customer's CMMC Status Date and any internal reference are NEVER shown
+ * on the public page; the public identifier is the human-friendly Custodia
+ * Verification ID.
  */
 export function VerifiedPageOfferCard({
   assessmentId,
@@ -180,8 +214,9 @@ export function VerifiedPageOfferCard({
             <p className="mt-2 text-sm leading-relaxed text-slate-700">
               Share your page or badge with primes and contracting officers.
               The page updates automatically as Custodia&rsquo;s monitoring
-              signals change. Your SPRS confirmation number stays private —
-              only your Custodia ID is shown publicly.
+              signals change. Your CMMC Status Date and any internal
+              reference you logged stay private — only your Custodia ID is
+              shown publicly.
             </p>
             <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
               <span className="inline-flex items-center gap-2 border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-mono font-semibold text-emerald-900">
@@ -310,8 +345,8 @@ export function VerifiedPageOfferCard({
             </li>
           </ul>
           <p className="mt-4 border border-slate-200 bg-white/80 p-3 text-xs leading-relaxed text-slate-600">
-            <strong>Privacy:</strong> your SPRS confirmation number is never
-            shown on the public page or in the URL. The Custodia Verification
+            <strong>Privacy:</strong> your CMMC Status Date and any internal
+            reference are never shown on the public page or in the URL. The Custodia Verification
             ID is the only public identifier and reveals nothing private. You
             can unpublish, customize, or rotate the ID any time from{" "}
             <em>Manage Verified page</em>.
@@ -376,12 +411,20 @@ export function SprsFilingPromptCard({
           <p className="mt-2 text-sm leading-relaxed text-slate-700">
             CMMC Level 1 is annual self-attestation, not third-party
             certification. Your signed affirmation memo isn&rsquo;t the
-            federal record — the SPRS confirmation is. Log into PIEE, submit
-            your affirmation in SPRS, then come back and paste the
-            confirmation number we&apos;ll record it with your assessment and
-            email you a Statement of Compliance.
+            federal record — the SPRS posting is. Log into PIEE, post your
+            assessment in SPRS, then come back and paste the CMMC Status
+            Date SPRS returns. We&rsquo;ll record it with your assessment
+            and email you a Statement of Compliance.
           </p>
-          <ol className="mt-4 list-decimal space-y-1 pl-5 text-sm text-slate-700">
+          <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-slate-700">
+            <li>
+              <strong>Confirm your PIEE role first.</strong> You need the{" "}
+              <code className="bg-slate-100 px-1 py-0.5 text-[12px]">SPRS Cyber Vendor User</code>{" "}
+              role on your CAGE (the{" "}
+              <code className="bg-slate-100 px-1 py-0.5 text-[12px]">Contractor/Vendor (Support Role)</code>{" "}
+              is view-only and cannot file). New role requests are activated
+              by your company&rsquo;s CAM — this can take 1–5 business days.
+            </li>
             <li>
               Open{" "}
               <a
@@ -392,22 +435,53 @@ export function SprsFilingPromptCard({
               >
                 piee.eb.mil
               </a>{" "}
-              and sign in with your PIEE account.
+              → click the <strong>SPRS</strong> tile → click{" "}
+              <strong>Cyber Reports</strong>.
             </li>
             <li>
-              Open <strong>SPRS</strong> → <strong>Cyber Reports</strong> →{" "}
-              <strong>CMMC Affirmations</strong>.
+              Pick your HLO from the hierarchy dropdown (SAM imports this
+              automatically — your CAGE should appear with an asterisk if
+              your Cyber Vendor User role is active).
             </li>
             <li>
-              Submit your annual affirmation for FY{fiscalYear}. SPRS will
-              return a confirmation number.
+              Open the <strong>CMMC Assessments</strong> tab → click{" "}
+              <strong>Add New Level 1 CMMC Self-Assessment</strong>.
             </li>
-            <li>Paste that number into the form on the right.</li>
+            <li>
+              Fill in the assessment details (Custodia gives you every value
+              to copy — see the &ldquo;Copy these into SPRS&rdquo; card on
+              this page). Click <strong>Continue to Affirmation</strong>.
+            </li>
+            <li>
+              If you are the Affirming Official, click <strong>Affirm</strong>.
+              Otherwise enter the AO&rsquo;s email and click{" "}
+              <strong>Transfer to AO</strong> — SPRS will email them to
+              come affirm.
+            </li>
+            <li>
+              Status flips to{" "}
+              <code className="bg-emerald-50 px-1 py-0.5 text-[12px] text-emerald-900">Final Level 1 Self-Assessment</code>{" "}
+              (the only status visible to government personnel). Note the
+              CMMC Status Date SPRS shows.
+            </li>
+            <li>
+              Paste that CMMC Status Date in the form on the right for
+              FY{fiscalYear}.
+            </li>
           </ol>
           <p className="mt-3 text-xs text-slate-500">
-            Don&rsquo;t have a PIEE account yet? You can register at
-            piee.eb.mil/xhtml/unauth/web/homepage/vendorRegistration.xhtml —
-            this is the same login you use for SAM.gov contracting workflows.
+            Don&rsquo;t have a PIEE account yet? Register at{" "}
+            <a
+              href="https://piee.eb.mil/xhtml/unauth/web/homepage/vendorRegistration.xhtml"
+              target="_blank"
+              rel="noreferrer noopener"
+              className="font-semibold text-emerald-700 underline hover:text-emerald-800"
+            >
+              piee.eb.mil registration
+            </a>{" "}
+            — same login you use for SAM.gov contracting workflows. If you
+            are the only CAM on your CAGE and need self-activation, email{" "}
+            <code className="bg-slate-100 px-1 py-0.5 text-[11px]">disa.global.servicedesk.mbx.eb-ticket-requests@mail.mil</code>.
           </p>
         </div>
         <form
@@ -416,26 +490,42 @@ export function SprsFilingPromptCard({
         >
           <input type="hidden" name="assessmentId" value={assessmentId} />
           <label
-            htmlFor="confirmationNumber"
+            htmlFor="statusDate"
             className="block text-xs font-semibold uppercase tracking-wider text-slate-700"
           >
-            SPRS confirmation number
+            CMMC Status Date
+          </label>
+          <input
+            id="statusDate"
+            name="statusDate"
+            type="date"
+            required
+            className="mt-2 block w-full min-w-0 border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+          />
+          <p className="mt-2 text-xs leading-snug text-slate-500">
+            The posting date SPRS shows on your assessment record once status flips to{" "}
+            <em>Final Level 1 Self-Assessment</em>. SPRS does not issue a confirmation number — this date is the federal artifact.
+          </p>
+          <label
+            htmlFor="confirmationNumber"
+            className="mt-4 block text-xs font-semibold uppercase tracking-wider text-slate-700"
+          >
+            Internal reference{" "}
+            <span className="font-normal normal-case text-slate-500">(optional)</span>
           </label>
           <input
             id="confirmationNumber"
             name="confirmationNumber"
             type="text"
-            required
             autoComplete="off"
             spellCheck={false}
             maxLength={64}
             pattern="[A-Za-z0-9_\-]+"
-            placeholder="CMMC-AFF-XXXXXX"
+            placeholder="e.g. ticket # or screenshot ID"
             className="mt-2 block w-full min-w-0 border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200"
           />
           <p className="mt-2 text-xs leading-snug text-slate-500">
-            Letters, numbers, dashes, underscores. Paste exactly what SPRS
-            returned — it&rsquo;s the legal artifact of your federal filing.
+            Optional customer-side tracking string. Letters, numbers, dashes, underscores.
           </p>
           <button
             type="submit"

@@ -1,17 +1,20 @@
 /**
  * SPRS-filed transactional email.
  *
- * Sent when a user records their SPRS confirmation number on the platform —
- * the moment they finish the federal-side step of their CMMC L1 annual
+ * Sent when a user records their CMMC Status Date on the platform — the
+ * moment they finish the federal-side step of their CMMC L1 annual
  * affirmation. This is the customer-facing "you're done for this cycle"
- * receipt. Includes the confirmation number, the date filed, the next
- * re-affirmation deadline, and a link back to download their Statement of
- * Compliance.
+ * receipt. Includes the CMMC Status Date SPRS posted, any internal
+ * reference the user chose to log, the date filed, the next re-affirmation
+ * deadline, and a link back to download their Statement of Compliance.
  *
  * Reality check: CMMC Level 1 is annual self-attestation under FAR 52.204-21
- * and 32 CFR Part 170. There is no third-party certificate. The defensible
- * artifacts are: (1) the SSP, (2) the signed annual affirmation memo, and
- * (3) the SPRS confirmation number. This email is the receipt for #3.
+ * and 32 CFR Part 170. There is no third-party certificate. SPRS does NOT
+ * issue a confirmation number — the CMMC Status Date IS the federal artifact
+ * (alongside the visible status "Final Level 1 Self-Assessment"). The
+ * defensible artifacts are: (1) the SSP, (2) the signed annual affirmation
+ * memo, and (3) the SPRS posting (Status + CMMC Status Date). This email is
+ * the receipt for #3.
  */
 
 import { getFromAddress, getReplyToAddress, getResend } from "./client";
@@ -20,7 +23,10 @@ export type SprsFiledEmailInput = {
   toEmail: string;
   firstName?: string | null;
   organizationName: string;
-  confirmationNumber: string;
+  /** The CMMC Status Date SPRS posted on the assessment record. */
+  statusDate: Date;
+  /** Optional customer-side internal reference (ticket #, screenshot ID, etc.). */
+  internalReference?: string | null;
   filedAt: Date;
   /** Sep 30 of the next federal fiscal year — when re-affirmation is due. */
   nextReaffirmDueDate: Date;
@@ -67,6 +73,9 @@ function fmtDate(d: Date): string {
 
 function renderText(input: SprsFiledEmailInput & { greeting: string }): string {
   const statementUrl = `${input.workspaceUrl}/assessments/${input.assessmentId}/statement`;
+  const refLine = input.internalReference
+    ? `Internal reference:  ${input.internalReference}\n`
+    : "";
   return `${input.greeting}
 
 You've filed your CMMC Level 1 annual affirmation in SPRS. ${input.organizationName}
@@ -77,14 +86,15 @@ require Federal Contract Information (FCI) protections.
 Filing details
 --------------
 Organization:        ${input.organizationName}
-SPRS confirmation #: ${input.confirmationNumber}
-Filed on:            ${fmtDate(input.filedAt)}
+CMMC Status Date:    ${fmtDate(input.statusDate)}
+${refLine}Filed on:            ${fmtDate(input.filedAt)}
 Next re-affirmation: ${fmtDate(input.nextReaffirmDueDate)}
 
 What you should keep on file (in case of a contracting officer audit):
   1. Your System Security Plan (SSP) — covers all 15 safeguarding requirements
   2. Your signed annual affirmation memo
-  3. This SPRS confirmation number
+  3. Your SPRS posting (status "Final Level 1 Self-Assessment" + the CMMC
+     Status Date above)
 
 You can download your Statement of Compliance — a one-page summary you can
 attach to prime questionnaires and capability statements — here:
@@ -100,8 +110,10 @@ What happens between now and ${fmtDate(input.nextReaffirmDueDate)}
   deadline so you're never caught off-guard.
 
 Important: CMMC Level 1 is annual self-attestation, not third-party
-certification. There is no government-issued certificate. The SPRS
-confirmation number above is the federal record that you've affirmed.
+certification. There is no government-issued certificate. SPRS does not
+issue a confirmation number — the CMMC Status Date above and the visible
+status "Final Level 1 Self-Assessment" together are the federal record
+that you've affirmed.
 
 — The Custodia team
 Pittsburgh, PA · ${input.workspaceUrl}
@@ -127,7 +139,8 @@ function renderHtml(input: SprsFiledEmailInput & { greeting: string }): string {
           <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#eaf3ee;border:1px solid #bde0cc;border-radius:10px;">
             <tr><td style="padding:16px 18px;font-size:13px;line-height:1.6;color:#10231d;">
               <div><strong style="color:#5a7d70;font-weight:600;">Organization:</strong> ${escapeHtml(input.organizationName)}</div>
-              <div><strong style="color:#5a7d70;font-weight:600;">SPRS confirmation #:</strong> <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${escapeHtml(input.confirmationNumber)}</span></div>
+              <div><strong style="color:#5a7d70;font-weight:600;">CMMC Status Date:</strong> <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${fmtDate(input.statusDate)}</span></div>
+              ${input.internalReference ? `<div><strong style="color:#5a7d70;font-weight:600;">Internal reference:</strong> <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">${escapeHtml(input.internalReference)}</span></div>` : ""}
               <div><strong style="color:#5a7d70;font-weight:600;">Filed on:</strong> ${fmtDate(input.filedAt)}</div>
               <div><strong style="color:#5a7d70;font-weight:600;">Next re-affirmation due:</strong> ${fmtDate(input.nextReaffirmDueDate)}</div>
             </td></tr>
@@ -138,7 +151,7 @@ function renderHtml(input: SprsFiledEmailInput & { greeting: string }): string {
           <ol style="margin:0 0 0 18px;padding:0;">
             <li>Your System Security Plan (SSP) — covers all 15 safeguarding requirements</li>
             <li>Your signed annual affirmation memo</li>
-            <li>This SPRS confirmation number</li>
+            <li>Your SPRS posting — status &ldquo;Final Level 1 Self-Assessment&rdquo; with the CMMC Status Date above</li>
           </ol>
         </td></tr>
         <tr><td align="center" style="padding:20px 32px;">
@@ -154,7 +167,7 @@ function renderHtml(input: SprsFiledEmailInput & { greeting: string }): string {
         </td></tr>
         <tr><td style="padding:0 32px 24px 32px;">
           <div style="border-top:1px solid #e3ece8;padding-top:14px;font-size:12px;line-height:1.5;color:#5a7d70;">
-            CMMC Level 1 is annual self-attestation under FAR 52.204-21 and 32 CFR Part 170 — not third-party certification. There is no government-issued certificate. The SPRS confirmation number above is the federal record that you've affirmed.
+            CMMC Level 1 is annual self-attestation under FAR 52.204-21 and 32 CFR Part 170 — not third-party certification. There is no government-issued certificate. SPRS does not issue a confirmation number — the CMMC Status Date above and the visible status &ldquo;Final Level 1 Self-Assessment&rdquo; together are the federal record that you&rsquo;ve affirmed.
           </div>
         </td></tr>
         <tr><td style="padding:0 32px 28px 32px;font-size:12px;color:#5a7d70;">

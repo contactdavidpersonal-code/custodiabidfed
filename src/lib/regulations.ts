@@ -300,9 +300,9 @@ export const frameworkCitations: Record<string, FrameworkCitation> = {
     slug: "sprs-submission",
     title: "How the SPRS affirmation is submitted",
     source:
-      "DFARS 252.204-7020 and the SPRS User's Guide (NIST SP 800-171 Assessments module)",
+      "DFARS 252.204-7021 and the SPRS CMMC Quick Entry Guide v4.0 (DEC 2024)",
     text:
-      "The Affirming Official submits the Level 1 self-assessment result and annual affirmation through the Supplier Performance Risk System (SPRS) at https://www.sprs.csd.disa.mil. SPRS login requires a Procurement Integrated Enterprise Environment (PIEE) account tied to the contractor's CAGE code. The submission records the assessment date, the Affirming Official's name and title, and the compliance status. Primes verify the posting before award.",
+      "The Affirming Official submits the Level 1 self-assessment result and annual affirmation through the Supplier Performance Risk System (SPRS), accessed via PIEE at https://piee.eb.mil → SPRS → Cyber Reports → CMMC Assessments tab → 'Add New Level 1 CMMC Self-Assessment'. The submitter must hold the 'SPRS Cyber Vendor User' role on the relevant CAGE (the 'Contractor/Vendor (Support Role)' is view-only); new role requests are activated by the company's Contractor Account Manager (CAM). The assessment form captures CAGE, assessment date, scope, the Affirming Official's name + title, and the compliance status. If the preparer is not the AO, SPRS supports a 'Transfer to AO' email handoff. Upon affirmation the record is published with a CMMC Status Date (SPRS does not issue a separate confirmation number) and the 'Final Level 1 Self-Assessment' status — the only CMMC Status Type visible to government personnel. Primes verify the posting before award.",
   },
   "sam-registration": {
     slug: "sam-registration",

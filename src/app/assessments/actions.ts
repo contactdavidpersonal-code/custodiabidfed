@@ -11,6 +11,7 @@ import {
 } from "@/lib/db";
 import {
   controlsMissingEvidence,
+  controlsMissingNaJustification,
   createAssessmentForOrg,
   deleteRemediationPlan,
   ensureOrgForUser,
@@ -19,14 +20,23 @@ import {
   getBusinessProfile,
   listEvidenceForAssessment,
   listResponsesForAssessment,
+  materialChangeQuestionKeys,
+  recordMaterialChangeReview,
   setArtifactCarryStatus,
   setResponseCarryStatus,
   tagArtifactPractice,
   untagArtifactPractice,
   updateBusinessProfile,
   upsertRemediationPlan,
+  type MaterialChangeAnswers,
+  type MaterialChangeQuestionKey,
 } from "@/lib/assessment";
 import { stampFreshnessOnInsert } from "@/lib/freshness";
+import {
+  getSamEntityStatus,
+  summarizeSamStatus,
+  type SamEntityStatus,
+} from "@/lib/sam-entity";
 import {
   carryForwardStatuses,
   remediationStatuses,
@@ -132,6 +142,44 @@ export async function saveFederalRegistrationAction(formData: FormData) {
     WHERE id = ${org.id}
   `;
 
+  // Live SAM Entity validation. Soft check: confirm the UEI exists in
+  // SAM and the registered legal business name reasonably matches the
+  // company name on file. Record the result on the audit log either
+  // way. A mismatch raises a non-blocking warning surfaced via query
+  // param on the registration page; a SAM outage degrades to silence.
+  // (Plan: sprs-readiness-upgrades.md #19; sam-entity.ts JSDoc.)
+  let samWarning: "ok" | "not_found" | "inactive" | "name_mismatch" | null = null;
+  if (samUei) {
+    try {
+      const status = await getSamEntityStatus(samUei);
+      if (status.kind === "active") {
+        const samName = (status.legalBusinessName ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+        const orgName = org.name.toLowerCase().replace(/[^a-z0-9]+/g, "");
+        // First-time org name is the literal "My Organization" stub;
+        // skip the comparison in that case so we don't flag every new user.
+        if (samName.length > 0 && orgName.length > 0 && orgName !== "myorganization" && !samName.includes(orgName) && !orgName.includes(samName)) {
+          samWarning = "name_mismatch";
+        } else {
+          samWarning = "ok";
+        }
+      } else if (status.kind === "inactive") {
+        samWarning = "inactive";
+      } else if (status.kind === "not_found") {
+        samWarning = "not_found";
+      }
+      await recordAuditEvent({
+        userId,
+        organizationId: org.id,
+        action: "organization.sam_uei_validated",
+        resourceType: "organization",
+        resourceId: org.id,
+        metadata: { uei: samUei, status: status.kind, result: samWarning },
+      });
+    } catch (err) {
+      console.error("[sam-entity] validation failed during registration save", err);
+    }
+  }
+
   revalidatePath("/assessments");
   if (assessmentId) {
     revalidatePath(`/assessments/${assessmentId}`);
@@ -143,8 +191,79 @@ export async function saveFederalRegistrationAction(formData: FormData) {
   // the user can finish filling things in.
   const registrationComplete = Boolean(samUei) && naicsCodes.length > 0;
   if (assessmentId && registrationComplete) {
+    if (samWarning && samWarning !== "ok") {
+      redirect(`/assessments/${assessmentId}/registration?sam_warning=${samWarning}`);
+    }
     redirect(`/assessments/${assessmentId}`);
   }
+  if (assessmentId && samWarning && samWarning !== "ok") {
+    redirect(`/assessments/${assessmentId}/registration?sam_warning=${samWarning}`);
+  }
+}
+
+/**
+ * Material-change interview (Scoping Guide L1 v2.13 § 170.19 p. 4). Required
+ * on carried-forward cycles before the user can walk the practices step.
+ * If any answer is "yes" we wipe the carried responses and force a fresh
+ * walk. If all "no" we record the review and let the carried draft stand
+ * (annual affirmation only).
+ */
+export async function submitMaterialChangeReviewAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "").trim();
+  const rationale = String(formData.get("rationale") ?? "").trim();
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Assessment not found.");
+  if (!ctx.assessment.carried_forward_from) {
+    // Defensive: only carry-forward cycles need this interview.
+    redirect(`/assessments/${assessmentId}`);
+  }
+
+  const answers = {} as MaterialChangeAnswers;
+  let anyYes = false;
+  for (const key of materialChangeQuestionKeys) {
+    const raw = String(formData.get(key) ?? "").trim().toLowerCase();
+    if (raw !== "yes" && raw !== "no") {
+      return {
+        error:
+          "Answer every question with yes or no — Scoping Guide L1 v2.13 § 170.19 p. 4 requires a complete review.",
+      };
+    }
+    const val = raw === "yes";
+    answers[key as MaterialChangeQuestionKey] = val;
+    if (val) anyYes = true;
+  }
+
+  if (anyYes && rationale.length < 40) {
+    return {
+      error:
+        "When any answer is yes, describe what changed in at least 40 characters so the audit trail captures the trigger.",
+    };
+  }
+
+  await recordMaterialChangeReview({
+    assessmentId,
+    answers,
+    rationale: rationale || null,
+    requiredReassessment: anyYes,
+  });
+
+  await recordAuditEvent({
+    action: "assessment.material_change_reviewed",
+    userId,
+    organizationId: ctx.organization.id,
+    resourceType: "assessment",
+    resourceId: assessmentId,
+    metadata: {
+      requiredReassessment: anyYes,
+      answers,
+    },
+  });
+
+  revalidatePath(`/assessments/${assessmentId}`);
+  revalidatePath(`/assessments/${assessmentId}/material-change`);
+  redirect(`/assessments/${assessmentId}`);
 }
 
 export async function saveControlResponseAction(formData: FormData) {
@@ -345,12 +464,19 @@ export async function uploadEvidenceAction(formData: FormData) {
   });
 
   const sql = getSql();
+  // CMMC AG L1 v2.13 §§ 5–7 assessment method (optional). Stored on the
+  // artifact so the SSP can render the per-method tally per practice.
+  const methodRaw = String(formData.get("method") ?? "").trim().toLowerCase();
+  const method =
+    methodRaw === "examine" || methodRaw === "interview" || methodRaw === "test"
+      ? methodRaw
+      : null;
   const inserted = (await sql`
     INSERT INTO evidence_artifacts
-      (assessment_id, control_id, filename, blob_url, mime_type, size_bytes, uploaded_by_user_id)
+      (assessment_id, control_id, filename, blob_url, mime_type, size_bytes, uploaded_by_user_id, assessment_method)
     VALUES
       (${assessmentId}, ${controlId}, ${taggedName}, ${blob.url},
-       ${file.type || null}, ${file.size}, ${userId})
+       ${file.type || null}, ${file.size}, ${userId}, ${method})
     RETURNING id
   `) as Array<{ id: string }>;
   const artifactId = inserted[0].id;
@@ -784,6 +910,115 @@ export async function deleteEvidenceAction(formData: FormData) {
 }
 
 /**
+ * Tag an artifact with the CMMC AG L1 v2.13 §§ 5–7 assessment method the
+ * (self-)assessor used to verify it: Examine (read the doc), Interview
+ * (talk to the responsible person), or Test (operate the control). The
+ * SSP renders this per artifact so a prime can see the method mix.
+ * Optional metadata — empty/unset is fine.
+ */
+export async function setEvidenceMethodAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const controlId = String(formData.get("controlId") ?? "");
+  const artifactId = String(formData.get("artifactId") ?? "");
+  const methodRaw = String(formData.get("method") ?? "").trim().toLowerCase();
+  const method =
+    methodRaw === "examine" || methodRaw === "interview" || methodRaw === "test"
+      ? methodRaw
+      : null;
+
+  if (!playbookById[controlId]) throw new Error("Unknown control");
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Not found");
+
+  const sql = getSql();
+  await sql`
+    UPDATE evidence_artifacts
+    SET assessment_method = ${method}
+    WHERE id = ${artifactId} AND assessment_id = ${assessmentId}
+  `;
+
+  await recordAuditEvent({
+    action: "evidence.method_set",
+    userId,
+    organizationId: ctx.organization.id,
+    resourceType: "evidence_artifact",
+    resourceId: artifactId,
+    metadata: { assessmentId, controlId, method },
+  });
+
+  revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
+}
+
+/**
+ * Mark a Charlie-drafted (or otherwise unfinished) artifact as a FINAL
+ * adopted policy of record. CMMC AG L1 v2.13 p. 7 + § 170.24 require
+ * "final form" evidence — drafts auto-fail the AI vision gate by design.
+ * The override path: the user names an adopter (typically the AO or
+ * ISSM) and an adoption date; the artifact is then accepted as MET
+ * regardless of the vision verdict, and the SSP renders an explicit
+ * adoption disclosure ("Final policy adopted YYYY-MM-DD by <name>").
+ *
+ * Refuses to override an artifact the AI actively flagged `insufficient`
+ * or `not_relevant` — those need a replacement, not a stamp.
+ */
+export async function markEvidenceAsFinalAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const controlId = String(formData.get("controlId") ?? "");
+  const artifactId = String(formData.get("artifactId") ?? "");
+  const adoptedBy = String(formData.get("adoptedBy") ?? "").trim();
+  const adoptedAtRaw = String(formData.get("adoptedAt") ?? "").trim();
+
+  if (!playbookById[controlId]) throw new Error("Unknown control");
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Not found");
+
+  if (adoptedBy.length < 2) {
+    return { error: "Adopter name is required (the senior official who signed off on this policy)." };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(adoptedAtRaw)) {
+    return { error: "Adoption date is required (YYYY-MM-DD)." };
+  }
+
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT ai_review_verdict
+    FROM evidence_artifacts
+    WHERE id = ${artifactId} AND assessment_id = ${assessmentId}
+    LIMIT 1
+  `) as Array<{ ai_review_verdict: string | null }>;
+  if (rows.length === 0) throw new Error("Artifact not found");
+  const verdict = rows[0].ai_review_verdict;
+  if (verdict === "insufficient" || verdict === "not_relevant") {
+    return {
+      error:
+        "This artifact was flagged by the auto-reviewer as insufficient or not relevant. Replace it instead of marking it final — the prime will see the same flags.",
+    };
+  }
+
+  await sql`
+    UPDATE evidence_artifacts
+    SET is_final_policy = TRUE,
+        final_adopted_at = ${adoptedAtRaw}::timestamptz,
+        final_adopted_by = ${adoptedBy}
+    WHERE id = ${artifactId} AND assessment_id = ${assessmentId}
+  `;
+
+  await recordAuditEvent({
+    action: "evidence.marked_final",
+    userId,
+    organizationId: ctx.organization.id,
+    resourceType: "evidence_artifact",
+    resourceId: artifactId,
+    metadata: { assessmentId, controlId, adoptedBy, adoptedAt: adoptedAtRaw },
+  });
+
+  revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
+  revalidatePath(`/assessments/${assessmentId}`);
+}
+
+/**
  * Cross-tag an existing artifact to ANOTHER practice in the same assessment.
  * Does not move or copy the artifact — both practices share the same file.
  * Idempotent (safe to click twice). Used by the reuse picker on the practice
@@ -888,18 +1123,75 @@ export async function submitAffirmationAction(formData: FormData) {
   )
     .trim()
     .toLowerCase();
+  // CMMC L1 v2.13 + SPRS Quick Entry Guide v4.0: the *assessment date*
+  // (the day the self-assessment work was completed) is a distinct SPRS
+  // field from the affirmation date (today). User may have completed the
+  // work earlier and only now be tracking down the AO to sign. Accept an
+  // optional yyyy-mm-dd; default to today when omitted.
+  const selfAssessmentCompletedRaw = String(
+    formData.get("selfAssessmentCompletedAt") ?? "",
+  ).trim();
   const acknowledged = formData.get("acknowledged") === "on";
-
+  // PIEE / SPRS readiness self-attestation (P1 #11). The user can sign a
+  // perfectly correct affirmation memo and still be unable to file it in
+  // SPRS if they don't have PIEE provisioned with the SPRS Cyber Vendor
+  // User role and a CAM-activated CAGE. Cuts the "I signed but I can't
+  // file" cohort. We can't verify these from the outside — the gate is a
+  // hard self-attestation.
+  const pieeAcct = formData.get("pieeAcct") === "on";
+  const pieeRole = formData.get("pieeRole") === "on";
+  const pieeSeesCage = formData.get("pieeSeesCage") === "on";
   if (!signerName) bail("Signer name is required");
   if (!signerTitle) bail("Signer title is required");
-  if (
-    affirmingOfficialEmail &&
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(affirmingOfficialEmail)
-  ) {
+  // AO email is REQUIRED for CMMC L1: SPRS's "Transfer to AO" flow uses
+  // email as the only routing channel when the AO isn't logged in. The
+  // affirming-official email also appears verbatim on the canonical
+  // attestation packet and in the annual renewal reminder we send. A
+  // missing or invalid address is a hard block at sign time.
+  if (!affirmingOfficialEmail) {
+    bail("Affirming Official email is required — SPRS routes the affirmation to this address");
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(affirmingOfficialEmail)) {
     bail("Affirming Official email is not a valid address");
+  }
+  // Reject obvious shared/role inboxes — the AO must be the senior
+  // official, not a distribution list. 32 CFR § 170.22 + DFARS
+  // 252.204-7021 frame this as a personal affirmation.
+  const localPart = affirmingOfficialEmail.split("@")[0] ?? "";
+  const sharedInboxPattern = /^(info|hello|contact|sales|support|admin|noreply|no-reply|team|office|help|hr|billing)$/;
+  if (sharedInboxPattern.test(localPart)) {
+    bail(
+      "Affirming Official email must be the senior official's personal work address, not a shared inbox (info@, hello@, etc.)",
+    );
   }
   if (!acknowledged) {
     bail("You must acknowledge the affirmation statement");
+  }
+
+  // Validate the optional assessment completion date. Empty string ⇒ use
+  // affirmation timestamp (today). yyyy-mm-dd format only, must not be in
+  // the future, must be within the past 366 days (we don't accept stale
+  // work — re-assess if the work is more than a year old per
+  // 32 CFR § 170.15(c)(2)).
+  let selfAssessmentCompletedAt: Date | null = null;
+  if (selfAssessmentCompletedRaw) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(selfAssessmentCompletedRaw)) {
+      bail("Assessment completion date must be in YYYY-MM-DD format");
+    }
+    const parsed = new Date(`${selfAssessmentCompletedRaw}T12:00:00Z`);
+    if (Number.isNaN(parsed.getTime())) {
+      bail("Assessment completion date is not a valid date");
+    }
+    const now = Date.now();
+    if (parsed.getTime() > now + 24 * 60 * 60 * 1000) {
+      bail("Assessment completion date cannot be in the future");
+    }
+    if (parsed.getTime() < now - 366 * 24 * 60 * 60 * 1000) {
+      bail(
+        "Assessment completion date is more than a year old — re-run the assessment before signing",
+      );
+    }
+    selfAssessmentCompletedAt = parsed;
   }
 
   const ctx = await getAssessmentForUser(assessmentId, userId);
@@ -907,6 +1199,65 @@ export async function submitAffirmationAction(formData: FormData) {
 
   if (!ctx.organization.scoped_systems) {
     bail("Complete your business profile before signing");
+  }
+
+  // CAGE gate: SPRS keys every CMMC assessment record on the CAGE code
+  // (SPRS CMMC Quick Entry Guide v4.0 — CAGE hierarchy is imported from
+  // SAM and the "Add New Level 1 CMMC Self-Assessment" form requires a
+  // CAGE under the selected HLO). Without a CAGE on file the user cannot
+  // actually post their affirmation in SPRS, so refuse to sign here — a
+  // signed-but-unfileable memo is the worst possible outcome.
+  if (
+    ctx.assessment.framework === "cmmc_l1" &&
+    !ctx.organization.cage_code?.trim()
+  ) {
+    bail(
+      "Add your CAGE code on the registration step before signing — SPRS keys every CMMC affirmation on CAGE, so without one your affirmation can't be posted.",
+    );
+  }
+
+  // PIEE / SPRS readiness self-attestation (P1 #11). The user can sign a
+  // perfectly correct affirmation memo and still be unable to file it in
+  // SPRS if they don't have PIEE provisioned with the SPRS Cyber Vendor
+  // User role and a CAM-activated CAGE. Cuts the "I signed but I can't
+  // file" cohort. We can't verify these from the outside — the gate is a
+  // hard self-attestation.
+  if (ctx.assessment.framework === "cmmc_l1") {
+    if (!pieeAcct) {
+      bail(
+        "Confirm you have a PIEE account before signing — see /sprs-guide.",
+      );
+    }
+    if (!pieeRole) {
+      bail(
+        "Confirm your PIEE account has the SPRS Cyber Vendor User role (or your CAM has activated the request) before signing.",
+      );
+    }
+    if (!pieeSeesCage) {
+      bail(
+        "Confirm you can see your CAGE in the SPRS Cyber Reports hierarchy before signing.",
+      );
+    }
+  }
+
+  // SAM Entity freshness — SOFT warning, never a block. SAM registration
+  // expires annually; an expired SAM registration silently flips SPRS
+  // lookups for this CAGE/UEI to "Inactive," which means contracting
+  // officers searching for cleared subcontractors won't find this vendor
+  // even though the CMMC record itself is MET. We record any negative
+  // status in the audit metadata so the user has a paper trail of "we
+  // told you." We never block here: a SAM API outage cannot prevent a
+  // valid CMMC affirmation from being signed.
+  let samStatusWarning: string | null = null;
+  let samStatusKind: SamEntityStatus["kind"] = "unknown";
+  if (ctx.organization.sam_uei?.trim()) {
+    try {
+      const samStatus = await getSamEntityStatus(ctx.organization.sam_uei.trim());
+      samStatusKind = samStatus.kind;
+      samStatusWarning = summarizeSamStatus(samStatus);
+    } catch (err) {
+      console.error("[sign] SAM Entity freshness check failed (non-blocking)", err);
+    }
   }
 
   const responses = await listResponsesForAssessment(assessmentId);
@@ -986,6 +1337,25 @@ export async function submitAffirmationAction(formData: FormData) {
       missingEvidence.length > 5 ? ` (+${missingEvidence.length - 5} more)` : "";
     bail(
       `Practices marked Met need at least one passing artifact (or a 200+ char narrative explaining why none applies): ${ids}${more}`,
+    );
+  }
+
+  // N/A justification gate (CMMC AG L1 v2.13 p. 8): every requirement
+  // marked Not Applicable must carry a written narrative explaining why
+  // it doesn't apply to the CMMC Assessment Scope. AG p. 8 treats N/A
+  // as equivalent to MET, which means a contracting officer reading the
+  // SSP needs to see the reasoning — otherwise they can't tell a
+  // legitimate N/A from a user clicking the wrong radio.
+  const missingNa = controlsMissingNaJustification(responses);
+  if (missingNa.length > 0) {
+    const ids = missingNa
+      .slice(0, 5)
+      .map((m) => m.control_id)
+      .join(", ");
+    const more =
+      missingNa.length > 5 ? ` (+${missingNa.length - 5} more)` : "";
+    bail(
+      `Practices marked Not Applicable need at least a 120-char written justification (CMMC AG L1 v2.13 p. 8): ${ids}${more}`,
     );
   }
 
@@ -1185,6 +1555,10 @@ export async function submitAffirmationAction(formData: FormData) {
         affirmed_by_name = ${encSignerName},
         affirmed_by_title = ${encSignerTitle},
         affirming_official_email = ${affirmingOfficialEmail || null},
+        self_assessment_completed_at = COALESCE(
+          ${selfAssessmentCompletedAt ? selfAssessmentCompletedAt.toISOString() : null}::timestamptz,
+          NOW()
+        ),
         cmmc_status = ${ctx.assessment.framework === "cmmc_l1" && implementsAll17 ? "Final Level 1 (Self)" : null},
         sprs_score = NULL,
         implements_all_17 = ${implementsAll17},
@@ -1212,6 +1586,12 @@ export async function submitAffirmationAction(formData: FormData) {
       keyVersion: signed.keyVersion,
       evidenceCount: evidence.length,
       responseCount: responses.length,
+      // SAM Entity freshness snapshot taken at sign time (P1 #10). Soft
+      // warning only — recorded for the paper trail when an inactive SAM
+      // registration would have caused SPRS to show this vendor as
+      // unreachable to primes.
+      samEntityStatus: samStatusKind,
+      samStatusWarning: samStatusWarning,
     },
   });
   } catch (e) {
@@ -1237,42 +1617,82 @@ export async function submitAffirmationAction(formData: FormData) {
  * Record the user's SPRS filing for an attested assessment.
  *
  * After the user signs their annual affirmation memo we walk them to
- * https://piee.eb.mil → SPRS → Cyber Reports → CMMC Affirmations. They
- * submit, copy the SPRS confirmation number it returns, and paste it back
- * into the platform. This action persists that filing, fires an audit
- * event, and emails the user a "you're done" receipt with their next
- * re-affirmation due date and a link to their Statement of Compliance.
+ * https://piee.eb.mil → SPRS → Cyber Reports → CMMC Assessments tab →
+ * "Add New Level 1 CMMC Self-Assessment" (per SPRS CMMC Quick Entry Guide
+ * v4.0, DEC 2024). The user enters the assessment, transfers to the
+ * Affirming Official if needed, the AO clicks Affirm, and SPRS returns a
+ * CMMC Status Date (the posting date — SPRS does NOT issue a separate
+ * confirmation number). They paste that posting date / status reference
+ * back here. This action persists that filing, fires an audit event, and
+ * emails the user a "you're done" receipt with their next re-affirmation
+ * due date and a link to their Statement of Compliance.
  *
  * Guardrails:
  *   - Assessment must be in `attested` status (i.e. memo signed first).
- *   - Confirmation number is stored as the user provided — we never
- *     fabricate or auto-fill it.
+ *   - The CMMC Status Date is required and must be a real date that is not
+ *     in the future and not absurdly far from the affirmation timestamp.
+ *   - The optional `confirmationNumber` field is an internal/customer-side
+ *     reference only — SPRS does NOT issue a confirmation number. We accept
+ *     it for users who want to log a screenshot ID, ticket number, or
+ *     PIEE workflow handle alongside the federal CMMC Status Date.
  *   - Email send failures do NOT roll back the DB write; the filing record
  *     is the legal artifact, the email is just a courtesy receipt.
  */
 export async function recordSprsFilingAction(formData: FormData) {
   const userId = await requireUserId();
   const assessmentId = String(formData.get("assessmentId") ?? "").trim();
+  const statusDateRaw = String(formData.get("statusDate") ?? "").trim();
   const confirmationNumberRaw = String(
     formData.get("confirmationNumber") ?? "",
   ).trim();
 
   if (!assessmentId) throw new Error("Missing assessment id");
-  if (!confirmationNumberRaw) {
-    throw new Error("Enter the SPRS confirmation number");
-  }
-  // SPRS confirmation numbers are short alphanumeric strings. Cap the length
-  // and strip anything that isn't a-z, 0-9, dash, or underscore so we never
-  // round-trip junk into the email body or PDF.
-  if (confirmationNumberRaw.length > 64) {
-    throw new Error("SPRS confirmation number looks too long");
-  }
-  if (!/^[A-Za-z0-9_-]+$/.test(confirmationNumberRaw)) {
+  if (!statusDateRaw) {
     throw new Error(
-      "SPRS confirmation number can only contain letters, numbers, dashes, or underscores",
+      "Enter the CMMC Status Date SPRS returned (the posting date on your assessment record)",
     );
   }
-  const confirmationNumber = confirmationNumberRaw.toUpperCase();
+  // The CMMC Status Date is the federal artifact. SPRS shows it on the
+  // assessment record after Affirm / Transfer-to-AO completes. Accept an
+  // ISO yyyy-mm-dd from <input type="date"> and validate it's a real,
+  // non-future date within the last 365 days. Anything else is almost
+  // certainly a typo or a paste from the wrong field.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(statusDateRaw)) {
+    throw new Error(
+      "CMMC Status Date must look like YYYY-MM-DD (use the date picker)",
+    );
+  }
+  const statusDate = new Date(`${statusDateRaw}T00:00:00Z`);
+  if (Number.isNaN(statusDate.getTime())) {
+    throw new Error("CMMC Status Date is not a valid date");
+  }
+  const todayUtc = new Date();
+  if (statusDate.getTime() > todayUtc.getTime() + 24 * 60 * 60 * 1000) {
+    throw new Error("CMMC Status Date cannot be in the future");
+  }
+  if (
+    statusDate.getTime() <
+    todayUtc.getTime() - 366 * 24 * 60 * 60 * 1000
+  ) {
+    throw new Error(
+      "CMMC Status Date looks too old — SPRS posting dates should be within the last year",
+    );
+  }
+  // Internal reference is optional. If supplied, sanitize it the same way
+  // we used to sanitize the old fictional confirmation number so the value
+  // is safe to round-trip into emails and PDFs.
+  let confirmationNumber: string | null = null;
+  if (confirmationNumberRaw) {
+    if (confirmationNumberRaw.length > 64) {
+      throw new Error("Internal reference looks too long (64 chars max)");
+    }
+    if (!/^[A-Za-z0-9_-]+$/.test(confirmationNumberRaw)) {
+      throw new Error(
+        "Internal reference can only contain letters, numbers, dashes, or underscores",
+      );
+    }
+    confirmationNumber = confirmationNumberRaw.toUpperCase();
+  }
 
   const ctx = await getAssessmentForUser(assessmentId, userId);
   if (!ctx) throw new Error("Assessment not found");
@@ -1282,23 +1702,28 @@ export async function recordSprsFilingAction(formData: FormData) {
     );
   }
   if (ctx.assessment.sprs_filed_at) {
-    // Idempotent re-save: same number is a no-op.
-    if (
-      ctx.assessment.sprs_confirmation_number?.toUpperCase() ===
-      confirmationNumber
-    ) {
+    // Idempotent re-save: same status date + same internal reference is a
+    // no-op.
+    const sameDate =
+      ctx.assessment.sprs_status_date === statusDateRaw;
+    const sameRef =
+      (ctx.assessment.sprs_confirmation_number ?? null) === confirmationNumber;
+    if (sameDate && sameRef) {
       revalidatePath(`/assessments/${assessmentId}`);
       revalidatePath(`/assessments/${assessmentId}/bid-packet`);
       return;
     }
-    // Amend the saved confirmation number — small-business contractors
-    // occasionally mistype on first paste. We log the change in the audit
-    // trail (old + new) so the legal record is still defensible.
+    // Amend the saved status date / internal reference — small-business
+    // contractors occasionally mistype on first paste. We log the change
+    // in the audit trail (old + new) so the legal record is still
+    // defensible.
     const sql = getSql();
-    const previous = ctx.assessment.sprs_confirmation_number;
+    const previousStatusDate = ctx.assessment.sprs_status_date;
+    const previousReference = ctx.assessment.sprs_confirmation_number;
     await sql`
       UPDATE assessments
-      SET sprs_confirmation_number = ${confirmationNumber},
+      SET sprs_status_date = ${statusDateRaw}::date,
+          sprs_confirmation_number = ${confirmationNumber},
           updated_at = NOW()
       WHERE id = ${assessmentId}
     `;
@@ -1309,8 +1734,10 @@ export async function recordSprsFilingAction(formData: FormData) {
       resourceType: "assessment",
       resourceId: assessmentId,
       metadata: {
-        previousConfirmationNumber: previous,
-        newConfirmationNumber: confirmationNumber,
+        previousStatusDate,
+        newStatusDate: statusDateRaw,
+        previousInternalReference: previousReference,
+        newInternalReference: confirmationNumber,
       },
     });
     revalidatePath(`/assessments/${assessmentId}`);
@@ -1323,6 +1750,7 @@ export async function recordSprsFilingAction(formData: FormData) {
   await sql`
     UPDATE assessments
     SET sprs_filed_at = ${filedAt.toISOString()}::timestamptz,
+        sprs_status_date = ${statusDateRaw}::date,
         sprs_confirmation_number = ${confirmationNumber},
         updated_at = NOW()
     WHERE id = ${assessmentId}
@@ -1332,8 +1760,9 @@ export async function recordSprsFilingAction(formData: FormData) {
   // from the offer card on the assessment overview). Failures here must
   // NOT roll back the SPRS filing — the legal record is what matters.
   // We compute deterministic public IDs (verification slug + CUST-V-XXXXXX)
-  // from (org, assessment, filed_at) so the SPRS confirmation number is
-  // never mixed into the public artifact.
+  // from (org, assessment, filed_at) so no private federal-record detail
+  // (CMMC Status Date or internal reference) is mixed into the public
+  // artifact.
   let custodiaVerificationId: string | null = null;
   try {
     const provisioned = await provisionTrustPageForFiling({
@@ -1382,7 +1811,8 @@ export async function recordSprsFilingAction(formData: FormData) {
     metadata: {
       framework: ctx.assessment.framework,
       fiscalYear: ctx.assessment.fiscal_year,
-      sprsConfirmationNumber: confirmationNumber,
+      sprsStatusDate: statusDateRaw,
+      internalReference: confirmationNumber,
       filedAt: filedAt.toISOString(),
       custodiaVerificationId,
     },
@@ -1410,7 +1840,8 @@ export async function recordSprsFilingAction(formData: FormData) {
         toEmail: email,
         firstName: user.firstName ?? null,
         organizationName: ctx.organization.name,
-        confirmationNumber,
+        statusDate,
+        internalReference: confirmationNumber,
         filedAt,
         nextReaffirmDueDate: nextDue,
         workspaceUrl,
@@ -1713,6 +2144,11 @@ export async function updateBusinessProfileManualAction(formData: FormData) {
     "physical_workspace",
     "it_identity",
     "data_location",
+    // Optional ISSM (Information System Security Manager) — distinct from
+    // the Affirming Official. Not required for L1 / SPRS but commonly
+    // requested by primes on intake; rendered in the SSP § 3 roles table.
+    "issm_name",
+    "issm_email",
     // Brand fields — surfaced on customer-facing deliverables (SSP,
     // affirmation memo, zipped HTML header bars).
     "website",

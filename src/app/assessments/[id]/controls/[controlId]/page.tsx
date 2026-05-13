@@ -8,13 +8,16 @@ import {
   getReuseCandidates,
   listEvidenceForControl,
   listResponsesForAssessment,
+  suggestedNaJustification,
 } from "@/lib/assessment";
 import { getObjectives, playbook, playbookById } from "@/lib/playbook";
 import { getPracticeQuiz } from "@/lib/practice-quizzes";
 import {
   deleteEvidenceAction,
+  markEvidenceAsFinalAction,
   reReviewEvidenceAction,
   saveControlResponseAction,
+  setEvidenceMethodAction,
   submitVaultEntryAction,
   tagArtifactPracticeAction,
   untagArtifactPracticeAction,
@@ -162,6 +165,7 @@ export default async function ControlDetailPage(
             response={response}
             evidence={evidenceForClient}
             remediationPlan={remediationPlan}
+            suggestedNa={suggestedNaJustification(controlId)}
             prevId={prevId}
             nextId={nextId}
             currentIdx={currentIdx}
@@ -173,6 +177,8 @@ export default async function ControlDetailPage(
             reReviewEvidenceAction={reReviewEvidenceAction}
             tagArtifactPracticeAction={tagArtifactPracticeAction}
             untagArtifactPracticeAction={untagArtifactPracticeAction}
+            markEvidenceAsFinalAction={markEvidenceAsFinalAction}
+            setEvidenceMethodAction={setEvidenceMethodAction}
             useSuggestedNarrativeAction={useSuggestedNarrativeAction}
             upsertRemediationPlanAction={upsertRemediationPlanAction}
           />
