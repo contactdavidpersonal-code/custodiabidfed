@@ -21,6 +21,13 @@ const APP_URL = (
 const PUBLIC_ALLOW = [
   "/",
   "/cmmc-level-1",
+  "/cmmc-level-1/checklist",
+  "/cmmc-level-1/diy",
+  "/cmmc-level-1/ssp-template",
+  "/cmmc-level-1/scoping-worksheet",
+  "/cmmc-level-1/policy-templates",
+  "/cmmc-level-1/sprs-walkthrough",
+  "/cmmc-level-1/annual-affirmation",
   "/blog",
   "/blog/",
   "/sprs-check",

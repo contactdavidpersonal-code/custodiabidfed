@@ -49,8 +49,10 @@ const STAGE_DEFS: Array<{
       "Before you spend a dollar: a flowchart of who is covered, who is exempt, and what FCI really means in your contracts.",
     slugs: [
       "do-i-need-cmmc-decision-tree",
+      "cui-vs-fci",
       "what-is-fci-federal-contract-information",
       "cmmc-level-1-vs-level-2",
+      "dfars-7012-vs-cmmc",
       "cmmc-for-sbir-phase-1-winners",
     ],
   },
@@ -73,6 +75,7 @@ const STAGE_DEFS: Array<{
     blurb:
       "Run the self-assessment, post your SPRS score, and respond to a prime asking for proof — without paying a 3PAO.",
     slugs: [
+      "cmmc-level-1-checklist",
       "sprs-score-explained",
       "cmmc-level-1-cost",
       "prime-asking-for-sprs-score-level-1-response",
@@ -254,6 +257,57 @@ export default function BlogIndexPage() {
               </li>
             ))}
           </ol>
+        </div>
+      </section>
+
+      {/* ---------- Free DIY Handbook banner ---------- */}
+      <section className="border-b border-[#cfe3d9] bg-white px-6 py-16 md:py-20">
+        <div className="mx-auto max-w-6xl">
+          <Link
+            href="/cmmc-level-1/diy"
+            className="group block overflow-hidden border border-[#cfe3d9] bg-[#08201a] text-white transition-colors hover:border-[#2f8f6d]"
+          >
+            <div className="grid gap-0 md:grid-cols-[1.2fr_1fr]">
+              <div className="p-10 md:p-14">
+                <div className="font-mono text-[10px] font-bold uppercase tracking-[0.32em] text-[#bdf2cf]">
+                  New &middot; The free DIY handbook
+                </div>
+                <h2 className="mt-4 font-serif text-3xl font-bold leading-tight md:text-[44px]">
+                  Do CMMC Level 1
+                  {" "}
+                  <span className="italic text-[#a8cfc0]">yourself</span>
+                  <span className="text-[#8dd2b1]">.</span>{" "}
+                  <span className="bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text italic text-transparent">
+                    For free.
+                  </span>
+                </h2>
+                <p className="mt-5 max-w-lg text-[15px] leading-relaxed text-[#a8cfc0]">
+                  Seven steps. Eight printable templates. The complete
+                  end-to-end path &mdash; SSP, scoping worksheet, 8
+                  policies, SPRS walkthrough. No email gate. No upsell.
+                </p>
+                <div className="mt-7 inline-flex items-center gap-2 border border-white/20 px-5 py-2.5 text-sm font-bold transition-colors group-hover:border-[#8dd2b1] group-hover:text-[#bdf2cf]">
+                  Open the handbook <span aria-hidden>&rarr;</span>
+                </div>
+              </div>
+              <dl className="grid grid-cols-3 divide-x divide-white/[0.08] border-t border-white/[0.08] bg-[#0a261e] md:border-l md:border-t-0">
+                {[
+                  { n: "7", l: "Steps" },
+                  { n: "8", l: "Templates" },
+                  { n: "$0", l: "Cost" },
+                ].map((s) => (
+                  <div key={s.l} className="flex flex-col items-center justify-center px-4 py-10">
+                    <dt className="font-serif text-4xl font-bold text-white md:text-5xl">
+                      {s.n}
+                    </dt>
+                    <dd className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#7aab98]">
+                      {s.l}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          </Link>
         </div>
       </section>
 

@@ -13,6 +13,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = [
     { url: `${APP_URL}/`, changeFrequency: "weekly", priority: 1 },
     { url: `${APP_URL}/cmmc-level-1`, changeFrequency: "weekly", priority: 0.95 },
+    { url: `${APP_URL}/cmmc-level-1/diy`, changeFrequency: "weekly", priority: 0.95 },
+    { url: `${APP_URL}/cmmc-level-1/checklist`, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${APP_URL}/cmmc-level-1/ssp-template`, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${APP_URL}/cmmc-level-1/scoping-worksheet`, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${APP_URL}/cmmc-level-1/policy-templates`, changeFrequency: "monthly", priority: 0.9 },
+    { url: `${APP_URL}/cmmc-level-1/sprs-walkthrough`, changeFrequency: "monthly", priority: 0.85 },
+    { url: `${APP_URL}/cmmc-level-1/annual-affirmation`, changeFrequency: "monthly", priority: 0.85 },
     { url: `${APP_URL}/blog`, changeFrequency: "weekly", priority: 0.9 },
     { url: `${APP_URL}/bid-digest`, changeFrequency: "weekly", priority: 0.85 },
     { url: `${APP_URL}/sprs-check`, changeFrequency: "monthly", priority: 0.8 },

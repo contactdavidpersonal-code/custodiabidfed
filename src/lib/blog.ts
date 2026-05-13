@@ -55,12 +55,30 @@ import primeSprs from "@/app/blog/posts/prime-asking-for-sprs-score-level-1-resp
 import l1Binary from "@/app/blog/posts/cmmc-level-1-binary-no-score";
 import sbirPhase1 from "@/app/blog/posts/cmmc-for-sbir-phase-1-winners";
 import needCmmc from "@/app/blog/posts/do-i-need-cmmc-decision-tree";
+import cmmcChecklist from "@/app/blog/posts/cmmc-level-1-checklist";
+import cuiVsFci from "@/app/blog/posts/cui-vs-fci";
+import dfars7012 from "@/app/blog/posts/dfars-7012-vs-cmmc";
+import diyHandbook from "@/app/blog/posts/how-to-do-cmmc-level-1-yourself";
+import sspTemplateGuide from "@/app/blog/posts/cmmc-ssp-template-free";
+import scopingGuide from "@/app/blog/posts/cmmc-scoping-boundary-guide";
+import policiesGuide from "@/app/blog/posts/cmmc-policies-free-templates";
+import sprsPostGuide from "@/app/blog/posts/how-to-post-sprs-score";
+import annualAffirmation from "@/app/blog/posts/cmmc-annual-affirmation";
 
 /**
  * Registered blog posts, ordered newest first. The order here is the order
  * they appear on /blog and in the sitemap.
  */
 export const POSTS: BlogPost[] = [
+  diyHandbook,
+  sspTemplateGuide,
+  scopingGuide,
+  policiesGuide,
+  sprsPostGuide,
+  annualAffirmation,
+  cmmcChecklist,
+  cuiVsFci,
+  dfars7012,
   needCmmc,
   sbirPhase1,
   l1Binary,
