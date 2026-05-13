@@ -2237,7 +2237,6 @@ export default function Home() {
                   <li><Link href="/sign-up" className="transition-colors hover:text-[#0f2f26]">Start free trial</Link></li>
                   <li><Link href="/sign-in" className="transition-colors hover:text-[#0f2f26]">Sign in</Link></li>
                   <li><Link href="/dashboard" className="transition-colors hover:text-[#0f2f26]">Dashboard</Link></li>
-                  <li><Link href="/for-msps" className="font-semibold text-[#0f2f26] transition-colors hover:text-[#2f8f6d]">Do you do CMMC lv 1 for others? &rarr;</Link></li>
                 </ul>
               </div>
               <div>
@@ -2254,7 +2253,26 @@ export default function Home() {
                 <ul className="space-y-2">
                   <li><a href="mailto:support@custodia.dev" className="transition-colors hover:text-[#0f2f26]">support@custodia.dev</a></li>
                   <li><a href="mailto:support@custodia.dev?subject=Support" className="transition-colors hover:text-[#0f2f26]">Support</a></li>
-                  <li><a href="https://www.linkedin.com/company/custodia-bidfed" target="_blank" rel="noreferrer" className="transition-colors hover:text-[#0f2f26]">LinkedIn</a></li>
+                  <li>
+                    <a
+                      href="https://www.linkedin.com/company/bidfedcmmc-cmmc-lv1-security-management-platform/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 transition-colors hover:text-[#0f2f26]"
+                    >
+                      <svg
+                        aria-hidden="true"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="text-[#0a66c2]"
+                      >
+                        <path d="M20.45 20.45h-3.55v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.36V9h3.41v1.56h.05c.47-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z" />
+                      </svg>
+                      LinkedIn
+                    </a>
+                  </li>
                 </ul>
               </div>
             </div>

@@ -45,7 +45,6 @@ const STATIC_URLS = [
   "/sprs-guide",
   "/sam-guide",
   "/cmmc/templates",
-  "/for-msps",
   "/audit-support",
   "/meet-charlie",
   "/privacy",

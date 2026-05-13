@@ -2,8 +2,8 @@ import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
 
 const ALLOWED_PLANS = new Set([
-  "custodia_squad",
-  "msp_platoon_20",
+  // MSP plans (custodia_squad, msp_platoon_20) are temporarily disabled —
+  // re-add when the /for-msps page is brought back online.
   "bidfedcmmc_self_service_",
   "bidfedcmmc_self_service_custodia_officer_",
   // Legacy plan slug kept for grandfathered links.

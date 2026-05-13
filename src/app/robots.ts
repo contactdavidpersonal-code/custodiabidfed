@@ -31,7 +31,6 @@ const PUBLIC_ALLOW = [
   "/verified/",
   "/bid-digest",
   "/trust",
-  "/for-msps",
   "/sam-guide",
   "/sprs-guide",
   "/audit-support",

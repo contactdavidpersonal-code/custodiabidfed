@@ -191,7 +191,7 @@ export default async function UpgradePage({
             </div>
           </Link>
           <Link
-            href={isMsp ? "/for-msps" : "/"}
+            href="/"
             className="text-xs font-medium text-[#a8cfc0] transition-colors hover:text-white"
           >
             ← Back
@@ -228,15 +228,7 @@ export default async function UpgradePage({
             {secondaryCfg ? (
               <PlanCard cfg={secondaryCfg} primary={false} />
             ) : null}
-            <p className="pt-2 text-center text-[11px] text-[#7fae9c]">
-              Manage multiple clients?{" "}
-              <Link
-                href="/for-msps"
-                className="font-medium text-[#bdf2cf] underline underline-offset-2 hover:text-white"
-              >
-                See MSP plans
-              </Link>
-            </p>
+
           </div>
         ) : (
           <PlanCard cfg={cfg} primary compact>
