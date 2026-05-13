@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { PublicCharlieWidget } from "@/components/PublicCharlieWidget";
 
 /**
  * Shared chrome for /blog and /blog/[slug] — matches the dark-hero theme of
@@ -83,6 +84,7 @@ export function BlogShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </footer>
+      <PublicCharlieWidget />
     </div>
   );
 }

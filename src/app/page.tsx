@@ -206,8 +206,13 @@ export default function Home() {
                 alt="Custodia shield"
                 className="h-8 w-auto [filter:drop-shadow(0_0_14px_rgba(0,0,0,0.85))_drop-shadow(0_2px_6px_rgba(0,0,0,0.7))] sm:h-10"
               />
-              <span className="font-serif text-xl font-bold tracking-tight text-white [text-shadow:0_0_18px_rgba(0,0,0,0.9),0_2px_6px_rgba(0,0,0,0.75)] sm:text-2xl">
-                Custodia<span className="text-[#8dd2b1]">.</span>
+              <span className="flex flex-col leading-none [text-shadow:0_0_18px_rgba(0,0,0,0.9),0_2px_6px_rgba(0,0,0,0.75)]">
+                <span className="font-serif text-sm font-medium tracking-tight text-white/85 sm:text-base">
+                  Custodia<span className="text-[#8dd2b1]">.</span>
+                </span>
+                <span className="font-serif text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                  BidFedCMMC
+                </span>
               </span>
             </Link>
             <div className="flex items-center gap-4 text-sm font-medium text-[#cce5da] sm:gap-7">
