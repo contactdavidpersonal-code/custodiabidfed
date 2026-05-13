@@ -498,7 +498,7 @@ export function ComplianceOfficerRail({
       }
       style={mobile ? undefined : { width }}
     >
-      <header className="flex items-center justify-between gap-3 border-b border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3">
+      <header className="flex items-center justify-between gap-3 border-b border-[#cfe3d9] bg-[#f7fcf9] px-4 pt-5 pb-4">
         <div className="flex items-center gap-2.5">
           <span className="inline-flex items-center justify-center  bg-[#0e2a23] px-1.5 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]">
             vCO
