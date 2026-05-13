@@ -494,7 +494,7 @@ export function ComplianceOfficerRail({
       className={
         mobile
           ? "flex h-full w-full flex-col bg-white"
-          : "sticky top-[57px] z-10 flex h-[calc(100vh-57px)] shrink-0 flex-col border-l border-[#cfe3d9] bg-white print:hidden"
+          : "sticky top-[72px] z-10 flex h-[calc(100vh-72px)] shrink-0 flex-col border-l border-[#cfe3d9] bg-white print:hidden"
       }
       style={mobile ? undefined : { width }}
     >
