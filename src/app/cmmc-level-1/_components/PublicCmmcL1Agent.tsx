@@ -27,6 +27,8 @@ export default function PublicCmmcL1Agent() {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [now, setNow] = useState<number>(() => Date.now());
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -36,9 +38,30 @@ export default function PublicCmmcL1Agent() {
     el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages, busy]);
 
+  // Live tick for the cooldown countdown chip. Only runs while cooling.
+  useEffect(() => {
+    if (!cooldownUntil) return;
+    const id = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  // Auto-clear cooldown once expired and refocus the input.
+  const cooldownRemaining = cooldownUntil
+    ? Math.max(0, Math.ceil((cooldownUntil - now) / 1_000))
+    : 0;
+  useEffect(() => {
+    if (cooldownUntil && cooldownRemaining === 0) {
+      setCooldownUntil(null);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [cooldownUntil, cooldownRemaining]);
+
+  const cooling = cooldownRemaining > 0;
+  const inputDisabled = busy || cooling;
+
   async function send(text: string) {
     const clean = text.trim();
-    if (!clean || busy) return;
+    if (!clean || busy || cooling) return;
     setBusy(true);
     setError(null);
     const next: Msg[] = [...messages, { role: "user", content: clean }];
@@ -54,12 +77,20 @@ export default function PublicCmmcL1Agent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: wire }),
       });
-      const json = (await res.json()) as { reply?: string; error?: string };
+      const json = (await res.json()) as {
+        reply?: string;
+        error?: string;
+        retryAfterSec?: number;
+      };
       if (!res.ok || !json.reply) {
         throw new Error(json.error || "Charlie is briefly unavailable.");
       }
       setMessages((m) => [...m, { role: "assistant", content: json.reply! }]);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      if (typeof json.retryAfterSec === "number" && json.retryAfterSec > 0) {
+        setCooldownUntil(Date.now() + json.retryAfterSec * 1_000);
+      } else {
+        setTimeout(() => inputRef.current?.focus(), 50);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
       // Roll back the user bubble so they can edit + retry.
@@ -70,6 +101,20 @@ export default function PublicCmmcL1Agent() {
     } finally {
       setBusy(false);
     }
+  }
+
+  function formatCountdown(sec: number): string {
+    if (sec >= 3_600) {
+      const h = Math.floor(sec / 3_600);
+      const m = Math.ceil((sec - h * 3_600) / 60);
+      return `${h}h ${m}m`;
+    }
+    if (sec >= 60) {
+      const m = Math.floor(sec / 60);
+      const s = sec - m * 60;
+      return `${m}:${String(s).padStart(2, "0")}`;
+    }
+    return `${sec}s`;
   }
 
   function onSubmit(e: React.FormEvent) {
@@ -146,7 +191,7 @@ export default function PublicCmmcL1Agent() {
       </div>
 
       {/* Suggestions (only when conversation hasn't really started) */}
-      {messages.length <= 1 && (
+      {messages.length <= 1 && !cooling && (
         <div className="border-t border-[#cfe3d9] bg-white px-5 py-3">
           <div className="mb-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
             Try asking
@@ -156,7 +201,7 @@ export default function PublicCmmcL1Agent() {
               <button
                 key={s}
                 type="button"
-                disabled={busy}
+                disabled={inputDisabled}
                 onClick={() => void send(s)}
                 className="border border-[#cfe3d9] bg-white px-3 py-1.5 text-left text-xs text-[#1d3a30] transition-colors hover:border-[#2f8f6d] hover:bg-[#f4faf6] disabled:opacity-50"
               >
@@ -164,6 +209,32 @@ export default function PublicCmmcL1Agent() {
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Cooldown chip — Claude.ai-style countdown when Charlie asked for a break */}
+      {cooling && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center justify-between gap-3 border-t border-[#e3d9b8] bg-[#fffaeb] px-5 py-3 text-xs text-[#7a5b1e]"
+        >
+          <div className="flex items-center gap-2">
+            <span aria-hidden className="inline-block h-2 w-2 animate-pulse rounded-full bg-[#c98a1f]" />
+            <span>
+              Charlie is taking a short break.{" "}
+              <strong className="font-bold text-[#5d4517]">
+                Available again in {formatCountdown(cooldownRemaining)}
+              </strong>
+              .
+            </span>
+          </div>
+          <a
+            href="/sign-up"
+            className="shrink-0 font-bold text-[#2f8f6d] underline hover:text-[#0e2a23]"
+          >
+            Skip the wait →
+          </a>
         </div>
       )}
 
@@ -184,18 +255,22 @@ export default function PublicCmmcL1Agent() {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={onKey}
-          disabled={busy}
+          disabled={inputDisabled}
           rows={2}
           maxLength={4000}
-          placeholder="Ask Charlie a CMMC Level 1 question…"
+          placeholder={
+            cooling
+              ? `Charlie is back in ${formatCountdown(cooldownRemaining)}\u2026`
+              : "Ask Charlie a CMMC Level 1 question\u2026"
+          }
           className="flex-1 resize-none border border-[#cfe3d9] bg-white px-3 py-2 text-sm leading-relaxed text-[#10231d] placeholder:text-[#7a9c90] focus:border-[#2f8f6d] focus:outline-none disabled:opacity-50"
         />
         <button
           type="submit"
-          disabled={busy || draft.trim().length === 0}
+          disabled={inputDisabled || draft.trim().length === 0}
           className="shrink-0 bg-[#08201a] px-4 py-2 text-sm font-bold text-[#bdf2cf] transition-colors hover:bg-[#0c2a22] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {busy ? "…" : "Send"}
+          {busy ? "\u2026" : cooling ? formatCountdown(cooldownRemaining) : "Send"}
         </button>
       </form>
 
