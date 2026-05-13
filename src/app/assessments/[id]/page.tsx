@@ -97,27 +97,35 @@ export default async function AssessmentOverviewPage(
   const justSigned = search?.signed === "1" && attested;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-10">
-      {justSigned && <CelebrationBanner assessmentId={ctx.assessment.id} />}
+    <main className="relative mx-auto max-w-6xl px-6 py-10 md:px-10 md:py-16">
+      {/* Ambient luxe accent */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 left-1/2 h-[380px] w-[680px] -translate-x-1/2 rounded-full bg-[#bef4be] opacity-[0.18] blur-[120px]"
+      />
 
-      <section className="mb-6">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
-          CMMC Level 1 · FY{ctx.assessment.fiscal_year}
-        </p>
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h1 className="font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-4xl">
-              Your annual affirmation
-            </h1>
-            <p className="mt-2 text-sm text-[#5a7d70]">
-              {ctx.organization.name !== "My Organization"
-                ? `${ctx.organization.name} — work the 15 safeguarding requirements below to MET, then sign and file with SPRS.`
-                : "Business profile not set yet"}
-            </p>
+      <div className="relative">
+        {justSigned && <CelebrationBanner assessmentId={ctx.assessment.id} />}
+
+        <section className="mb-10">
+          <p className="inline-flex items-center gap-2 rounded-full border border-[#063f2e]/15 bg-white/70 px-3.5 py-1.5 text-[11px] font-medium tracking-wide text-[#063f2e] backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#063f2e]" />
+            CMMC Level 1 · FY{ctx.assessment.fiscal_year}
+          </p>
+          <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
+            <div className="max-w-2xl">
+              <h1 className="font-serif text-5xl font-normal leading-[1.05] tracking-[-0.04em] text-[#063f2e] md:text-6xl">
+                Your annual<br />affirmation.
+              </h1>
+              <p className="mt-5 text-base leading-[1.6] text-[#063f2e]/65 md:text-lg">
+                {ctx.organization.name !== "My Organization"
+                  ? `${ctx.organization.name} — work the 15 safeguarding requirements below to MET, then sign and file with SPRS.`
+                  : "Business profile not set yet"}
+              </p>
+            </div>
+            <ProgressRing percent={progress.percentAnswered} />
           </div>
-          <ProgressRing percent={progress.percentAnswered} />
-        </div>
-      </section>
+        </section>
 
       {(carryForward.responses.length > 0 ||
         carryForward.artifacts.length > 0) && (
@@ -140,7 +148,7 @@ export default async function AssessmentOverviewPage(
         assessmentId={ctx.assessment.id}
       />
 
-      <section className="mb-10 grid gap-3 md:grid-cols-5">
+      <section className="mb-12 grid gap-3 md:grid-cols-5">
         <ProgressPill label="Met" value={progress.met} tone="emerald" />
         <ProgressPill label="Partial" value={progress.partial} tone="amber" />
         <ProgressPill label="Not met" value={progress.notMet} tone="rose" />
@@ -153,12 +161,12 @@ export default async function AssessmentOverviewPage(
       </section>
 
       <section>
-        <div className="mb-6 flex items-end justify-between gap-4">
-          <div>
-            <h2 className="font-serif text-2xl font-bold tracking-tight text-[#10231d]">
-              The 15 safeguarding requirements
+        <div className="mb-8 flex items-end justify-between gap-4">
+          <div className="max-w-2xl">
+            <h2 className="font-serif text-4xl font-normal leading-tight tracking-[-0.03em] text-[#063f2e]">
+              The 15 safeguarding<br />requirements.
             </h2>
-            <p className="mt-1 text-sm text-[#5a7d70]">
+            <p className="mt-4 text-base leading-[1.6] text-[#063f2e]/65">
               Every practice must be MET or N/A before you can sign. Click any
               card to drop evidence into your vault and mark it MET.
             </p>
@@ -174,16 +182,16 @@ export default async function AssessmentOverviewPage(
             }).length;
             return (
               <div key={domain}>
-                <div className="mb-3 flex items-center justify-between">
+                <div className="mb-4 flex items-center justify-between border-b border-[#063f2e]/10 pb-3">
                   <div className="flex items-baseline gap-3">
-                    <span className=" bg-[#0e2a23] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.2em] text-[#bdf2cf]">
+                    <span className="rounded-full bg-[#063f2e] px-2.5 py-1 font-mono text-[10px] font-medium tracking-[0.15em] text-[#bef4be]">
                       {domain}
                     </span>
-                    <h3 className="font-serif text-base font-bold text-[#10231d]">
+                    <h3 className="font-serif text-xl font-normal tracking-[-0.02em] text-[#063f2e]">
                       {domainLabels[domain]}
                     </h3>
                   </div>
-                  <span className="text-xs font-medium text-[#5a7d70]">
+                  <span className="text-xs font-medium text-[#063f2e]/55">
                     {answered} of {domainPractices.length} done
                   </span>
                 </div>
@@ -196,37 +204,41 @@ export default async function AssessmentOverviewPage(
                       <Link
                         key={practice.id}
                         href={`/assessments/${ctx.assessment.id}/controls/${practice.id}`}
-                        className="group block  border border-[#cfe3d9] bg-white p-4 shadow-[0_2px_0_rgba(14,48,37,0.04)] transition-all hover:border-[#2f8f6d] hover:shadow-[0_2px_0_rgba(14,48,37,0.04),0_18px_44px_rgba(14,48,37,0.10)]"
+                        className="group relative block overflow-hidden rounded-2xl border border-[#063f2e]/12 bg-white p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#063f2e]/40 hover:shadow-[0_20px_50px_-12px_rgba(6,63,46,0.20)]"
                       >
-                        <div className="flex items-start gap-3">
+                        <div
+                          aria-hidden
+                          className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#bef4be] opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-50"
+                        />
+                        <div className="relative flex items-start gap-3">
                           <span
-                            className={`mt-1.5 h-2 w-2 flex-none  ${statusDotStyles[status]}`}
+                            className={`mt-1.5 h-2 w-2 flex-none rounded-full ${statusDotStyles[status]}`}
                           />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center justify-between gap-2">
-                              <span className="font-mono text-xs text-[#5a7d70]">
+                              <span className="font-mono text-[11px] tracking-wide text-[#063f2e]/55">
                                 {practice.id}
                               </span>
                               <span
-                                className={`inline-flex items-center  px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.16em] ring-1 ring-inset ${statusPillStyles[status]}`}
+                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] ring-1 ring-inset ${statusPillStyles[status]}`}
                               >
                                 {statusLabels[status]}
                               </span>
                             </div>
-                            <h4 className="mt-2 truncate font-serif font-bold text-[#10231d]">
+                            <h4 className="mt-3 truncate font-serif text-lg font-normal tracking-[-0.01em] text-[#063f2e]">
                               {practice.shortName}
                             </h4>
-                            <p className="mt-1.5 line-clamp-2 text-sm text-[#5a7d70]">
+                            <p className="mt-2 line-clamp-2 text-sm leading-[1.55] text-[#063f2e]/65">
                               {practice.plainEnglish}
                             </p>
-                            <div className="mt-3 flex items-center gap-2">
-                              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#f1f6f3]">
+                            <div className="mt-4 flex items-center gap-2">
+                              <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#063f2e]/8">
                                 <div
                                   className={`h-full ${statusBarColor[status]} transition-[width] duration-500 ease-out`}
                                   style={{ width: `${Math.max(2, percent)}%` }}
                                 />
                               </div>
-                              <span className="shrink-0 text-[10px] font-bold tabular-nums text-[#5a7d70]">
+                              <span className="shrink-0 text-[10px] font-medium tabular-nums text-[#063f2e]/55">
                                 {percent}%
                               </span>
                             </div>
@@ -241,6 +253,7 @@ export default async function AssessmentOverviewPage(
           })}
         </div>
       </section>
+      </div>
     </main>
   );
 }
@@ -352,7 +365,7 @@ function ProgressRing({ percent }: { percent: number }) {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - percent / 100);
   return (
-    <div className="flex items-center gap-4  border border-slate-200 bg-white px-5 py-3 shadow-sm">
+    <div className="flex items-center gap-4 rounded-2xl border border-[#063f2e]/15 bg-white/80 px-6 py-4 shadow-[0_8px_30px_-12px_rgba(6,63,46,0.20)] backdrop-blur">
       <div className="relative h-16 w-16">
         <svg className="h-16 w-16 -rotate-90" viewBox="0 0 64 64">
           <circle
@@ -360,32 +373,32 @@ function ProgressRing({ percent }: { percent: number }) {
             cy="32"
             r={radius}
             stroke="currentColor"
-            strokeWidth="6"
+            strokeWidth="5"
             fill="none"
-            className="text-slate-100"
+            className="text-[#063f2e]/10"
           />
           <circle
             cx="32"
             cy="32"
             r={radius}
             stroke="currentColor"
-            strokeWidth="6"
+            strokeWidth="5"
             fill="none"
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             strokeLinecap="round"
-            className="text-amber-400 transition-all"
+            className="text-[#063f2e] transition-all duration-700"
           />
         </svg>
-        <div className="absolute inset-0 flex items-center justify-center text-sm font-bold tabular-nums text-slate-900">
+        <div className="absolute inset-0 flex items-center justify-center font-serif text-base font-normal tabular-nums tracking-tight text-[#063f2e]">
           {percent}%
         </div>
       </div>
       <div className="leading-tight">
-        <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <div className="text-[10px] font-medium uppercase tracking-[0.22em] text-[#063f2e]/55">
           Progress
         </div>
-        <div className="text-sm font-semibold text-slate-900">
+        <div className="mt-1 font-serif text-base font-normal tracking-[-0.01em] text-[#063f2e]">
           {percent === 100 ? "All answered" : "Keep going"}
         </div>
       </div>
@@ -408,15 +421,16 @@ function NextStepBanner({
 }) {
   if (attested) {
     return (
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-emerald-200 bg-emerald-50 p-5">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
+      <div className="mb-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#063f2e]/20 bg-gradient-to-br from-[#bef4be] to-[#a8e8b0] p-7 text-[#063f2e] shadow-[0_20px_60px_-20px_rgba(6,63,46,0.35)]">
+        <div className="max-w-2xl">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#063f2e] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[#bef4be]">
+            <span className="h-1 w-1 rounded-full bg-[#bef4be]" />
             Attested
           </div>
-          <h2 className="mt-1 text-lg font-bold text-slate-900">
-            This assessment is signed and ready to file.
+          <h2 className="mt-4 font-serif text-3xl font-normal leading-tight tracking-[-0.03em]">
+            Signed and ready to file.
           </h2>
-          <p className="mt-1 text-sm text-slate-700">
+          <p className="mt-3 text-sm leading-[1.6] text-[#063f2e]/75">
             The bid-ready package bundles your SSP, signed affirmation, and
             every evidence artifact — everything a prime or SPRS filing might
             ask for.
@@ -425,19 +439,19 @@ function NextStepBanner({
         <div className="flex flex-wrap gap-2">
           <a
             href={`/api/assessments/${assessmentId}/bid-package`}
-            className=" bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-900 shadow-sm transition-colors hover:bg-amber-300"
+            className="inline-flex items-center gap-2 rounded-full bg-[#063f2e] px-5 py-2.5 text-sm font-medium tracking-tight text-[#bef4be] transition-colors hover:bg-[#052e22]"
           >
-            Download bid-ready package (.zip)
+            Download bid-ready package
           </a>
           <Link
             href={`/assessments/${assessmentId}/ssp`}
-            className=" border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
+            className="inline-flex items-center rounded-full border border-[#063f2e]/30 bg-white/60 px-5 py-2.5 text-sm font-medium text-[#063f2e] transition-colors hover:bg-white"
           >
             SSP only
           </Link>
           <Link
             href={`/assessments/${assessmentId}/affirmation`}
-            className=" border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-900 transition-colors hover:border-slate-400"
+            className="inline-flex items-center rounded-full border border-[#063f2e]/30 bg-white/60 px-5 py-2.5 text-sm font-medium text-[#063f2e] transition-colors hover:bg-white"
           >
             Affirmation only
           </Link>
@@ -448,24 +462,28 @@ function NextStepBanner({
 
   if (!profileDone) {
     return (
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-amber-200 bg-amber-50 p-5">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+      <div className="mb-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#a06b1a]/20 bg-[#fff4e0] p-7 shadow-[0_10px_40px_-20px_rgba(160,107,26,0.20)]">
+        <div className="max-w-2xl">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#a06b1a] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[#fff4e0]">
+            <span className="h-1 w-1 rounded-full bg-[#fff4e0]" />
             Action needed · Step 1 of 8
           </div>
-          <h2 className="mt-1 text-lg font-bold text-slate-900">
-            Finish telling the officer about your business
+          <h2 className="mt-4 font-serif text-3xl font-normal leading-tight tracking-[-0.03em] text-[#063f2e]">
+            Tell the officer about your business.
           </h2>
-          <p className="mt-1 text-sm text-slate-700">
+          <p className="mt-3 text-sm leading-[1.6] text-[#063f2e]/70">
             Legal name, UEI/CAGE, and the systems in scope — captured through a
             quick chat, not a form.
           </p>
         </div>
         <Link
           href="/onboard"
-          className=" bg-slate-900 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-slate-800"
+          className="inline-flex items-center gap-2 rounded-full bg-[#063f2e] px-6 py-3 text-sm font-medium tracking-tight text-[#bef4be] transition-colors hover:bg-[#052e22]"
         >
-          Open onboarding &rarr;
+          Open onboarding
+          <svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M1.5 1.5L6 6l-4.5 4.5" />
+          </svg>
         </Link>
       </div>
     );
@@ -473,23 +491,24 @@ function NextStepBanner({
 
   if (!allAnswered) {
     return (
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-[#cfe3d9] bg-[#f1f9f4] p-5">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-wider text-[#2f8f6d]">
+      <div className="mb-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#063f2e]/15 bg-gradient-to-br from-[#bef4be]/40 via-white to-white p-7 shadow-[0_10px_40px_-20px_rgba(6,63,46,0.25)]">
+        <div className="max-w-2xl">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[#063f2e] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[#bef4be]">
+            <span className="h-1 w-1 rounded-full bg-[#bef4be]" />
             Step 4 of 8 · You are here
           </div>
-          <h2 className="mt-1 text-lg font-bold text-[#10231d]">
-            Answer the 15 requirements
+          <h2 className="mt-4 font-serif text-3xl font-normal leading-tight tracking-[-0.03em] text-[#063f2e]">
+            Answer the 15 requirements.
           </h2>
-          <p className="mt-1 text-sm text-slate-700">
+          <p className="mt-3 text-sm leading-[1.6] text-[#063f2e]/70">
             Click any practice below. We&apos;ll explain it in plain English and
             show exactly what evidence to capture.
           </p>
-          <p className="mt-2 text-xs text-slate-600">
+          <p className="mt-3 text-xs leading-[1.6] text-[#063f2e]/60">
             Can&apos;t fully meet a requirement?{" "}
             <Link
               href={`/assessments/${assessmentId}/exceptions`}
-              className="font-semibold text-emerald-700 underline hover:text-emerald-900"
+              className="font-medium text-[#063f2e] underline decoration-[#063f2e]/30 underline-offset-2 hover:decoration-[#063f2e]"
             >
               Document an Enduring Exception or Temporary Deficiency
             </Link>
@@ -502,17 +521,18 @@ function NextStepBanner({
   }
 
   return (
-    <div className="mb-8 flex flex-wrap items-center justify-between gap-4  border border-[#10231d] bg-[#10231d] p-5 text-white">
-      <div>
-        <div className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
+    <div className="mb-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#063f2e]/20 bg-[#052e22] p-7 text-white shadow-[0_20px_60px_-20px_rgba(6,63,46,0.45)]">
+      <div className="max-w-2xl">
+        <div className="inline-flex items-center gap-2 rounded-full border border-[#bef4be]/30 bg-[#063f2e]/60 px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[#bef4be]">
+          <span className="h-1 w-1 rounded-full bg-[#bef4be]" />
           Ready for step 5 · Sign &amp; affirm
         </div>
-        <h2 className="mt-1 text-lg font-bold">
+        <h2 className="mt-4 font-serif text-3xl font-normal leading-tight tracking-[-0.03em]">
           {hasBlockers
-            ? "All answered — but some practices need fixing first"
+            ? "All answered — but some practices need fixing first."
             : "You're ready to affirm."}
         </h2>
-        <p className="mt-1 text-sm text-emerald-100/80">
+        <p className="mt-3 text-sm leading-[1.6] text-[#bef4be]/70">
           {hasBlockers
             ? "'Not met' or 'Partial' practices must become 'Met' or 'N/A' before you can sign the SPRS affirmation."
             : "A senior official signs the SPRS annual affirmation. This locks the assessment and generates your SSP."}
@@ -521,9 +541,12 @@ function NextStepBanner({
       {!hasBlockers && (
         <Link
           href={`/assessments/${assessmentId}/sign`}
-          className=" bg-emerald-400 px-4 py-2.5 text-sm font-bold text-[#10231d] transition-colors hover:bg-emerald-300"
+          className="inline-flex items-center gap-2 rounded-full bg-[#bef4be] px-6 py-3 text-sm font-medium tracking-tight text-[#063f2e] transition-colors hover:bg-white"
         >
-          Review & sign &rarr;
+          Review &amp; sign
+          <svg width="8" height="12" viewBox="0 0 8 12" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M1.5 1.5L6 6l-4.5 4.5" />
+          </svg>
         </Link>
       )}
     </div>
@@ -540,18 +563,20 @@ function ProgressPill({
   tone: "emerald" | "amber" | "rose" | "sky" | "slate";
 }) {
   const toneStyles: Record<typeof tone, string> = {
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    amber: "border-amber-200 bg-amber-50 text-amber-800",
-    rose: "border-rose-200 bg-rose-50 text-rose-800",
-    sky: "border-sky-200 bg-sky-50 text-sky-800",
-    slate: "border-slate-200 bg-white text-slate-700",
+    emerald: "border-[#2f8f6d]/25 bg-[#eaf3ee] text-[#0e2a23]",
+    amber: "border-[#a06b1a]/25 bg-[#fff4e0] text-[#a06b1a]",
+    rose: "border-[#b03a2e]/25 bg-[#fbe9e6] text-[#b03a2e]",
+    sky: "border-sky-300/40 bg-sky-50 text-sky-900",
+    slate: "border-[#063f2e]/12 bg-white text-[#063f2e]",
   };
   return (
-    <div className={` border px-4 py-3 ${toneStyles[tone]}`}>
-      <div className="text-[11px] font-semibold uppercase tracking-wider opacity-80">
+    <div className={`rounded-2xl border px-5 py-4 backdrop-blur transition-colors ${toneStyles[tone]}`}>
+      <div className="text-[10px] font-medium uppercase tracking-[0.2em] opacity-75">
         {label}
       </div>
-      <div className="mt-1 text-2xl font-bold tabular-nums">{value}</div>
+      <div className="mt-2 font-serif text-3xl font-normal tabular-nums tracking-[-0.03em]">
+        {value}
+      </div>
     </div>
   );
 }

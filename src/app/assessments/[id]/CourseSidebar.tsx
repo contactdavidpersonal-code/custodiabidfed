@@ -88,17 +88,18 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
 
   return (
     <aside
-      className="hidden lg:block sticky top-[57px] z-10 h-[calc(100vh-57px)] shrink-0 border-r border-[#cfe3d9] bg-[#fbfcf9] transition-[width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] print:hidden"
+      className="hidden lg:block sticky top-[57px] z-10 h-[calc(100vh-57px)] shrink-0 border-r border-[#063f2e]/10 bg-gradient-to-b from-[#fbfcf9] to-[#f3f7f1] transition-[width] duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] print:hidden"
       style={{ width: open ? 288 : 56 }}
     >
       <div className="flex h-full flex-col">
-        <div className="flex items-center justify-between border-b border-[#cfe3d9] px-3 py-3">
+        <div className="flex items-center justify-between border-b border-[#063f2e]/10 px-4 py-4">
           {open && (
             <div className="leading-tight">
-              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
+              <div className="inline-flex items-center gap-1.5 text-[9px] font-medium uppercase tracking-[0.22em] text-[#063f2e]/55">
+                <span className="h-1 w-1 rounded-full bg-[#063f2e]" />
                 FCI readiness
               </div>
-              <div className="font-serif text-sm font-bold text-[#10231d]">
+              <div className="mt-1.5 font-serif text-base font-normal tracking-[-0.02em] text-[#063f2e]">
                 Your bid-ready journey
               </div>
             </div>
@@ -107,7 +108,7 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
             type="button"
             onClick={toggle}
             aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
-            className=" p-1.5 text-[#7a9c90] transition-colors hover:bg-[#eaf3ee] hover:text-[#10231d]"
+            className="rounded-full p-1.5 text-[#063f2e]/55 transition-colors hover:bg-[#063f2e]/8 hover:text-[#063f2e]"
           >
             <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
               {open ? (
@@ -120,8 +121,7 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
         </div>
 
         <nav className="relative flex-1 overflow-y-auto px-2 py-3">
-          {/* Sliding active indicator. A sharp mint slab with a deep-green
-          left rule — finance-firm aesthetic, no blur, no blobs. */}
+          {/* Soft mint pill active indicator. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-2 z-0"
@@ -134,8 +134,7 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
             opacity: indicator.visible && hydrated ? 1 : 0,
           }}
         >
-          <div className="absolute inset-y-1 left-0 right-1  bg-[#bdf2cf]" />
-          <div className="absolute inset-y-1 left-0 w-[3px] bg-[#0e2a23]" />
+          <div className="absolute inset-y-1 left-0 right-1 rounded-xl bg-gradient-to-br from-[#bef4be] to-[#a8e8b0] shadow-[0_4px_12px_-4px_rgba(6,63,46,0.20)]" />
         </div>
       </div>
 
@@ -153,14 +152,14 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
                     href={locked ? currentStepHref : s.href}
                     aria-disabled={locked || undefined}
                     title={locked ? `Finish your current step first \u2014 ${s.subtitle}` : undefined}
-                    className={`relative flex items-center gap-3  px-3 py-2.5 transition-colors ${
+                    className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
                       isActive
-                        ? "text-[#0c2219]"
+                        ? "text-[#063f2e]"
                         : complete
-                          ? "text-[#10231d] hover:bg-[#eef5f0]"
+                          ? "text-[#063f2e] hover:bg-[#063f2e]/5"
                           : locked
-                            ? "text-[#7a9c90] hover:bg-[#eef5f0] hover:text-[#10231d]"
-                            : "text-[#456c5f] hover:bg-[#eef5f0] hover:text-[#10231d]"
+                            ? "text-[#063f2e]/40 hover:bg-[#063f2e]/5 hover:text-[#063f2e]/65"
+                            : "text-[#063f2e]/65 hover:bg-[#063f2e]/5 hover:text-[#063f2e]"
                     }`}
                   >
                     <StepDot step={s.step} status={s.status} active={isActive} />
@@ -168,11 +167,11 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <span
-                            className={`truncate text-sm font-semibold ${
+                            className={`truncate text-sm font-medium tracking-tight ${
                               isActive
-                                ? "text-[#0c2219]"
+                                ? "text-[#063f2e]"
                                 : complete
-                                  ? "text-[#10231d]"
+                                  ? "text-[#063f2e]"
                                   : ""
                             }`}
                           >
@@ -181,7 +180,7 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
                           {locked && (
                             <svg
                               viewBox="0 0 20 20"
-                              className="h-3 w-3 flex-none text-[#7a9c90]"
+                              className="h-3 w-3 flex-none text-[#063f2e]/35"
                               fill="currentColor"
                               aria-hidden
                             >
@@ -192,10 +191,10 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
                         <div
                           className={`mt-0.5 truncate text-[11px] ${
                             isActive
-                              ? "text-[#1f4a3b]"
+                              ? "text-[#063f2e]/75"
                               : complete
                                 ? "text-[#2f8f6d]"
-                                : "text-[#7a9c90]"
+                                : "text-[#063f2e]/50"
                           }`}
                         >
                           {s.subtitle}
@@ -210,7 +209,7 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
         </nav>
 
         {open && (
-          <div className="border-t border-[#cfe3d9] px-4 py-3 text-[11px] text-[#5a7d70]">
+          <div className="border-t border-[#063f2e]/10 px-4 py-3 text-[11px] leading-relaxed text-[#063f2e]/50">
             Every step is open during your 14-day free trial. Steps with a lock icon need a prior step finished before they fully unlock &mdash; click any step to see what&apos;s missing.
           </div>
         )}
@@ -230,7 +229,7 @@ function StepDot({
 }) {
   if (status === "complete") {
     return (
-      <span className="relative z-10 flex h-7 w-7 flex-none items-center justify-center  bg-[#0e2a23] text-[#bdf2cf]">
+      <span className="relative z-10 flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#063f2e] text-[#bef4be]">
         <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
           <path d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" />
         </svg>
@@ -239,12 +238,12 @@ function StepDot({
   }
   return (
     <span
-      className={`relative z-10 flex h-7 w-7 flex-none items-center justify-center  text-[11px] font-bold ${
+      className={`relative z-10 flex h-7 w-7 flex-none items-center justify-center rounded-full text-[11px] font-medium tabular-nums ${
         active
-          ? "bg-[#0e2a23] text-[#bdf2cf]"
+          ? "bg-[#063f2e] text-[#bef4be]"
           : status === "locked"
-            ? "border border-dashed border-[#cfe3d9] bg-white text-[#7a9c90]"
-            : "border border-[#cfe3d9] bg-white text-[#10231d]"
+            ? "border border-dashed border-[#063f2e]/20 bg-white text-[#063f2e]/40"
+            : "border border-[#063f2e]/15 bg-white text-[#063f2e]"
       }`}
     >
       {step}
