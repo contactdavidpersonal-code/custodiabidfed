@@ -528,7 +528,7 @@ export function ComplianceOfficerRail({
 
       <div
         ref={listRef}
-        className="min-h-0 flex-1 overflow-y-auto px-4 py-4"
+        className="min-h-0 flex-1 overflow-y-auto px-4 pt-6 pb-4"
       >
         {!hydrated ? (
           <LoadingBubble />

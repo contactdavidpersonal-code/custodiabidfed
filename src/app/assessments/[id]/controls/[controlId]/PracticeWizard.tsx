@@ -185,7 +185,7 @@ export function PracticeWizard(props: Props) {
           which practice they're working on. Includes the back link, title,
           plain-English description, progress, and current status. */}
       <div
-        className="sticky z-20 -mx-4 mb-6 border-b border-[#cfe3d9] bg-[#f7f7f3]/95 px-4 pt-4 pb-4 shadow-[0_8px_24px_-18px_rgba(14,42,35,0.4)] backdrop-blur md:-mx-6 md:px-6"
+        className="sticky z-20 -mx-4 mb-6 border-b border-[#cfe3d9] bg-[#f7f7f3]/95 px-4 pt-6 pb-4 shadow-[0_8px_24px_-18px_rgba(14,42,35,0.4)] backdrop-blur md:-mx-6 md:px-6 md:pt-7"
         style={{ top: "calc(var(--safe-top, 0px) + 64px)" }}
       >
         <div className="mb-3 flex items-center justify-between gap-4 text-sm">

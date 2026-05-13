@@ -169,8 +169,8 @@ export function PracticeChat(props: Props) {
           as the user scrolls into the evidence section so they always know
           which practice they're working on. */}
       <header
-        className="sticky z-20 -mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#cfe3d9] bg-[#f7f7f3]/95 px-4 pt-4 pb-4 shadow-[0_8px_24px_-18px_rgba(14,42,35,0.4)] backdrop-blur md:-mx-6 md:px-6"
-        style={{ top: "calc(var(--safe-top, 0px) + 64px)" }}
+        className="sticky z-20 -mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#cfe3d9] bg-[#f7f7f3]/95 px-4 pt-6 pb-4 shadow-[0_8px_24px_-18px_rgba(14,42,35,0.4)] backdrop-blur md:-mx-6 md:px-6 md:pt-7"
+        style={{ top: "calc(var(--safe-top, 0px) + 72px)" }}
       >
         <div>
           <Link
