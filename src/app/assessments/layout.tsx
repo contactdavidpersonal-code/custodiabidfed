@@ -41,14 +41,19 @@ export default async function AssessmentsLayout({
         style={{ paddingTop: "var(--safe-top)" }}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 md:gap-6 md:px-6">
-          <Link href="/assessments" className="flex items-center gap-2 md:gap-3 min-w-0">
+          <Link href="/assessments" className="flex items-center gap-2 min-w-0 sm:gap-3">
             <img
               src="/custodia-logo.png"
               alt="Custodia shield"
-              className="h-8 w-auto md:h-9"
+              className="h-8 w-auto md:h-10"
             />
-            <span className="font-serif text-xl font-bold tracking-tight text-[#0f2f26] md:text-2xl">
-              Custodia<span className="text-[#2f8f6d]">.</span>
+            <span className="flex flex-col leading-none">
+              <span className="font-serif text-sm font-medium tracking-tight text-[#456c5f] md:text-base">
+                Custodia
+              </span>
+              <span className="font-serif text-2xl font-bold tracking-tight text-[#0f2f26] md:text-3xl">
+                BidFedCMMC<span className="text-[#2f8f6d]">.</span>
+              </span>
             </span>
             <span className="hidden border-l border-[#cfe3d9] pl-3 font-serif text-sm font-bold text-[#10231d] lg:inline">
               CMMC Level 1 workspace
