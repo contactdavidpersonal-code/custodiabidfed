@@ -271,6 +271,15 @@ export function ComplianceOfficerRail({
   // re-fires synchronously before the sessionStorage write lands (it depends
   // on `send`, which is reborn whenever streaming/draft flip).
   const kickoffFiredRef = useRef<Set<string>>(new Set());
+  // Tracks which tool each in-flight `tool_use` id maps to. We can't read
+  // this off React state during the SSE handler because React's state
+  // updates are scheduled — by the time `tool_end` arrives, `messages`
+  // may not yet contain the tool block we appended on `tool_start`. So we
+  // mirror tool name + relevant input onto a ref so dispatch decisions in
+  // tool_end are deterministic and don't depend on React commit timing.
+  const toolMetaByIdRef = useRef<
+    Map<string, { name: string; controlId?: string; assessmentId?: string }>
+  >(new Map());
   useEffect(() => {
     if (streaming) return;
     const queued = pendingDraftRef.current;
@@ -374,6 +383,25 @@ export function ComplianceOfficerRail({
             data && typeof data.input === "object" && data.input !== null
               ? (data.input as Record<string, unknown>)
               : null;
+          // Mirror the tool name on a ref so tool_end can dispatch the
+          // right window event without reading React state. Also stash
+          // the control_id / assessment_id from the tool input — they
+          // travel with the event so PracticeChat can filter to its own
+          // practice instead of refetching for every Charlie tool call
+          // anywhere in the workspace.
+          const ctrl =
+            input && typeof input.control_id === "string"
+              ? input.control_id
+              : undefined;
+          const asmt =
+            input && typeof input.assessment_id === "string"
+              ? input.assessment_id
+              : undefined;
+          toolMetaByIdRef.current.set(id, {
+            name,
+            controlId: ctrl,
+            assessmentId: asmt,
+          });
           patchAssistant((m) => ({
             ...m,
             tools: [...m.tools, { id, name, status: "running", input }],
@@ -381,55 +409,56 @@ export function ComplianceOfficerRail({
         } else if (event === "tool_end") {
           const id = String(data.id ?? "");
           const ok = data.ok !== false;
-          patchAssistant((m) => {
-            const tools = m.tools.map((t) =>
+          const meta = toolMetaByIdRef.current.get(id);
+          patchAssistant((m) => ({
+            ...m,
+            tools: m.tools.map((t) =>
               t.id === id
                 ? { ...t, status: (ok ? "done" : "error") as ToolEvent["status"] }
                 : t,
-            );
-            // If a successful tool call likely changed practice state
-            // (artifact creation, evidence tagging), tell the middle
-            // pane to re-render right away — don't wait for the full
-            // stream + /sync round-trip.
-            if (ok) {
-              const tool = tools.find((t) => t.id === id);
-              if (
-                tool?.name === "generate_evidence_artifact" ||
-                tool?.name === "tag_evidence_to_practice"
-              ) {
-                window.dispatchEvent(
-                  new CustomEvent("evidence-changed", {
-                    detail: { tool: tool.name },
-                  }),
-                );
-              }
-              if (
-                tool?.name === "add_scope_item" ||
-                tool?.name === "add_esp" ||
-                tool?.name === "add_specialized_asset" ||
-                tool?.name === "remove_scope_item" ||
-                tool?.name === "remove_esp" ||
-                tool?.name === "remove_specialized_asset" ||
-                tool?.name === "update_scope_item" ||
-                tool?.name === "update_esp" ||
-                tool?.name === "update_specialized_asset"
-              ) {
-                window.dispatchEvent(
-                  new CustomEvent("custodia:scope-changed", {
-                    detail: { tool: tool.name },
-                  }),
-                );
-              }
-              if (tool?.name === "set_objective_status") {
-                window.dispatchEvent(
-                  new CustomEvent("custodia:objective-changed", {
-                    detail: { tool: tool.name },
-                  }),
-                );
-              }
+            ),
+          }));
+          // Fire side-effect events OUTSIDE the React state updater. The
+          // updater above is pure (only computes the next state); these
+          // dispatches happen synchronously right after, so any listener
+          // attached on the page sees the event regardless of React
+          // commit timing or concurrent rendering.
+          if (ok && meta) {
+            const detail = {
+              tool: meta.name,
+              controlId: meta.controlId,
+              assessmentId: meta.assessmentId,
+            };
+            if (
+              meta.name === "generate_evidence_artifact" ||
+              meta.name === "tag_evidence_to_practice"
+            ) {
+              window.dispatchEvent(
+                new CustomEvent("evidence-changed", { detail }),
+              );
             }
-            return { ...m, tools };
-          });
+            if (
+              meta.name === "add_scope_item" ||
+              meta.name === "add_esp" ||
+              meta.name === "add_specialized_asset" ||
+              meta.name === "remove_scope_item" ||
+              meta.name === "remove_esp" ||
+              meta.name === "remove_specialized_asset" ||
+              meta.name === "update_scope_item" ||
+              meta.name === "update_esp" ||
+              meta.name === "update_specialized_asset"
+            ) {
+              window.dispatchEvent(
+                new CustomEvent("custodia:scope-changed", { detail }),
+              );
+            }
+            if (meta.name === "set_objective_status") {
+              window.dispatchEvent(
+                new CustomEvent("custodia:objective-changed", { detail }),
+              );
+            }
+          }
+          toolMetaByIdRef.current.delete(id);
         } else if (event === "navigate") {
           const path = typeof data.path === "string" ? data.path : "";
           if (path.startsWith("/") && !path.includes("://")) {

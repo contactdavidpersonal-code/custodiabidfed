@@ -75,16 +75,33 @@ export function PracticeChat(props: Props) {
     setEvidence(props.evidence);
   }, [props.evidence]);
   const refetchEvidence = useCallback(async () => {
-    try {
-      const res = await fetch(
-        `/api/assessments/${props.assessmentId}/controls/${encodeURIComponent(props.controlId)}/evidence`,
-        { cache: "no-store" },
-      );
-      if (!res.ok) return;
-      const data = (await res.json()) as { evidence: ClientEvidenceRow[] };
-      if (Array.isArray(data.evidence)) setEvidence(data.evidence);
-    } catch (err) {
-      console.warn("refetchEvidence failed", err);
+    // Refetch with a short backoff: Charlie's tool_end fires the
+    // millisecond the INSERT promise resolves, but pooled-DB read replicas
+    // and Next.js's per-request cache can lag the new row by a tick.
+    // Three quick attempts (0ms, 350ms, 1200ms) covers the realistic
+    // window without spamming the API or making the user wait.
+    const delays = [0, 350, 1200];
+    let lastLen = -1;
+    for (const delay of delays) {
+      if (delay > 0) await new Promise((r) => setTimeout(r, delay));
+      try {
+        const res = await fetch(
+          `/api/assessments/${props.assessmentId}/controls/${encodeURIComponent(props.controlId)}/evidence`,
+          { cache: "no-store" },
+        );
+        if (!res.ok) continue;
+        const data = (await res.json()) as { evidence: ClientEvidenceRow[] };
+        if (!Array.isArray(data.evidence)) continue;
+        setEvidence(data.evidence);
+        // Stop early once the row count stabilises AND is at least as
+        // large as what we had on the prior render — i.e. the new
+        // artifact has shown up. (`>` would miss the deletion case;
+        // `>=` after a non-empty refetch is the right floor.)
+        if (data.evidence.length === lastLen && lastLen >= 0) return;
+        lastLen = data.evidence.length;
+      } catch (err) {
+        console.warn("refetchEvidence failed", err);
+      }
     }
   }, [props.assessmentId, props.controlId]);
 
