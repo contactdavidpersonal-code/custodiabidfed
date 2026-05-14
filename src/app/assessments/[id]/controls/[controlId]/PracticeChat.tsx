@@ -63,6 +63,31 @@ export function PracticeChat(props: Props) {
   const [reverifying, setReverifying] = useState(false);
   const [, startTransition] = useTransition();
 
+  // Local mirror of the server-rendered evidence list. We seed it from
+  // props (so the first paint matches the RSC) and refetch the list any
+  // time the rail dispatches `evidence-changed` — that's how a Charlie
+  // tool call lands a brand-new artifact into the correct slot card
+  // without requiring a full page refresh.
+  const [evidence, setEvidence] = useState<ClientEvidenceRow[]>(
+    props.evidence,
+  );
+  useEffect(() => {
+    setEvidence(props.evidence);
+  }, [props.evidence]);
+  const refetchEvidence = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/assessments/${props.assessmentId}/controls/${encodeURIComponent(props.controlId)}/evidence`,
+        { cache: "no-store" },
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as { evidence: ClientEvidenceRow[] };
+      if (Array.isArray(data.evidence)) setEvidence(data.evidence);
+    } catch (err) {
+      console.warn("refetchEvidence failed", err);
+    }
+  }, [props.assessmentId, props.controlId]);
+
   // Listen for practice-graded events from the Charlie rail. The rail emits
   // one after every turn while the user is on this control's page.
   useEffect(() => {
@@ -90,11 +115,16 @@ export function PracticeChat(props: Props) {
   // turn to finish or for /sync to grade objectives.
   useEffect(() => {
     const handler = () => {
+      // 1. Refetch the evidence list directly so the slot card updates
+      //    instantly, even if the RSC refresh is throttled or coalesced.
+      void refetchEvidence();
+      // 2. Also refresh the RSC tree so server-rendered panels (progress
+      //    rollups, audit timeline) reflect the same fresh row.
       startTransition(() => router.refresh());
     };
     window.addEventListener("evidence-changed", handler);
     return () => window.removeEventListener("evidence-changed", handler);
-  }, [router]);
+  }, [router, refetchEvidence]);
 
   // When the user pastes or drops an image into the Charlie chat composer,
   // the rail emits `charlie-image-incoming` with the File. We catch it here
@@ -144,7 +174,7 @@ export function PracticeChat(props: Props) {
   const requiredSlots = props.spec.evidenceSlots.filter((s) => s.required);
   const filledSlots = requiredSlots.filter((s) => {
     const slotKey = s.key;
-    return props.evidence.some((ev) => {
+    return evidence.some((ev) => {
       if (ev.ai_review_verdict !== "sufficient") return false;
       return inferSlotKey(ev.filename, props.spec) === slotKey;
     });
@@ -257,7 +287,7 @@ export function PracticeChat(props: Props) {
             file={pendingImage.file}
             previewUrl={pendingImage.previewUrl}
             spec={props.spec}
-            evidence={props.evidence}
+            evidence={evidence}
             onPick={(slotKey) => {
               window.dispatchEvent(
                 new CustomEvent("charlie-image-dropped", {
@@ -285,7 +315,7 @@ export function PracticeChat(props: Props) {
         )}
         <EvidencePanel
           spec={props.spec}
-          evidence={props.evidence}
+          evidence={evidence}
           assessmentId={props.assessmentId}
           controlId={props.controlId}
           connectedProviders={props.connectedProviders}
