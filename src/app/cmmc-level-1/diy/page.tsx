@@ -595,7 +595,7 @@ export default function DiyHubPage() {
               },
               {
                 q: "What does your platform actually do that this handbook doesn't?",
-                a: "The platform fills the templates in for you using a guided interview, collects evidence on a schedule, sends the annual renewal reminders, posts to SPRS for you, and gives you a single dashboard a prime can be shown. The handbook gives you the same artifacts at the cost of doing the work manually each year.",
+                a: "The platform fills the templates in for you using a guided interview, collects evidence on a schedule, sends the annual renewal reminders, generates your SPRS-ready score and submission packet, and gives you a single dashboard a prime can be shown. (SPRS posting itself still requires your CAGE-linked PIEE login — we walk you through it.) The handbook gives you the same artifacts at the cost of doing the work manually each year.",
               },
               {
                 q: "When should I just pay someone?",
