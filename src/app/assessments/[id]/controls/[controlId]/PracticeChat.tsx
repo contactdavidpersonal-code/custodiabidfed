@@ -26,6 +26,7 @@ type Props = {
   connectedProviders: ConnectorProvider[];
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
+  deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
   prevId: string | null;
   nextId: string | null;
   currentIdx: number;
@@ -290,6 +291,7 @@ export function PracticeChat(props: Props) {
           connectedProviders={props.connectedProviders}
           uploadEvidenceAction={props.uploadEvidenceAction}
           reReviewEvidenceAction={props.reReviewEvidenceAction}
+          deleteEvidenceAction={props.deleteEvidenceAction}
           // Evidence collection is a living document. Even after the practice
           // is signed/locked, users keep their packet current year-round:
           // new hires, retired devices, refreshed rosters. The signed
@@ -493,6 +495,7 @@ function EvidencePanel({
   connectedProviders,
   uploadEvidenceAction,
   reReviewEvidenceAction,
+  deleteEvidenceAction,
   disabled,
   locked = false,
 }: {
@@ -503,6 +506,7 @@ function EvidencePanel({
   connectedProviders: ConnectorProvider[];
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
+  deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
   /** When true, suppresses upload / replace / re-review affordances. Today
    * this is always false from the practice page; reserved for read-only
    * audit-share views in the future. */
@@ -577,6 +581,7 @@ function EvidencePanel({
             connectedProviders={connectedProviders}
             uploadEvidenceAction={uploadEvidenceAction}
             reReviewEvidenceAction={reReviewEvidenceAction}
+            deleteEvidenceAction={deleteEvidenceAction}
             disabled={disabled}
           />
         ))}
@@ -592,7 +597,10 @@ function EvidencePanel({
               <ArtifactCard
                 key={ev.id}
                 evidence={ev}
+                assessmentId={assessmentId}
+                controlId={controlId}
                 reReviewEvidenceAction={reReviewEvidenceAction}
+                deleteEvidenceAction={deleteEvidenceAction}
                 disabled={disabled}
               />
             ))}
@@ -628,6 +636,7 @@ function SlotRow({
   connectedProviders,
   uploadEvidenceAction,
   reReviewEvidenceAction,
+  deleteEvidenceAction,
   disabled,
 }: {
   index: number;
@@ -638,6 +647,7 @@ function SlotRow({
   connectedProviders: ConnectorProvider[];
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
+  deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
   disabled: boolean;
 }) {
   const sufficient = artifacts.find((a) => a.ai_review_verdict === "sufficient");
@@ -685,7 +695,10 @@ function SlotRow({
             <ArtifactCard
               key={ev.id}
               evidence={ev}
+              assessmentId={assessmentId}
+              controlId={controlId}
               reReviewEvidenceAction={reReviewEvidenceAction}
+              deleteEvidenceAction={deleteEvidenceAction}
               disabled={disabled}
             />
           ))}
@@ -1265,16 +1278,24 @@ function askCharlieToGenerate(
 
 function ArtifactCard({
   evidence,
+  assessmentId,
+  controlId,
   reReviewEvidenceAction,
+  deleteEvidenceAction,
   disabled,
 }: {
   evidence: ClientEvidenceRow;
+  assessmentId: string;
+  controlId: string;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
+  deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
   disabled: boolean;
 }) {
   const verdict = evidence.ai_review_verdict;
-  const verdictTone =
-    verdict === "sufficient"
+  const reviewing = verdict === null || verdict === undefined;
+  const verdictTone = reviewing
+    ? "text-[#08201a] bg-[#eaf3ee] ring-[#2f8f6d]/40"
+    : verdict === "sufficient"
       ? "text-[#10231d] bg-[#e8f5ec] ring-[#2f8f6d]/40"
       : verdict === "insufficient"
         ? "text-rose-800 bg-rose-50 ring-rose-300"
@@ -1284,8 +1305,18 @@ function ArtifactCard({
   const generatedByCharlie = evidence.ai_review_model === "charlie-generated";
   // Strip the [slot:KEY]__ prefix from the displayed filename if present.
   const displayName = evidence.filename.replace(/^\[slot:[a-z0-9_]+\]__/i, "");
+  // Local pending state for the delete server action so the row dims and the
+  // button shows a spinner while the request is in flight. Used <form
+  // action={fn}> from React DOM would not give us a Promise to await, so we
+  // call the action directly.
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   return (
-    <div className="border border-[#cfe3d9] bg-[#fcfdfb] px-4 py-3 text-[13px]">
+    <div
+      className={`border border-[#cfe3d9] bg-[#fcfdfb] px-4 py-3 text-[13px] transition-opacity ${
+        deleting ? "opacity-50" : ""
+      }`}
+    >
       <div className="flex items-center justify-between gap-2">
         <a
           href={`/api/evidence/${evidence.id}`}
@@ -1302,9 +1333,22 @@ function ArtifactCard({
             </span>
           )}
           <span
-            className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] ring-1 ${verdictTone}`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] ring-1 ${verdictTone}`}
           >
-            {verdict ?? "pending"}
+            {reviewing && (
+              <svg
+                viewBox="0 0 20 20"
+                className="h-2.5 w-2.5 animate-spin"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                aria-hidden
+              >
+                <circle cx="10" cy="10" r="7" opacity="0.25" />
+                <path d="M17 10a7 7 0 0 1-7 7" strokeLinecap="round" />
+              </svg>
+            )}
+            {reviewing ? "Reviewing" : verdict}
           </span>
         </div>
       </div>
@@ -1313,22 +1357,69 @@ function ArtifactCard({
           {evidence.ai_review_summary}
         </p>
       )}
+      {reviewing && !generatedByCharlie && !evidence.ai_review_summary && (
+        <p className="mt-2 text-[12px] italic leading-relaxed text-[#5a7d70]">
+          Charlie is comparing this against the assessor expectation — about a
+          minute. The verdict will land here automatically.
+        </p>
+      )}
       {generatedByCharlie && (
         <p className="mt-2 text-[12px] italic leading-relaxed text-[#5a7d70]">
           Charlie drafted this from your conversation. Open it, check the
           details are correct, and replace any time.
         </p>
       )}
-      {!disabled && verdict && !generatedByCharlie && (
-        <form action={reReviewEvidenceAction} className="mt-2">
-          <input type="hidden" name="artifactId" value={evidence.id} />
+      {!disabled && (
+        <div className="mt-2 flex items-center gap-4">
+          {verdict && !generatedByCharlie && (
+            <form action={reReviewEvidenceAction}>
+              <input type="hidden" name="artifactId" value={evidence.id} />
+              <input type="hidden" name="assessmentId" value={assessmentId} />
+              <input type="hidden" name="controlId" value={controlId} />
+              <button
+                type="submit"
+                className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline"
+              >
+                Re-review
+              </button>
+            </form>
+          )}
           <button
-            type="submit"
-            className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline"
+            type="button"
+            disabled={deleting}
+            onClick={async () => {
+              if (
+                !window.confirm(
+                  `Delete "${displayName}"? This removes the file and its AI review — you can re-upload anytime.`,
+                )
+              )
+                return;
+              setDeleting(true);
+              setDeleteError(null);
+              try {
+                const fd = new FormData();
+                fd.set("assessmentId", assessmentId);
+                fd.set("controlId", controlId);
+                fd.set("artifactId", evidence.id);
+                await deleteEvidenceAction(fd);
+                window.dispatchEvent(new CustomEvent("evidence-changed"));
+              } catch (e) {
+                setDeleteError(
+                  e instanceof Error ? e.message : "Could not delete.",
+                );
+                setDeleting(false);
+              }
+            }}
+            className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-rose-700 underline-offset-4 hover:text-rose-900 hover:underline disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Re-review
+            {deleting ? "Deleting…" : "Delete"}
           </button>
-        </form>
+          {deleteError && (
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-rose-700">
+              {deleteError}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

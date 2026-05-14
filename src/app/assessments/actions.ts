@@ -526,11 +526,36 @@ export async function uploadEvidenceAction(formData: FormData) {
     console.error("stampFreshnessOnInsert threw:", err);
   }
 
-  // Charlie's review is opt-in. The artifact lands with `ai_review_verdict
-  // = NULL` ("not yet reviewed"). The user can click "Ask Charlie to
-  // review" on the artifact row when they want a verdict. Attestation
-  // gating still requires a verdict before this artifact can count, so
-  // they're nudged to review once they're ready to attest.
+  // Charlie's review is opt-in for the legacy wizard flow (the artifact
+  // lands with `ai_review_verdict = NULL` and the user clicks "Ask Charlie
+  // to review" when ready). But the hybrid chat flow sends `slotKey` — in
+  // that flow the user just dropped a screenshot into a specific slot
+  // expecting Charlie to verify it lives up to the assessor expectation.
+  // Auto-run the review in-band so the verdict is on the row by the time
+  // the page revalidates. Best-effort: if the model call fails we still
+  // return success and the user can click "Re-review" manually.
+  if (slotKey) {
+    try {
+      const profile = await getBusinessProfile(ctx.organization.id);
+      const companyContext = summarizeBusinessContext(
+        ctx.organization.name,
+        ctx.organization.scoped_systems,
+        profile?.data,
+      );
+      await reviewEvidenceArtifact({
+        artifactId,
+        claimedControlId: controlId,
+        blobUrl: blob.url,
+        mimeType: file.type || null,
+        filename: taggedName,
+        companyContext,
+        organizationId: ctx.organization.id,
+        assessmentId,
+      });
+    } catch (err) {
+      console.error("auto-review on slot upload failed:", err);
+    }
+  }
 
   revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
   revalidatePath(`/assessments/${assessmentId}`);

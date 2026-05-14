@@ -127,6 +127,7 @@ export default async function ControlDetailPage(
               connectedProviders={connectedProviders}
               uploadEvidenceAction={uploadEvidenceAction}
               reReviewEvidenceAction={reReviewEvidenceAction}
+              deleteEvidenceAction={deleteEvidenceAction}
               prevId={prevId}
               nextId={nextId}
               currentIdx={currentIdx}
