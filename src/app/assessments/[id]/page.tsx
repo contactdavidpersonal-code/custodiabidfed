@@ -263,12 +263,14 @@ export default async function AssessmentOverviewPage(
                             />
                           </span>
 
-                          {/* Practice ID + title — the "entry" text in the TOC */}
-                          <span className="flex min-w-0 items-baseline gap-3 overflow-hidden">
+                          {/* Practice ID + title — the "entry" text in the TOC.
+                              On mobile (< sm) the title wraps below the FAR ID; on desktop
+                              everything sits inline with [FCI Data] tag + dotted leader. */}
+                          <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 sm:flex-nowrap sm:overflow-hidden">
                             <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-[#063f2e]/60">
                               {reqId}
                             </span>
-                            <span className="truncate font-serif text-base font-normal text-[#063f2e] group-hover:text-[#063f2e]">
+                            <span className="font-serif text-base font-normal text-[#063f2e] sm:truncate">
                               {meta.shortName}
                             </span>
                             <span className="hidden shrink-0 font-mono text-[10px] uppercase tracking-[0.16em] text-[#063f2e]/40 sm:inline">
