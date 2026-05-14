@@ -73,6 +73,28 @@ export async function retireScopeItem(
   `;
 }
 
+export async function updateScopeItem(args: {
+  id: string;
+  organizationId: string;
+  label: string;
+  role: string | null;
+  handlesFci: boolean;
+  notes: string | null;
+}): Promise<void> {
+  const sql = getSql();
+  await sql`
+    UPDATE scope_inventory
+    SET label = ${args.label},
+        role = ${args.role},
+        handles_fci = ${args.handlesFci},
+        notes = ${args.notes},
+        updated_at = NOW()
+    WHERE id = ${args.id}
+      AND organization_id = ${args.organizationId}
+      AND retired_at IS NULL
+  `;
+}
+
 export type EspRow = {
   id: string;
   organization_id: string;
@@ -121,6 +143,41 @@ export async function addEsp(args: {
   return rows[0];
 }
 
+export async function updateEsp(args: {
+  id: string;
+  organizationId: string;
+  name: string;
+  vendor: string | null;
+  services: string | null;
+  cmmcStatus: string | null;
+  attestationDocUrl: string | null;
+  contactEmail: string | null;
+}): Promise<void> {
+  const sql = getSql();
+  await sql`
+    UPDATE esp_registry
+    SET name = ${args.name},
+        vendor = ${args.vendor},
+        services = ${args.services},
+        cmmc_status = ${args.cmmcStatus},
+        attestation_doc_url = ${args.attestationDocUrl},
+        contact_email = ${args.contactEmail},
+        updated_at = NOW()
+    WHERE id = ${args.id} AND organization_id = ${args.organizationId}
+  `;
+}
+
+export async function deleteEsp(
+  espId: string,
+  organizationId: string,
+): Promise<void> {
+  const sql = getSql();
+  await sql`
+    DELETE FROM esp_registry
+    WHERE id = ${espId} AND organization_id = ${organizationId}
+  `;
+}
+
 export type SpecializedAssetRow = {
   id: string;
   organization_id: string;
@@ -130,6 +187,36 @@ export type SpecializedAssetRow = {
   handles_fci: boolean;
   created_at: string;
 };
+
+export async function updateSpecializedAsset(args: {
+  id: string;
+  organizationId: string;
+  label: string;
+  assetType: SpecializedAssetType;
+  description: string | null;
+  handlesFci: boolean;
+}): Promise<void> {
+  const sql = getSql();
+  await sql`
+    UPDATE specialized_assets
+    SET label = ${args.label},
+        asset_type = ${args.assetType},
+        description = ${args.description},
+        handles_fci = ${args.handlesFci}
+    WHERE id = ${args.id} AND organization_id = ${args.organizationId}
+  `;
+}
+
+export async function deleteSpecializedAsset(
+  assetId: string,
+  organizationId: string,
+): Promise<void> {
+  const sql = getSql();
+  await sql`
+    DELETE FROM specialized_assets
+    WHERE id = ${assetId} AND organization_id = ${organizationId}
+  `;
+}
 
 export async function listSpecializedAssets(
   organizationId: string,
