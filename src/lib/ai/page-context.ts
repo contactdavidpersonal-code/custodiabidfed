@@ -149,6 +149,8 @@ const PACK_SCOPE: Pack = {
   ],
   body: `**This page is gated by the scope-inventory discipline rules in your system prompt.** Read those again before each add call.
 
+**READ THE USER'S WORDS FIRST. Do not call any add tool unless the user's most recent message EXPLICITLY named one or more concrete items to add (a person's name, a device, a SaaS product, an address, etc.). If the user said "what's next?", "ok", "stop", "wait", or asked a question — RESPOND WITH TEXT ONLY. Being on the scope page does NOT mean you should add things; it means you should help the user build the list when they tell you what's on it.**
+
 The five sections, IN ORDER:
 1. **People** — humans who access FCI (employees, contractors, owners). Use \`add_scope_item\` with \`kind: "people"\`.
 2. **Technology** — laptops, phones, servers, on-prem network gear, SaaS accounts the org owns and operates (e.g. their own Microsoft 365 tenant). Use \`add_scope_item\` with \`kind: "technology"\`.
@@ -161,13 +163,17 @@ Decision rule when the user names a SaaS:
 - If they USE someone else's tenant or pay a vendor to host data → ESP.
 - If it's Microsoft 365 / Google Workspace and they're the admin → BOTH count; record the tenant as Technology and the underlying provider as an ESP.
 
-Hard rules:
-- ONE add per assistant turn. The server will reject the 2nd.
-- Always \`read_scope_inventory_state\` before EVERY add. Treat the returned list as the truth, not your memory of the conversation.
-- Case-insensitive duplicate labels are rejected by the server (the row returns \`already_existed: true\`). If you see that flag, tell the user the item was already there and ASK what they want to do — do not retry.
-- If the user wants to EDIT or REMOVE a row, they do it on the page via the Edit/Delete buttons — you do not have an update tool yet.
+Multi-add is fine and encouraged when the user lists multiple items in one message. If they say "add me, my wife as contractor, the laptop, the Pixel 9a, and our home office" — that is FIVE adds in this turn. Do them all. The server has an abuse cap at 8 per message; nothing else stops you.
 
-When a section is complete: call \`read_scope_inventory_state\` and recite back the rows in that section ("Here's what we have for People: …. Anything missing or wrong?"). Wait for confirmation, then move to the next section.`,
+Hard rules:
+- Always \`read_scope_inventory_state\` before adding so you know what already exists.
+- Case-insensitive duplicate labels are rejected by the server (the row returns \`already_existed: true\`). If you see that flag, tell the user the item was already there and ASK what they want to do — do not retry the same add.
+- If the user wants to EDIT or REMOVE a row, they do it on the page via the Edit/Delete buttons — you do not have an update tool yet. Tell them that.
+- After a batch of adds, ALWAYS reply with text: summarize what was just added and ask what's next.
+
+When a section is complete: call \`read_scope_inventory_state\` and recite back the rows in that section ("Here's what we have for People: …. Anything missing or wrong?"). Wait for confirmation, then move to the next section.
+
+If you ever get stuck or confused, tell the user they can type \`/reset\` to start a fresh conversation.`,
 };
 
 const PACK_BOUNDARY: Pack = {

@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { COMPLIANCE_OFFICER_SYSTEM_PROMPT } from "@/lib/anthropic";
 import {
   appendMessage,
+  archiveWorkspaceConversation,
   getOrCreateWorkspaceConversation,
   listMessages,
 } from "@/lib/ai/conversations";
@@ -52,12 +53,63 @@ export async function POST(req: NextRequest) {
   if (blocked) return blocked;
 
   const org = await ensureOrgForUser(userId);
+
+  // `/reset` escape hatch — archives the current workspace conversation
+  // and starts fresh on the next request. The user types this when Charlie
+  // gets stuck in a tool-call loop or otherwise wedged. We deliberately
+  // do NOT call the model here — we just stream back a synthetic assistant
+  // reply confirming the reset so the UI updates instantly.
+  const lower = userMessage.toLowerCase();
+  if (lower === "/reset" || lower === "reset charlie" || lower === "reset chat") {
+    await archiveWorkspaceConversation(org.id);
+    const fresh = await getOrCreateWorkspaceConversation(org.id);
+    const greeting =
+      "Conversation reset. Fresh start — what would you like to work on? I can help with scope inventory, walking a practice, generating evidence, or just answering questions.";
+    await appendMessage({
+      conversationId: fresh.id,
+      role: "user",
+      content: [{ type: "text", text: userMessage }],
+    });
+    await appendMessage({
+      conversationId: fresh.id,
+      role: "assistant",
+      content: [{ type: "text", text: greeting }],
+      model: "reset",
+      stopReason: "reset",
+    });
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(
+          encoder.encode(
+            `event: text\ndata: ${JSON.stringify({ text: greeting })}\n\n`,
+          ),
+        );
+        controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+        controller.close();
+      },
+    });
+    return new Response(stream, { headers: SSE_HEADERS });
+  }
+
   const conv = await getOrCreateWorkspaceConversation(org.id);
+
+  // Lightweight intent classification on the user's message. Short
+  // messages, anything ending in '?', and anything containing explicit
+  // stop-words are conversational turns — Charlie must NOT call mutating
+  // tools on these. We prepend a hidden hint so the model has a clear
+  // signal in addition to the page pack's general rules. This is the
+  // cheapest fix for the "user says 'what's next?' and gets 5 add_scope_item
+  // calls" failure mode.
+  const intentHint = classifyUserIntent(userMessage);
+  const userMessageForModel = intentHint
+    ? `${intentHint}\n\n${userMessage}`
+    : userMessage;
 
   await appendMessage({
     conversationId: conv.id,
     role: "user",
-    content: [{ type: "text", text: userMessage }],
+    content: [{ type: "text", text: userMessageForModel }],
   });
 
   const profile = await getBusinessProfile(org.id);
@@ -92,6 +144,47 @@ export async function POST(req: NextRequest) {
   });
 
   return new Response(stream, { headers: SSE_HEADERS });
+}
+
+/**
+ * Lightweight intent classifier. Returns a one-line prefix to inject above
+ * the user's message when the message is clearly conversational — meaning
+ * Charlie should respond with text and NOT call mutating tools.
+ *
+ * Rule-based and cheap (no LLM call). It exists because Anthropic's model
+ * sometimes pattern-matches on page context and emits add_scope_item even
+ * when the user just asked "what's next?". The prefix is stored in DB so
+ * past intent hints stay visible to the model — that's intentional.
+ */
+function classifyUserIntent(message: string): string | null {
+  const m = message.trim();
+  if (!m) return null;
+  const lower = m.toLowerCase();
+
+  const stopWords = [
+    "stop", "wait", "halt", "pause", "hold on", "hold up",
+    "don't add", "dont add", "no don't", "stop adding", "quit adding",
+    "back up", "go back", "undo",
+  ];
+  if (stopWords.some((w) => lower.includes(w))) {
+    return "[Charlie hint: the user just told you to STOP / PAUSE / UNDO. Respond with TEXT ONLY this turn. Do NOT call add_scope_item, add_esp, add_specialized_asset, or any other mutation tool. Acknowledge what they said and ask what they want instead.]";
+  }
+
+  if (lower.endsWith("?")) {
+    return "[Charlie hint: the user is asking a question. Answer with text. Do NOT call mutation tools (add_scope_item / add_esp / add_specialized_asset / update_*) unless the user's question explicitly names something to add.]";
+  }
+
+  const shortNav = new Set([
+    "ok", "okay", "k", "yes", "y", "no", "n", "next",
+    "what next", "whats next", "what's next",
+    "continue", "go", "go on", "and",
+    "hmm", "huh", "sure", "right", "got it", "cool",
+  ]);
+  if (shortNav.has(lower) || (m.length < 25 && lower.startsWith("what"))) {
+    return "[Charlie hint: this is a short conversational ack/nav message. Respond with text describing the next step or asking a focused question. Do NOT call mutation tools — the user has not named anything new to add.]";
+  }
+
+  return null;
 }
 
 function buildWorkspaceContextBlock(input: {

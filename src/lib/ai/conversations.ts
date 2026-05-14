@@ -77,6 +77,26 @@ export async function getOrCreateOnboardingConversation(
 }
 
 /**
+ * Archive the user's current workspace conversation. The next call to
+ * `getOrCreateWorkspaceConversation` will create a brand-new one. Used
+ * by the `/reset` slash command so a user can escape a stuck Charlie
+ * without losing all history (the old conversation is retained for
+ * audit/replay, just hidden from the live chat).
+ */
+export async function archiveWorkspaceConversation(
+  organizationId: string,
+): Promise<void> {
+  const sql = getSql();
+  await sql`
+    UPDATE ai_conversations
+    SET archived = TRUE
+    WHERE organization_id = ${organizationId}
+      AND kind = 'workspace'
+      AND archived = FALSE
+  `;
+}
+
+/**
  * Deterministic opener for the onboarding conversation. Persists a single
  * assistant message the very first time so the user always sees the same
  * calibrated welcome + first question, and the model has stable context to

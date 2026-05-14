@@ -62,19 +62,30 @@ export function runOfficerAgentStream(
       };
 
       try {
-        // Per-USER-MESSAGE caps — these accumulate across all agent
-        // iterations within one runOfficerAgentStream invocation. With
-        // MAX_TOOL_ITERATIONS=5 the agent could otherwise do 1 add per
-        // iteration × 5 iterations = 5 adds before ever showing a
-        // response to the user. That's the bug we keep seeing in the UI
-        // (5+ "Adding to your scope inventory" cards from a single
-        // "ok what's next?"). Track adds across the whole invocation.
+        // Per-USER-MESSAGE state that accumulates across all agent
+        // iterations within one runOfficerAgentStream invocation.
+        //
+        // ADD_HARD_CAP_PER_MESSAGE — abuse ceiling, not a workflow rail.
+        //   A legit user who pastes "add my laptop, my phone, my printer,
+        //   our office printer, our NAS, the receptionist's iPad" deserves
+        //   to have all of those added in one turn. We only block runaway
+        //   model loops. 8 is well above any realistic single-message ask.
+        //
+        // CONSECUTIVE_TOOL_ONLY_TURNS — circuit breaker. If the model
+        //   keeps emitting tool_use blocks WITHOUT any text reply across
+        //   N iterations in a row, force-break with a synthetic error
+        //   telling it to respond to the user. This is what stops the
+        //   "5 cards from one 'what's next?'" failure mode without
+        //   forbidding legit multi-add turns.
         const ADD_TOOLS = new Set([
           "add_scope_item",
           "add_esp",
           "add_specialized_asset",
         ]);
+        const ADD_HARD_CAP_PER_MESSAGE = 8;
+        const MAX_CONSECUTIVE_TOOL_ONLY_TURNS = 2;
         let addCallsThisMessage = 0;
+        let consecutiveToolOnlyTurns = 0;
         const seenAddKeysThisMessage = new Set<string>();
 
         for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
@@ -107,6 +118,46 @@ export function runOfficerAgentStream(
           );
           if (turn.stopReason !== "tool_use" || toolUses.length === 0) {
             break;
+          }
+
+          // Circuit breaker: track turns where the model only emitted tool
+          // calls (no text reply to the user). 2+ in a row = the model is
+          // looping. Force-break by injecting a synthetic instruction as
+          // the tool results and letting the next iteration produce text.
+          const emittedText = turn.assistantBlocks.some(
+            (b) => b.type === "text" && b.text.trim().length > 0,
+          );
+          if (!emittedText) {
+            consecutiveToolOnlyTurns++;
+          } else {
+            consecutiveToolOnlyTurns = 0;
+          }
+          if (consecutiveToolOnlyTurns >= MAX_CONSECUTIVE_TOOL_ONLY_TURNS) {
+            // Build error tool_results for every pending tool_use so the
+            // pairing invariant holds, then persist the row and break.
+            const forcedResults: ToolResultBlock[] = toolUses.map((b) => ({
+              type: "tool_result",
+              tool_use_id: b.id,
+              content: JSON.stringify({
+                ok: false,
+                error: "tool_only_loop_break",
+                message:
+                  "You have emitted multiple consecutive turns of tool calls without any text reply to the user. This is a loop. Do NOT call any more tools. Reply to the user with text now — summarize what you've done, what state the workspace is in, and ask a focused next question.",
+              }),
+              is_error: true,
+            }));
+            // Emit synthetic tool_end events so the UI removes spinners.
+            for (const b of toolUses) {
+              send("tool_end", { id: b.id, ok: false });
+            }
+            await appendMessage({
+              conversationId: input.conversationId,
+              role: "tool",
+              content: forcedResults,
+            });
+            // Let the next iteration produce a text reply, then it will
+            // hit the no-tool-use branch and break naturally.
+            continue;
           }
 
           // Execute each tool defensively. A throw from any single tool must
@@ -163,15 +214,14 @@ export function runOfficerAgentStream(
                 });
                 continue;
               }
-              if (isAdd && addCallsThisMessage >= 1) {
+              if (isAdd && addCallsThisMessage >= ADD_HARD_CAP_PER_MESSAGE) {
                 toolResults.push({
                   type: "tool_result",
                   tool_use_id: block.id,
                   content: JSON.stringify({
                     ok: false,
-                    error: "add_rate_limit_per_message",
-                    message:
-                      "You have already made one add-style call (add_scope_item / add_esp / add_specialized_asset) in your response to this user message. Only ONE add per user message is allowed — scope inventory is a compliance artifact and each row must be confirmed by the user before the next one. Stop calling tools. Reply to the user with a short summary of what was just added and ask which item to add next.",
+                    error: "add_hard_cap_per_message",
+                    message: `You have already made ${ADD_HARD_CAP_PER_MESSAGE} add-style calls in your response to this single user message — that is the hard abuse ceiling. Stop calling tools now. Reply to the user with a summary of what was added and ask if they have more items to add.`,
                   }),
                   is_error: true,
                 });
