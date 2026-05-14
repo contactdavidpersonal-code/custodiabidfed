@@ -76,6 +76,7 @@ export function ComplianceOfficerRail({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [recap, setRecap] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -210,6 +211,32 @@ export function ComplianceOfficerRail({
     if (!listRef.current) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages, streaming]);
+
+  // Keep keyboard focus in the composer between turns. The textarea is
+  // disabled while streaming, which causes the browser to drop focus and
+  // forces the user to click back into it before they can type the next
+  // message. Re-focus on the falling edge of `streaming`.
+  useEffect(() => {
+    if (streaming) return;
+    if (!hydrated) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    // Wait a tick so React re-enables the textarea before we focus it.
+    const t = window.setTimeout(() => {
+      if (document.activeElement === el) return;
+      // Don't steal focus if the user is typing somewhere else.
+      const ae = document.activeElement;
+      if (
+        ae instanceof HTMLInputElement ||
+        ae instanceof HTMLTextAreaElement ||
+        (ae instanceof HTMLElement && ae.isContentEditable)
+      ) {
+        return;
+      }
+      el.focus();
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [streaming, hydrated]);
 
   const toggle = useCallback(() => {
     setOpen((prev) => {
@@ -629,6 +656,7 @@ export function ComplianceOfficerRail({
       >
         <div className="flex items-end gap-2  border border-[#cfe3d9] bg-white p-2 focus-within:border-[#2f8f6d] focus-within:ring-2 focus-within:ring-[#2f8f6d]/20">
           <textarea
+            ref={textareaRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
