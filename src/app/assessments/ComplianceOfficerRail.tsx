@@ -266,6 +266,11 @@ export function ComplianceOfficerRail({
   // `send` further down, so this effect references the latest closure via
   // the ref-style accessor below.
   const sendRef = useRef<((t?: string) => Promise<void>) | null>(null);
+  // Per-mount guard set: which controlIds have we already kicked off in this
+  // mounted rail instance? Backstops sessionStorage in case the kickoff effect
+  // re-fires synchronously before the sessionStorage write lands (it depends
+  // on `send`, which is reborn whenever streaming/draft flip).
+  const kickoffFiredRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     if (streaming) return;
     const queued = pendingDraftRef.current;
@@ -529,7 +534,15 @@ export function ComplianceOfficerRail({
     if (!ctx.assessmentId || !ctx.controlId) return;
 
     const sessionKey = `custodia.practice-kickoff.${ctx.controlId}`;
+    // Per-tab dedupe (survives refresh, dies on tab close).
     if (window.sessionStorage.getItem(sessionKey)) return;
+    // Per-mount dedupe (prevents racing between effect re-runs in the same
+    // render cycle, before sessionStorage has been written).
+    if (kickoffFiredRef.current.has(ctx.controlId)) return;
+    // Claim the kickoff slot SYNCHRONOUSLY so any concurrent effect re-fire
+    // bails out before issuing a duplicate request.
+    kickoffFiredRef.current.add(ctx.controlId);
+    window.sessionStorage.setItem(sessionKey, "1");
 
     let cancelled = false;
     (async () => {
@@ -546,19 +559,19 @@ export function ComplianceOfficerRail({
           locked?: boolean;
         };
         if (cancelled) return;
-        if (data.locked) {
-          window.sessionStorage.setItem(sessionKey, "1");
-          return;
-        }
+        if (data.locked) return;
         const userTurns = data.messages.filter((m) => m.role === "user").length;
         const opener =
           userTurns > 0
             ? `I'm back on ${ctx.controlId} — pick up where we left off.`
             : `Let's start ${ctx.controlId}. Walk me through it.`;
-        window.sessionStorage.setItem(sessionKey, "1");
         setOpen(true);
         window.localStorage.setItem(STORAGE_OPEN_KEY, "1");
-        await send(opener);
+        // Route through sendRef so we always invoke the *latest* send closure
+        // (with current pathname/router) instead of a stale one captured at
+        // effect-creation time. Falls back to `send` if the ref isn't wired yet.
+        const fn = sendRef.current ?? send;
+        await fn(opener);
       } catch (err) {
         console.warn("practice kickoff failed", err);
       }
@@ -566,7 +579,12 @@ export function ComplianceOfficerRail({
     return () => {
       cancelled = true;
     };
-  }, [pathname, hydrated, streaming, send]);
+    // Intentionally exclude `send` from the dep list — we resolve it through
+    // sendRef inside the effect. Including it caused the effect to re-fire
+    // every time draft/streaming changed, which raced the sessionStorage
+    // dedupe write and double-kicked the chat.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, hydrated, streaming]);
 
   if (!open && !mobile) {
     return (
