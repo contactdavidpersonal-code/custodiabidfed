@@ -410,7 +410,7 @@ export default function TermsPage() {
           <p>
             <strong>Custodia, LLC</strong>
             <br />
-            615 First Avenue, Suite 1009<br />Pittsburgh, Pennsylvania 15219<br />United States
+            6375 Penn Avenue, Suite B #1246<br />Pittsburgh, Pennsylvania 15206<br />United States
             <br />
             Legal:{" "}
             <a href="mailto:legal@bidfedcmmc.com" className="text-emerald-700 underline">
