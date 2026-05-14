@@ -22,8 +22,14 @@
  */
 
 import { getSql } from "@/lib/db";
-import { getAnthropic } from "@/lib/anthropic";
+import { getAnthropic, metadataForOrg } from "@/lib/anthropic";
 import { listMessages, type AiMessageRow } from "@/lib/ai/conversations";
+import {
+  encryptField,
+  tryDecryptField,
+} from "@/lib/security/field-encryption";
+
+const MEMORY_SUMMARY_FIELD = "ai_memory.summary";
 
 const MEMORY_BUILD_MODEL = "claude-haiku-4-5";
 const REFRESH_AFTER_NEW_MESSAGES = 20;
@@ -49,7 +55,15 @@ export async function getMemory(
     WHERE organization_id = ${organizationId}
     LIMIT 1
   `) as AiMemoryRow[];
-  return rows[0] ?? null;
+  const row = rows[0];
+  if (!row) return null;
+  // The `summary` column is encrypted at rest under the tenant DEK.
+  // Legacy plaintext rows pass through `tryDecryptField` untouched.
+  const decrypted = await tryDecryptField(row.summary, {
+    organizationId,
+    field: MEMORY_SUMMARY_FIELD,
+  });
+  return { ...row, summary: decrypted ?? "" };
 }
 
 async function upsertMemory(
@@ -60,6 +74,12 @@ async function upsertMemory(
   model: string,
 ): Promise<void> {
   const sql = getSql();
+  // Encrypt the rolling summary before persisting. AAD pins org + field
+  // so a row swapped between tenants will fail to decrypt.
+  const encryptedSummary = await encryptField(summary, {
+    organizationId,
+    field: MEMORY_SUMMARY_FIELD,
+  });
   const factsJson = JSON.stringify(keyFacts);
   await sql`
     INSERT INTO ai_memory (
@@ -67,7 +87,7 @@ async function upsertMemory(
       last_built_at, last_built_model
     ) VALUES (
       ${organizationId}::uuid,
-      ${summary},
+      ${encryptedSummary},
       ${factsJson}::jsonb,
       ${messagesSummarized},
       NOW(),
@@ -189,6 +209,7 @@ export async function buildMemoryForOrg(
     model: MEMORY_BUILD_MODEL,
     max_tokens: 1500,
     system: MEMORY_BUILDER_PROMPT,
+    metadata: metadataForOrg(organizationId, null),
     messages: [
       {
         role: "user",

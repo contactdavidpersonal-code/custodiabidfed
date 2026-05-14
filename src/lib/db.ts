@@ -843,6 +843,37 @@ async function runInitDdl() {
     )
   `;
 
+  // Charlie tool-call audit log. Every AI tool invocation is recorded
+  // here with SHA-256 hashes of input and output, the tool name, status,
+  // and the trusted tenant/user/conversation context. Payload contents
+  // live encrypted on `ai_messages.content`; this table is the
+  // tamper-evident cross-reference. Hashed instead of raw so we don't
+  // double the leak surface and so we can group/aggregate without ever
+  // decrypting (e.g. "how many duplicate add_scope_item calls today").
+  await sql`
+    CREATE TABLE IF NOT EXISTS ai_tool_audit (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      user_id TEXT,
+      conversation_id UUID REFERENCES ai_conversations(id) ON DELETE SET NULL,
+      message_id UUID REFERENCES ai_messages(id) ON DELETE SET NULL,
+      tool_name TEXT NOT NULL,
+      input_sha256 TEXT NOT NULL,
+      output_sha256 TEXT NOT NULL,
+      status TEXT NOT NULL CHECK (status IN ('ok','error','denied','rate_limited')),
+      duration_ms INT NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_ai_tool_audit_org_created
+      ON ai_tool_audit (organization_id, created_at DESC)
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_ai_tool_audit_tool
+      ON ai_tool_audit (tool_name, created_at DESC)
+  `;
+
   // Phase 0: fiscal-calendar milestones keeping orgs compliant year-over-year.
   await sql`
     CREATE TABLE IF NOT EXISTS compliance_milestones (

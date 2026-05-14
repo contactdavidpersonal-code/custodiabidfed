@@ -1,4 +1,8 @@
 import { getSql, type ConversationKind, type MessageRole } from "@/lib/db";
+import {
+  encryptMessageContent,
+  tryDecryptMessageContent,
+} from "@/lib/ai/message-encryption";
 
 export type AiConversationRow = {
   id: string;
@@ -145,6 +149,12 @@ export async function ensureOnboardingOpener(
 
 type AppendInput = {
   conversationId: string;
+  /**
+   * Optional. When the caller already has the org id (e.g. the stream
+   * loop), pass it to skip the per-call SELECT used to bind the
+   * encryption AAD. When omitted, we look it up via `conversation_id`.
+   */
+  organizationId?: string;
   role: MessageRole;
   content: unknown; // string or Anthropic content blocks
   toolUseId?: string;
@@ -156,9 +166,34 @@ type AppendInput = {
   stopReason?: string;
 };
 
+/**
+ * Resolve the tenant org id for a conversation. Used as the AAD binding
+ * for envelope encryption of `ai_messages.content` so a ciphertext from
+ * one org can never be decrypted under another org's DEK.
+ */
+async function resolveOrgIdForConversation(
+  conversationId: string,
+): Promise<string> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT organization_id FROM ai_conversations WHERE id = ${conversationId} LIMIT 1
+  `) as Array<{ organization_id: string }>;
+  if (!rows[0]) {
+    throw new Error(
+      `appendMessage: conversation ${conversationId} not found — cannot bind encryption AAD`,
+    );
+  }
+  return rows[0].organization_id;
+}
+
 export async function appendMessage(input: AppendInput): Promise<AiMessageRow> {
   const sql = getSql();
-  const contentJson = JSON.stringify(input.content);
+  const organizationId =
+    input.organizationId ?? (await resolveOrgIdForConversation(input.conversationId));
+  // Envelope-encrypt the content jsonb under the tenant DEK. AAD pins the
+  // org id and field name so cross-tenant ciphertext swaps fail loudly.
+  const envelope = await encryptMessageContent(input.content, organizationId);
+  const contentJson = JSON.stringify(envelope);
   const inserted = (await sql`
     INSERT INTO ai_messages (
       conversation_id, role, content, tool_use_id,
@@ -182,12 +217,17 @@ export async function appendMessage(input: AppendInput): Promise<AiMessageRow> {
               model, stop_reason, created_at
   `) as AiMessageRow[];
 
+  // Return the decrypted content so the caller sees the plain shape,
+  // not the wire envelope.
+  const row = inserted[0];
+  row.content = input.content;
+
   await sql`
     UPDATE ai_conversations
     SET last_message_at = NOW()
     WHERE id = ${input.conversationId}
   `;
-  return inserted[0];
+  return row;
 }
 
 export async function listMessages(
@@ -195,15 +235,40 @@ export async function listMessages(
   limit = 100,
 ): Promise<AiMessageRow[]> {
   const sql = getSql();
-  return (await sql`
-    SELECT id, conversation_id, role, content, tool_use_id,
-           input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens,
-           model, stop_reason, created_at
-    FROM ai_messages
-    WHERE conversation_id = ${conversationId}
-    ORDER BY created_at ASC
+  const rows = (await sql`
+    SELECT m.id, m.conversation_id, m.role, m.content, m.tool_use_id,
+           m.input_tokens, m.output_tokens, m.cache_read_tokens, m.cache_creation_tokens,
+           m.model, m.stop_reason, m.created_at,
+           c.organization_id
+    FROM ai_messages m
+    JOIN ai_conversations c ON c.id = m.conversation_id
+    WHERE m.conversation_id = ${conversationId}
+    ORDER BY m.created_at ASC
     LIMIT ${limit}
-  `) as AiMessageRow[];
+  `) as Array<AiMessageRow & { organization_id: string }>;
+  // Decrypt in parallel. Legacy plaintext rows pass through untouched.
+  const decrypted = await Promise.all(
+    rows.map(async (r) => {
+      const content = await tryDecryptMessageContent(r.content, r.organization_id);
+      // Strip the organization_id helper column from the public shape.
+      const rest: AiMessageRow = {
+        id: r.id,
+        conversation_id: r.conversation_id,
+        role: r.role,
+        content,
+        tool_use_id: r.tool_use_id,
+        input_tokens: r.input_tokens,
+        output_tokens: r.output_tokens,
+        cache_read_tokens: r.cache_read_tokens,
+        cache_creation_tokens: r.cache_creation_tokens,
+        model: r.model,
+        stop_reason: r.stop_reason,
+        created_at: r.created_at,
+      };
+      return rest;
+    }),
+  );
+  return decrypted;
 }
 
 /**
