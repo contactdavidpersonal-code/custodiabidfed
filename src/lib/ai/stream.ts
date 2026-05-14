@@ -61,9 +61,67 @@ function looksLikePreAnnounceStall(blocks: AssistantBlock[]): boolean {
     .join(" ")
     .trim();
   if (!text) return false;
-  const wordCount = text.split(/\s+/).length;
-  if (wordCount > 60) return false;
+  // No word-count ceiling: "Hang tight while I assemble all four — starting
+  // with the user roster, then devices, then service accounts…" is still a
+  // pre-announce, even at 80 words. The signal is verb + zero tool_use.
   return PREANNOUNCE_VERB_RX.test(text);
+}
+
+// Confirmation patterns the user types to authorize an offered action.
+// Kept tight on purpose — we only want to force tool_use when the user is
+// CLEARLY saying "do it". A bare "yes" or "go ahead" mid-conversation can
+// also legitimately just be confirming something informational, so we also
+// require the previous assistant turn to contain an explicit offer.
+const CONFIRMATION_RX =
+  /^(?:yes|yeah|yep|yup|y|sure|ok|okay|please|please\s+do|do\s+it|do\s+them|do\s+all|do\s+all\s+of\s+them|go|go\s+ahead|go\s+for\s+it|let'?s\s+go|let'?s\s+do\s+it|sounds\s+good|sounds?\s+great|generate|generate\s+them|generate\s+all|draft\s+them|create\s+them|build\s+them|make\s+them|run\s+it|fire\s+away|all\s+four|all\s+three|all\s+five|all\s+of\s+them)\W*$/i;
+
+const OFFER_RX =
+  /\b(?:want\s+me\s+to|should\s+i|shall\s+i|ready\s+for\s+me\s+to|ok(?:ay)?\s+(?:for\s+me\s+)?to|can\s+i\s+(?:go\s+ahead|generate|draft|create|build)|i\s+can\s+(?:generate|draft|create|build)|generate\s+(?:all|the)\s+\w+\s+now|right\s+now\?|now\?)/i;
+
+function extractText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .filter((b): b is { type: string; text?: string } =>
+        typeof b === "object" && b !== null && (b as { type?: unknown }).type === "text",
+      )
+      .map((b) => b.text ?? "")
+      .join(" ");
+  }
+  return "";
+}
+
+/**
+ * Pre-flight decision: should we force tool_choice on the FIRST turn,
+ * before the model has a chance to defect into pre-announce text?
+ *
+ * Triggers when the user's latest message is a short confirmation AND the
+ * previous assistant message contained an offer to perform an action. This
+ * catches the canonical broken flow:
+ *   Charlie: "Want me to generate all four now?"
+ *   User:    "yes"
+ *   Charlie: "Generating all four now."   ← stall, no tools fired
+ * Without depending on a post-hoc retry, this saves the model round-trip
+ * and the user's tokens.
+ */
+function shouldForceToolUseOnFirstTurn(
+  priorMessages: Array<{ role: "user" | "assistant"; content: unknown }>,
+): boolean {
+  if (priorMessages.length < 2) return false;
+  const last = priorMessages[priorMessages.length - 1];
+  if (last.role !== "user") return false;
+  const lastText = extractText(last.content).trim();
+  if (!lastText || lastText.length > 60) return false;
+  if (!CONFIRMATION_RX.test(lastText)) return false;
+  // Walk back to the most recent assistant text and look for an offer.
+  for (let i = priorMessages.length - 2; i >= 0; i--) {
+    const m = priorMessages[i];
+    if (m.role !== "assistant") continue;
+    const text = extractText(m.content);
+    if (!text.trim()) continue;
+    return OFFER_RX.test(text);
+  }
+  return false;
 }
 
 type TextBlock = { type: "text"; text: string };
@@ -156,6 +214,22 @@ export function runOfficerAgentStream(
           const priorRows = await listMessages(input.conversationId, 50);
           const priorMessages = toAnthropicMessages(priorRows);
 
+          // Pre-flight: on the FIRST iteration only, force tool_choice when
+          // the user is clearly confirming a recent offer. Saves one round
+          // trip vs. waiting for the post-hoc detector to catch a stall.
+          if (
+            i === 0 &&
+            !preAnnounceRetried &&
+            shouldForceToolUseOnFirstTurn(priorMessages)
+          ) {
+            preAnnounceRetried = true;
+            forceToolChoice = { type: "any" };
+            console.warn(
+              "[charlie] pre-flight forcing tool_choice=any on confirmation",
+              { conversationId: input.conversationId },
+            );
+          }
+
           const turn = await runOneTurn({
             priorMessages,
             systemText: input.systemPrompt,
@@ -178,6 +252,18 @@ export function runOfficerAgentStream(
           ) {
             preAnnounceRetried = true;
             forceToolChoice = { type: "any" };
+            console.warn(
+              "[charlie] post-hoc pre-announce stall detected, retrying with tool_choice=any",
+              {
+                conversationId: input.conversationId,
+                stopReason: turn.stopReason,
+                textSample: turn.assistantBlocks
+                  .filter((b): b is TextBlock => b.type === "text")
+                  .map((b) => b.text)
+                  .join(" ")
+                  .slice(0, 200),
+              },
+            );
             continue;
           }
 
