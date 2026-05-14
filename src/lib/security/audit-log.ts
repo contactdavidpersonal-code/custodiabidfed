@@ -46,6 +46,7 @@ export type AuditAction =
   | "milestone.deleted"
   | "organization.sam_uei_validated"
   | "assessment.material_change_reviewed"
+  | "assessment.material_change_filed"
   | "evidence.method_set"
   | "evidence.marked_final";
 

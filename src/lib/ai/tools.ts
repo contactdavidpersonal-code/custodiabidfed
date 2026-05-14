@@ -60,6 +60,10 @@ import {
   type ObjectiveResponseRow,
 } from "@/lib/cmmc/objectives";
 import { getSamEntityStatus, summarizeSamStatus } from "@/lib/sam-entity";
+import { recomputeTrustStatus } from "@/lib/trust-status";
+import { fileMaterialChange } from "@/lib/cmmc/material-changes";
+import { recordAuditEvent } from "@/lib/security/audit-log";
+import { getSql } from "@/lib/db";
 import {
   assembleBoundaryView,
   getScopeProfile,
@@ -950,6 +954,64 @@ export const officerTools = [
       required: ["narrative"],
     },
   },
+  {
+    name: "regenerate_deliverable",
+    description:
+      "Re-render one of the org's compliance deliverables from current data. The CONTENT is never inlined in the response — the tool returns a download URL the user can click. Use after material profile/scope changes or when the user explicitly asks to refresh a doc. For 'trust_profile', this recomputes the live trust-status snapshot at /verified/{slug}.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        kind: {
+          type: "string",
+          enum: ["ssp", "attestation", "bid_packet", "bid_package", "trust_profile"],
+          description:
+            "Which deliverable to regenerate. ssp = System Security Plan HTML. attestation = senior-official affirmation memo HTML. bid_packet = print-ready marketing/proposal packet (one HTML doc). bid_package = full ZIP with SSP + affirmation + CSVs + evidence files. trust_profile = public /verified/{slug} snapshot.",
+        },
+        assessment_id: {
+          type: "string",
+          description:
+            "Optional. Defaults to the active assessment when omitted.",
+        },
+        draft: {
+          type: "boolean",
+          description:
+            "Only for bid_package. When true allows export of an unsigned/draft package.",
+        },
+      },
+      required: ["kind"],
+    },
+  },
+  {
+    name: "file_material_change",
+    description:
+      "File a § 170.22(d) Material Change record for the active assessment. Use when the user reports a change that may invalidate the current annual affirmation (new FCI flow, scope expansion, M&A, new ESP, etc.). Records the change to the material_changes audit table; if requires_reassessment is true, also flips the assessment-level snapshot so the affirmation bar re-prompts.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        reason: {
+          type: "string",
+          description:
+            "Why this is a material change (≥ 20 chars). Cite the specific element that changed.",
+        },
+        changes: {
+          type: "object",
+          description:
+            "Structured payload describing what changed (free-form key/value).",
+          additionalProperties: true,
+        },
+        requires_reassessment: {
+          type: "boolean",
+          description:
+            "True when the change forces a fresh self-assessment cycle.",
+        },
+        assessment_id: {
+          type: "string",
+          description: "Optional. Defaults to the active assessment.",
+        },
+      },
+      required: ["reason", "changes"],
+    },
+  },
 ];
 
 export type ToolContext = {
@@ -1062,6 +1124,10 @@ export async function executeOfficerTool(
         return await handleUpdateOutOfScopeItem(input, ctx);
       case "save_scoping_statement":
         return await handleSaveScopingStatement(input, ctx);
+      case "regenerate_deliverable":
+        return await handleRegenerateDeliverable(input, ctx);
+      case "file_material_change":
+        return await handleFileMaterialChange(input, ctx);
       default:
         return { ok: false, error: `Unknown tool: ${name}` };
     }
@@ -3240,6 +3306,213 @@ async function handleSaveScopingStatement(
     data: {
       length: narrative.length,
       cleared: narrative.length === 0,
+    },
+  };
+}
+
+// ---------- Tier 2.4: regenerate_deliverable ----------
+
+async function handleRegenerateDeliverable(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  // audit:tenant-scoping skip — uses ctx.userId + getAssessmentForUser for
+  // SSP/attestation/bid_packet via download URL, ctx.organizationId for
+  // trust_profile recomputation. Bid-package download URL hits a route
+  // that re-checks org ownership before serving bytes.
+  const kind = typeof input.kind === "string" ? input.kind : "";
+  const allowed = new Set([
+    "ssp",
+    "attestation",
+    "bid_packet",
+    "bid_package",
+    "trust_profile",
+  ]);
+  if (!allowed.has(kind)) {
+    return {
+      ok: false,
+      error: `kind must be one of: ssp, attestation, bid_packet, bid_package, trust_profile.`,
+    };
+  }
+  const draft = typeof input.draft === "boolean" ? input.draft : false;
+  const generatedAt = new Date().toISOString();
+
+  if (kind === "trust_profile") {
+    // Trust profile is org-scoped, not assessment-scoped. Recompute the
+    // live snapshot and return the public URL.
+    const snapshot = await recomputeTrustStatus(ctx.organizationId);
+    const sql = getSql();
+    const rows = (await sql`
+      SELECT verification_slug, slug
+      FROM trust_pages
+      WHERE organization_id = ${ctx.organizationId}
+      LIMIT 1
+    `) as Array<{ verification_slug: string | null; slug: string | null }>;
+    const publicSlug =
+      rows[0]?.verification_slug ?? rows[0]?.slug ?? null;
+    return {
+      ok: true,
+      data: {
+        kind: "trust_profile",
+        regenerated: true,
+        generated_at: generatedAt,
+        health: snapshot.health,
+        public_url: publicSlug ? `/verified/${publicSlug}` : null,
+        message: publicSlug
+          ? "Trust profile snapshot recomputed. The public page at /verified/{slug} now reflects the latest data."
+          : "Trust profile snapshot recomputed. No public trust page is published yet — publish one from Trust settings to share the URL.",
+      },
+    };
+  }
+
+  // Assessment-scoped deliverables: resolve + tenant-check via the existing
+  // helper, then return a stable download URL.
+  const assessmentId = await resolveAssessmentId(input, ctx);
+  if (!assessmentId) {
+    return { ok: false, error: "No active assessment for this org." };
+  }
+  const owned = await getAssessmentForUser(assessmentId, ctx.userId);
+  if (!owned) {
+    return {
+      ok: false,
+      error: "Assessment not found or you do not have access.",
+    };
+  }
+
+  // Cache-bust the URL so the user's browser fetches a fresh render even
+  // when the underlying route is on a CDN.
+  const cacheBust = `t=${Date.now()}`;
+  let url: string;
+  let filenameHint: string;
+  if (kind === "bid_package") {
+    const q = draft ? `?draft=1&${cacheBust}` : `?${cacheBust}`;
+    url = `/api/assessments/${assessmentId}/bid-package${q}`;
+    filenameHint = "bid-package.zip";
+  } else if (kind === "bid_packet") {
+    url = `/api/assessments/${assessmentId}/bid-packet?${cacheBust}`;
+    filenameHint = "bid-ready-packet.html";
+  } else if (kind === "ssp") {
+    // SSP is served as part of the bid-package ZIP today. Use the bundle
+    // route with draft=1 so unsigned assessments still render. The user
+    // unpacks 01-SSP.html from the ZIP. (A dedicated SSP-only endpoint
+    // can be added later if friction shows up.)
+    url = `/api/assessments/${assessmentId}/bid-package?draft=1&${cacheBust}`;
+    filenameHint = "01-SSP.html (inside the ZIP)";
+  } else {
+    // attestation — same story as SSP today.
+    url = `/api/assessments/${assessmentId}/bid-package?draft=1&${cacheBust}`;
+    filenameHint = "02-Affirmation.html (inside the ZIP)";
+  }
+
+  return {
+    ok: true,
+    data: {
+      kind,
+      regenerated: true,
+      generated_at: generatedAt,
+      download_url: url,
+      filename_hint: filenameHint,
+      attested: owned.assessment.status === "attested",
+      draft,
+    },
+  };
+}
+
+// ---------- Tier 2.5: file_material_change ----------
+
+async function handleFileMaterialChange(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const reason = pickString(input, "reason")?.trim() ?? "";
+  if (reason.length < 20) {
+    return {
+      ok: false,
+      error: "reason must be at least 20 characters describing the change.",
+    };
+  }
+  if (reason.length > 2000) {
+    return { ok: false, error: "reason must be 2000 characters or fewer." };
+  }
+  const rawChanges = input.changes;
+  if (!rawChanges || typeof rawChanges !== "object" || Array.isArray(rawChanges)) {
+    return {
+      ok: false,
+      error: "changes must be an object describing what changed.",
+    };
+  }
+  const changes = rawChanges as Record<string, unknown>;
+  const requiresReassessment =
+    typeof input.requires_reassessment === "boolean"
+      ? input.requires_reassessment
+      : false;
+
+  const assessmentId = await resolveAssessmentId(input, ctx);
+  if (!assessmentId) {
+    return { ok: false, error: "No active assessment for this org." };
+  }
+  // Tenant-scope check: confirm caller owns the assessment before INSERT.
+  const owned = await getAssessmentForUser(assessmentId, ctx.userId);
+  if (!owned) {
+    return {
+      ok: false,
+      error: "Assessment not found or you do not have access.",
+    };
+  }
+  if (owned.organization.id !== ctx.organizationId) {
+    return { ok: false, error: "Assessment belongs to a different organization." };
+  }
+
+  const filed = await fileMaterialChange({
+    assessmentId,
+    organizationId: ctx.organizationId,
+    userId: ctx.userId,
+    reason,
+    changes,
+    requiresReassessment,
+  });
+
+  // When the change forces a fresh cycle, flip the assessment-level snapshot
+  // so the affirmation bar re-prompts. Annual-review interview field stays
+  // separate — this is a parallel signal, not a replacement.
+  if (requiresReassessment) {
+    const sql = getSql();
+    await sql`
+      UPDATE assessments
+      SET material_change_required_reassessment = TRUE,
+          material_change_details = ${JSON.stringify({
+            source: "file_material_change",
+            filing_id: filed.id,
+            reason,
+            filed_at: filed.filed_at,
+          })}::jsonb
+      WHERE id = ${assessmentId}
+        AND organization_id = ${ctx.organizationId}
+    `;
+  }
+
+  await recordAuditEvent({
+    action: "assessment.material_change_filed",
+    userId: ctx.userId,
+    organizationId: ctx.organizationId,
+    resourceType: "assessment",
+    resourceId: assessmentId,
+    metadata: {
+      filing_id: filed.id,
+      requires_reassessment: requiresReassessment,
+      reason_length: reason.length,
+    },
+  });
+
+  return {
+    ok: true,
+    data: {
+      filing_id: filed.id,
+      filed_at: filed.filed_at,
+      requires_reassessment: requiresReassessment,
+      message: requiresReassessment
+        ? "Material change filed. Reassessment is required — the affirmation will be re-prompted."
+        : "Material change filed. Current affirmation remains valid; this entry is on the audit log.",
     },
   };
 }

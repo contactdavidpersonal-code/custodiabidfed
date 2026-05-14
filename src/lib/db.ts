@@ -1118,6 +1118,30 @@ async function runInitDdl() {
       ON audit_log (action, created_at DESC)
   `;
 
+  // 32 CFR § 170.22(d) requires reaffirmation any time a material change
+  // affects the system or scope. This is a structured filing log — one row
+  // per declared change — distinct from the once-per-annual-cycle
+  // `assessments.material_change_reviewed_at` snapshot (which records that
+  // the user completed the annual interview, not that they filed a change).
+  // The Charlie `file_material_change` tool writes here; the affirmation
+  // bar surfaces unresolved entries.
+  await sql`
+    CREATE TABLE IF NOT EXISTS material_changes (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      reason TEXT NOT NULL,
+      changes JSONB NOT NULL DEFAULT '{}'::jsonb,
+      filed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      filed_by_user_id TEXT NOT NULL,
+      requires_reassessment BOOLEAN NOT NULL DEFAULT FALSE
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS material_changes_org_assessment_filed_idx
+      ON material_changes (organization_id, assessment_id, filed_at DESC)
+  `;
+
   // Postgres-backed fixed-window rate limiter (defense-in-depth against
   // LLM-cost abuse and waitlist spam). See src/lib/security/rate-limit.ts.
   await sql`
