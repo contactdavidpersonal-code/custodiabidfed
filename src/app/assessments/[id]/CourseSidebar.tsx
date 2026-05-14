@@ -37,7 +37,9 @@ type Props = {
  */
 export function CourseSidebar({ sections, currentStepHref }: Props) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(true);
+  // Collapsed by default so the main content gets the full canvas. The user can
+  // expand the rail and that preference is persisted in localStorage.
+  const [open, setOpen] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
   const [indicator, setIndicator] = useState<{ top: number; height: number; visible: boolean }>({
@@ -48,7 +50,7 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
 
   useEffect(() => {
     const v = window.localStorage.getItem(STORAGE_KEY);
-    if (v === "0") setOpen(false);
+    if (v === "1") setOpen(true);
     setHydrated(true);
   }, []);
 
