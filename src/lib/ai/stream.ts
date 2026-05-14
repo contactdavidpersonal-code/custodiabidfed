@@ -12,7 +12,25 @@ import {
   type ToolContext,
 } from "@/lib/ai/tools";
 
-const MAX_TOOL_ITERATIONS = 5;
+// 10 iterations gives legitimate multi-step workflows (e.g. "generate
+// the first four evidence artifacts now") enough headroom while still
+// capping runaway loops. The earlier value of 5 was right at the edge
+// for 4 serial generate_evidence_artifact calls + a closing summary
+// and caused the chat to silently stall when the user said "yes" to a
+// batched generate.
+const MAX_TOOL_ITERATIONS = 10;
+
+// Tools that represent real per-call progress (each invocation produces
+// a distinct artifact, response, or save) and therefore should NOT be
+// counted as "tool-only loop" turns even when emitted back-to-back with
+// no text reply. The circuit breaker still fires on actual loops — it
+// just no longer punishes legitimate bulk work like generating four
+// evidence files for one practice in a row.
+const BULK_PROGRESS_TOOLS = new Set([
+  "generate_evidence_artifact",
+  "set_objective_response",
+  "save_control_narrative",
+]);
 
 type TextBlock = { type: "text"; text: string };
 type ToolUseBlock = {
@@ -127,10 +145,20 @@ export function runOfficerAgentStream(
           // calls (no text reply to the user). 2+ in a row = the model is
           // looping. Force-break by injecting a synthetic instruction as
           // the tool results and letting the next iteration produce text.
+          //
+          // Exception: a turn made up entirely of BULK_PROGRESS_TOOLS
+          // (e.g. generating evidence artifacts one after another) does
+          // NOT increment the counter, because each call produces real
+          // distinct progress and is not a loop. This is what fixes the
+          // "chat got stuck on a loop when I wanted to make the evidence
+          // artifacts with Charlie" failure mode.
           const emittedText = turn.assistantBlocks.some(
             (b) => b.type === "text" && b.text.trim().length > 0,
           );
-          if (!emittedText) {
+          const allBulkProgress =
+            toolUses.length > 0 &&
+            toolUses.every((b) => BULK_PROGRESS_TOOLS.has(b.name));
+          if (!emittedText && !allBulkProgress) {
             consecutiveToolOnlyTurns++;
           } else {
             consecutiveToolOnlyTurns = 0;
