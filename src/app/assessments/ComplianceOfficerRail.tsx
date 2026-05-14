@@ -90,6 +90,11 @@ export function ComplianceOfficerRail({
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [streaming, setStreaming] = useState(false);
+  // While a turn is streaming we keep the composer fully writable. If the
+  // user hits Send/Enter before the officer finishes talking we stash the
+  // draft here and fire it the moment streaming flips false. Beats the
+  // “textarea is disabled for 8 seconds and looks broken” UX.
+  const pendingDraftRef = useRef<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [recap, setRecap] = useState<string | null>(null);
@@ -256,6 +261,19 @@ export function ComplianceOfficerRail({
     return () => window.clearTimeout(t);
   }, [streaming, hydrated]);
 
+  // Falling edge of `streaming`: if the user queued a message while the
+  // previous turn was still running, fire it now. We declare-then-assign
+  // `send` further down, so this effect references the latest closure via
+  // the ref-style accessor below.
+  const sendRef = useRef<((t?: string) => Promise<void>) | null>(null);
+  useEffect(() => {
+    if (streaming) return;
+    const queued = pendingDraftRef.current;
+    if (!queued) return;
+    pendingDraftRef.current = null;
+    sendRef.current?.(queued);
+  }, [streaming]);
+
   const toggle = useCallback(() => {
     setOpen((prev) => {
       window.localStorage.setItem(STORAGE_OPEN_KEY, prev ? "0" : "1");
@@ -291,7 +309,17 @@ export function ComplianceOfficerRail({
 
   const send = useCallback(async (textOverride?: string) => {
     const text = (textOverride ?? draft).trim();
-    if (!text || streaming) return;
+    if (!text) return;
+    // Mid-stream: don't drop the user's message and don't fire a second
+    // request. Stash the draft, clear the input so it feels submitted, and
+    // the streaming-falling-edge effect below will resend it for real.
+    if (streaming) {
+      if (textOverride === undefined) {
+        pendingDraftRef.current = text;
+        setDraft("");
+      }
+      return;
+    }
     setErrorMsg(null);
     if (textOverride === undefined) setDraft("");
     setStreaming(true);
@@ -462,6 +490,12 @@ export function ComplianceOfficerRail({
       setStreaming(false);
     }
   }, [draft, streaming, pathname, router]);
+
+  // Wire the ref so the queue-flush effect (declared earlier) calls the
+  // latest `send` closure.
+  useEffect(() => {
+    sendRef.current = send;
+  }, [send]);
 
   // Listen for `charlie-send-message` events fired by other parts of the
   // assessment workspace (e.g. the per-slot "Charlie generates from chat"
@@ -688,19 +722,40 @@ export function ComplianceOfficerRail({
               }
             }}
             rows={1}
-            placeholder="Ask the officer anything about CMMC L1…"
-            disabled={streaming}
-            className="min-h-[36px] max-h-40 flex-1 resize-none bg-transparent px-1 py-1 text-sm text-[#10231d] outline-none placeholder:text-[#9ab8ac] disabled:opacity-60"
+            placeholder={
+              streaming
+                ? "Officer is replying — type your next message…"
+                : "Ask the officer anything about CMMC L1…"
+            }
+            // Intentionally never disabled. Letting users type (and queue
+            // the next turn) while the officer is replying feels alive;
+            // greying the field out for 8 seconds reads as broken.
+            className="min-h-[36px] max-h-40 flex-1 resize-none bg-transparent px-1 py-1 text-sm text-[#10231d] outline-none placeholder:text-[#9ab8ac]"
           />
           <button
             type="submit"
-            disabled={streaming || !draft.trim()}
-            className="flex h-8 w-8 shrink-0 items-center justify-center  bg-[#0e2a23] text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:bg-[#cfe3d9] disabled:text-white"
-            aria-label="Send"
+            disabled={!draft.trim()}
+            className="flex h-8 w-8 shrink-0 items-center justify-center bg-[#0e2a23] text-[#bdf2cf] transition-colors hover:bg-[#10231d] disabled:cursor-not-allowed disabled:bg-[#cfe3d9] disabled:text-white"
+            aria-label={streaming ? "Queue message" : "Send"}
+            title={streaming ? "Queue this message for after the reply" : "Send"}
           >
-            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
-              <path d="M3.105 3.105a1 1 0 011.09-.217l13 5a1 1 0 010 1.864l-13 5a1 1 0 01-1.317-1.297L5.432 10 2.878 4.545a1 1 0 01.227-1.44z" />
-            </svg>
+            {streaming ? (
+              <svg
+                viewBox="0 0 20 20"
+                className="h-4 w-4 animate-spin"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden
+              >
+                <circle cx="10" cy="10" r="7" opacity="0.25" />
+                <path d="M17 10a7 7 0 0 1-7 7" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
+                <path d="M3.105 3.105a1 1 0 011.09-.217l13 5a1 1 0 010 1.864l-13 5a1 1 0 01-1.317-1.297L5.432 10 2.878 4.545a1 1 0 01.227-1.44z" />
+              </svg>
+            )}
           </button>
         </div>
         <p className="mt-1.5 px-1 text-[10px] leading-tight text-[#7a9c90]">
