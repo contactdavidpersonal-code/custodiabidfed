@@ -202,6 +202,11 @@ export function OnboardingChat({
               t.id === id ? { ...t, status: ok ? "done" : "error" } : t,
             ),
           }));
+        } else if (event === "navigate") {
+          const path = typeof data.path === "string" ? data.path : "";
+          if (path.startsWith("/") && !path.includes("://")) {
+            router.push(path);
+          }
         } else if (event === "error") {
           const msg = typeof data.message === "string" ? data.message : "unknown error";
           setErrorMsg(msg);
@@ -222,7 +227,7 @@ export function OnboardingChat({
       // Re-focus immediately on the same tick so caret stays in the box.
       requestAnimationFrame(() => inputRef.current?.focus());
     }
-  }, [draft, streaming, refreshStatus]);
+  }, [draft, streaming, refreshStatus, router]);
 
   return (
     <div className="flex min-h-0 flex-1 gap-4">

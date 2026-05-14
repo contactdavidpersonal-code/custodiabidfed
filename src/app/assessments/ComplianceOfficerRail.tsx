@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -77,6 +77,7 @@ export function ComplianceOfficerRail({
   const [recap, setRecap] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
+  const router = useRouter();
 
   // Hydrate UI state from localStorage after mount. setState-in-effect is the
   // simplest pattern here: the server can't know the user's saved preferences,
@@ -323,7 +324,13 @@ export function ComplianceOfficerRail({
               if (
                 tool?.name === "add_scope_item" ||
                 tool?.name === "add_esp" ||
-                tool?.name === "add_specialized_asset"
+                tool?.name === "add_specialized_asset" ||
+                tool?.name === "remove_scope_item" ||
+                tool?.name === "remove_esp" ||
+                tool?.name === "remove_specialized_asset" ||
+                tool?.name === "update_scope_item" ||
+                tool?.name === "update_esp" ||
+                tool?.name === "update_specialized_asset"
               ) {
                 window.dispatchEvent(
                   new CustomEvent("custodia:scope-changed", {
@@ -331,9 +338,21 @@ export function ComplianceOfficerRail({
                   }),
                 );
               }
+              if (tool?.name === "set_objective_status") {
+                window.dispatchEvent(
+                  new CustomEvent("custodia:objective-changed", {
+                    detail: { tool: tool.name },
+                  }),
+                );
+              }
             }
             return { ...m, tools };
           });
+        } else if (event === "navigate") {
+          const path = typeof data.path === "string" ? data.path : "";
+          if (path.startsWith("/") && !path.includes("://")) {
+            router.push(path);
+          }
         } else if (event === "error") {
           const msg = typeof data.message === "string" ? data.message : "unknown error";
           setErrorMsg(msg);
@@ -393,7 +412,7 @@ export function ComplianceOfficerRail({
     } finally {
       setStreaming(false);
     }
-  }, [draft, streaming, pathname]);
+  }, [draft, streaming, pathname, router]);
 
   // Listen for `charlie-send-message` events fired by other parts of the
   // assessment workspace (e.g. the per-slot "Charlie generates from chat"

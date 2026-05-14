@@ -20,7 +20,7 @@ import {
   tagArtifactPractice,
   updateBusinessProfile,
 } from "@/lib/assessment";
-import { playbookById } from "@/lib/playbook";
+import { playbookById, practiceObjectives, legacyToRequirement } from "@/lib/playbook";
 import { fiscalYearOf } from "@/lib/fiscal";
 import {
   controlCitations,
@@ -38,10 +38,22 @@ import {
   addEsp,
   addScopeItem,
   addSpecializedAsset,
+  deleteEsp,
+  deleteSpecializedAsset,
   listEsps,
   listScopeItems,
   listSpecializedAssets,
+  retireScopeItem,
+  updateEsp,
+  updateScopeItem,
+  updateSpecializedAsset,
 } from "@/lib/cmmc/scope";
+import {
+  listObjectivesForAssessment,
+  seedObjectiveRows,
+  setObjectiveResponse,
+  type ObjectiveResponseRow,
+} from "@/lib/cmmc/objectives";
 import {
   assembleBoundaryView,
   getScopeProfile,
@@ -576,6 +588,170 @@ export const officerTools = [
       required: ["topic", "urgency", "summary"],
     },
   },
+  {
+    name: "set_objective_status",
+    description:
+      "Set a NIST SP 800-171A objective verdict (a/b/c/d/e/f letter) for one of the 15 CMMC L1 practices. Status MET = the objective is satisfied. NOT_MET = a real gap that blocks attestation. NA = does-not-apply (must justify in rationale). EE = enduring exception (permanent business reason it can't be met). TD = temporary deficiency (will be remediated; pair with propose_milestone). Rationale is REQUIRED and MUST be at least 20 chars — this is what the user (or 3PAO) will read later. Do NOT call this without explicit user confirmation of the verdict and reasoning.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        control_id: {
+          type: "string",
+          description:
+            "Legacy CMMC L1 practice ID, e.g. 'AC.L1-3.1.1'. Must be one of the 15 v2.13 safeguarding requirements.",
+        },
+        letter: {
+          type: "string",
+          enum: ["a", "b", "c", "d", "e", "f"],
+          description: "The objective letter (a..f) under that practice.",
+        },
+        status: {
+          type: "string",
+          enum: ["MET", "NOT_MET", "NA", "EE", "TD"],
+          description:
+            "MET, NOT_MET, NA (not applicable), EE (enduring exception), TD (temporary deficiency).",
+        },
+        rationale: {
+          type: "string",
+          description:
+            "Plain-English justification (≥ 20 chars). For NA: why it doesn't apply. For EE: the permanent business reason. For TD: what's broken and the fix plan. For MET: what specifically satisfies it.",
+        },
+        assessment_id: {
+          type: "string",
+          description: "Optional assessment UUID; defaults to active.",
+        },
+      },
+      required: ["control_id", "letter", "status", "rationale"],
+    },
+  },
+  {
+    name: "remove_scope_item",
+    description:
+      "Retire (soft-delete) a scope_inventory row by id. Use when the user says 'we don't use that anymore' or 'drop that from scope'. Only retires — does not hard-delete history.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        id: { type: "string", description: "UUID of the scope_inventory row." },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "remove_esp",
+    description:
+      "Delete an ESP from esp_registry by id. Use only when the user confirms they no longer use that provider AT ALL. If they just changed plans, prefer update_esp.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        id: { type: "string", description: "UUID of the esp_registry row." },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "remove_specialized_asset",
+    description:
+      "Delete a specialized_assets row by id (IoT / OT / GFE / restricted). Use only on explicit user confirmation.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        id: { type: "string", description: "UUID of the specialized_assets row." },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "update_scope_item",
+    description:
+      "Patch fields on an existing scope_inventory row. Only supplied fields are changed; omitted fields stay as-is. Use this instead of remove+add when the user just wants to correct a detail.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        id: { type: "string", description: "UUID of the scope_inventory row." },
+        label: { type: "string", description: "New display label." },
+        role: { type: "string", description: "Role / description (people only)." },
+        handles_fci: {
+          type: "boolean",
+          description: "Whether this asset handles FCI.",
+        },
+        notes: { type: "string", description: "Free-text notes." },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "update_esp",
+    description:
+      "Patch fields on an existing esp_registry row. Only supplied fields are changed. Use to record a new attestation URL, change cmmc_status, fix contact email, etc.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        id: { type: "string", description: "UUID of the esp_registry row." },
+        name: { type: "string" },
+        vendor: { type: "string" },
+        services: { type: "string" },
+        cmmc_status: { type: "string" },
+        attestation_doc_url: { type: "string" },
+        contact_email: { type: "string" },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "update_specialized_asset",
+    description:
+      "Patch fields on an existing specialized_assets row. Only supplied fields are changed.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        id: { type: "string", description: "UUID of the specialized_assets row." },
+        label: { type: "string" },
+        asset_type: {
+          type: "string",
+          enum: specializedAssetTypes as unknown as string[],
+        },
+        description: { type: "string" },
+        handles_fci: { type: "boolean" },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "next_best_action",
+    description:
+      "Inspect the entire account state (business profile, SAM UEI, scope inventory, boundary, the 15 practices, affirming official, bid radar inbox) and return ONE prioritized next step plus any blockers. Returns {blockers:[…], next_step:{section, action, route, why}, pct_complete, est_minutes_to_attestation}. Use whenever the user asks 'what should I do next', 'where am I stuck', or after finishing a task.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        assessment_id: {
+          type: "string",
+          description: "Optional assessment UUID; defaults to active.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "navigate_user_to",
+    description:
+      "Ask the client to navigate the user to a specific in-app page (e.g. the page for a specific practice, the scope page, the boundary page, an opportunity, attestation). The path MUST start with '/' and MUST be one of: /onboard, /assessments, /assessments/{id}, /assessments/{id}/controls/{controlId}, /assessments/{id}/boundary, /assessments/{id}/scope, /opportunities, /opportunities/{id}, /dashboard, /profile, /admin/sam. Use ONLY when the next step is clearly on a different page than the user is currently viewing.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        path: {
+          type: "string",
+          description:
+            "Absolute in-app path starting with '/'. No external URLs, no protocol, no query strings with PII.",
+        },
+        reason: {
+          type: "string",
+          description:
+            "Short reason shown back to the user. e.g. 'Open AC.L1-3.1.1 to grade objective (a)'.",
+        },
+      },
+      required: ["path"],
+    },
+  },
 ];
 
 export type ToolContext = {
@@ -648,6 +824,24 @@ export async function executeOfficerTool(
         return await handleAddFciFlow(input, ctx);
       case "add_out_of_scope_item":
         return await handleAddOutOfScopeItem(input, ctx);
+      case "set_objective_status":
+        return await handleSetObjectiveStatus(input, ctx);
+      case "remove_scope_item":
+        return await handleRemoveScopeItem(input, ctx);
+      case "remove_esp":
+        return await handleRemoveEsp(input, ctx);
+      case "remove_specialized_asset":
+        return await handleRemoveSpecializedAsset(input, ctx);
+      case "update_scope_item":
+        return await handleUpdateScopeItem(input, ctx);
+      case "update_esp":
+        return await handleUpdateEspTool(input, ctx);
+      case "update_specialized_asset":
+        return await handleUpdateSpecializedAssetTool(input, ctx);
+      case "next_best_action":
+        return await handleNextBestAction(input, ctx);
+      case "navigate_user_to":
+        return await handleNavigateUserTo(input, ctx);
       default:
         return { ok: false, error: `Unknown tool: ${name}` };
     }
@@ -1806,6 +2000,587 @@ async function handleAddOutOfScopeItem(
       asset: item.asset,
       reason: item.reason,
       segregation: item.segregation,
+    },
+  };
+}
+
+// ---------- Tier 1.1: set_objective_status ----------
+
+const OBJECTIVE_LETTERS = new Set(["a", "b", "c", "d", "e", "f"]);
+
+async function handleSetObjectiveStatus(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  // audit:tenant-scoping skip — scopes via ctx.userId + getAssessmentForUser
+  const controlIdRaw =
+    typeof input.control_id === "string" ? input.control_id.trim() : "";
+  const letterRaw =
+    typeof input.letter === "string" ? input.letter.trim().toLowerCase() : "";
+  const statusRaw =
+    typeof input.status === "string" ? input.status.trim().toUpperCase() : "";
+  const rationaleRaw =
+    typeof input.rationale === "string" ? input.rationale.trim() : "";
+
+  if (!controlIdRaw) return { ok: false, error: "control_id is required." };
+  if (!legacyToRequirement[controlIdRaw]) {
+    return {
+      ok: false,
+      error: `Unknown control_id '${controlIdRaw}'. Must be one of the 15 CMMC L1 practices (e.g. AC.L1-3.1.1).`,
+    };
+  }
+  if (!OBJECTIVE_LETTERS.has(letterRaw)) {
+    return { ok: false, error: "letter must be one of: a, b, c, d, e, f." };
+  }
+  const objectives = practiceObjectives[controlIdRaw] ?? [];
+  const objective = objectives.find((o) => o.letter === letterRaw);
+  if (!objective) {
+    return {
+      ok: false,
+      error: `Practice ${controlIdRaw} has no objective '${letterRaw}'. Valid letters: ${objectives.map((o) => o.letter).join(", ")}.`,
+    };
+  }
+  if (!["MET", "NOT_MET", "NA", "EE", "TD"].includes(statusRaw)) {
+    return {
+      ok: false,
+      error: "status must be one of: MET, NOT_MET, NA, EE, TD.",
+    };
+  }
+  if (rationaleRaw.length < 20) {
+    return {
+      ok: false,
+      error:
+        "rationale must be at least 20 characters — write a real justification the user (and a future 3PAO) can read.",
+    };
+  }
+
+  const assessmentId = await resolveAssessmentId(input, ctx);
+  if (!assessmentId) {
+    return { ok: false, error: "No assessment found for this org." };
+  }
+  const assessment = await getAssessmentForUser(assessmentId, ctx.userId);
+  if (!assessment) {
+    return {
+      ok: false,
+      error: "You don't have access to that assessment.",
+    };
+  }
+
+  // Make sure the per-objective rows exist before UPSERT.
+  await seedObjectiveRows(assessmentId);
+
+  let update: Parameters<typeof setObjectiveResponse>[0]["update"];
+  let appliedStatus: string;
+  switch (statusRaw) {
+    case "MET":
+      update = {
+        status: "met",
+        narrative: rationaleRaw,
+        exceptionType: null,
+        exceptionNotes: null,
+      };
+      appliedStatus = "met";
+      break;
+    case "NOT_MET":
+      update = {
+        status: "not_met",
+        narrative: rationaleRaw,
+        exceptionType: null,
+        exceptionNotes: null,
+      };
+      appliedStatus = "not_met";
+      break;
+    case "NA":
+      update = {
+        status: "not_applicable",
+        naJustification: rationaleRaw,
+        exceptionType: null,
+        exceptionNotes: null,
+      };
+      appliedStatus = "not_applicable";
+      break;
+    case "EE":
+      update = {
+        status: "not_met",
+        exceptionType: "enduring",
+        exceptionNotes: rationaleRaw,
+      };
+      appliedStatus = "met (rolled up from enduring exception)";
+      break;
+    case "TD":
+      update = {
+        status: "not_met",
+        exceptionType: "temporary",
+        exceptionNotes: rationaleRaw,
+      };
+      appliedStatus =
+        "met (rolled up from temporary deficiency — pair with propose_milestone)";
+      break;
+    default:
+      return { ok: false, error: "unreachable status" };
+  }
+
+  await setObjectiveResponse({
+    assessmentId,
+    controlId: controlIdRaw,
+    objectiveLetter: letterRaw,
+    update,
+  });
+
+  return {
+    ok: true,
+    data: {
+      assessment_id: assessmentId,
+      control_id: controlIdRaw,
+      letter: letterRaw,
+      status: statusRaw,
+      applied: appliedStatus,
+      objective_ask: objective.ask,
+    },
+  };
+}
+
+// ---------- Tier 1.2: remove tools ----------
+
+async function handleRemoveScopeItem(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const id = typeof input.id === "string" ? input.id.trim() : "";
+  if (!id) return { ok: false, error: "id is required." };
+  const items = await listScopeItems(ctx.organizationId);
+  const existing = items.find((i) => i.id === id);
+  if (!existing) {
+    return {
+      ok: false,
+      error: "scope item not found (already removed or wrong id).",
+    };
+  }
+  await retireScopeItem(id, ctx.organizationId);
+  return {
+    ok: true,
+    data: {
+      id,
+      label: existing.label,
+      kind: existing.kind,
+      retired: true,
+    },
+  };
+}
+
+async function handleRemoveEsp(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const id = typeof input.id === "string" ? input.id.trim() : "";
+  if (!id) return { ok: false, error: "id is required." };
+  const items = await listEsps(ctx.organizationId);
+  const existing = items.find((i) => i.id === id);
+  if (!existing) {
+    return { ok: false, error: "ESP not found (already removed or wrong id)." };
+  }
+  await deleteEsp(id, ctx.organizationId);
+  return {
+    ok: true,
+    data: { id, name: existing.name, deleted: true },
+  };
+}
+
+async function handleRemoveSpecializedAsset(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const id = typeof input.id === "string" ? input.id.trim() : "";
+  if (!id) return { ok: false, error: "id is required." };
+  const items = await listSpecializedAssets(ctx.organizationId);
+  const existing = items.find((i) => i.id === id);
+  if (!existing) {
+    return {
+      ok: false,
+      error: "specialized asset not found (already removed or wrong id).",
+    };
+  }
+  await deleteSpecializedAsset(id, ctx.organizationId);
+  return {
+    ok: true,
+    data: {
+      id,
+      label: existing.label,
+      asset_type: existing.asset_type,
+      deleted: true,
+    },
+  };
+}
+
+// ---------- Tier 1.3: update tools ----------
+
+function strPatch(input: Record<string, unknown>, key: string): string | null | undefined {
+  if (!(key in input)) return undefined;
+  const v = input[key];
+  if (v === null) return null;
+  if (typeof v !== "string") return undefined;
+  const t = v.trim();
+  return t ? t : null;
+}
+
+async function handleUpdateScopeItem(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const id = typeof input.id === "string" ? input.id.trim() : "";
+  if (!id) return { ok: false, error: "id is required." };
+  const items = await listScopeItems(ctx.organizationId);
+  const existing = items.find((i) => i.id === id);
+  if (!existing) return { ok: false, error: "scope item not found." };
+
+  const labelPatch = strPatch(input, "label");
+  const rolePatch = strPatch(input, "role");
+  const notesPatch = strPatch(input, "notes");
+  const handlesFciPatch =
+    typeof input.handles_fci === "boolean" ? input.handles_fci : undefined;
+
+  const nextLabel = labelPatch === undefined ? existing.label : (labelPatch ?? existing.label);
+  if (!nextLabel) return { ok: false, error: "label cannot be cleared to empty." };
+
+  await updateScopeItem({
+    id,
+    organizationId: ctx.organizationId,
+    label: nextLabel,
+    role: rolePatch === undefined ? existing.role : rolePatch,
+    handlesFci: handlesFciPatch === undefined ? existing.handles_fci : handlesFciPatch,
+    notes: notesPatch === undefined ? existing.notes : notesPatch,
+  });
+
+  return {
+    ok: true,
+    data: {
+      id,
+      label: nextLabel,
+      kind: existing.kind,
+      handles_fci:
+        handlesFciPatch === undefined ? existing.handles_fci : handlesFciPatch,
+      updated: true,
+    },
+  };
+}
+
+async function handleUpdateEspTool(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const id = typeof input.id === "string" ? input.id.trim() : "";
+  if (!id) return { ok: false, error: "id is required." };
+  const items = await listEsps(ctx.organizationId);
+  const existing = items.find((i) => i.id === id);
+  if (!existing) return { ok: false, error: "ESP not found." };
+
+  const namePatch = strPatch(input, "name");
+  const nextName = namePatch === undefined ? existing.name : (namePatch ?? existing.name);
+  if (!nextName) return { ok: false, error: "name cannot be cleared to empty." };
+
+  const vendorPatch = strPatch(input, "vendor");
+  const servicesPatch = strPatch(input, "services");
+  const cmmcStatusPatch = strPatch(input, "cmmc_status");
+  const attestationPatch = strPatch(input, "attestation_doc_url");
+  const contactPatch = strPatch(input, "contact_email");
+
+  await updateEsp({
+    id,
+    organizationId: ctx.organizationId,
+    name: nextName,
+    vendor: vendorPatch === undefined ? existing.vendor : vendorPatch,
+    services: servicesPatch === undefined ? existing.services : servicesPatch,
+    cmmcStatus:
+      cmmcStatusPatch === undefined ? existing.cmmc_status : cmmcStatusPatch,
+    attestationDocUrl:
+      attestationPatch === undefined
+        ? existing.attestation_doc_url
+        : attestationPatch,
+    contactEmail:
+      contactPatch === undefined ? existing.contact_email : contactPatch,
+  });
+
+  return {
+    ok: true,
+    data: {
+      id,
+      name: nextName,
+      cmmc_status:
+        cmmcStatusPatch === undefined ? existing.cmmc_status : cmmcStatusPatch,
+      updated: true,
+    },
+  };
+}
+
+async function handleUpdateSpecializedAssetTool(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const id = typeof input.id === "string" ? input.id.trim() : "";
+  if (!id) return { ok: false, error: "id is required." };
+  const items = await listSpecializedAssets(ctx.organizationId);
+  const existing = items.find((i) => i.id === id);
+  if (!existing) return { ok: false, error: "specialized asset not found." };
+
+  const labelPatch = strPatch(input, "label");
+  const nextLabel = labelPatch === undefined ? existing.label : (labelPatch ?? existing.label);
+  if (!nextLabel) return { ok: false, error: "label cannot be cleared to empty." };
+
+  let nextAssetType: SpecializedAssetType = existing.asset_type;
+  if (typeof input.asset_type === "string") {
+    const candidate = input.asset_type.trim();
+    if (!(specializedAssetTypes as readonly string[]).includes(candidate)) {
+      return {
+        ok: false,
+        error: `asset_type must be one of: ${specializedAssetTypes.join(", ")}.`,
+      };
+    }
+    nextAssetType = candidate as SpecializedAssetType;
+  }
+  const descriptionPatch = strPatch(input, "description");
+  const handlesFciPatch =
+    typeof input.handles_fci === "boolean" ? input.handles_fci : undefined;
+
+  await updateSpecializedAsset({
+    id,
+    organizationId: ctx.organizationId,
+    label: nextLabel,
+    assetType: nextAssetType,
+    description:
+      descriptionPatch === undefined ? existing.description : descriptionPatch,
+    handlesFci:
+      handlesFciPatch === undefined ? existing.handles_fci : handlesFciPatch,
+  });
+
+  return {
+    ok: true,
+    data: {
+      id,
+      label: nextLabel,
+      asset_type: nextAssetType,
+      updated: true,
+    },
+  };
+}
+
+// ---------- Tier 1.4: next_best_action ----------
+
+async function handleNextBestAction(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  // audit:tenant-scoping skip — every fetch below is scoped via
+  // ctx.organizationId or via assessmentId resolved from ctx.userId.
+  const orgId = ctx.organizationId;
+
+  const [profile, scopeItems, esps, specialAssets, scopeProfile, opps, samRows] =
+    await Promise.all([
+      getBusinessProfile(orgId),
+      listScopeItems(orgId),
+      listEsps(orgId),
+      listSpecializedAssets(orgId),
+      getScopeProfile(orgId),
+      listOpportunitiesForOrg({ organizationId: orgId, limit: 5 }),
+      (async () => {
+        const sql = getSql();
+        const rows = (await sql`
+          SELECT sam_uei FROM organizations WHERE id = ${orgId}
+        `) as Array<{ sam_uei: string | null }>;
+        return rows[0]?.sam_uei ?? null;
+      })(),
+    ]);
+
+  const assessmentId = await resolveAssessmentId(input, ctx);
+  let objectives: ObjectiveResponseRow[] = [];
+  if (assessmentId) {
+    const assessment = await getAssessmentForUser(assessmentId, ctx.userId);
+    if (assessment) {
+      await seedObjectiveRows(assessmentId);
+      objectives = await listObjectivesForAssessment(assessmentId);
+    }
+  }
+
+  const blockers: Array<{ section: string; reason: string; route: string }> = [];
+
+  const profileScore = profile?.completeness_score ?? 0;
+  if (profileScore < 40) {
+    blockers.push({
+      section: "business_profile",
+      reason:
+        "Business profile is below 40% complete — the AI needs basic context (what you do, where, who you serve) before it can tailor anything.",
+      route: "/onboard",
+    });
+  }
+
+  if (!samRows) {
+    blockers.push({
+      section: "sam_registration",
+      reason:
+        "SAM.gov UEI is missing. Federal primes require an active SAM registration before contract award.",
+      route: "/admin/sam",
+    });
+  }
+
+  if (scopeItems.length === 0 && esps.length === 0 && specialAssets.length === 0) {
+    blockers.push({
+      section: "scope_inventory",
+      reason:
+        "Scope inventory is empty. The 15 L1 practices map to assets — without at least a few people / systems / facilities the boundary is undefined.",
+      route: assessmentId ? `/assessments/${assessmentId}/scope` : "/assessments",
+    });
+  }
+
+  if (!scopeProfile.affirming_official) {
+    blockers.push({
+      section: "affirming_official",
+      reason:
+        "No affirming official recorded. Required to submit the annual self-attestation.",
+      route: assessmentId ? `/assessments/${assessmentId}/boundary` : "/assessments",
+    });
+  }
+
+  // Practice progress
+  const totalObjectives = objectives.length;
+  const answeredObjectives = objectives.filter(
+    (o) => o.status !== "unanswered",
+  ).length;
+  const unmetObjectives = objectives.filter(
+    (o) => o.status === "not_met" && !o.exception_type,
+  );
+
+  // Composite percent
+  const pieces = [
+    Math.min(profileScore, 100),
+    samRows ? 100 : 0,
+    scopeItems.length + esps.length + specialAssets.length > 0 ? 100 : 0,
+    scopeProfile.affirming_official ? 100 : 0,
+    totalObjectives > 0
+      ? Math.round((answeredObjectives / totalObjectives) * 100)
+      : 0,
+  ];
+  const pctComplete = Math.round(pieces.reduce((a, b) => a + b, 0) / pieces.length);
+
+  // Pick the single next step (highest-priority blocker, else next gap)
+  let nextStep: { section: string; action: string; route: string; why: string };
+  if (blockers.length > 0) {
+    const b = blockers[0];
+    nextStep = {
+      section: b.section,
+      action: `Resolve blocker: ${b.section}`,
+      route: b.route,
+      why: b.reason,
+    };
+  } else if (unmetObjectives.length > 0) {
+    const u = unmetObjectives[0];
+    nextStep = {
+      section: "practice",
+      action: `Grade objective ${u.objective_letter} on ${u.control_id}`,
+      route: assessmentId
+        ? `/assessments/${assessmentId}/controls/${u.control_id}`
+        : "/assessments",
+      why: `Objective ${u.control_id}.${u.objective_letter} is NOT_MET with no exception — either remediate, mark EE/TD with rationale, or attach evidence.`,
+    };
+  } else if (answeredObjectives < totalObjectives) {
+    const u = objectives.find((o) => o.status === "unanswered");
+    nextStep = {
+      section: "practice",
+      action: u
+        ? `Grade objective ${u.objective_letter} on ${u.control_id}`
+        : "Continue grading practices",
+      route:
+        u && assessmentId
+          ? `/assessments/${assessmentId}/controls/${u.control_id}`
+          : assessmentId
+            ? `/assessments/${assessmentId}`
+            : "/assessments",
+      why: `${totalObjectives - answeredObjectives} objectives still unanswered.`,
+    };
+  } else if (opps.length === 0) {
+    nextStep = {
+      section: "bid_radar",
+      action: "Set up bid radar to find matching SAM.gov opportunities",
+      route: "/opportunities",
+      why: "Once attestation is ready, the next leverage point is sourcing matching contract opportunities.",
+    };
+  } else {
+    nextStep = {
+      section: "attestation",
+      action: "Submit annual self-attestation",
+      route: assessmentId ? `/assessments/${assessmentId}` : "/assessments",
+      why: "All blockers cleared and every objective answered — the cycle is ready to attest.",
+    };
+  }
+
+  // Rough minutes-to-attestation estimate
+  const remainingObjectives = Math.max(totalObjectives - answeredObjectives, 0);
+  const estMinutes =
+    blockers.length * 10 + remainingObjectives * 3 + (samRows ? 0 : 15);
+
+  return {
+    ok: true,
+    data: {
+      pct_complete: pctComplete,
+      est_minutes_to_attestation: estMinutes,
+      blockers,
+      next_step: nextStep,
+      counts: {
+        scope_items: scopeItems.length,
+        esps: esps.length,
+        specialized_assets: specialAssets.length,
+        objectives_total: totalObjectives,
+        objectives_answered: answeredObjectives,
+        objectives_unmet_no_exception: unmetObjectives.length,
+        opportunities_inbox: opps.length,
+      },
+    },
+  };
+}
+
+// ---------- Tier 1.5: navigate_user_to ----------
+
+const NAVIGATE_ALLOWED_PREFIXES = [
+  "/onboard",
+  "/assessments",
+  "/opportunities",
+  "/dashboard",
+  "/profile",
+  "/admin/sam",
+];
+
+async function handleNavigateUserTo(
+  input: Record<string, unknown>,
+  _ctx: ToolContext,
+): Promise<ToolResult> {
+  // audit:tenant-scoping skip — emits a client-side navigation hint only; no data read or written.
+  void _ctx;
+  const raw = typeof input.path === "string" ? input.path.trim() : "";
+  if (!raw) return { ok: false, error: "path is required." };
+  if (!raw.startsWith("/")) {
+    return {
+      ok: false,
+      error: "path must start with '/' (in-app absolute path only — no external URLs).",
+    };
+  }
+  if (raw.includes("://") || raw.includes("//")) {
+    return { ok: false, error: "path must not contain a protocol or '//'." };
+  }
+  // Strip query/hash for the allow-list check, but keep them for the emit.
+  const pathOnly = raw.split(/[?#]/)[0];
+  const allowed = NAVIGATE_ALLOWED_PREFIXES.some(
+    (p) => pathOnly === p || pathOnly.startsWith(`${p}/`),
+  );
+  if (!allowed) {
+    return {
+      ok: false,
+      error: `path '${pathOnly}' is not in the allowed navigation set: ${NAVIGATE_ALLOWED_PREFIXES.join(", ")}.`,
+    };
+  }
+  const reason = typeof input.reason === "string" ? input.reason.trim() : "";
+  return {
+    ok: true,
+    data: {
+      navigate: raw,
+      reason: reason || undefined,
     },
   };
 }

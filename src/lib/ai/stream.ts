@@ -267,6 +267,18 @@ export function runOfficerAgentStream(
                 if (addKey) seenAddKeysThisMessage.add(addKey);
               }
               send("tool_end", { id: block.id, ok: result.ok });
+              // Tier 1.5: navigate_user_to (and any other tool) may include a
+              // `navigate` field in its data payload — surface it as a
+              // dedicated SSE event so the client can router.push() in
+              // response. Server-side allow-list already enforced inside
+              // the handler; we still validate it starts with '/' here as
+              // a defense-in-depth check.
+              if (result.ok && result.data && typeof result.data === "object") {
+                const nav = (result.data as { navigate?: unknown }).navigate;
+                if (typeof nav === "string" && nav.startsWith("/") && !nav.includes("://")) {
+                  send("navigate", { path: nav });
+                }
+              }
               // Scrub high-risk identifiers from the tool result before
               // it is sent BACK to Anthropic in the next iteration. The
               // real (unscrubbed) value is still persisted encrypted on
