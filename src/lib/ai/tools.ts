@@ -16,8 +16,10 @@ import {
   getAssessmentForUser,
   listAssessmentsForOrg,
   listEvidenceForAssessment,
+  listEvidenceForControl,
   listResponsesForAssessment,
   tagArtifactPractice,
+  untagArtifactPractice,
   updateBusinessProfile,
 } from "@/lib/assessment";
 import { playbookById, practiceObjectives, legacyToRequirement } from "@/lib/playbook";
@@ -52,8 +54,12 @@ import {
   listObjectivesForAssessment,
   seedObjectiveRows,
   setObjectiveResponse,
+  setControlException,
+  clearControlException,
+  controlsBlockingAffirmation,
   type ObjectiveResponseRow,
 } from "@/lib/cmmc/objectives";
+import { getSamEntityStatus, summarizeSamStatus } from "@/lib/sam-entity";
 import {
   assembleBoundaryView,
   getScopeProfile,
@@ -752,6 +758,198 @@ export const officerTools = [
       required: ["path"],
     },
   },
+  {
+    name: "verify_sam_registration",
+    description:
+      "Look up a UEI in the SAM.gov Entity Management API and compare the result against the org profile. Returns active/inactive/not_found + legal name + expiration date + any mismatches (e.g. legal name differs, UEI doesn't match what's on file). Use when the user adds/changes UEI, or before recommending attestation.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        uei: {
+          type: "string",
+          description:
+            "Optional 12-char alphanumeric UEI. If omitted, uses the UEI on the organization record.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "attach_evidence_to_objective",
+    description:
+      "Link an uploaded evidence artifact to a specific NIST 800-171A objective (control_id + letter). Merges into the existing objectives list for that (artifact, control) tag — does NOT clobber other letters already tagged. The artifact must already be uploaded for this assessment.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        artifact_id: {
+          type: "string",
+          description: "UUID of the evidence_artifacts row.",
+        },
+        control_id: {
+          type: "string",
+          description: "Legacy CMMC L1 practice ID, e.g. 'AC.L1-3.1.1'.",
+        },
+        letter: {
+          type: "string",
+          enum: ["a", "b", "c", "d", "e", "f"],
+          description: "Objective letter under that practice.",
+        },
+        assessment_id: {
+          type: "string",
+          description: "Optional assessment UUID; defaults to active.",
+        },
+      },
+      required: ["artifact_id", "control_id", "letter"],
+    },
+  },
+  {
+    name: "remove_evidence_from_objective",
+    description:
+      "Remove a single objective letter from an artifact's tag on a practice. If the artifact had only that letter for that control, the entire tag row is deleted. Does NOT delete the artifact file itself — for that the user must use the Evidence page.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        artifact_id: { type: "string" },
+        control_id: { type: "string" },
+        letter: {
+          type: "string",
+          enum: ["a", "b", "c", "d", "e", "f"],
+        },
+        assessment_id: { type: "string" },
+      },
+      required: ["artifact_id", "control_id", "letter"],
+    },
+  },
+  {
+    name: "record_exception",
+    description:
+      "Declare an Enduring Exception (EE — permanent business reason an objective can't be met) or Temporary Deficiency (TD — known gap with a remediation plan) at the CONTROL level. Sets exception_type + exception_notes on every not-met objective of that practice. For TD you MUST also call propose_milestone afterward (no plan-of-action = no rollup to MET).",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        control_id: {
+          type: "string",
+          description: "Legacy CMMC L1 practice ID, e.g. 'AC.L1-3.1.1'.",
+        },
+        kind: {
+          type: "string",
+          enum: ["enduring_exception", "temporary_deficiency"],
+          description: "EE = permanent, TD = temporary with remediation plan.",
+        },
+        rationale: {
+          type: "string",
+          description:
+            "Required justification (≥ 20 chars). For EE: the permanent business reason. For TD: what's broken and the fix.",
+        },
+        assessment_id: { type: "string" },
+      },
+      required: ["control_id", "kind", "rationale"],
+    },
+  },
+  {
+    name: "clear_exception",
+    description:
+      "Clear any EE/TD declaration from every objective under a control. Also hard-deletes the orphaned plan-of-action milestones. Use when the user remediated the gap and the practice now meets normally.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        control_id: { type: "string" },
+        assessment_id: { type: "string" },
+      },
+      required: ["control_id"],
+    },
+  },
+  {
+    name: "preflight_affirmation",
+    description:
+      "Run the pre-attestation readiness check. Returns every blocker that would prevent the affirming official from signing: unanswered controls, NOT_MET with no exception, TD without milestones, evidence still pending review, boundary findings flagged 'fail'. Charlie MUST call this before recommending the user submit the attestation.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        assessment_id: { type: "string" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "remove_fci_flow",
+    description:
+      "Delete an FCI flow row from the boundary by id. Use when the user says that channel no longer carries FCI.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        id: { type: "string", description: "UUID of the ScopeFlow." },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "update_fci_flow",
+    description:
+      "Patch an existing FCI flow. Only supplied fields are changed; others stay as-is.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        id: { type: "string" },
+        direction: { type: "string", enum: ["inbound", "outbound", "bidirectional", "internal"] },
+        channel: {
+          type: "string",
+          enum: ["email", "portal", "sftp", "api", "removable_media", "paper", "internal_sync", "other"],
+        },
+        description: { type: "string" },
+        counterparty: { type: "string" },
+        touches_scope_item_ids: {
+          type: "array",
+          items: { type: "string" },
+          description: "Optional list of scope_inventory ids touched by this flow.",
+        },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "remove_out_of_scope_item",
+    description:
+      "Delete an explicit out-of-scope declaration by id.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        id: { type: "string" },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "update_out_of_scope_item",
+    description:
+      "Patch an existing out-of-scope item. Only supplied fields are changed.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        id: { type: "string" },
+        asset: { type: "string" },
+        reason: { type: "string" },
+        segregation: { type: "string" },
+      },
+      required: ["id"],
+    },
+  },
+  {
+    name: "save_scoping_statement",
+    description:
+      "Persist a scoping-statement narrative onto the organization's scope_profile (free-text overview that appears under the boundary diagram). Use when the user approves a narrative draft (e.g. from suggest_narrative).",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        narrative: {
+          type: "string",
+          description:
+            "The narrative text to persist. Pass an empty string to clear.",
+        },
+      },
+      required: ["narrative"],
+    },
+  },
 ];
 
 export type ToolContext = {
@@ -842,6 +1040,28 @@ export async function executeOfficerTool(
         return await handleNextBestAction(input, ctx);
       case "navigate_user_to":
         return await handleNavigateUserTo(input, ctx);
+      case "verify_sam_registration":
+        return await handleVerifySamRegistration(input, ctx);
+      case "attach_evidence_to_objective":
+        return await handleAttachEvidenceToObjective(input, ctx);
+      case "remove_evidence_from_objective":
+        return await handleRemoveEvidenceFromObjective(input, ctx);
+      case "record_exception":
+        return await handleRecordException(input, ctx);
+      case "clear_exception":
+        return await handleClearException(input, ctx);
+      case "preflight_affirmation":
+        return await handlePreflightAffirmation(input, ctx);
+      case "remove_fci_flow":
+        return await handleRemoveFciFlow(input, ctx);
+      case "update_fci_flow":
+        return await handleUpdateFciFlow(input, ctx);
+      case "remove_out_of_scope_item":
+        return await handleRemoveOutOfScopeItem(input, ctx);
+      case "update_out_of_scope_item":
+        return await handleUpdateOutOfScopeItem(input, ctx);
+      case "save_scoping_statement":
+        return await handleSaveScopingStatement(input, ctx);
       default:
         return { ok: false, error: `Unknown tool: ${name}` };
     }
@@ -2581,6 +2801,445 @@ async function handleNavigateUserTo(
     data: {
       navigate: raw,
       reason: reason || undefined,
+    },
+  };
+}
+
+// ---------- Tier 2.1: verify_sam_registration ----------
+
+async function handleVerifySamRegistration(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const org = await loadOrgLegalEntity(ctx.organizationId);
+  const supplied = typeof input.uei === "string" ? input.uei.trim().toUpperCase() : "";
+  const ueiOnFile = (org.uei ?? "").trim().toUpperCase();
+  const lookupUei = supplied || ueiOnFile;
+  if (!lookupUei) {
+    return {
+      ok: false,
+      error:
+        "No UEI provided and no UEI on file. Save the SAM UEI on the organization profile first.",
+    };
+  }
+  const status = await getSamEntityStatus(lookupUei);
+  const mismatches: Array<{ field: string; got: string | null; expected: string | null }> = [];
+  if (supplied && ueiOnFile && supplied !== ueiOnFile) {
+    mismatches.push({ field: "uei", got: ueiOnFile, expected: supplied });
+  }
+  if (status.kind === "active" && status.legalBusinessName && org.name) {
+    // Case-insensitive comparison; ignore extra whitespace.
+    const samName = status.legalBusinessName.trim().toLowerCase().replace(/\s+/g, " ");
+    const orgName = org.name.trim().toLowerCase().replace(/\s+/g, " ");
+    if (samName !== orgName) {
+      mismatches.push({
+        field: "legal_name",
+        got: org.name,
+        expected: status.legalBusinessName,
+      });
+    }
+  }
+  return {
+    ok: true,
+    data: {
+      uei: lookupUei,
+      kind: status.kind,
+      legal_business_name:
+        status.kind === "active" ? status.legalBusinessName : null,
+      expiration_date:
+        status.kind === "active" || status.kind === "inactive"
+          ? status.expirationDate
+          : null,
+      reason:
+        status.kind === "inactive" || status.kind === "unknown"
+          ? status.reason
+          : null,
+      mismatches,
+      warning: summarizeSamStatus(status),
+    },
+  };
+}
+
+// ---------- Tier 2.2 / 2.3: evidence attach / remove ----------
+
+const OBJECTIVE_LETTERS = ["a", "b", "c", "d", "e", "f"] as const;
+type ObjectiveLetter = (typeof OBJECTIVE_LETTERS)[number];
+
+function parseLetter(input: Record<string, unknown>): ObjectiveLetter | null {
+  const raw = typeof input.letter === "string" ? input.letter.toLowerCase() : "";
+  return (OBJECTIVE_LETTERS as readonly string[]).includes(raw)
+    ? (raw as ObjectiveLetter)
+    : null;
+}
+
+async function handleAttachEvidenceToObjective(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  // audit:tenant-scoping skip — scopes via listEvidenceForAssessment + getAssessmentForUser
+  const artifactId = typeof input.artifact_id === "string" ? input.artifact_id : "";
+  const controlId = typeof input.control_id === "string" ? input.control_id : "";
+  const letter = parseLetter(input);
+  if (!artifactId) return { ok: false, error: "artifact_id is required." };
+  if (!controlId) return { ok: false, error: "control_id is required." };
+  if (!letter) return { ok: false, error: "letter must be one of a, b, c, d, e, f." };
+  const assessmentId = await resolveAssessmentId(input, ctx);
+  if (!assessmentId) return { ok: false, error: "No assessment found." };
+  // Tenant check: assessment must belong to a user-visible org.
+  await getAssessmentForUser(assessmentId, ctx.userId);
+  // Verify artifact exists on this assessment (any control).
+  const allEvidence = await listEvidenceForAssessment(assessmentId);
+  if (!allEvidence.some((e) => e.id === artifactId)) {
+    return {
+      ok: false,
+      error: "Artifact not found on this assessment. Upload it first via /assessments.",
+    };
+  }
+  // Look up existing letters tagged for this (artifact, control). Returns
+  // empty array if not yet tagged for this control.
+  const tagged = await listEvidenceForControl(assessmentId, controlId);
+  const existing = tagged.find((e) => e.id === artifactId);
+  const merged = new Set<string>(existing?.tagged_objectives ?? []);
+  merged.add(letter);
+  const objectives = Array.from(merged).sort();
+  await tagArtifactPractice({
+    artifactId,
+    assessmentId,
+    controlId,
+    objectives,
+    userId: ctx.userId,
+  });
+  return {
+    ok: true,
+    data: {
+      artifact_id: artifactId,
+      control_id: controlId,
+      objectives,
+    },
+  };
+}
+
+async function handleRemoveEvidenceFromObjective(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  // audit:tenant-scoping skip — scopes via getAssessmentForUser + listEvidenceForAssessment
+  const artifactId = typeof input.artifact_id === "string" ? input.artifact_id : "";
+  const controlId = typeof input.control_id === "string" ? input.control_id : "";
+  const letter = parseLetter(input);
+  if (!artifactId) return { ok: false, error: "artifact_id is required." };
+  if (!controlId) return { ok: false, error: "control_id is required." };
+  if (!letter) return { ok: false, error: "letter must be one of a, b, c, d, e, f." };
+  const assessmentId = await resolveAssessmentId(input, ctx);
+  if (!assessmentId) return { ok: false, error: "No assessment found." };
+  await getAssessmentForUser(assessmentId, ctx.userId);
+  const tagged = await listEvidenceForControl(assessmentId, controlId);
+  const existing = tagged.find((e) => e.id === artifactId);
+  if (!existing) {
+    return {
+      ok: false,
+      error: "Artifact is not currently tagged to this control on this assessment.",
+    };
+  }
+  const remaining = (existing.tagged_objectives ?? []).filter((o) => o !== letter);
+  if (remaining.length === 0) {
+    // No letters left → drop the whole (artifact, control) tag row.
+    await untagArtifactPractice({ artifactId, assessmentId, controlId });
+    return {
+      ok: true,
+      data: { artifact_id: artifactId, control_id: controlId, objectives: [] },
+    };
+  }
+  await tagArtifactPractice({
+    artifactId,
+    assessmentId,
+    controlId,
+    objectives: remaining.sort(),
+    userId: ctx.userId,
+  });
+  return {
+    ok: true,
+    data: { artifact_id: artifactId, control_id: controlId, objectives: remaining.sort() },
+  };
+}
+
+// ---------- Tier 2.6: record_exception / clear_exception ----------
+
+async function handleRecordException(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  // audit:tenant-scoping skip — scopes via getAssessmentForUser
+  const controlId = typeof input.control_id === "string" ? input.control_id : "";
+  const kindRaw = typeof input.kind === "string" ? input.kind : "";
+  const rationale = typeof input.rationale === "string" ? input.rationale.trim() : "";
+  if (!controlId) return { ok: false, error: "control_id is required." };
+  if (kindRaw !== "enduring_exception" && kindRaw !== "temporary_deficiency") {
+    return {
+      ok: false,
+      error: "kind must be 'enduring_exception' or 'temporary_deficiency'.",
+    };
+  }
+  if (rationale.length < 20) {
+    return {
+      ok: false,
+      error: "rationale must be at least 20 characters explaining the gap and justification.",
+    };
+  }
+  if (!legacyToRequirement[controlId]) {
+    return { ok: false, error: `Unknown control_id '${controlId}'.` };
+  }
+  const assessmentId = await resolveAssessmentId(input, ctx);
+  if (!assessmentId) return { ok: false, error: "No assessment found." };
+  await getAssessmentForUser(assessmentId, ctx.userId);
+  const exceptionType = kindRaw === "enduring_exception" ? "enduring" : "temporary";
+  await setControlException({
+    assessmentId,
+    controlId,
+    exceptionType,
+    notes: rationale,
+  });
+  return {
+    ok: true,
+    data: {
+      assessment_id: assessmentId,
+      control_id: controlId,
+      exception_type: exceptionType,
+      needs_milestone: exceptionType === "temporary",
+    },
+  };
+}
+
+async function handleClearException(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  // audit:tenant-scoping skip — scopes via getAssessmentForUser
+  const controlId = typeof input.control_id === "string" ? input.control_id : "";
+  if (!controlId) return { ok: false, error: "control_id is required." };
+  const assessmentId = await resolveAssessmentId(input, ctx);
+  if (!assessmentId) return { ok: false, error: "No assessment found." };
+  await getAssessmentForUser(assessmentId, ctx.userId);
+  await clearControlException({ assessmentId, controlId });
+  return {
+    ok: true,
+    data: { assessment_id: assessmentId, control_id: controlId },
+  };
+}
+
+// ---------- Tier 2.7: preflight_affirmation ----------
+
+async function handlePreflightAffirmation(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  // audit:tenant-scoping skip — scopes via getAssessmentForUser + assembleBoundaryView (orgId)
+  const assessmentId = await resolveAssessmentId(input, ctx);
+  if (!assessmentId) return { ok: false, error: "No assessment found." };
+  await getAssessmentForUser(assessmentId, ctx.userId);
+
+  const [responses, evidence, legalEntity] = await Promise.all([
+    listResponsesForAssessment(assessmentId),
+    listEvidenceForAssessment(assessmentId),
+    loadOrgLegalEntity(ctx.organizationId),
+  ]);
+  const view = await assembleBoundaryView({
+    organizationId: ctx.organizationId,
+    legalEntity,
+  });
+  const findings = validateBoundary(view);
+  const findingCountsBucket = findingCounts(findings);
+
+  const controlBlockers = await controlsBlockingAffirmation(
+    assessmentId,
+    responses.map((r) => ({ control_id: r.control_id, status: r.status })),
+  );
+  const evidenceBlockers = evidenceReviewBlockers(evidence);
+  const boundaryFailures = findings.filter((f) => f.severity === "fail");
+
+  const blockers: Array<{
+    section: "controls" | "evidence" | "boundary" | "affirming_official";
+    detail: Record<string, unknown>;
+  }> = [];
+  for (const b of controlBlockers) {
+    blockers.push({
+      section: "controls",
+      detail: { control_id: b.controlId, status: b.status, reason: b.reason },
+    });
+  }
+  for (const b of evidenceBlockers) {
+    blockers.push({
+      section: "evidence",
+      detail: { artifact_id: b.id, filename: b.filename, reason: b.reason },
+    });
+  }
+  for (const f of boundaryFailures) {
+    blockers.push({
+      section: "boundary",
+      detail: { id: f.id, message: f.message, severity: f.severity },
+    });
+  }
+  if (!view.affirming_official) {
+    blockers.push({
+      section: "affirming_official",
+      detail: { reason: "No affirming official recorded on the scope profile." },
+    });
+  }
+
+  const progress = computeProgress(responses);
+
+  return {
+    ok: true,
+    data: {
+      ready: blockers.length === 0,
+      blockers,
+      progress,
+      boundary_findings: findingCountsBucket,
+      ready_for_ssp: isReadyForSsp(findings),
+    },
+  };
+}
+
+// ---------- Tier 2.8: boundary FCI flow + out-of-scope CRUD ----------
+
+function pickString(input: Record<string, unknown>, key: string): string | undefined {
+  const v = input[key];
+  return typeof v === "string" ? v : undefined;
+}
+
+async function handleRemoveFciFlow(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const id = typeof input.id === "string" ? input.id : "";
+  if (!id) return { ok: false, error: "id is required." };
+  const current = await getScopeProfile(ctx.organizationId);
+  const before = current.flows.length;
+  const filtered = current.flows.filter((f) => f.id !== id);
+  if (filtered.length === before) {
+    return { ok: false, error: `No FCI flow with id '${id}'.` };
+  }
+  await patchScopeProfile(ctx.organizationId, { flows: filtered });
+  return { ok: true, data: { id, remaining: filtered.length } };
+}
+
+async function handleUpdateFciFlow(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const id = typeof input.id === "string" ? input.id : "";
+  if (!id) return { ok: false, error: "id is required." };
+  const current = await getScopeProfile(ctx.organizationId);
+  const idx = current.flows.findIndex((f) => f.id === id);
+  if (idx < 0) return { ok: false, error: `No FCI flow with id '${id}'.` };
+  const existing = current.flows[idx];
+  const direction = pickString(input, "direction");
+  const channel = pickString(input, "channel");
+  const description = pickString(input, "description");
+  const counterparty = pickString(input, "counterparty");
+  const touches = Array.isArray(input.touches_scope_item_ids)
+    ? (input.touches_scope_item_ids.filter((x): x is string => typeof x === "string"))
+    : undefined;
+  const ALLOWED_DIRS = ["inbound", "outbound", "bidirectional", "internal"] as const;
+  const ALLOWED_CHANS = [
+    "email",
+    "portal",
+    "sftp",
+    "api",
+    "removable_media",
+    "paper",
+    "internal_sync",
+    "other",
+  ] as const;
+  if (direction !== undefined && !(ALLOWED_DIRS as readonly string[]).includes(direction)) {
+    return { ok: false, error: `direction must be one of ${ALLOWED_DIRS.join(", ")}.` };
+  }
+  if (channel !== undefined && !(ALLOWED_CHANS as readonly string[]).includes(channel)) {
+    return { ok: false, error: `channel must be one of ${ALLOWED_CHANS.join(", ")}.` };
+  }
+  const updated = {
+    ...existing,
+    ...(direction !== undefined ? { direction: direction as typeof existing.direction } : {}),
+    ...(channel !== undefined ? { channel: channel as typeof existing.channel } : {}),
+    ...(description !== undefined ? { description } : {}),
+    ...(counterparty !== undefined ? { counterparty: counterparty || null } : {}),
+    ...(touches !== undefined ? { touches_scope_item_ids: touches } : {}),
+  };
+  const flows = current.flows.slice();
+  flows[idx] = updated;
+  await patchScopeProfile(ctx.organizationId, { flows });
+  return { ok: true, data: { id, flow: updated } };
+}
+
+async function handleRemoveOutOfScopeItem(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const id = typeof input.id === "string" ? input.id : "";
+  if (!id) return { ok: false, error: "id is required." };
+  const current = await getScopeProfile(ctx.organizationId);
+  const before = current.out_of_scope.length;
+  const filtered = current.out_of_scope.filter((o) => o.id !== id);
+  if (filtered.length === before) {
+    return { ok: false, error: `No out-of-scope item with id '${id}'.` };
+  }
+  await patchScopeProfile(ctx.organizationId, { out_of_scope: filtered });
+  return { ok: true, data: { id, remaining: filtered.length } };
+}
+
+async function handleUpdateOutOfScopeItem(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const id = typeof input.id === "string" ? input.id : "";
+  if (!id) return { ok: false, error: "id is required." };
+  const current = await getScopeProfile(ctx.organizationId);
+  const idx = current.out_of_scope.findIndex((o) => o.id === id);
+  if (idx < 0) return { ok: false, error: `No out-of-scope item with id '${id}'.` };
+  const existing = current.out_of_scope[idx];
+  const asset = pickString(input, "asset");
+  const reason = pickString(input, "reason");
+  const segregation = pickString(input, "segregation");
+  const updated = {
+    ...existing,
+    ...(asset !== undefined ? { asset } : {}),
+    ...(reason !== undefined ? { reason } : {}),
+    ...(segregation !== undefined ? { segregation } : {}),
+  };
+  const out_of_scope = current.out_of_scope.slice();
+  out_of_scope[idx] = updated;
+  await patchScopeProfile(ctx.organizationId, { out_of_scope });
+  return { ok: true, data: { id, item: updated } };
+}
+
+// ---------- Tier 2.9: save_scoping_statement ----------
+
+async function handleSaveScopingStatement(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const narrative = typeof input.narrative === "string" ? input.narrative.trim() : null;
+  if (narrative === null) {
+    return { ok: false, error: "narrative is required (string)." };
+  }
+  if (narrative.length > 0 && narrative.length < 20) {
+    return {
+      ok: false,
+      error:
+        "narrative must be at least 20 characters, or an empty string to clear.",
+    };
+  }
+  if (narrative.length > 4000) {
+    return { ok: false, error: "narrative must be 4000 characters or fewer." };
+  }
+  await patchScopeProfile(ctx.organizationId, {
+    narrative: narrative.length === 0 ? null : narrative,
+  });
+  return {
+    ok: true,
+    data: {
+      length: narrative.length,
+      cleared: narrative.length === 0,
     },
   };
 }
