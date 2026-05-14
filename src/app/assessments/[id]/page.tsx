@@ -10,7 +10,12 @@ import {
   type ControlResponseRow,
   type OrganizationRow,
 } from "@/lib/assessment";
-import { controlDomains, playbook } from "@/lib/playbook";
+import {
+  cmmcL1Requirements,
+  controlDomains,
+  requirementMeta,
+  requirementToLegacy,
+} from "@/lib/playbook";
 
 const statusLabels: Record<ControlResponseRow["status"], string> = {
   unanswered: "Not started",
@@ -62,9 +67,37 @@ const domainLabels: Record<(typeof controlDomains)[number], string> = {
   IA: "Identification & Authentication",
   MP: "Media Protection",
   PE: "Physical Protection",
-  SC: "System & Communications",
+  SC: "System & Communications Protection",
   SI: "System & Information Integrity",
 };
+
+/**
+ * Roll up the underlying NIST 800-171 control statuses into a single status
+ * for the parent CMMC L1 v2.13 requirement. Most requirements bundle one
+ * legacy control (1:1); `PE.L1-b.1.ix` bundles three (3.10.3 / .4 / .5), so
+ * we need a deterministic worst-case rollup so the user can never sign a
+ * requirement while a sub-control is still unfinished.
+ *
+ * Priority order (worst → best):
+ *   not_met  >  partial  >  unanswered  >  not_applicable  >  yes
+ *
+ * The user expects the parent to mirror the worst child — a "MET" rollup
+ * with a hidden NOT_MET underneath would let someone attest to something
+ * that isn't actually compliant.
+ */
+function rollupRequirementStatus(
+  responses: Map<string, ControlResponseRow>,
+  legacyIds: string[],
+): ControlResponseRow["status"] {
+  const statuses = legacyIds.map(
+    (id) => responses.get(id)?.status ?? "unanswered",
+  );
+  if (statuses.includes("no")) return "no";
+  if (statuses.includes("partial")) return "partial";
+  if (statuses.includes("unanswered")) return "unanswered";
+  if (statuses.every((s) => s === "not_applicable")) return "not_applicable";
+  return "yes";
+}
 
 function isProfileComplete(org: OrganizationRow): boolean {
   return Boolean(
@@ -173,82 +206,127 @@ export default async function AssessmentOverviewPage(
           </div>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-10">
           {controlDomains.map((domain) => {
-            const domainPractices = playbook.filter((p) => p.domain === domain);
-            const answered = domainPractices.filter((p) => {
-              const s = responseByControl.get(p.id)?.status ?? "unanswered";
-              return s !== "unanswered";
-            }).length;
+            const domainReqs = cmmcL1Requirements.filter(
+              (reqId) => requirementMeta[reqId].domain === domain,
+            );
+            const domainRollups = domainReqs.map((reqId) => ({
+              reqId,
+              status: rollupRequirementStatus(
+                responseByControl,
+                requirementToLegacy[reqId],
+              ),
+            }));
+            const answered = domainRollups.filter(
+              (r) => r.status !== "unanswered",
+            ).length;
             return (
-              <div key={domain}>
-                <div className="mb-4 flex items-center justify-between border-b border-[#063f2e]/10 pb-3">
+              <section key={domain} className="relative">
+                {/* Domain header — styled like the SAG TOC section header */}
+                <header className="mb-5 flex items-baseline justify-between gap-4 border-b-2 border-[#063f2e]/15 pb-3">
                   <div className="flex items-baseline gap-3">
-                    <span className="rounded-full bg-[#063f2e] px-2.5 py-1 font-mono text-[10px] font-medium tracking-[0.15em] text-[#bef4be]">
+                    <span className="rounded-full bg-[#063f2e] px-2.5 py-1 font-mono text-[10px] font-medium tracking-[0.18em] text-[#bef4be]">
                       {domain}
                     </span>
-                    <h3 className="font-serif text-xl font-normal tracking-[-0.02em] text-[#063f2e]">
+                    <h3 className="font-serif text-2xl font-normal tracking-[-0.02em] text-[#063f2e]">
                       {domainLabels[domain]}
                     </h3>
                   </div>
-                  <span className="text-xs font-medium text-[#063f2e]/55">
-                    {answered} of {domainPractices.length} done
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#063f2e]/55">
+                    {answered} of {domainReqs.length} done
                   </span>
-                </div>
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {domainPractices.map((practice) => {
-                    const resp = responseByControl.get(practice.id);
-                    const status = resp?.status ?? "unanswered";
+                </header>
+
+                {/* Requirement list — indented under the domain, TOC style with dotted leader */}
+                <ol className="divide-y divide-[#063f2e]/8">
+                  {domainRollups.map(({ reqId, status }) => {
+                    const meta = requirementMeta[reqId];
+                    const legacyIds = requirementToLegacy[reqId];
+                    const firstLegacy = legacyIds[0];
                     const percent = statusPercent[status];
+                    // Build a short [FCI Data] tag like the SAG TOC ("[FCI Data]"
+                    // appears after every L1 practice — CMMC L1 is FCI scope only).
                     return (
-                      <Link
-                        key={practice.id}
-                        href={`/assessments/${ctx.assessment.id}/controls/${practice.id}`}
-                        className="group relative block overflow-hidden rounded-2xl border border-[#063f2e]/12 bg-white p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-[#063f2e]/40 hover:shadow-[0_20px_50px_-12px_rgba(6,63,46,0.20)]"
-                      >
-                        <div
-                          aria-hidden
-                          className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 rounded-full bg-[#bef4be] opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-50"
-                        />
-                        <div className="relative flex items-start gap-3">
-                          <span
-                            className={`mt-1.5 h-2 w-2 flex-none rounded-full ${statusDotStyles[status]}`}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-mono text-[11px] tracking-wide text-[#063f2e]/55">
-                                {practice.id}
-                              </span>
-                              <span
-                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] ring-1 ring-inset ${statusPillStyles[status]}`}
-                              >
-                                {statusLabels[status]}
-                              </span>
-                            </div>
-                            <h4 className="mt-3 truncate font-serif text-lg font-normal tracking-[-0.01em] text-[#063f2e]">
-                              {practice.shortName}
-                            </h4>
-                            <p className="mt-2 line-clamp-2 text-sm leading-[1.55] text-[#063f2e]/65">
-                              {practice.plainEnglish}
-                            </p>
-                            <div className="mt-4 flex items-center gap-2">
-                              <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#063f2e]/8">
-                                <div
-                                  className={`h-full ${statusBarColor[status]} transition-[width] duration-500 ease-out`}
-                                  style={{ width: `${Math.max(2, percent)}%` }}
-                                />
-                              </div>
-                              <span className="shrink-0 text-[10px] font-medium tabular-nums text-[#063f2e]/55">
-                                {percent}%
-                              </span>
-                            </div>
+                      <li key={reqId}>
+                        <Link
+                          href={`/assessments/${ctx.assessment.id}/controls/${firstLegacy}`}
+                          className="group grid grid-cols-[auto_1fr_auto] items-baseline gap-x-3 py-3 pl-6 pr-2 transition-colors hover:bg-[#bef4be]/12 sm:gap-x-4 sm:pl-8"
+                        >
+                          {/* Status dot — left rail like a bullet in the regulation */}
+                          <span className="relative -ml-4 sm:-ml-6">
+                            <span
+                              className={`inline-block h-2 w-2 rounded-full ${statusDotStyles[status]} ring-2 ring-white`}
+                              aria-hidden
+                            />
+                          </span>
+
+                          {/* Practice ID + title — the "entry" text in the TOC */}
+                          <span className="flex min-w-0 items-baseline gap-3 overflow-hidden">
+                            <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-[#063f2e]/60">
+                              {reqId}
+                            </span>
+                            <span className="truncate font-serif text-base font-normal text-[#063f2e] group-hover:text-[#063f2e]">
+                              {meta.shortName}
+                            </span>
+                            <span className="hidden shrink-0 font-mono text-[10px] uppercase tracking-[0.16em] text-[#063f2e]/40 sm:inline">
+                              [FCI Data]
+                            </span>
+                            {/* Dotted leader — fills remaining horizontal space like a print TOC */}
+                            <span
+                              aria-hidden
+                              className="hidden min-w-0 flex-1 translate-y-[-3px] border-b border-dotted border-[#063f2e]/25 sm:block"
+                            />
+                          </span>
+
+                          {/* Status pill — the "page number" slot in the TOC */}
+                          <span className="flex shrink-0 items-center gap-3">
+                            <span
+                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] ring-1 ring-inset ${statusPillStyles[status]}`}
+                            >
+                              {statusLabels[status]}
+                            </span>
+                            <span className="hidden w-10 text-right font-mono text-[10px] tabular-nums text-[#063f2e]/45 sm:inline">
+                              {percent}%
+                            </span>
+                          </span>
+                        </Link>
+
+                        {/* Sub-row for the FAR citation + bundled NIST controls — small print, sits under the title */}
+                        <div className="pb-3 pl-6 pr-2 sm:pl-12">
+                          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[#063f2e]/40">
+                            <span>{meta.farClause}</span>
+                            <span className="mx-2">·</span>
+                            <span>
+                              NIST 800-171 r2{" "}
+                              {legacyIds
+                                .map((id) => id.split("-")[1])
+                                .join(", ")}
+                            </span>
+                            {legacyIds.length > 1 && (
+                              <>
+                                <span className="mx-2">·</span>
+                                <span>
+                                  {legacyIds.length} controls rolled up
+                                </span>
+                              </>
+                            )}
+                          </p>
+                          <p className="mt-1.5 line-clamp-2 max-w-3xl text-[13px] leading-[1.55] text-[#063f2e]/65">
+                            {meta.statement}
+                          </p>
+                          <div className="mt-2 h-[2px] w-full max-w-3xl overflow-hidden rounded-full bg-[#063f2e]/6">
+                            <div
+                              className={`h-full ${statusBarColor[status]} transition-[width] duration-500 ease-out`}
+                              style={{ width: `${Math.max(2, percent)}%` }}
+                            />
                           </div>
                         </div>
-                      </Link>
+                      </li>
                     );
                   })}
-                </div>
-              </div>
+                </ol>
+              </section>
             );
           })}
         </div>
