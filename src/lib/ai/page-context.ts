@@ -224,16 +224,30 @@ function buildControlsDetailPack(controlId?: string): Pack {
   if (!spec) {
     return {
       label: `Practice detail page${controlId ? ` (${controlId})` : ""}`,
-      goal: "Walk the user through this practice's NIST 800-171A objectives one objective at a time.",
+      goal: "Run the interview-style narrative copilot so this practice gets a real first-person SSP paragraph, then capture evidence.",
       preferredTools: [
         "read_assessment_state",
+        "interview_for_control_narrative",
+        "draft_control_narrative",
+        "save_control_narrative",
+        "critique_control_narrative",
         "describe_evidence",
         "generate_evidence_artifact",
         "cite_regulation",
+      ],
+      avoidTools: [
+        "add_scope_item",
+        "add_esp",
+        "add_specialized_asset",
+        "add_fci_flow",
+        "add_out_of_scope_item",
         "suggest_narrative",
       ],
-      avoidTools: ["add_scope_item", "add_esp", "add_specialized_asset"],
-      body: `Use guided-walkthrough mode: one shaped question at a time, fill each objective letter [a]/[b]/[c]/... When you have enough for an objective, note it briefly and move on. Generate artifacts via \`generate_evidence_artifact\` — never paste roster tables or procedures into chat.`,
+      body: `**You are on a per-practice page. SCOPE INVENTORY TOOLS ARE OFF-LIMITS HERE — do not call \`add_scope_item\`, \`add_esp\`, \`add_specialized_asset\`, \`add_fci_flow\`, or \`add_out_of_scope_item\` on this page under any circumstance. Those belong on /scope and /boundary. If the user wants to add a person, device, or vendor, tell them to go to the Scope tab.**
+
+Opening behavior: if the user has no narrative yet, OPEN by calling \`interview_for_control_narrative\` with this \`control_id\` and no \`answer\` — that returns the first conversational question. Then for every subsequent user reply, call \`interview_for_control_narrative\` again, passing the user's words verbatim as \`answer\`. When the tool returns a final \`draft\`, show it to the user, ask if they want any tweaks, and on approval call \`save_control_narrative\`. After save you may call \`critique_control_narrative\` to surface weaknesses before they sign.
+
+Generate evidence artifacts via \`generate_evidence_artifact\` — never paste rosters or procedures into chat. Plain English, one question at a time.`,
     };
   }
 
@@ -254,17 +268,29 @@ function buildControlsDetailPack(controlId?: string): Pack {
     .join("\n");
 
   return {
-    label: `Practice ${spec.controlId} — ${spec.shortName} (guided walkthrough)`,
-    goal: "Fill every NIST 800-171A objective for this practice and produce the required evidence artifacts.",
+    label: `Practice ${spec.controlId} — ${spec.shortName} (interview + evidence)`,
+    goal: "Run the conversational narrative copilot so this practice gets a real first-person SSP paragraph, then fill every NIST 800-171A objective and produce evidence artifacts.",
     preferredTools: [
       "read_assessment_state",
+      "interview_for_control_narrative",
+      "draft_control_narrative",
+      "save_control_narrative",
+      "critique_control_narrative",
       "describe_evidence",
       "generate_evidence_artifact",
       "cite_regulation",
+    ],
+    avoidTools: [
+      "add_scope_item",
+      "add_esp",
+      "add_specialized_asset",
+      "add_fci_flow",
+      "add_out_of_scope_item",
       "suggest_narrative",
     ],
-    avoidTools: ["add_scope_item", "add_esp", "add_specialized_asset", "add_fci_flow", "add_out_of_scope_item"],
-    body: `### Verbatim control statement (FAR 52.204-21 / NIST SP 800-171 §${spec.controlId})
+    body: `**You are on a per-practice page. SCOPE INVENTORY TOOLS ARE OFF-LIMITS HERE — do not call \`add_scope_item\`, \`add_esp\`, \`add_specialized_asset\`, \`add_fci_flow\`, or \`add_out_of_scope_item\` on this page under any circumstance. Those belong on /scope and /boundary. If the user wants to add a person, device, or vendor, tell them to go to the Scope tab and stop.**
+
+### Verbatim control statement (FAR 52.204-21 / NIST SP 800-171 §${spec.controlId})
 "${spec.statement}"
 
 ### NIST 800-171A objectives the assessor will check:
@@ -273,18 +299,28 @@ ${objectives}
 ### Evidence slots an assessor accepts:
 ${slots}
 
-### Behaviour for this practice:
+### Opening behavior — narrative-first interview
+
+**On the FIRST turn after the user lands on this page (or any greeting like "hi", "what's next", "ok"):** call \`read_assessment_state\` once, then call \`interview_for_control_narrative\` with this practice's \`control_id\` and NO \`answer\` field. That returns the first conversational question from the interview copilot. Relay that question to the user verbatim (or in your own slightly warmer phrasing) — do NOT call any other mutator tool on this opening turn.
+
+**On every subsequent user reply during the interview:** call \`interview_for_control_narrative\` again, passing the user's most recent message verbatim as \`answer\`. The tool returns either the next question OR a finished \`draft\` narrative. When you receive a \`draft\`:
+  1. Show the draft to the user in a single block.
+  2. Ask if they want any tweaks.
+  3. On user approval ("looks good", "save it", "yes") call \`save_control_narrative\` with the exact draft text and this \`control_id\`.
+  4. After saving, you MAY call \`critique_control_narrative\` to flag any remaining weaknesses before they sign. Surface the weakness list as a short bulleted summary.
+
+**Quick-draft path (when the user says "just write it for me" / "skip the interview" / "draft something"):** call \`draft_control_narrative\` directly. Show the draft, confirm, then \`save_control_narrative\`.
+
+**Bulk path:** if the user says "do all of them" / "draft every practice", point them at \`bulk_draft_remaining_narratives\` — but recommend the interview for at least 1-2 controls first so the tone calibrates.
+
+### Objectives + evidence
 - ONE question at a time. Plain English. No jargon without defining it.
 - The user is not a security expert. Assume zero prior knowledge.
-- Convert their plain description into a clean mapping of each objective letter onto reality.
-- When you have enough for an objective, briefly note "Got what I need for [letter]" and move on.
-
-### Evidence — close the loop, do not type documents in chat:
-- The middle pane has an Evidence section listing every slot above. As the user gives you facts, FILL THE SLOTS by calling \`generate_evidence_artifact\` — do NOT paste roster tables, procedures, or service-account lists into chat.
-- Use \`generate_evidence_artifact\` for: rosters (CSV), inventories (CSV), service-account lists (CSV), written procedures (markdown), scoping statements (markdown). Pass the slot's \`key\` exactly as listed above.
-- After the tool succeeds, give a 1-2 sentence chat summary like: "I dropped an Authorized Users Roster into your evidence — listed you as the sole user on Windows 11 + Pixel 9a. Replace it if anything's wrong."
-- For evidence that requires a screenshot or live system export (e.g. enforcement_proof), do NOT generate — instead ask the user to either upload one OR connect Microsoft 365 / Google Workspace from /dashboard so Custodia can auto-collect it. A "Connect" callout is already shown above the practice for slots a connector can satisfy.
-- NEVER mark the practice MET on your own — the platform handles that. You just gather facts and produce artifacts.
+- The interview tool drives the objective coverage — you do not need to ask objective-by-objective questions yourself unless the interview is finished and an objective is still uncovered.
+- The middle pane has an Evidence section listing every slot above. As the user gives you facts, FILL THE SLOTS by calling \`generate_evidence_artifact\` — do NOT paste roster tables, procedures, or service-account lists into chat. Pass the slot's \`key\` exactly as listed above.
+- After a \`generate_evidence_artifact\` succeeds, give a 1-2 sentence chat summary like: "I dropped an Authorized Users Roster into your evidence — listed you as the sole user on Windows 11 + Pixel 9a. Replace it if anything's wrong."
+- For evidence that requires a screenshot or live system export (e.g. enforcement_proof), do NOT generate — instead ask the user to either upload one OR connect Microsoft 365 / Google Workspace from /dashboard so Custodia can auto-collect it.
+- NEVER mark the practice MET on your own — the platform handles that. You gather facts, produce artifacts, save narratives.
 - Keep replies short — 2-5 sentences. The middle pane is doing the visual tracking.
 
 Authoritative sources:
