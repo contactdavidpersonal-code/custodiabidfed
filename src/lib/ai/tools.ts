@@ -1132,6 +1132,20 @@ export type ToolResult = {
 };
 
 /**
+ * Scope-inventory mutators. These are valid on /scope and /boundary but must
+ * be hard-refused on a practice page (/controls/[id]) to break any loop where
+ * the model keeps firing add_scope_item even after the user has navigated
+ * away. See the guard at the top of executeOfficerTool.
+ */
+const SCOPE_MUTATOR_TOOLS = new Set([
+  "add_scope_item",
+  "add_esp",
+  "add_specialized_asset",
+  "add_fci_flow",
+  "add_out_of_scope_item",
+]);
+
+/**
  * Dispatch a tool call from the model. Each handler is defensive: invalid
  * input returns `{ ok: false, error }` rather than throwing, so the agent
  * loop can surface the error to the model and it can self-correct.
@@ -1141,6 +1155,18 @@ export async function executeOfficerTool(
   input: Record<string, unknown>,
   ctx: ToolContext,
 ): Promise<ToolResult> {
+  // Server-side page-scope guard. Per-page packs in page-context.ts tell the
+  // model which tools belong where, but a polluted conversation history (e.g.
+  // a long scope-inventory thread) can keep the model re-firing scope adds
+  // even after the user navigates to a control page. We refuse them outright
+  // so the loop terminates and the model gets an explicit redirect instead.
+  if (ctx.activeControlId && SCOPE_MUTATOR_TOOLS.has(name)) {
+    return {
+      ok: false,
+      error: `Tool '${name}' is not available on a practice page (you're on ${ctx.activeControlId}). Scope inventory edits live on /scope and /boundary. Tell the user to head to the Scope tab if they want to add a person, device, vendor, or facility. On this page use the narrative copilot tools instead (interview_for_control_narrative, draft_control_narrative, save_control_narrative, critique_control_narrative).`,
+    };
+  }
+
   try {
     switch (name) {
       case "read_assessment_state":
