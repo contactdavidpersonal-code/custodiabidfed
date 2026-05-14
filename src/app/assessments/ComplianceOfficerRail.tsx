@@ -531,18 +531,59 @@ export function ComplianceOfficerRail({
             </div>
           </div>
         </div>
-        {mobile ? null : (
+        <div className="flex items-center gap-1">
           <button
             type="button"
-            onClick={toggle}
-            aria-label="Hide Charlie"
-            className=" p-1 text-[#7a9c90] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
+            onClick={() => {
+              if (streaming) return;
+              if (
+                !window.confirm(
+                  "Start a new conversation? The current thread will be archived (you can still reference it later, but Charlie will start fresh).",
+                )
+              )
+                return;
+              setMessages([]);
+              setRecap(null);
+              setErrorMsg(null);
+              // Clear the per-control auto-kickoff dedupe keys so Charlie
+              // will re-greet (with the current narrative copilot flow) the
+              // next time the user lands on a /controls/[id] page.
+              try {
+                const ss = window.sessionStorage;
+                for (let i = ss.length - 1; i >= 0; i -= 1) {
+                  const k = ss.key(i);
+                  if (k && k.startsWith("custodia.practice-kickoff.")) {
+                    ss.removeItem(k);
+                  }
+                }
+              } catch {
+                // sessionStorage unavailable — non-fatal.
+              }
+              void send("/reset");
+            }}
+            disabled={streaming}
+            aria-label="Start a new conversation with Charlie"
+            title="New conversation"
+            className="p-1 text-[#7a9c90] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
-              <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M4 4v5h5" />
+              <path d="M4 9a7 7 0 1 1 1.5 4.5" />
             </svg>
           </button>
-        )}
+          {mobile ? null : (
+            <button
+              type="button"
+              onClick={toggle}
+              aria-label="Hide Charlie"
+              className=" p-1 text-[#7a9c90] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
+            >
+              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden>
+                <path d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
+              </svg>
+            </button>
+          )}
+        </div>
       </header>
 
       <div
