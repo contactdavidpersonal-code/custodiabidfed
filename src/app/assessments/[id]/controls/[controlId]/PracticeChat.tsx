@@ -33,9 +33,9 @@ type Props = {
 };
 
 const STATUS_COLOR: Record<ObjectiveVerdict["status"], string> = {
-  covered: "text-emerald-700 bg-emerald-50 ring-emerald-200",
-  partial: "text-amber-700 bg-amber-50 ring-amber-200",
-  missing: "text-rose-700 bg-rose-50 ring-rose-200",
+  covered: "text-[#10231d] bg-[#e8f5ec] ring-[#2f8f6d]/40",
+  partial: "text-amber-800 bg-amber-50 ring-amber-300",
+  missing: "text-rose-800 bg-rose-50 ring-rose-300",
 };
 
 const STATUS_LABEL: Record<ObjectiveVerdict["status"], string> = {
@@ -169,34 +169,35 @@ export function PracticeChat(props: Props) {
           as the user scrolls into the evidence section so they always know
           which practice they're working on. */}
       <header
-        className="sticky z-20 -mx-4 mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-[#cfe3d9] bg-[#f7f7f3]/95 px-4 pt-6 pb-4 shadow-[0_8px_24px_-18px_rgba(14,42,35,0.4)] backdrop-blur md:-mx-6 md:px-6 md:pt-7"
+        className="sticky z-20 -mx-4 mb-6 border-b border-[#cfe3d9] bg-white/95 px-4 pt-6 pb-6 shadow-[0_8px_24px_-18px_rgba(14,42,35,0.4)] backdrop-blur md:-mx-6 md:px-6 md:pt-7"
         style={{ top: "calc(var(--safe-top, 0px) + 72px)" }}
       >
-        <div>
-          <Link
-            href={`/assessments/${props.assessmentId}`}
-            className="text-xs text-stone-500 hover:text-stone-800"
-          >
-            ← Back to overview
-          </Link>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-stone-900">
-            {props.spec.controlId} — {props.spec.shortName}
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm text-stone-600">
-            {props.spec.oneLiner}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-stone-500">
-            Practice {props.currentIdx + 1} of {props.total}
-          </span>
+        <Link
+          href={`/assessments/${props.assessmentId}`}
+          className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] hover:text-[#10231d]"
+        >
+          ← Back to overview
+        </Link>
+        <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+              Practice {props.currentIdx + 1} of {props.total} ·{" "}
+              {locked ? "Met" : allCovered ? "Ready to lock" : "In progress"}
+            </div>
+            <h1 className="mt-2 font-serif text-3xl font-bold tracking-tight text-[#10231d] md:text-4xl">
+              {props.spec.controlId} — {props.spec.shortName}
+            </h1>
+            <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-[#3a544a]">
+              {props.spec.oneLiner}
+            </p>
+          </div>
           <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ring-1 ${
+            className={`shrink-0 rounded-full px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.22em] ring-1 ${
               locked
-                ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
+                ? "bg-[#08201a] text-[#bdf2cf] ring-[#08201a]"
                 : allCovered
-                  ? "bg-amber-50 text-amber-700 ring-amber-200"
-                  : "bg-stone-100 text-stone-700 ring-stone-200"
+                  ? "bg-[#f4faf6] text-[#2f8f6d] ring-[#2f8f6d]/40"
+                  : "bg-[#fcfdfb] text-[#5a7d70] ring-[#cfe3d9]"
             }`}
           >
             {locked ? "MET" : allCovered ? "READY TO LOCK" : "IN PROGRESS"}
@@ -215,7 +216,7 @@ export function PracticeChat(props: Props) {
 
       <CharliePrompt locked={locked} controlId={props.controlId} />
 
-      <div className="mt-4 space-y-4">
+      <div className="mt-8 space-y-10">
         <ObjectivesPanel
           spec={props.spec}
           verdicts={verdicts}
@@ -271,43 +272,44 @@ function PracticeProgressBar({
   locked: boolean;
 }) {
   const tone = locked
-    ? "bg-emerald-600"
+    ? "bg-[#08201a]"
     : percent >= 80
-      ? "bg-emerald-500"
+      ? "bg-[#2f8f6d]"
       : percent >= 50
         ? "bg-amber-500"
-        : "bg-stone-400";
+        : "bg-[#a8cfc0]";
   return (
-    <div className="mb-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+    <div className="mb-6 border border-[#cfe3d9] bg-white p-5">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-500">
+        <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70]">
           This practice
         </div>
-        <div className="text-sm font-bold tabular-nums text-stone-900">
+        <div className="font-serif text-2xl font-bold tabular-nums text-[#10231d]">
           {percent}%
         </div>
       </div>
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-stone-100">
+      <div className="mt-3 h-1.5 w-full overflow-hidden bg-[#f4faf6]">
         <div
           className={`h-full ${tone} transition-[width] duration-500 ease-out`}
           style={{ width: `${Math.max(2, percent)}%` }}
         />
       </div>
-      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-stone-600">
+      <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px] text-[#3a544a]">
         <span>
-          <strong className="text-stone-900">
+          <strong className="font-semibold text-[#10231d]">
             {coveredObjectives} of {totalObjectives}
           </strong>{" "}
           objectives covered
         </span>
+        <span className="text-[#cfe3d9]" aria-hidden>·</span>
         <span>
-          <strong className="text-stone-900">
+          <strong className="font-semibold text-[#10231d]">
             {filledSlots} of {totalSlots}
           </strong>{" "}
           evidence collected
         </span>
         {!locked && percent === 100 && (
-          <span className="font-semibold text-emerald-700">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
             Ready to lock as MET ↓
           </span>
         )}
@@ -319,29 +321,33 @@ function PracticeProgressBar({
 function CharliePrompt({ locked, controlId }: { locked: boolean; controlId: string }) {
   if (locked) {
     return (
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
-        This practice is locked as <strong>MET</strong>. The conversation
-        transcript and the signed narrative are a frozen snapshot the assessor
-        can read end-to-end. Evidence below stays editable so your packet
-        keeps up with the business year-round.
+      <div className="border-l-4 border-[#08201a] bg-[#f4faf6] px-6 py-5">
+        <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+          Practice locked · MET
+        </div>
+        <p className="mt-2 text-[15px] leading-relaxed text-[#10231d]">
+          The conversation transcript and the signed narrative are a frozen
+          snapshot the assessor can read end-to-end. Evidence below stays
+          editable so your packet keeps up with the business year-round.
+        </p>
       </div>
     );
   }
   return (
-    <div className="rounded-xl border border-[#cfe3d9] bg-[#f7fcf9] px-4 py-3 text-sm text-[#10231d]">
-      <div className="mb-1 flex items-center gap-2">
-        <span className="inline-flex items-center justify-center bg-[#0e2a23] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]">
+    <div className="border-l-4 border-[#2f8f6d] bg-[#f7fcf9] px-6 py-5">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex items-center justify-center bg-[#08201a] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf]">
           vCO
         </span>
-        <span className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#2f8f6d]">
+        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
           Talk to Charlie on the right →
         </span>
       </div>
-      <p className="text-stone-700">
+      <p className="mt-3 text-[15px] leading-relaxed text-[#10231d]">
         Charlie is loaded with the official CMMC requirement for{" "}
-        <strong>{controlId}</strong>. As you chat, the assessment objectives
-        below light up green. When all six are covered and your evidence is
-        attached, the lock button unlocks.
+        <strong className="font-semibold">{controlId}</strong>. As you chat,
+        the assessment objectives below light up green. When all six are
+        covered and your evidence is attached, the lock button unlocks.
       </p>
     </div>
   );
@@ -359,51 +365,64 @@ function ObjectivesPanel({
   reverifying: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-stone-900">
-          Assessment objectives — what an auditor checks
-        </h2>
+    <section>
+      <div className="mb-5 flex items-end justify-between gap-3">
+        <div>
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+            What an auditor checks
+          </div>
+          <h2 className="mt-2 font-serif text-2xl font-bold tracking-tight text-[#10231d]">
+            Assessment objectives
+          </h2>
+        </div>
         <button
           type="button"
           onClick={onReverify}
           disabled={reverifying}
-          className="text-xs text-stone-500 underline-offset-2 hover:text-stone-800 hover:underline disabled:opacity-50"
+          className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline disabled:opacity-50"
         >
           {reverifying ? "Re-grading…" : "Re-grade"}
         </button>
       </div>
-      <ul className="space-y-2">
+      <ol className="space-y-3">
         {spec.objectives.map((o) => {
           const v = verdicts[o.letter] ?? {
             status: "missing" as const,
             reason: "",
           };
           return (
-            <li key={o.letter} className="text-xs">
-              <div className="flex items-start gap-2">
-                <span
-                  className={`mt-0.5 inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ring-1 ${STATUS_COLOR[v.status]}`}
-                >
-                  [{o.letter}] {STATUS_LABEL[v.status]}
-                </span>
-                <div className="min-w-0">
-                  <div className="font-medium text-stone-800">{o.text}</div>
-                  {v.reason && (
-                    <div className="mt-0.5 text-stone-500">{v.reason}</div>
-                  )}
-                  {v.status === "partial" && "missing" in v && v.missing && (
-                    <div className="mt-0.5 italic text-amber-700">
-                      Missing: {v.missing}
-                    </div>
-                  )}
+            <li
+              key={o.letter}
+              className="border border-[#cfe3d9] bg-white p-5 transition-colors hover:border-[#2f8f6d]"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70]">
+                  Objective {o.letter.toUpperCase()}
                 </div>
+                <span
+                  className={`shrink-0 rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] ring-1 ${STATUS_COLOR[v.status]}`}
+                >
+                  {STATUS_LABEL[v.status]}
+                </span>
               </div>
+              <p className="mt-3 text-[15px] leading-relaxed text-[#10231d]">
+                {o.text}
+              </p>
+              {v.reason && (
+                <p className="mt-2 text-[13px] leading-relaxed text-[#5a7d70]">
+                  {v.reason}
+                </p>
+              )}
+              {v.status === "partial" && "missing" in v && v.missing && (
+                <p className="mt-2 text-[13px] italic leading-relaxed text-amber-700">
+                  Missing: {v.missing}
+                </p>
+              )}
             </li>
           );
         })}
-      </ul>
-    </div>
+      </ol>
+    </section>
   );
 }
 
@@ -455,13 +474,16 @@ function EvidencePanel({
   const totalRequired = spec.evidenceSlots.filter((s) => s.required).length;
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-3">
+    <section>
+      <div className="mb-5 flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-stone-900">
-            Evidence — {filledCount} of {totalRequired} collected
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+            {filledCount} of {totalRequired} collected
+          </div>
+          <h2 className="mt-2 font-serif text-2xl font-bold tracking-tight text-[#10231d]">
+            Evidence required
           </h2>
-          <p className="mt-0.5 text-xs text-stone-500">
+          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-[#5a7d70]">
             Each row is a separate artifact an assessor would ask for. Fill it
             with Charlie, a connector, or your own upload.
           </p>
@@ -470,35 +492,21 @@ function EvidencePanel({
       </div>
 
       {locked && (
-        <div className="mb-3 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="mt-0.5 shrink-0"
-            aria-hidden
-          >
-            <path d="M21 12a9 9 0 1 1-6.2-8.55" />
-            <path d="M21 4v6h-6" />
-          </svg>
-          <div className="min-w-0">
-            <div className="font-semibold">Keep your packet current</div>
-            <p className="mt-0.5">
-              This practice is signed and locked as MET — that snapshot is
-              preserved for the assessor. Evidence here stays editable: as you
-              hire, retire devices, or refresh accounts, upload a new version
-              and we&apos;ll review it. Your current packet always reflects today.
-            </p>
+        <div className="mb-5 border-l-4 border-[#08201a] bg-[#f4faf6] px-6 py-4">
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+            Keep your packet current
           </div>
+          <p className="mt-2 text-[14px] leading-relaxed text-[#10231d]">
+            This practice is signed and locked as MET — that snapshot is
+            preserved for the assessor. Evidence here stays editable: as you
+            hire, retire devices, or refresh accounts, upload a new version
+            and we&apos;ll review it. Your current packet always reflects
+            today.
+          </p>
         </div>
       )}
 
-      <ul className="space-y-3">
+      <ol className="space-y-4">
         {spec.evidenceSlots.map((slot, idx) => (
           <SlotRow
             key={slot.key}
@@ -513,13 +521,13 @@ function EvidencePanel({
             disabled={disabled}
           />
         ))}
-      </ul>
+      </ol>
 
       {unmatched.length > 0 && (
-        <div className="mt-4 border-t border-stone-200 pt-3">
-          <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-stone-500">
+        <div className="mt-8 border-t border-[#cfe3d9] pt-5">
+          <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70]">
             Other artifacts on this practice
-          </h3>
+          </div>
           <div className="space-y-2">
             {unmatched.map((ev) => (
               <ArtifactCard
@@ -532,19 +540,19 @@ function EvidencePanel({
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }
 
 function ProgressDots({ filled, total }: { filled: number; total: number }) {
   return (
-    <div className="flex shrink-0 items-center gap-1">
+    <div className="flex shrink-0 items-center gap-1.5">
       {Array.from({ length: total }).map((_, i) => (
         <span
           key={i}
           aria-hidden
           className={`h-2 w-2 rounded-full ${
-            i < filled ? "bg-emerald-500" : "bg-stone-200"
+            i < filled ? "bg-[#2f8f6d]" : "bg-[#cfe3d9]"
           }`}
         />
       ))}
@@ -582,26 +590,30 @@ function SlotRow({
 
   const statusBadge =
     status === "filled"
-      ? { label: "FILLED", tone: "bg-emerald-50 text-emerald-700 ring-emerald-200" }
+      ? { label: "Filled", tone: "bg-[#e8f5ec] text-[#10231d] ring-[#2f8f6d]/40" }
       : status === "needs_review"
-        ? { label: "NEEDS REVIEW", tone: "bg-amber-50 text-amber-700 ring-amber-200" }
-        : { label: "EMPTY", tone: "bg-stone-100 text-stone-600 ring-stone-200" };
+        ? { label: "Needs review", tone: "bg-amber-50 text-amber-800 ring-amber-300" }
+        : { label: "Empty", tone: "bg-[#fcfdfb] text-[#5a7d70] ring-[#cfe3d9]" };
 
   return (
-    <li className="rounded-xl border border-stone-200 bg-stone-50/50 p-3">
-      <div className="flex items-start justify-between gap-3">
+    <li className="border border-[#cfe3d9] bg-white p-6 transition-colors hover:border-[#2f8f6d]">
+      <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="font-mono text-stone-400">#{index}</span>
-            <span className="font-semibold text-stone-900">{slot.label}</span>
-            <span className="text-[10px] uppercase tracking-wide text-stone-500">
-              {slot.required ? "required" : "optional"} · [{slot.satisfies.join(",")}]
-            </span>
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70]">
+            Slot {index} ·{" "}
+            {slot.required ? "Required" : "Optional"} ·{" "}
+            Objective{slot.satisfies.length > 1 ? "s" : ""}{" "}
+            {slot.satisfies.map((s) => s.toUpperCase()).join(", ")}
           </div>
-          <p className="mt-1 text-xs text-stone-600">{slot.hint}</p>
+          <h3 className="mt-2 font-serif text-xl font-bold tracking-tight text-[#10231d]">
+            {slot.label}
+          </h3>
+          <p className="mt-2 text-[14px] leading-relaxed text-[#3a544a]">
+            {slot.hint}
+          </p>
         </div>
         <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ring-1 ${statusBadge.tone}`}
+          className={`shrink-0 rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] ring-1 ${statusBadge.tone}`}
         >
           {statusBadge.label}
         </span>
@@ -609,7 +621,7 @@ function SlotRow({
 
       {/* Filled artifacts for this slot */}
       {artifacts.length > 0 && (
-        <div className="mt-3 space-y-2">
+        <div className="mt-4 space-y-2">
           {artifacts.map((ev) => (
             <ArtifactCard
               key={ev.id}
@@ -634,11 +646,11 @@ function SlotRow({
 
       {/* "Replace" rail when filled — same actions, different label */}
       {!disabled && status === "filled" && (
-        <details className="mt-2">
-          <summary className="cursor-pointer text-[11px] text-stone-500 hover:text-stone-800">
+        <details className="mt-3">
+          <summary className="cursor-pointer font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] hover:text-[#10231d]">
             Replace this artifact
           </summary>
-          <div className="mt-2">
+          <div className="mt-3">
             <SlotActions
               slot={slot}
               assessmentId={assessmentId}
@@ -667,7 +679,7 @@ function SlotActions({
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
 }) {
   return (
-    <div className="mt-3 flex flex-wrap items-center gap-2">
+    <div className="mt-4 flex flex-wrap items-center gap-2">
       {slot.destinations.map((dest, i) => (
         <DestinationButton
           key={`${slot.key}-${dest.type}-${i}`}
@@ -684,7 +696,7 @@ function SlotActions({
         <a
           href={slot.templatePath}
           download
-          className="text-[11px] text-stone-500 underline-offset-2 hover:text-stone-800 hover:underline"
+          className="ml-1 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline"
         >
           Download template
         </a>
@@ -711,8 +723,8 @@ function DestinationButton({
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
 }) {
   const baseClasses = recommended
-    ? "bg-emerald-700 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-800"
-    : "border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 hover:border-stone-400 hover:bg-stone-50";
+    ? "bg-[#08201a] px-4 py-2 text-[12px] font-semibold text-[#bdf2cf] hover:bg-[#0c2a22]"
+    : "border border-[#cfe3d9] bg-white px-4 py-2 text-[12px] font-semibold text-[#10231d] hover:border-[#2f8f6d]";
 
   if (dest.type === "generate") {
     return (
@@ -736,7 +748,7 @@ function DestinationButton({
       return (
         <span
           title={dest.describes}
-          className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-[11px] font-medium text-emerald-700"
+          className="border border-[#2f8f6d] bg-[#f4faf6] px-4 py-2 text-[12px] font-semibold text-[#2f8f6d]"
         >
           Connected — auto-collect coming online
         </span>
@@ -788,8 +800,8 @@ function SlotUploadButton({
   recommended: boolean;
 }) {
   const baseClasses = recommended
-    ? "inline-flex cursor-pointer items-center bg-emerald-700 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-800"
-    : "inline-flex cursor-pointer items-center border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-medium text-stone-700 hover:border-stone-400 hover:bg-stone-50";
+    ? "inline-flex cursor-pointer items-center bg-[#08201a] px-4 py-2 text-[12px] font-semibold text-[#bdf2cf] hover:bg-[#0c2a22]"
+    : "inline-flex cursor-pointer items-center border border-[#cfe3d9] bg-white px-4 py-2 text-[12px] font-semibold text-[#10231d] hover:border-[#2f8f6d]";
 
   return (
     <form
@@ -850,54 +862,56 @@ function ArtifactCard({
   const verdict = evidence.ai_review_verdict;
   const verdictTone =
     verdict === "sufficient"
-      ? "text-emerald-700 bg-emerald-50 ring-emerald-200"
+      ? "text-[#10231d] bg-[#e8f5ec] ring-[#2f8f6d]/40"
       : verdict === "insufficient"
-        ? "text-rose-700 bg-rose-50 ring-rose-200"
+        ? "text-rose-800 bg-rose-50 ring-rose-300"
         : verdict === "not_relevant"
-          ? "text-rose-700 bg-rose-50 ring-rose-200"
-          : "text-stone-700 bg-stone-50 ring-stone-200";
+          ? "text-rose-800 bg-rose-50 ring-rose-300"
+          : "text-[#5a7d70] bg-[#fcfdfb] ring-[#cfe3d9]";
   const generatedByCharlie = evidence.ai_review_model === "charlie-generated";
   // Strip the [slot:KEY]__ prefix from the displayed filename if present.
   const displayName = evidence.filename.replace(/^\[slot:[a-z0-9_]+\]__/i, "");
   return (
-    <div className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs">
+    <div className="border border-[#cfe3d9] bg-[#fcfdfb] px-4 py-3 text-[13px]">
       <div className="flex items-center justify-between gap-2">
         <a
           href={`/api/evidence/${evidence.id}`}
           target="_blank"
           rel="noreferrer"
-          className="truncate font-medium text-stone-800 hover:underline"
+          className="truncate font-semibold text-[#10231d] underline-offset-4 hover:underline"
         >
           {displayName}
         </a>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1.5">
           {generatedByCharlie && (
-            <span className="rounded-full bg-[#0e2a23] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#bdf2cf]">
+            <span className="rounded-full bg-[#08201a] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf]">
               Charlie
             </span>
           )}
           <span
-            className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase ring-1 ${verdictTone}`}
+            className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] ring-1 ${verdictTone}`}
           >
             {verdict ?? "pending"}
           </span>
         </div>
       </div>
       {evidence.ai_review_summary && (
-        <p className="mt-1 text-stone-600">{evidence.ai_review_summary}</p>
+        <p className="mt-2 leading-relaxed text-[#3a544a]">
+          {evidence.ai_review_summary}
+        </p>
       )}
       {generatedByCharlie && (
-        <p className="mt-1 text-[11px] italic text-stone-500">
+        <p className="mt-2 text-[12px] italic leading-relaxed text-[#5a7d70]">
           Charlie drafted this from your conversation. Open it, check the
           details are correct, and replace any time.
         </p>
       )}
       {!disabled && verdict && !generatedByCharlie && (
-        <form action={reReviewEvidenceAction} className="mt-1">
+        <form action={reReviewEvidenceAction} className="mt-2">
           <input type="hidden" name="artifactId" value={evidence.id} />
           <button
             type="submit"
-            className="text-[11px] text-stone-500 underline-offset-2 hover:text-stone-800 hover:underline"
+            className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline"
           >
             Re-review
           </button>
@@ -920,32 +934,57 @@ function LockPanel({
 }) {
   if (locked) {
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-        <div className="font-semibold">Practice locked as MET</div>
-        <p className="mt-1 text-emerald-800">
+      <section className="border-2 border-[#08201a] bg-[#08201a] p-6 md:p-8">
+        <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf]">
+          Practice locked · MET
+        </div>
+        <p className="mt-3 text-[15px] leading-relaxed text-[#a8cfc0]">
           The chat transcript and the signed narrative are a frozen snapshot
           — the assessor reads this end-to-end as proof of how each objective
           was satisfied. Evidence above stays a living document: refresh your
           rosters, devices, and accounts whenever the business changes, and
           your current packet stays accurate.
         </p>
-      </div>
+      </section>
     );
   }
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+    <section
+      className={`border-2 p-6 md:p-8 ${
+        allCovered
+          ? "border-[#2f8f6d] bg-[#f4faf6]"
+          : "border-[#cfe3d9] bg-[#fcfdfb]"
+      }`}
+    >
+      <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+        {allCovered ? "Ready to sign" : "Not ready yet"}
+      </div>
+      <h2 className="mt-2 font-serif text-2xl font-bold tracking-tight text-[#10231d]">
+        {allCovered
+          ? "Lock this practice as MET"
+          : "Locked until every objective is covered"}
+      </h2>
+      <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-[#3a544a]">
+        {allCovered
+          ? "Charlie has confirmed every assessment objective. Lock the snapshot so the transcript and narrative are preserved for your assessor."
+          : "Keep chatting with Charlie on the right. The lock unlocks the moment every objective is covered and every required artifact is attached."}
+      </p>
       <button
         type="button"
         onClick={onLock}
         disabled={!allCovered}
-        className="w-full rounded-lg bg-stone-900 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-stone-300"
+        className={`mt-5 px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.22em] ${
+          allCovered
+            ? "bg-[#08201a] text-[#bdf2cf] hover:bg-[#0c2a22]"
+            : "cursor-not-allowed bg-[#cfe3d9] text-white"
+        }`}
       >
-        {allCovered ? "Lock as MET" : "Locked until every objective is covered"}
+        {allCovered ? "Lock as MET" : "Locked"}
       </button>
       {lockError && (
-        <p className="mt-2 text-xs text-rose-600">{lockError}</p>
+        <p className="mt-3 text-[13px] text-rose-700">{lockError}</p>
       )}
-    </div>
+    </section>
   );
 }
 
@@ -959,11 +998,11 @@ function NavRow({
   nextId: string | null;
 }) {
   return (
-    <div className="mt-4 flex items-center justify-between text-xs text-stone-500">
+    <div className="mt-10 flex items-center justify-between border-t border-[#cfe3d9] pt-6">
       {prevId ? (
         <Link
           href={`/assessments/${assessmentId}/controls/${prevId}`}
-          className="hover:text-stone-800"
+          className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] hover:text-[#10231d]"
         >
           ← Previous practice
         </Link>
@@ -973,7 +1012,7 @@ function NavRow({
       {nextId ? (
         <Link
           href={`/assessments/${assessmentId}/controls/${nextId}`}
-          className="hover:text-stone-800"
+          className="font-serif text-lg font-bold tracking-tight text-[#10231d] underline-offset-4 hover:text-[#2f8f6d] hover:underline"
         >
           Next practice →
         </Link>
