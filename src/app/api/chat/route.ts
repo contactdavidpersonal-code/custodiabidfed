@@ -15,6 +15,10 @@ import { buildPageContextBlock } from "@/lib/ai/page-context";
 import { runOfficerAgentStream, SSE_HEADERS } from "@/lib/ai/stream";
 import { ensureOrgForUser, getBusinessProfile } from "@/lib/assessment";
 import {
+  formatSavedStateBlock,
+  getControlSavedState,
+} from "@/lib/cmmc/narrative-copilot";
+import {
   enforceCharlieBudget,
 } from "@/lib/security/rate-limit";
 import {
@@ -157,10 +161,33 @@ export async function POST(req: NextRequest) {
     memoryBlock,
   });
 
+  // Dynamic saved-state block: when the user is on a specific control
+  // page, surface the persisted interview / narrative / evidence /
+  // objective state so Charlie's first reply after a refresh
+  // ACKNOWLEDGES prior work instead of saying "hasn't been started".
+  // Best-effort — a DB hiccup here must never block the chat.
+  let savedStateBlock = "";
+  if (body.pageContext?.assessmentId && body.pageContext?.controlId) {
+    try {
+      const saved = await getControlSavedState({
+        organizationId: org.id,
+        assessmentId: body.pageContext.assessmentId,
+        controlId: body.pageContext.controlId,
+        userId,
+      });
+      savedStateBlock = formatSavedStateBlock(saved);
+    } catch (err) {
+      console.warn("getControlSavedState failed (non-fatal)", err);
+    }
+  }
+  const fullContextBlock = savedStateBlock
+    ? `${contextBlock}\n\n${savedStateBlock}`
+    : contextBlock;
+
   const stream = runOfficerAgentStream({
     conversationId: conv.id,
     systemPrompt: COMPLIANCE_OFFICER_SYSTEM_PROMPT,
-    contextBlock,
+    contextBlock: fullContextBlock,
     toolContext: {
       organizationId: org.id,
       userId,

@@ -71,6 +71,7 @@ import {
   gatherControlContext,
   getOrCreateInterviewSession,
   hasMinimumContext,
+  markResponseInProgress,
   markSessionDrafted,
   recordCritique,
   saveNarrative,
@@ -3830,6 +3831,15 @@ async function handleInterviewForControlNarrative(
       organizationId: ctx.organizationId,
       answer,
     });
+    // Save on entry: the moment the interview has any answered turn we
+    // bump control_responses from `unanswered` → `partial` so the overall
+    // practices progress bar moves and the user can see their work
+    // landed. Idempotent — never overrides yes/no/not_applicable.
+    try {
+      await markResponseInProgress({ assessmentId, controlId });
+    } catch (err) {
+      console.warn("markResponseInProgress failed (non-fatal)", err);
+    }
   }
 
   // Refresh context after any answer — evidence/scope may have changed

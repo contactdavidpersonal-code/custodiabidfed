@@ -765,3 +765,198 @@ export async function saveNarrative(args: {
   `) as Array<{ id: string; updated_at: string }>;
   return rows[0];
 }
+
+/**
+ * Move a control_response from `unanswered` to `partial` to reflect that
+ * the interview copilot has gathered information for this control. Called
+ * automatically the first time the user answers an interview question so
+ * the overall practices progress bar advances on entry. Idempotent — only
+ * touches rows currently in `unanswered`; leaves `yes` / `no` / `partial`
+ * / `not_applicable` alone.
+ */
+export async function markResponseInProgress(args: {
+  assessmentId: string;
+  controlId: string;
+}): Promise<void> {
+  const sql = getSql();
+  await sql`
+    INSERT INTO control_responses (assessment_id, control_id, status)
+    VALUES (${args.assessmentId}, ${args.controlId}, 'partial')
+    ON CONFLICT (assessment_id, control_id) DO UPDATE
+    SET status = 'partial',
+        updated_at = NOW()
+    WHERE control_responses.status = 'unanswered'
+  `;
+}
+
+/**
+ * Snapshot of saved progress for one control, for use in the Charlie
+ * system prompt. Lets the model see — on the very first turn after a
+ * refresh — that the user has already answered N interview questions,
+ * the narrative is/isn't drafted, evidence is/isn't attached, and how
+ * each objective letter currently grades. This is what fixes the
+ * "Charlie says 'hasn't been started' after refresh" failure mode: prompt
+ * guidance alone is not enough, the model needs to literally see the
+ * persisted state.
+ */
+export type ControlSavedState = {
+  controlId: string;
+  responseStatus: string | null;
+  narrativeSavedChars: number;
+  evidenceCount: number;
+  interview: {
+    sessionId: string | null;
+    status: "active" | "drafted" | "abandoned" | "none";
+    turnCount: number;
+    answeredCount: number;
+    lastQuestion: string | null;
+    lastAnswer: string | null;
+    pendingQuestion: string | null;
+    draftReady: boolean;
+  };
+  objectives: Array<{ letter: string; status: string; reason: string | null }>;
+};
+
+export async function getControlSavedState(args: {
+  organizationId: string;
+  assessmentId: string;
+  controlId: string;
+  userId: string;
+}): Promise<ControlSavedState> {
+  const { organizationId, assessmentId, controlId, userId } = args;
+  const sql = getSql();
+
+  const [resp, sessRows, evRows, convRows] = await Promise.all([
+    sql`
+      SELECT status, narrative
+      FROM control_responses
+      WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
+      LIMIT 1
+    ` as unknown as Promise<Array<{ status: string; narrative: string | null }>>,
+    sql`
+      SELECT id, turns, status, draft_narrative
+      FROM narrative_interview_sessions
+      WHERE organization_id = ${organizationId}
+        AND assessment_id = ${assessmentId}
+        AND control_id = ${controlId}
+        AND user_id = ${userId}
+        AND expires_at > NOW()
+      ORDER BY updated_at DESC
+      LIMIT 1
+    ` as unknown as Promise<Array<{
+      id: string;
+      turns: InterviewTurn[];
+      status: "active" | "drafted" | "abandoned";
+      draft_narrative: string | null;
+    }>>,
+    sql`
+      SELECT COUNT(*)::int AS n
+      FROM evidence_artifacts
+      WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
+    ` as unknown as Promise<Array<{ n: number }>>,
+    sql`
+      SELECT objective_verdicts
+      FROM practice_conversations
+      WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
+      LIMIT 1
+    ` as unknown as Promise<Array<{ objective_verdicts: Record<string, { status: string; reason?: string }> }>>,
+  ]);
+
+  const response = resp[0] ?? null;
+  const session = sessRows[0] ?? null;
+  const evidenceCount = evRows[0]?.n ?? 0;
+  const verdicts = convRows[0]?.objective_verdicts ?? {};
+
+  const turns: InterviewTurn[] = session?.turns ?? [];
+  const answered = turns.filter((t) => t.a !== null);
+  const lastAnswered = answered[answered.length - 1] ?? null;
+  const pending = turns.find((t) => t.a === null) ?? null;
+
+  return {
+    controlId,
+    responseStatus: response?.status ?? null,
+    narrativeSavedChars: response?.narrative?.length ?? 0,
+    evidenceCount,
+    interview: {
+      sessionId: session?.id ?? null,
+      status: session?.status ?? "none",
+      turnCount: turns.length,
+      answeredCount: answered.length,
+      lastQuestion: lastAnswered?.q ?? null,
+      lastAnswer: lastAnswered?.a ?? null,
+      pendingQuestion: pending?.q ?? null,
+      draftReady: Boolean(session?.draft_narrative),
+    },
+    objectives: Object.entries(verdicts).map(([letter, v]) => ({
+      letter,
+      status: v.status,
+      reason: v.reason ?? null,
+    })),
+  };
+}
+
+/**
+ * Format a `ControlSavedState` as a Markdown block for the Charlie system
+ * prompt. Empty state collapses to a short "Nothing saved yet" line.
+ */
+export function formatSavedStateBlock(state: ControlSavedState): string {
+  const lines: string[] = [];
+  lines.push(`## Saved progress for ${state.controlId}`);
+
+  const nothing =
+    state.responseStatus === null &&
+    state.narrativeSavedChars === 0 &&
+    state.evidenceCount === 0 &&
+    state.interview.turnCount === 0 &&
+    state.objectives.length === 0;
+  if (nothing) {
+    lines.push(
+      `- Nothing saved yet for this practice. Open with \`interview_for_control_narrative\` (no \`answer\`) to start the conversation.`,
+    );
+    return lines.join("\n");
+  }
+
+  lines.push(`- Response status: ${state.responseStatus ?? "unanswered"}`);
+  lines.push(
+    `- Saved narrative: ${state.narrativeSavedChars > 0 ? `${state.narrativeSavedChars} chars on file` : "none"}`,
+  );
+  lines.push(`- Evidence attached: ${state.evidenceCount}`);
+
+  if (state.interview.turnCount > 0) {
+    lines.push(
+      `- Interview session: ${state.interview.status}, ${state.interview.answeredCount}/${state.interview.turnCount} questions answered${state.interview.draftReady ? " (draft narrative pending save)" : ""}`,
+    );
+    if (state.interview.lastQuestion && state.interview.lastAnswer) {
+      lines.push(`  - Last Q: ${truncateSaved(state.interview.lastQuestion, 240)}`);
+      lines.push(`  - Last A: ${truncateSaved(state.interview.lastAnswer, 240)}`);
+    }
+    if (state.interview.pendingQuestion) {
+      lines.push(
+        `  - Outstanding question waiting on the user: ${truncateSaved(state.interview.pendingQuestion, 240)}`,
+      );
+    }
+  } else {
+    lines.push(`- Interview session: not started`);
+  }
+
+  if (state.objectives.length > 0) {
+    const covered = state.objectives.filter((o) => o.status === "covered").length;
+    const partial = state.objectives.filter((o) => o.status === "partial").length;
+    const missing = state.objectives.filter((o) => o.status === "missing").length;
+    lines.push(
+      `- Objective verdicts: ${covered} covered, ${partial} partial, ${missing} missing`,
+    );
+  }
+
+  lines.push("");
+  lines.push(
+    `**This means progress IS saved.** Do NOT tell the user "nothing has been started" if any of the numbers above are non-zero. Resume the interview by calling \`interview_for_control_narrative\` (with no \`answer\` to fetch the outstanding question, or with the user's reply to advance).`,
+  );
+
+  return lines.join("\n");
+}
+
+function truncateSaved(s: string, max: number): string {
+  if (s.length <= max) return s;
+  return `${s.slice(0, max - 1)}…`;
+}
