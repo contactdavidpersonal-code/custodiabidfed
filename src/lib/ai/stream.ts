@@ -94,33 +94,82 @@ export function runOfficerAgentStream(
             break;
           }
 
+          // Execute each tool defensively. A throw from any single tool must
+          // NOT leave the conversation poisoned — Anthropic requires every
+          // assistant tool_use to be paired with a tool_result in the very
+          // next message. We build a result block for every tool_use up front
+          // (synthetic error if anything throws) and ALWAYS persist the
+          // tool-role message in a finally so even an outer crash leaves the
+          // history valid.
           const toolResults: ToolResultBlock[] = [];
-          for (const block of toolUses) {
-            send("tool_start", {
-              id: block.id,
-              name: block.name,
-              input: block.input,
-            });
-            const toolInput = (block.input ?? {}) as Record<string, unknown>;
-            const result = await executeOfficerTool(
-              block.name,
-              toolInput,
-              input.toolContext,
-            );
-            send("tool_end", { id: block.id, ok: result.ok });
-            toolResults.push({
-              type: "tool_result",
-              tool_use_id: block.id,
-              content: JSON.stringify(result),
-              is_error: !result.ok,
-            });
+          let toolLoopError: unknown = null;
+          try {
+            for (const block of toolUses) {
+              send("tool_start", {
+                id: block.id,
+                name: block.name,
+                input: block.input,
+              });
+              const toolInput = (block.input ?? {}) as Record<string, unknown>;
+              let result: { ok: boolean; [k: string]: unknown };
+              try {
+                result = await executeOfficerTool(
+                  block.name,
+                  toolInput,
+                  input.toolContext,
+                );
+              } catch (toolErr) {
+                const msg =
+                  toolErr instanceof Error ? toolErr.message : String(toolErr);
+                result = { ok: false, error: "tool_threw", message: msg };
+              }
+              send("tool_end", { id: block.id, ok: result.ok });
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: block.id,
+                content: JSON.stringify(result),
+                is_error: !result.ok,
+              });
+            }
+          } catch (loopErr) {
+            // Anything thrown outside an individual tool — fill remaining
+            // tool_uses with synthetic errors so pairing stays intact.
+            toolLoopError = loopErr;
+            const covered = new Set(toolResults.map((r) => r.tool_use_id));
+            for (const block of toolUses) {
+              if (covered.has(block.id)) continue;
+              toolResults.push({
+                type: "tool_result",
+                tool_use_id: block.id,
+                content: JSON.stringify({
+                  ok: false,
+                  error: "tool_loop_aborted",
+                  message: "Tool execution was interrupted before completing.",
+                }),
+                is_error: true,
+              });
+            }
+          } finally {
+            if (toolResults.length > 0) {
+              try {
+                await appendMessage({
+                  conversationId: input.conversationId,
+                  role: "tool",
+                  content: toolResults,
+                });
+              } catch (persistErr) {
+                // Surface but don't swallow — if we can't persist, the
+                // next turn will at least be healed by toAnthropicMessages.
+                send("error", {
+                  message:
+                    persistErr instanceof Error
+                      ? persistErr.message
+                      : String(persistErr),
+                });
+              }
+            }
           }
-
-          await appendMessage({
-            conversationId: input.conversationId,
-            role: "tool",
-            content: toolResults,
-          });
+          if (toolLoopError) throw toolLoopError;
         }
 
         send("done", {});

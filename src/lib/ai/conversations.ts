@@ -189,11 +189,18 @@ export async function listMessages(
 /**
  * Shapes stored rows into the Anthropic Messages API format. System messages
  * are never persisted — the system prompt is provided fresh on every call.
+ *
+ * Also heals corrupt histories: Anthropic rejects any request where an
+ * assistant `tool_use` block isn't immediately followed by a matching
+ * `tool_result`. If a prior turn died mid-loop (DB error, deploy, tool
+ * exception) the assistant row was persisted but the tool row wasn't. We
+ * inject a synthetic error tool_result for every orphaned tool_use id so
+ * the user can keep chatting instead of being stuck.
  */
 export function toAnthropicMessages(
   rows: AiMessageRow[],
 ): Array<{ role: "user" | "assistant"; content: unknown }> {
-  return rows
+  const shaped = rows
     .filter((r) => r.role === "user" || r.role === "assistant" || r.role === "tool")
     .map((r) => {
       if (r.role === "tool") {
@@ -203,4 +210,45 @@ export function toAnthropicMessages(
       }
       return { role: r.role as "user" | "assistant", content: r.content };
     });
+
+  const result: Array<{ role: "user" | "assistant"; content: unknown }> = [];
+  for (let i = 0; i < shaped.length; i++) {
+    const msg = shaped[i];
+    result.push(msg);
+    if (msg.role !== "assistant" || !Array.isArray(msg.content)) continue;
+    const toolUseIds = (msg.content as Array<{ type: string; id?: string }>)
+      .filter((b) => b.type === "tool_use" && typeof b.id === "string")
+      .map((b) => b.id as string);
+    if (toolUseIds.length === 0) continue;
+    // Find every tool_result id present in the very next user message (if any).
+    const next = shaped[i + 1];
+    const nextResults = next && next.role === "user" && Array.isArray(next.content)
+      ? new Set(
+          (next.content as Array<{ type: string; tool_use_id?: string }>)
+            .filter((b) => b.type === "tool_result" && typeof b.tool_use_id === "string")
+            .map((b) => b.tool_use_id as string),
+        )
+      : new Set<string>();
+    const orphans = toolUseIds.filter((id) => !nextResults.has(id));
+    if (orphans.length === 0) continue;
+    // Inject synthetic error tool_result(s) immediately after the assistant
+    // turn so Anthropic's pairing rule is satisfied. Mark is_error so the
+    // model can apologize and retry instead of acting as if the tool worked.
+    const synthetic = {
+      role: "user" as const,
+      content: orphans.map((id) => ({
+        type: "tool_result" as const,
+        tool_use_id: id,
+        content: JSON.stringify({
+          ok: false,
+          error: "tool_execution_interrupted",
+          message:
+            "Previous tool call did not finish (stream interrupted). Please retry the action.",
+        }),
+        is_error: true,
+      })),
+    };
+    result.push(synthetic);
+  }
+  return result;
 }
