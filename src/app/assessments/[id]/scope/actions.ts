@@ -53,7 +53,7 @@ export async function addScopeItemAction(formData: FormData) {
 
   const { userId, ctx } = await requireOrgForAssessment(assessmentId);
 
-  const row = await addScopeItem({
+  const { row, duplicate } = await addScopeItem({
     organizationId: ctx.organization.id,
     kind: kindRaw as ScopeKind,
     label,
@@ -62,14 +62,16 @@ export async function addScopeItemAction(formData: FormData) {
     notes: notes || null,
   });
 
-  await recordAuditEvent({
-    action: "scope_inventory.added",
-    userId,
-    organizationId: ctx.organization.id,
-    resourceType: "scope_inventory",
-    resourceId: row.id,
-    metadata: { kind: row.kind, handles_fci: row.handles_fci },
-  });
+  if (!duplicate) {
+    await recordAuditEvent({
+      action: "scope_inventory.added",
+      userId,
+      organizationId: ctx.organization.id,
+      resourceType: "scope_inventory",
+      resourceId: row.id,
+      metadata: { kind: row.kind, handles_fci: row.handles_fci },
+    });
+  }
 
   revalidatePath(`/assessments/${assessmentId}/scope`);
 }
@@ -163,7 +165,7 @@ export async function addEspAction(formData: FormData) {
 
   const { userId, ctx } = await requireOrgForAssessment(assessmentId);
 
-  const row = await addEsp({
+  const { row, duplicate } = await addEsp({
     organizationId: ctx.organization.id,
     name,
     vendor: vendor || null,
@@ -173,14 +175,16 @@ export async function addEspAction(formData: FormData) {
     contactEmail: contactEmail || null,
   });
 
-  await recordAuditEvent({
-    action: "esp_registry.added",
-    userId,
-    organizationId: ctx.organization.id,
-    resourceType: "esp_registry",
-    resourceId: row.id,
-    metadata: { vendor: row.vendor },
-  });
+  if (!duplicate) {
+    await recordAuditEvent({
+      action: "esp_registry.added",
+      userId,
+      organizationId: ctx.organization.id,
+      resourceType: "esp_registry",
+      resourceId: row.id,
+      metadata: { vendor: row.vendor },
+    });
+  }
 
   revalidatePath(`/assessments/${assessmentId}/scope`);
 }
@@ -202,7 +206,7 @@ export async function addSpecializedAssetAction(formData: FormData) {
 
   const { userId, ctx } = await requireOrgForAssessment(assessmentId);
 
-  const row = await addSpecializedAsset({
+  const { row, duplicate } = await addSpecializedAsset({
     organizationId: ctx.organization.id,
     label,
     assetType: assetTypeRaw as SpecializedAssetType,
@@ -210,14 +214,16 @@ export async function addSpecializedAssetAction(formData: FormData) {
     handlesFci,
   });
 
-  await recordAuditEvent({
-    action: "specialized_asset.added",
-    userId,
-    organizationId: ctx.organization.id,
-    resourceType: "specialized_assets",
-    resourceId: row.id,
-    metadata: { asset_type: row.asset_type, handles_fci: row.handles_fci },
-  });
+  if (!duplicate) {
+    await recordAuditEvent({
+      action: "specialized_asset.added",
+      userId,
+      organizationId: ctx.organization.id,
+      resourceType: "specialized_assets",
+      resourceId: row.id,
+      metadata: { asset_type: row.asset_type, handles_fci: row.handles_fci },
+    });
+  }
 
   revalidatePath(`/assessments/${assessmentId}/scope`);
 }

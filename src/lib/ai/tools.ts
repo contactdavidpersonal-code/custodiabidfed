@@ -354,7 +354,7 @@ export const officerTools = [
   {
     name: "add_scope_item",
     description:
-      "Add a People / Technology / Facility row to the org's CMMC L1 scope inventory (32 CFR § 170.19(b)(3)). Use during the scope-inventory step when the user lists who or what handles FCI. Each call writes ONE item — call multiple times for a list. Read scope_inventory_state first if you need to avoid duplicates. Do NOT call this for ESPs (use add_esp) or for IoT/OT/GFE (use add_specialized_asset).",
+      "Add a People / Technology / Facility row to the org's CMMC L1 scope inventory (32 CFR § 170.19(b)(3)). MANDATORY workflow: (1) call read_scope_inventory_state first to know what's already there, (2) get explicit user confirmation for the specific row, (3) THEN call this tool exactly once for that row. Each call writes ONE item. The server is now idempotent (case-insensitive label match within kind) and will return already_existed: true instead of duplicating — if you see that flag, stop and tell the user it was already on the list. Do NOT call this for ESPs (use add_esp) or for IoT / IIoT / OT / GFE / restricted / test_equipment (use add_specialized_asset).",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -387,7 +387,7 @@ export const officerTools = [
   {
     name: "add_esp",
     description:
-      "Register an External Service Provider (ESP) in the user's scope inventory. Vendors and managed services that process, store, or transmit FCI on the OSA's behalf — Microsoft 365, Google Workspace, AWS, MSPs, contracted helpdesks. Per CMMC Scoping Guide L1 v2.13 ESPs are in scope and may share/inherit objectives when supporting evidence (SOC 2, attestation, contract responsibility matrix) is on file.",
+      "Register an External Service Provider (ESP) in the user's scope inventory. Vendors and managed services that process, store, or transmit FCI on the OSA's behalf — Microsoft 365, Google Workspace, AWS, MSPs, contracted helpdesks. Per CMMC Scoping Guide L1 v2.13 ESPs are in scope and may share/inherit objectives when supporting evidence (SOC 2, attestation, contract responsibility matrix) is on file. MANDATORY workflow: (1) read_scope_inventory_state first, (2) confirm the specific ESP with the user, (3) THEN call this tool once. The server refuses duplicates by lower(name) and returns already_existed: true — if you see that, stop and report it was already registered.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -419,7 +419,7 @@ export const officerTools = [
   {
     name: "add_specialized_asset",
     description:
-      "Document a Specialized Asset per 32 CFR § 170.19(b)(2)(ii). Specialized Assets — IoT, IIoT, Operational Technology, Government-Furnished Equipment, Restricted Information Systems, Test Equipment — are listed for completeness but NOT graded against the 15 requirements. Use this when the user mentions a connected sensor, lab fixture, GFE laptop, air-gapped test bench, etc.",
+      "Document a Specialized Asset per 32 CFR § 170.19(b)(2)(ii). Specialized Assets — IoT, IIoT, Operational Technology, Government-Furnished Equipment, Restricted Information Systems, Test Equipment — are listed for completeness but NOT graded against the 15 requirements. Use this when the user mentions a connected sensor, lab fixture, GFE laptop, air-gapped test bench, etc. MANDATORY workflow: (1) read_scope_inventory_state first, (2) confirm with the user, (3) THEN call this tool once. The server refuses duplicates by (asset_type, lower(label)) and returns already_existed: true — if you see that, stop and report it.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -1457,7 +1457,7 @@ async function handleAddScopeItem(
   const handlesFci =
     typeof input.handles_fci === "boolean" ? input.handles_fci : true;
 
-  const row = await addScopeItem({
+  const { row, duplicate } = await addScopeItem({
     organizationId: ctx.organizationId,
     kind: kind as ScopeKind,
     label,
@@ -1474,6 +1474,10 @@ async function handleAddScopeItem(
       kind_label: ALLOWED_SCOPE_KIND_LABELS[kind as keyof typeof ALLOWED_SCOPE_KIND_LABELS],
       label: row.label,
       handles_fci: row.handles_fci,
+      already_existed: duplicate,
+      note: duplicate
+        ? "This item was ALREADY in the scope inventory — no duplicate was created. Do not add it again. If the user wanted to change details, call update_scope_item (not available yet) or tell them to edit on the Scope page."
+        : undefined,
     },
   };
 }
@@ -1492,7 +1496,7 @@ async function handleAddEsp(
     return t ? t : null;
   };
 
-  const row = await addEsp({
+  const { row, duplicate } = await addEsp({
     organizationId: ctx.organizationId,
     name,
     vendor: str("vendor"),
@@ -1509,6 +1513,10 @@ async function handleAddEsp(
       name: row.name,
       vendor: row.vendor,
       cmmc_status: row.cmmc_status,
+      already_existed: duplicate,
+      note: duplicate
+        ? "This ESP was ALREADY registered — no duplicate was created. Do not add it again."
+        : undefined,
     },
   };
 }
@@ -1533,7 +1541,7 @@ async function handleAddSpecializedAsset(
   const handlesFci =
     typeof input.handles_fci === "boolean" ? input.handles_fci : true;
 
-  const row = await addSpecializedAsset({
+  const { row, duplicate } = await addSpecializedAsset({
     organizationId: ctx.organizationId,
     label,
     assetType: assetType as SpecializedAssetType,
@@ -1548,6 +1556,10 @@ async function handleAddSpecializedAsset(
       label: row.label,
       asset_type: row.asset_type,
       handles_fci: row.handles_fci,
+      already_existed: duplicate,
+      note: duplicate
+        ? "This specialized asset was ALREADY in the inventory — no duplicate was created. Do not add it again."
+        : undefined,
     },
   };
 }

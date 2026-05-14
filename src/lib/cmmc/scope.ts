@@ -40,6 +40,11 @@ export async function listScopeItems(
   `) as ScopeItemRow[];
 }
 
+export type AddScopeItemResult = {
+  row: ScopeItemRow;
+  duplicate: boolean;
+};
+
 export async function addScopeItem(args: {
   organizationId: string;
   kind: ScopeKind;
@@ -47,8 +52,24 @@ export async function addScopeItem(args: {
   role?: string | null;
   handlesFci?: boolean;
   notes?: string | null;
-}): Promise<ScopeItemRow> {
+}): Promise<AddScopeItemResult> {
   const sql = getSql();
+  // Idempotency guard: case-insensitive label match within (org, kind),
+  // ignoring retired rows. Critical for a compliance artifact — Charlie
+  // re-issuing add_scope_item should never silently duplicate a row.
+  const existing = (await sql`
+    SELECT id, organization_id, kind, label, role, handles_fci, notes,
+           retired_at, created_at, updated_at
+    FROM scope_inventory
+    WHERE organization_id = ${args.organizationId}::uuid
+      AND kind = ${args.kind}
+      AND retired_at IS NULL
+      AND lower(label) = lower(${args.label})
+    LIMIT 1
+  `) as ScopeItemRow[];
+  if (existing.length > 0) {
+    return { row: existing[0], duplicate: true };
+  }
   const rows = (await sql`
     INSERT INTO scope_inventory
       (organization_id, kind, label, role, handles_fci, notes)
@@ -58,7 +79,7 @@ export async function addScopeItem(args: {
     RETURNING id, organization_id, kind, label, role, handles_fci, notes,
               retired_at, created_at, updated_at
   `) as ScopeItemRow[];
-  return rows[0];
+  return { row: rows[0], duplicate: false };
 }
 
 export async function retireScopeItem(
@@ -119,6 +140,11 @@ export async function listEsps(organizationId: string): Promise<EspRow[]> {
   `) as EspRow[];
 }
 
+export type AddEspResult = {
+  row: EspRow;
+  duplicate: boolean;
+};
+
 export async function addEsp(args: {
   organizationId: string;
   name: string;
@@ -127,8 +153,19 @@ export async function addEsp(args: {
   cmmcStatus?: string | null;
   attestationDocUrl?: string | null;
   contactEmail?: string | null;
-}): Promise<EspRow> {
+}): Promise<AddEspResult> {
   const sql = getSql();
+  const existing = (await sql`
+    SELECT id, organization_id, name, vendor, services, cmmc_status,
+           attestation_doc_url, contact_email, created_at, updated_at
+    FROM esp_registry
+    WHERE organization_id = ${args.organizationId}::uuid
+      AND lower(name) = lower(${args.name})
+    LIMIT 1
+  `) as EspRow[];
+  if (existing.length > 0) {
+    return { row: existing[0], duplicate: true };
+  }
   const rows = (await sql`
     INSERT INTO esp_registry
       (organization_id, name, vendor, services, cmmc_status,
@@ -140,7 +177,7 @@ export async function addEsp(args: {
     RETURNING id, organization_id, name, vendor, services, cmmc_status,
               attestation_doc_url, contact_email, created_at, updated_at
   `) as EspRow[];
-  return rows[0];
+  return { row: rows[0], duplicate: false };
 }
 
 export async function updateEsp(args: {
@@ -236,8 +273,19 @@ export async function addSpecializedAsset(args: {
   assetType: SpecializedAssetType;
   description?: string | null;
   handlesFci?: boolean;
-}): Promise<SpecializedAssetRow> {
+}): Promise<{ row: SpecializedAssetRow; duplicate: boolean }> {
   const sql = getSql();
+  const existing = (await sql`
+    SELECT id, organization_id, label, asset_type, description, handles_fci, created_at
+    FROM specialized_assets
+    WHERE organization_id = ${args.organizationId}::uuid
+      AND asset_type = ${args.assetType}
+      AND lower(label) = lower(${args.label})
+    LIMIT 1
+  `) as SpecializedAssetRow[];
+  if (existing.length > 0) {
+    return { row: existing[0], duplicate: true };
+  }
   const rows = (await sql`
     INSERT INTO specialized_assets
       (organization_id, label, asset_type, description, handles_fci)
@@ -246,7 +294,7 @@ export async function addSpecializedAsset(args: {
        ${args.description ?? null}, ${args.handlesFci ?? true})
     RETURNING id, organization_id, label, asset_type, description, handles_fci, created_at
   `) as SpecializedAssetRow[];
-  return rows[0];
+  return { row: rows[0], duplicate: false };
 }
 
 export const specializedAssetLabels: Record<SpecializedAssetType, string> = {
