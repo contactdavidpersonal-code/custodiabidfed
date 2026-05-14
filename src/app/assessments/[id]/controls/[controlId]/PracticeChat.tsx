@@ -815,26 +815,48 @@ function SlotDropzone({
   describes: string;
   accept?: string[];
 }) {
-  const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const zoneRef = useRef<HTMLDivElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const submitWithFile = useCallback((file: File) => {
-    if (!inputRef.current || !formRef.current) return;
-    if (file.size > 25 * 1024 * 1024) {
-      setError("File is over 25 MB. Try splitting it or compressing.");
-      return;
-    }
-    setError(null);
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    inputRef.current.files = dt.files;
-    setUploading(true);
-    formRef.current.requestSubmit();
-  }, []);
+  // We call the server action directly with a fully-populated FormData
+  // instead of submitting the <form>. Two reasons:
+  //   1. The action returns a Promise, so we can `try/finally` the spinner
+  //      state — submitting via requestSubmit() doesn't give us a completion
+  //      hook, which is why the dropzone was getting stuck in "Uploading…".
+  //   2. We can surface server-side validation errors (MIME deny, rate
+  //      limit, 25 MB) inline instead of bubbling them as uncaught Next
+  //      action errors.
+  const submitWithFile = useCallback(
+    async (file: File) => {
+      if (file.size > 25 * 1024 * 1024) {
+        setError("File is over 25 MB. Try splitting it or compressing.");
+        return;
+      }
+      setError(null);
+      setUploading(true);
+      try {
+        const fd = new FormData();
+        fd.set("assessmentId", assessmentId);
+        fd.set("controlId", controlId);
+        fd.set("slotKey", slot.key);
+        fd.set("file", file);
+        await uploadEvidenceAction(fd);
+        // Let the rest of the page (PracticeChat itself, EvidencePanel,
+        // ObjectivesPanel, progress bar) refresh off the server's new state.
+        window.dispatchEvent(new CustomEvent("evidence-changed"));
+      } catch (e) {
+        setError(
+          e instanceof Error ? e.message : "Upload failed. Please try again.",
+        );
+      } finally {
+        setUploading(false);
+      }
+    },
+    [assessmentId, controlId, slot.key, uploadEvidenceAction],
+  );
 
   const onDrop = useCallback(
     (e: React.DragEvent<HTMLDivElement>) => {
@@ -842,7 +864,7 @@ function SlotDropzone({
       e.stopPropagation();
       setDragActive(false);
       const f = e.dataTransfer.files?.[0];
-      if (f) submitWithFile(f);
+      if (f) void submitWithFile(f);
     },
     [submitWithFile],
   );
@@ -862,7 +884,7 @@ function SlotDropzone({
           const f = item.getAsFile();
           if (f) {
             e.preventDefault();
-            submitWithFile(f);
+            void submitWithFile(f);
             return;
           }
         }
@@ -880,30 +902,24 @@ function SlotDropzone({
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<{ slotKey: string; file: File }>).detail;
       if (!detail || detail.slotKey !== slot.key) return;
-      submitWithFile(detail.file);
+      void submitWithFile(detail.file);
     };
     window.addEventListener("charlie-image-dropped", handler);
     return () => window.removeEventListener("charlie-image-dropped", handler);
   }, [slot.key, submitWithFile]);
 
   return (
-    <form
-      ref={formRef}
-      action={uploadEvidenceAction}
-      encType="multipart/form-data"
-    >
-      <input type="hidden" name="assessmentId" value={assessmentId} />
-      <input type="hidden" name="controlId" value={controlId} />
-      <input type="hidden" name="slotKey" value={slot.key} />
+    <div>
       <input
         ref={inputRef}
         type="file"
-        name="file"
         accept={accept?.join(",")}
         className="sr-only"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) submitWithFile(f);
+          if (f) void submitWithFile(f);
+          // Clear so picking the same filename twice still fires onChange.
+          e.target.value = "";
         }}
       />
       <div
@@ -976,7 +992,7 @@ function SlotDropzone({
           {error}
         </p>
       )}
-    </form>
+    </div>
   );
 }
 
