@@ -34,9 +34,10 @@ export default async function ScopePage(
   const { id } = await props.params;
   const ctx = await getAssessmentForUser(id, userId);
   if (!ctx) notFound();
-  // Scope sits between profile and the requirement work — gate on profile so
-  // the user has a name/system context before mapping their environment.
-  await enforceStepOrder(ctx, "registration");
+  // Scope is its own gated step — § 170.19(b)(3) requires People, Technology,
+  // Facility, and ESP rows before practice work is meaningful. enforceStepOrder
+  // will bounce the user back to whichever earlier step they still owe.
+  await enforceStepOrder(ctx, "scope");
 
   const orgId = ctx.organization.id;
   const [scope, esps, specialized] = await Promise.all([

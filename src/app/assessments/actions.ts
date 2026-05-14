@@ -186,15 +186,18 @@ export async function saveFederalRegistrationAction(formData: FormData) {
     revalidatePath(`/assessments/${assessmentId}/registration`);
   }
 
-  // Forward to the practices page once the registration step is complete
-  // (UEI + at least one NAICS). Otherwise stay on the registration page so
-  // the user can finish filling things in.
+  // Forward to the scope inventory step once the registration step is
+  // complete (UEI + at least one NAICS). The Scoping Guide L1 § 170.19(b)(3)
+  // requires People / Technology / Facility / ESP inventory before any
+  // practice work is meaningful, so we deliberately route to /scope here
+  // rather than the practices overview. Otherwise stay on the registration
+  // page so the user can finish filling things in.
   const registrationComplete = Boolean(samUei) && naicsCodes.length > 0;
   if (assessmentId && registrationComplete) {
     if (samWarning && samWarning !== "ok") {
       redirect(`/assessments/${assessmentId}/registration?sam_warning=${samWarning}`);
     }
-    redirect(`/assessments/${assessmentId}`);
+    redirect(`/assessments/${assessmentId}/scope`);
   }
   if (assessmentId && samWarning && samWarning !== "ok") {
     redirect(`/assessments/${assessmentId}/registration?sam_warning=${samWarning}`);

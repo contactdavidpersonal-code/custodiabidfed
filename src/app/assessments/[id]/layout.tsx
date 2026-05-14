@@ -61,7 +61,14 @@ export default async function CourseLayout(
   }
 
   const progress = computeProgress(responses);
-  const gate = getStepGate(ctx.organization, profile, responses, ctx.assessment, coverage);
+  const gate = getStepGate(
+    ctx.organization,
+    profile,
+    responses,
+    ctx.assessment,
+    coverage,
+    scopeComplete,
+  );
   const profileComplete = gate.profileComplete;
   const registrationComplete = gate.registrationComplete;
   const practicesAllResolved = gate.practicesComplete;
@@ -91,7 +98,7 @@ export default async function CourseLayout(
       ? "complete"
       : "in_progress";
 
-  const practicesStatus: SectionStatus = !profileComplete || !registrationComplete || (isCarryForward && !materialChangeReviewed)
+  const practicesStatus: SectionStatus = !profileComplete || !registrationComplete || (isCarryForward && !materialChangeReviewed) || !scopeComplete
     ? "locked"
     : practicesAllResolved
       ? "complete"
@@ -99,7 +106,7 @@ export default async function CourseLayout(
 
   const signStatus: SectionStatus = attested
     ? "complete"
-    : profileComplete && registrationComplete && practicesAllResolved
+    : profileComplete && registrationComplete && scopeComplete && practicesAllResolved
       ? "in_progress"
       : "locked";
 
@@ -146,14 +153,16 @@ export default async function CourseLayout(
       step: 3,
       href: `/assessments/${id}/scope`,
       title: "Scope inventory",
-      subtitle: registrationComplete
-        ? "People, technology, facilities, ESPs"
-        : "Unlocks after registration",
+      subtitle: !registrationComplete
+        ? "Unlocks after registration"
+        : scopeComplete
+          ? "People, technology, facilities, ESPs"
+          : "People, technology, facilities, ESPs — required before practices",
       status: !registrationComplete
         ? "locked"
         : scopeComplete
           ? "complete"
-          : "available",
+          : "in_progress",
       match: "prefix",
     },
     {
@@ -196,7 +205,7 @@ export default async function CourseLayout(
       href: `/assessments/${id}/sign`,
       title: "Sign and affirm",
       subtitle: attested
-        ? "Yearly affirmation on file"
+        ? "Yearly affirmation on 4ile"
         : signStatus === "locked"
           ? "Finish steps 1\u20133 first"
           : "Senior official signature",

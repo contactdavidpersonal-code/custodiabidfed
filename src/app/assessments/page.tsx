@@ -10,6 +10,7 @@ import {
   listResponsesForAssessment,
   stepHref,
 } from "@/lib/assessment";
+import { listEsps, listScopeItems } from "@/lib/cmmc/scope";
 import { ensureWelcomeEmailSent } from "@/lib/email/welcome";
 import { defaultCycleLabel, fiscalYearOf } from "@/lib/fiscal";
 
@@ -59,6 +60,19 @@ export default async function AssessmentsIndexPage() {
     ? await listResponsesForAssessment(assessment.id)
     : [];
 
+  // 32 CFR § 170.19(b)(3) scope inventory completeness — needed so the
+  // index can route to /scope when the user owes that step. Matches the
+  // logic in CourseLayout and enforceStepOrder.
+  const [scopeItems, esps] = await Promise.all([
+    listScopeItems(org.id),
+    listEsps(org.id),
+  ]);
+  const scopeComplete =
+    scopeItems.some((s) => s.kind === "people") &&
+    scopeItems.some((s) => s.kind === "technology") &&
+    scopeItems.some((s) => s.kind === "facility") &&
+    esps.length > 0;
+
   // We only need the bare minimum to compute the gate. Cast through unknown
   // because computeProgress only reads `status` and getStepGate only reads
   // `status` off the assessment row.
@@ -71,6 +85,8 @@ export default async function AssessmentsIndexPage() {
       organization_id: org.id,
       status: "in_progress",
     }) as never,
+    undefined,
+    scopeComplete,
   );
 
   redirect(stepHref(assessmentId, gate.currentStep));

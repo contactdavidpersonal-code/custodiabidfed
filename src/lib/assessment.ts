@@ -1359,6 +1359,7 @@ export type AssessmentStep =
   | "profile"
   | "registration"
   | "material-change"
+  | "scope"
   | "practices"
   | "sign"
   | "attested";
@@ -1367,6 +1368,7 @@ const STEP_ORDER: AssessmentStep[] = [
   "profile",
   "registration",
   "material-change",
+  "scope",
   "practices",
   "sign",
   "attested",
@@ -1381,6 +1383,12 @@ export type StepGate = {
    * a fresh (non-carried) assessment.
    */
   materialChangeReviewed: boolean;
+  /**
+   * 32 CFR § 170.19(b)(3) scope inventory minimum: at least one People,
+   * Technology, Facility, and ESP row on file. Defaults to true for
+   * frameworks other than CMMC L1 so this gate is a no-op there.
+   */
+  scopeComplete: boolean;
   practicesComplete: boolean;
   attested: boolean;
   /** The earliest step the user has not finished. Where they should go next. */
@@ -1428,6 +1436,13 @@ export function getStepGate(
    * controls are treated as MET-equivalent for the practicesComplete gate.
    */
   exceptionCoveredControlIds?: ReadonlySet<string>,
+  /**
+   * 32 CFR § 170.19(b)(3) scope inventory completeness. Pass `true` when the
+   * org has at least one People, Technology, Facility, and ESP row. Omit
+   * (defaults to `true`) for non-CMMC frameworks or callers that do not
+   * gate on scope.
+   */
+  scopeComplete: boolean = true,
 ): StepGate {
   const profileComplete = isProfileStepComplete(org, profile);
   const registrationComplete = isRegistrationStepComplete(org);
@@ -1453,6 +1468,7 @@ export function getStepGate(
   if (!profileComplete) currentStep = "profile";
   else if (!registrationComplete) currentStep = "registration";
   else if (!materialChangeReviewed) currentStep = "material-change";
+  else if (!scopeComplete) currentStep = "scope";
   else if (!practicesComplete) currentStep = "practices";
   else if (!attested) currentStep = "sign";
 
@@ -1460,6 +1476,7 @@ export function getStepGate(
     profileComplete,
     registrationComplete,
     materialChangeReviewed,
+    scopeComplete,
     practicesComplete,
     attested,
     currentStep,
@@ -1478,6 +1495,8 @@ export function stepHref(assessmentId: string, step: AssessmentStep): string {
       return `/assessments/${assessmentId}/registration`;
     case "material-change":
       return `/assessments/${assessmentId}/material-change`;
+    case "scope":
+      return `/assessments/${assessmentId}/scope`;
     case "practices":
       return `/assessments/${assessmentId}`;
     case "sign":
@@ -1527,14 +1546,30 @@ export async function enforceStepOrder(
   // legacy table can still pass the practices-complete gate when properly
   // documented. CMMC L1 only — other frameworks use the legacy gate as-is.
   let coverage: ReadonlySet<string> | undefined;
+  let scopeComplete = true;
   if (ctx.assessment.framework === "cmmc_l1") {
-    const { computeExceptionCoverage } = await import("@/lib/cmmc/objectives");
-    const map = await computeExceptionCoverage(ctx.assessment.id);
+    const [{ computeExceptionCoverage }, { listScopeItems, listEsps }] =
+      await Promise.all([
+        import("@/lib/cmmc/objectives"),
+        import("@/lib/cmmc/scope"),
+      ]);
+    const [map, scopeItems, esps] = await Promise.all([
+      computeExceptionCoverage(ctx.assessment.id),
+      listScopeItems(ctx.organization.id),
+      listEsps(ctx.organization.id),
+    ]);
     const covered = new Set<string>();
     for (const [controlId, info] of map) {
       if (info.covered) covered.add(controlId);
     }
     coverage = covered;
+    // 32 CFR § 170.19(b)(3) scope inventory: at least one row in each of
+    // People, Technology, Facility, and ESP. Matches CourseLayout.
+    const hasPeople = scopeItems.some((s) => s.kind === "people");
+    const hasTech = scopeItems.some((s) => s.kind === "technology");
+    const hasFacility = scopeItems.some((s) => s.kind === "facility");
+    const hasEsp = esps.length > 0;
+    scopeComplete = hasPeople && hasTech && hasFacility && hasEsp;
   }
   const gate = getStepGate(
     ctx.organization,
@@ -1542,6 +1577,7 @@ export async function enforceStepOrder(
     responses,
     ctx.assessment,
     coverage,
+    scopeComplete,
   );
   const target = stepGateRedirect(gate, ctx.assessment.id, requestedStep);
   if (target) redirect(target);
