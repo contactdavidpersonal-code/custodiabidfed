@@ -159,7 +159,7 @@ export async function gatherControlContext(args: {
         FROM organizations
         WHERE id = ${organizationId}
         LIMIT 1
-      ` as Promise<
+      ` as unknown as Promise<
         Array<{
           name: string;
           naics_codes: string[];
@@ -185,7 +185,7 @@ export async function gatherControlContext(args: {
     orgScopedSystems: org.scoped_systems,
     scopeNarrative: scope.narrative,
     businessProfile: (businessProfile?.data ?? {}) as Record<string, unknown>,
-    citation: lookupCitation(controlId) ?? null,
+    citation: (lookupCitation(controlId) as unknown) as ControlCitation | null,
     controlId,
     evidenceFilenames: evidence.map((e: EvidenceArtifactRow) => e.filename),
     existingResponse: existingResponse ?? null,

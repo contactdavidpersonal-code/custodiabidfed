@@ -76,7 +76,6 @@ import {
   saveNarrative,
 } from "@/lib/cmmc/narrative-copilot";
 import { recordAuditEvent } from "@/lib/security/audit-log";
-import { getSql } from "@/lib/db";
 import {
   assembleBoundaryView,
   getScopeProfile,
@@ -3042,12 +3041,12 @@ async function handleVerifySamRegistration(
 
 // ---------- Tier 2.2 / 2.3: evidence attach / remove ----------
 
-const OBJECTIVE_LETTERS = ["a", "b", "c", "d", "e", "f"] as const;
-type ObjectiveLetter = (typeof OBJECTIVE_LETTERS)[number];
+const OBJECTIVE_LETTER_TUPLE = ["a", "b", "c", "d", "e", "f"] as const;
+type ObjectiveLetter = (typeof OBJECTIVE_LETTER_TUPLE)[number];
 
 function parseLetter(input: Record<string, unknown>): ObjectiveLetter | null {
   const raw = typeof input.letter === "string" ? input.letter.toLowerCase() : "";
-  return (OBJECTIVE_LETTERS as readonly string[]).includes(raw)
+  return (OBJECTIVE_LETTER_TUPLE as readonly string[]).includes(raw)
     ? (raw as ObjectiveLetter)
     : null;
 }
@@ -3235,7 +3234,7 @@ async function handlePreflightAffirmation(
     responses.map((r) => ({ control_id: r.control_id, status: r.status })),
   );
   const evidenceBlockers = evidenceReviewBlockers(evidence);
-  const boundaryFailures = findings.filter((f) => f.severity === "fail");
+  const boundaryFailures = findings.filter((f) => f.level === "fail");
 
   const blockers: Array<{
     section: "controls" | "evidence" | "boundary" | "affirming_official";
@@ -3256,7 +3255,7 @@ async function handlePreflightAffirmation(
   for (const f of boundaryFailures) {
     blockers.push({
       section: "boundary",
-      detail: { id: f.id, message: f.message, severity: f.severity },
+      detail: { code: f.code, message: f.message, level: f.level },
     });
   }
   if (!view.affirming_official) {
