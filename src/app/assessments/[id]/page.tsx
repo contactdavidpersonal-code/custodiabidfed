@@ -62,13 +62,15 @@ const statusBarColor: Record<ControlResponseRow["status"], string> = {
   not_applicable: "bg-[#5a7d70]",
 };
 
+// Domain titles taken verbatim from CMMC Assessment Guide – Level 1 v2.13
+// (DoD-CIO-00002, Sept 2024), section headers on pp. 12, 22, 27, 29, 34, 39.
 const domainLabels: Record<(typeof controlDomains)[number], string> = {
   AC: "Access Control",
-  IA: "Identification & Authentication",
+  IA: "Identification and Authentication",
   MP: "Media Protection",
   PE: "Physical Protection",
-  SC: "System & Communications Protection",
-  SI: "System & Information Integrity",
+  SC: "System and Communications Protection",
+  SI: "System and Information Integrity",
 };
 
 /**
