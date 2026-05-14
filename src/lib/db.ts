@@ -1142,6 +1142,61 @@ async function runInitDdl() {
       ON material_changes (organization_id, assessment_id, filed_at DESC)
   `;
 
+  // ── Tier 3: SSP narrative copilot ──────────────────────────────────────
+  // Two-table cohort that lets Charlie ghostwrite the per-control SSP
+  // narratives from interview-driven context (org profile + scope + evidence
+  // filenames + control text) and produce a critique-history audit trail
+  // assessors can review alongside the SSP itself.
+  //
+  // narrative_interview_sessions: ephemeral, per (assessment, control, user)
+  // working buffer. turns[] holds the back-and-forth and final draft so the
+  // user can resume mid-interview. Auto-cleaned at 30 days.
+  //
+  // narrative_critique_history: append-only "what was wrong with this SSP
+  // section at point in time T". narrative_hash lets the UI tell the user
+  // "you haven't changed this since the last critique — here's what's still
+  // weak" without re-spending the LLM call.
+  await sql`
+    CREATE TABLE IF NOT EXISTS narrative_interview_sessions (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      control_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      turns JSONB NOT NULL DEFAULT '[]'::jsonb,
+      status TEXT NOT NULL DEFAULT 'active'
+        CHECK (status IN ('active','drafted','abandoned')),
+      draft_narrative TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at TIMESTAMPTZ NOT NULL DEFAULT NOW() + INTERVAL '30 days'
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS narrative_interview_sessions_active_idx
+      ON narrative_interview_sessions
+        (organization_id, assessment_id, control_id, user_id)
+      WHERE status = 'active'
+  `;
+  await sql`
+    CREATE TABLE IF NOT EXISTS narrative_critique_history (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+      organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      control_id TEXT NOT NULL,
+      narrative_hash TEXT NOT NULL,
+      ready BOOLEAN NOT NULL,
+      weaknesses JSONB NOT NULL DEFAULT '[]'::jsonb,
+      critiqued_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      critiqued_by_user_id TEXT NOT NULL
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS narrative_critique_history_lookup_idx
+      ON narrative_critique_history
+        (organization_id, assessment_id, control_id, critiqued_at DESC)
+  `;
+
   // Postgres-backed fixed-window rate limiter (defense-in-depth against
   // LLM-cost abuse and waitlist spam). See src/lib/security/rate-limit.ts.
   await sql`

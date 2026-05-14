@@ -62,6 +62,19 @@ import {
 import { getSamEntityStatus, summarizeSamStatus } from "@/lib/sam-entity";
 import { recomputeTrustStatus } from "@/lib/trust-status";
 import { fileMaterialChange } from "@/lib/cmmc/material-changes";
+import {
+  appendInterviewTurn,
+  answerLastInterviewTurn,
+  askNextInterviewQuestion,
+  critiqueControlNarrative,
+  draftControlNarrative,
+  gatherControlContext,
+  getOrCreateInterviewSession,
+  hasMinimumContext,
+  markSessionDrafted,
+  recordCritique,
+  saveNarrative,
+} from "@/lib/cmmc/narrative-copilot";
 import { recordAuditEvent } from "@/lib/security/audit-log";
 import { getSql } from "@/lib/db";
 import {
@@ -1012,6 +1025,97 @@ export const officerTools = [
       required: ["reason", "changes"],
     },
   },
+  {
+    name: "draft_control_narrative",
+    description:
+      "Ghostwrite an SSP narrative paragraph for one CMMC L1 control, grounded in the org's profile, scope, and attached evidence. Returns a draft for the user to review — does NOT save. Use when the user asks Charlie to write, draft, ghostwrite, or improve the narrative for a specific control. If the org has too little context, returns needs_more_context=true and the caller should run interview_for_control_narrative first.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        control_id: {
+          type: "string",
+          description: "CMMC L1 control id, e.g. 'AC.L1-3.1.1'.",
+        },
+        assessment_id: {
+          type: "string",
+          description: "Optional. Defaults to the active assessment.",
+        },
+      },
+      required: ["control_id"],
+    },
+  },
+  {
+    name: "interview_for_control_narrative",
+    description:
+      "Conversational interview to gather the org-specific facts needed to ghostwrite an SSP narrative for one control. Call with no `answer` to start (or to resume) — returns the next question. Call with `answer` to record the user's reply to the most recent question. When Charlie has enough context, returns ready=true and a final draft. State persists per (assessment, control, user) for 30 days.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        control_id: {
+          type: "string",
+          description: "CMMC L1 control id, e.g. 'AC.L1-3.1.1'.",
+        },
+        answer: {
+          type: "string",
+          description:
+            "The user's reply to the most recent interview question. Omit on the first call.",
+        },
+        assessment_id: {
+          type: "string",
+          description: "Optional. Defaults to the active assessment.",
+        },
+      },
+      required: ["control_id"],
+    },
+  },
+  {
+    name: "save_control_narrative",
+    description:
+      "Persist a narrative to control_responses.narrative for one control. Overwrites any existing narrative. Use after the user reviews a draft and confirms they want it saved (or after they hand-edit one). Rejects narratives shorter than 80 chars or longer than 4000.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        control_id: { type: "string" },
+        narrative: { type: "string" },
+        assessment_id: {
+          type: "string",
+          description: "Optional. Defaults to the active assessment.",
+        },
+      },
+      required: ["control_id", "narrative"],
+    },
+  },
+  {
+    name: "critique_control_narrative",
+    description:
+      "C3PAO assessor-style critique of the currently-saved narrative for one control. Returns ready=true|false and a short weaknesses list. Read-only — does NOT modify the narrative. Records the critique to the audit history so the UI can later detect 'narrative unchanged since last critique'.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        control_id: { type: "string" },
+        assessment_id: {
+          type: "string",
+          description: "Optional. Defaults to the active assessment.",
+        },
+      },
+      required: ["control_id"],
+    },
+  },
+  {
+    name: "bulk_draft_remaining_narratives",
+    description:
+      "Generate narrative drafts for every L1 control on the active assessment that has an empty or weak (< 80 chars) narrative. Returns an array of drafts for the user to review — does NOT save. Each draft is independent; the user picks which to keep. No cap — runs across all 15 L1 practices.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        assessment_id: {
+          type: "string",
+          description: "Optional. Defaults to the active assessment.",
+        },
+      },
+      required: [],
+    },
+  },
 ];
 
 export type ToolContext = {
@@ -1128,6 +1232,16 @@ export async function executeOfficerTool(
         return await handleRegenerateDeliverable(input, ctx);
       case "file_material_change":
         return await handleFileMaterialChange(input, ctx);
+      case "draft_control_narrative":
+        return await handleDraftControlNarrative(input, ctx);
+      case "interview_for_control_narrative":
+        return await handleInterviewForControlNarrative(input, ctx);
+      case "save_control_narrative":
+        return await handleSaveControlNarrative(input, ctx);
+      case "critique_control_narrative":
+        return await handleCritiqueControlNarrative(input, ctx);
+      case "bulk_draft_remaining_narratives":
+        return await handleBulkDraftRemainingNarratives(input, ctx);
       default:
         return { ok: false, error: `Unknown tool: ${name}` };
     }
@@ -3513,6 +3627,522 @@ async function handleFileMaterialChange(
       message: requiresReassessment
         ? "Material change filed. Reassessment is required — the affirmation will be re-prompted."
         : "Material change filed. Current affirmation remains valid; this entry is on the audit log.",
+    },
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Tier 3: SSP Narrative Copilot handlers
+// ═══════════════════════════════════════════════════════════════════════
+
+// Shared minimums: narratives shorter than this are treated as "weak" by
+// bulk_draft_remaining_narratives. The official assessment.ts validators
+// already enforce ≥120 for N/A and ≥200 for "Met w/o evidence" — this
+// threshold is just our "this control needs help" line.
+const WEAK_NARRATIVE_THRESHOLD = 80;
+const MAX_NARRATIVE_LENGTH = 4000;
+
+/**
+ * Resolve + tenant-check the assessment for a narrative-copilot tool call.
+ * Returns the assessmentId on success, or a ToolResult on error so the
+ * caller can `if (..."ok" in r) return r;`.
+ */
+async function resolveNarrativeContext(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<{ assessmentId: string } | ToolResult> {
+  const assessmentId = await resolveAssessmentId(input, ctx);
+  if (!assessmentId) return { ok: false, error: "No active assessment." };
+  const owned = await getAssessmentForUser(assessmentId, ctx.userId);
+  if (!owned) {
+    return {
+      ok: false,
+      error: "Assessment not found or you do not have access.",
+    };
+  }
+  if (owned.organization.id !== ctx.organizationId) {
+    return { ok: false, error: "Assessment belongs to a different organization." };
+  }
+  return { assessmentId };
+}
+
+function isToolResult(x: unknown): x is ToolResult {
+  return (
+    typeof x === "object" && x !== null && "ok" in (x as Record<string, unknown>)
+  );
+}
+
+function normalizeControlId(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) return null;
+  // Accept either lowercase or uppercase. Catalog keys are uppercase.
+  return trimmed.toUpperCase();
+}
+
+// ---------- Tier 3.1: draft_control_narrative ----------
+
+async function handleDraftControlNarrative(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const controlId = normalizeControlId(input.control_id);
+  if (!controlId) {
+    return { ok: false, error: "control_id is required." };
+  }
+  const resolved = await resolveNarrativeContext(input, ctx);
+  if (isToolResult(resolved)) return resolved;
+  const { assessmentId } = resolved;
+
+  const controlCtx = await gatherControlContext({
+    organizationId: ctx.organizationId,
+    assessmentId,
+    controlId,
+  });
+
+  if (!hasMinimumContext(controlCtx)) {
+    return {
+      ok: true,
+      data: {
+        control_id: controlId,
+        draft: null,
+        needs_more_context: true,
+        message:
+          "Not enough company-specific context yet to write a grounded narrative. Call `interview_for_control_narrative` first — Charlie will ask a few short questions.",
+      },
+    };
+  }
+
+  const result = await draftControlNarrative({
+    organizationId: ctx.organizationId,
+    ctx: controlCtx,
+  });
+
+  if (result.needsMoreContext) {
+    return {
+      ok: true,
+      data: {
+        control_id: controlId,
+        draft: null,
+        needs_more_context: true,
+        message:
+          "Claude flagged that more context is needed. Call `interview_for_control_narrative` to gather specifics.",
+      },
+    };
+  }
+
+  await recordAuditEvent({
+    action: "narrative.drafted",
+    userId: ctx.userId,
+    organizationId: ctx.organizationId,
+    resourceType: "control_response",
+    resourceId: `${assessmentId}:${controlId}`,
+    metadata: {
+      draft_length: result.draft.length,
+      regenerated_for_slop: result.regeneratedForSlop,
+      cited_evidence_count: result.citedEvidence.length,
+    },
+  });
+
+  return {
+    ok: true,
+    data: {
+      control_id: controlId,
+      draft: result.draft,
+      draft_length: result.draft.length,
+      cited_evidence: result.citedEvidence,
+      regenerated_for_slop: result.regeneratedForSlop,
+      needs_more_context: false,
+      message:
+        "Draft generated. Review it, edit if needed, then call `save_control_narrative` to persist.",
+    },
+  };
+}
+
+// ---------- Tier 3.2: interview_for_control_narrative ----------
+
+async function handleInterviewForControlNarrative(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const controlId = normalizeControlId(input.control_id);
+  if (!controlId) {
+    return { ok: false, error: "control_id is required." };
+  }
+  const resolved = await resolveNarrativeContext(input, ctx);
+  if (isToolResult(resolved)) return resolved;
+  const { assessmentId } = resolved;
+
+  const session = await getOrCreateInterviewSession({
+    organizationId: ctx.organizationId,
+    assessmentId,
+    controlId,
+    userId: ctx.userId,
+  });
+
+  // If the caller supplied an answer to the most recent question, record
+  // it before asking what's next.
+  const rawAnswer = pickString(input, "answer");
+  let working = session;
+  if (rawAnswer !== undefined) {
+    const answer = rawAnswer.trim();
+    if (answer.length === 0) {
+      return { ok: false, error: "answer must not be empty." };
+    }
+    if (answer.length > 2000) {
+      return { ok: false, error: "answer must be 2000 characters or fewer." };
+    }
+    const hasUnanswered = working.turns.some((t) => t.a === null);
+    if (!hasUnanswered) {
+      return {
+        ok: false,
+        error:
+          "No outstanding question to answer. Call this tool without `answer` to get the next question.",
+      };
+    }
+    working = await answerLastInterviewTurn({
+      sessionId: working.id,
+      organizationId: ctx.organizationId,
+      answer,
+    });
+  }
+
+  // Refresh context after any answer — evidence/scope may have changed
+  // out-of-band, but more importantly the businessProfile growth from
+  // chat is reflected here.
+  const controlCtx = await gatherControlContext({
+    organizationId: ctx.organizationId,
+    assessmentId,
+    controlId,
+  });
+
+  const next = await askNextInterviewQuestion({
+    organizationId: ctx.organizationId,
+    ctx: controlCtx,
+    turns: working.turns,
+  });
+
+  if (!next.ready && next.question) {
+    const newTurn = {
+      q: next.question,
+      a: null,
+      asked_at: new Date().toISOString(),
+      answered_at: null,
+    };
+    working = await appendInterviewTurn({
+      sessionId: working.id,
+      organizationId: ctx.organizationId,
+      turn: newTurn,
+    });
+    return {
+      ok: true,
+      data: {
+        control_id: controlId,
+        session_id: working.id,
+        ready: false,
+        question: next.question,
+        turn_count: working.turns.length,
+      },
+    };
+  }
+
+  // Ready to draft.
+  const draft = await draftControlNarrative({
+    organizationId: ctx.organizationId,
+    ctx: controlCtx,
+    interviewAnswers: working.turns,
+  });
+
+  if (draft.needsMoreContext) {
+    // Pathological — model flipped its mind. Surface honestly.
+    return {
+      ok: true,
+      data: {
+        control_id: controlId,
+        session_id: working.id,
+        ready: false,
+        question:
+          "Could you tell me more about how this control is actually implemented at your company?",
+        turn_count: working.turns.length,
+        note: "Drafting model still wants more context.",
+      },
+    };
+  }
+
+  await markSessionDrafted({
+    sessionId: working.id,
+    organizationId: ctx.organizationId,
+    draftNarrative: draft.draft,
+  });
+
+  await recordAuditEvent({
+    action: "narrative.drafted",
+    userId: ctx.userId,
+    organizationId: ctx.organizationId,
+    resourceType: "control_response",
+    resourceId: `${assessmentId}:${controlId}`,
+    metadata: {
+      via: "interview",
+      session_id: working.id,
+      turn_count: working.turns.length,
+      regenerated_for_slop: draft.regeneratedForSlop,
+    },
+  });
+
+  return {
+    ok: true,
+    data: {
+      control_id: controlId,
+      session_id: working.id,
+      ready: true,
+      draft: draft.draft,
+      draft_length: draft.draft.length,
+      cited_evidence: draft.citedEvidence,
+      turn_count: working.turns.length,
+      message:
+        "Charlie has enough context — draft generated. Review and call `save_control_narrative` to persist.",
+    },
+  };
+}
+
+// ---------- Tier 3.3: save_control_narrative ----------
+
+async function handleSaveControlNarrative(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const controlId = normalizeControlId(input.control_id);
+  if (!controlId) {
+    return { ok: false, error: "control_id is required." };
+  }
+  const narrative = pickString(input, "narrative")?.trim() ?? "";
+  if (narrative.length < WEAK_NARRATIVE_THRESHOLD) {
+    return {
+      ok: false,
+      error: `narrative must be at least ${WEAK_NARRATIVE_THRESHOLD} characters.`,
+    };
+  }
+  if (narrative.length > MAX_NARRATIVE_LENGTH) {
+    return {
+      ok: false,
+      error: `narrative must be ${MAX_NARRATIVE_LENGTH} characters or fewer.`,
+    };
+  }
+  const resolved = await resolveNarrativeContext(input, ctx);
+  if (isToolResult(resolved)) return resolved;
+  const { assessmentId } = resolved;
+
+  const saved = await saveNarrative({
+    assessmentId,
+    controlId,
+    narrative,
+  });
+
+  await recordAuditEvent({
+    action: "narrative.saved",
+    userId: ctx.userId,
+    organizationId: ctx.organizationId,
+    resourceType: "control_response",
+    resourceId: saved.id,
+    metadata: {
+      control_id: controlId,
+      narrative_length: narrative.length,
+    },
+  });
+
+  return {
+    ok: true,
+    data: {
+      control_response_id: saved.id,
+      control_id: controlId,
+      narrative_length: narrative.length,
+      saved_at: saved.updated_at,
+    },
+  };
+}
+
+// ---------- Tier 3.4: critique_control_narrative ----------
+
+async function handleCritiqueControlNarrative(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const controlId = normalizeControlId(input.control_id);
+  if (!controlId) {
+    return { ok: false, error: "control_id is required." };
+  }
+  const resolved = await resolveNarrativeContext(input, ctx);
+  if (isToolResult(resolved)) return resolved;
+  const { assessmentId } = resolved;
+
+  const controlCtx = await gatherControlContext({
+    organizationId: ctx.organizationId,
+    assessmentId,
+    controlId,
+  });
+  const existing = controlCtx.existingResponse?.narrative?.trim() ?? "";
+  if (existing.length < WEAK_NARRATIVE_THRESHOLD) {
+    return {
+      ok: true,
+      data: {
+        control_id: controlId,
+        ready: false,
+        weaknesses: [
+          existing.length === 0
+            ? "No narrative on file yet. Draft one with `draft_control_narrative` or `interview_for_control_narrative`."
+            : `Narrative is only ${existing.length} characters — too short to demonstrate implementation.`,
+        ],
+        critiqued_at: new Date().toISOString(),
+      },
+    };
+  }
+
+  const critique = await critiqueControlNarrative({
+    organizationId: ctx.organizationId,
+    ctx: controlCtx,
+    narrative: existing,
+  });
+
+  const recorded = await recordCritique({
+    organizationId: ctx.organizationId,
+    assessmentId,
+    controlId,
+    userId: ctx.userId,
+    narrative: existing,
+    ready: critique.ready,
+    weaknesses: critique.weaknesses,
+  });
+
+  await recordAuditEvent({
+    action: "narrative.critiqued",
+    userId: ctx.userId,
+    organizationId: ctx.organizationId,
+    resourceType: "control_response",
+    resourceId: `${assessmentId}:${controlId}`,
+    metadata: {
+      critique_id: recorded.id,
+      ready: critique.ready,
+      weakness_count: critique.weaknesses.length,
+    },
+  });
+
+  return {
+    ok: true,
+    data: {
+      control_id: controlId,
+      ready: critique.ready,
+      weaknesses: critique.weaknesses,
+      critique_id: recorded.id,
+      critiqued_at: recorded.critiqued_at,
+    },
+  };
+}
+
+// ---------- Tier 3.5: bulk_draft_remaining_narratives ----------
+
+async function handleBulkDraftRemainingNarratives(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  const resolved = await resolveNarrativeContext(input, ctx);
+  if (isToolResult(resolved)) return resolved;
+  const { assessmentId } = resolved;
+
+  // L1 control universe = keys of controlCitations whose id contains "L1".
+  const l1ControlIds = Object.keys(controlCitations).filter((id) =>
+    id.includes(".L1-"),
+  );
+
+  // Find which controls actually need a draft right now.
+  const existing = await listResponsesForAssessment(assessmentId);
+  const byControl = new Map(existing.map((r) => [r.control_id, r]));
+
+  const candidates = l1ControlIds.filter((controlId) => {
+    const row = byControl.get(controlId);
+    const narrative = row?.narrative?.trim() ?? "";
+    return narrative.length < WEAK_NARRATIVE_THRESHOLD;
+  });
+
+  // Each draft is a Sonnet call — run them serially so we don't blow
+  // through the rate limit on a single tool invocation. With ~15 L1
+  // controls this is still fast enough; if it ever needs concurrency
+  // it can be promise-pooled later.
+  const drafts: Array<{
+    control_id: string;
+    draft: string | null;
+    needs_more_context: boolean;
+    regenerated_for_slop: boolean;
+    cited_evidence: string[];
+    error?: string;
+  }> = [];
+  for (const controlId of candidates) {
+    try {
+      const controlCtx = await gatherControlContext({
+        organizationId: ctx.organizationId,
+        assessmentId,
+        controlId,
+      });
+      if (!hasMinimumContext(controlCtx)) {
+        drafts.push({
+          control_id: controlId,
+          draft: null,
+          needs_more_context: true,
+          regenerated_for_slop: false,
+          cited_evidence: [],
+        });
+        continue;
+      }
+      const r = await draftControlNarrative({
+        organizationId: ctx.organizationId,
+        ctx: controlCtx,
+      });
+      drafts.push({
+        control_id: controlId,
+        draft: r.needsMoreContext ? null : r.draft,
+        needs_more_context: r.needsMoreContext,
+        regenerated_for_slop: r.regeneratedForSlop,
+        cited_evidence: r.citedEvidence,
+      });
+    } catch (err) {
+      drafts.push({
+        control_id: controlId,
+        draft: null,
+        needs_more_context: false,
+        regenerated_for_slop: false,
+        cited_evidence: [],
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  await recordAuditEvent({
+    action: "narrative.drafted",
+    userId: ctx.userId,
+    organizationId: ctx.organizationId,
+    resourceType: "assessment",
+    resourceId: assessmentId,
+    metadata: {
+      via: "bulk",
+      control_count: candidates.length,
+      drafts_with_content: drafts.filter((d) => d.draft).length,
+      controls_needing_interview: drafts.filter((d) => d.needs_more_context)
+        .length,
+    },
+  });
+
+  return {
+    ok: true,
+    data: {
+      assessment_id: assessmentId,
+      considered: l1ControlIds.length,
+      candidates: candidates.length,
+      drafts,
+      message:
+        drafts.length === 0
+          ? "All L1 controls already have substantive narratives."
+          : `Drafted ${
+              drafts.filter((d) => d.draft).length
+            } narratives. Review each and call \`save_control_narrative\` for the ones you want to keep.`,
     },
   };
 }

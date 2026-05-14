@@ -48,7 +48,10 @@ export type AuditAction =
   | "assessment.material_change_reviewed"
   | "assessment.material_change_filed"
   | "evidence.method_set"
-  | "evidence.marked_final";
+  | "evidence.marked_final"
+  | "narrative.drafted"
+  | "narrative.saved"
+  | "narrative.critiqued";
 
 export type AuditEvent = {
   action: AuditAction;
