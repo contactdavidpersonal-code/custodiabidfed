@@ -103,14 +103,79 @@ export function runOfficerAgentStream(
           // history valid.
           const toolResults: ToolResultBlock[] = [];
           let toolLoopError: unknown = null;
+          // Hard invariant: scope inventory is an attested compliance
+          // artifact. Charlie must read state + confirm with the user
+          // before each add. Cap add-style tool calls at ONE per assistant
+          // turn — anything beyond is short-circuited with a synthetic
+          // error so the model learns to slow down. This protects against
+          // the failure mode where one mis-thought turn emits 5+ parallel
+          // add_scope_item calls. Server-side dedup already keeps the DB
+          // clean; this stops the noise upstream.
+          const ADD_TOOLS = new Set([
+            "add_scope_item",
+            "add_esp",
+            "add_specialized_asset",
+          ]);
+          let addCallsThisTurn = 0;
+          const seenAddKeys = new Set<string>();
           try {
             for (const block of toolUses) {
+              const toolInput = (block.input ?? {}) as Record<string, unknown>;
+              const isAdd = ADD_TOOLS.has(block.name);
+              // Dedupe identical add calls within a single turn (same
+              // kind+label / name / asset_type+label). Even before the
+              // 1-per-turn cap fires, collapse exact duplicates.
+              let addKey: string | null = null;
+              if (isAdd) {
+                if (block.name === "add_scope_item") {
+                  const k = String(toolInput.kind ?? "").toLowerCase();
+                  const l = String(toolInput.label ?? "").trim().toLowerCase();
+                  addKey = `scope:${k}:${l}`;
+                } else if (block.name === "add_esp") {
+                  const n = String(toolInput.name ?? "").trim().toLowerCase();
+                  addKey = `esp:${n}`;
+                } else if (block.name === "add_specialized_asset") {
+                  const t = String(toolInput.asset_type ?? "").toLowerCase();
+                  const l = String(toolInput.label ?? "").trim().toLowerCase();
+                  addKey = `asset:${t}:${l}`;
+                }
+              }
+
+              if (isAdd && addKey && seenAddKeys.has(addKey)) {
+                // Don't even emit tool_start — keeps the UI clean.
+                toolResults.push({
+                  type: "tool_result",
+                  tool_use_id: block.id,
+                  content: JSON.stringify({
+                    ok: false,
+                    error: "duplicate_add_in_turn",
+                    message:
+                      "You already emitted an identical add call in this same turn. The duplicate was rejected. Do not retry — wait for the user's next message before adding anything else.",
+                  }),
+                  is_error: true,
+                });
+                continue;
+              }
+              if (isAdd && addCallsThisTurn >= 1) {
+                toolResults.push({
+                  type: "tool_result",
+                  tool_use_id: block.id,
+                  content: JSON.stringify({
+                    ok: false,
+                    error: "add_rate_limit_per_turn",
+                    message:
+                      "You have already made one add-style call (add_scope_item / add_esp / add_specialized_asset) in this turn. Only ONE add per assistant turn is allowed — scope inventory is a compliance artifact and each row must be confirmed with the user. Stop calling tools now. Reply to the user with a short summary of what was just added and ask which item to add next.",
+                  }),
+                  is_error: true,
+                });
+                continue;
+              }
+
               send("tool_start", {
                 id: block.id,
                 name: block.name,
                 input: block.input,
               });
-              const toolInput = (block.input ?? {}) as Record<string, unknown>;
               let result: { ok: boolean; [k: string]: unknown };
               try {
                 result = await executeOfficerTool(
@@ -122,6 +187,10 @@ export function runOfficerAgentStream(
                 const msg =
                   toolErr instanceof Error ? toolErr.message : String(toolErr);
                 result = { ok: false, error: "tool_threw", message: msg };
+              }
+              if (isAdd) {
+                addCallsThisTurn++;
+                if (addKey) seenAddKeys.add(addKey);
               }
               send("tool_end", { id: block.id, ok: result.ok });
               toolResults.push({
