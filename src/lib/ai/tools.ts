@@ -352,7 +352,7 @@ export const officerTools = [
   {
     name: "generate_evidence_artifact",
     description:
-      "Generate a real evidence artifact directly into the user's evidence vault for the practice they're currently working on. Use this when the user has given you enough information to fill an evidence slot AND that slot's destinations include 'generated' (rosters, service-account lists, written procedures, scoping statements). DO NOT type the artifact's full content into chat — call this tool, and the artifact appears in the middle pane's Evidence section ready for the user to download or replace. After calling this, give a 1-2 sentence chat summary of what you produced, e.g. 'I dropped an Authorized Users Roster into your evidence — it lists you as the sole user, on Windows 11 + Pixel 9a. Replace it if anything's wrong.' Do NOT call this tool for evidence that requires a screenshot or live system export — those still need the user to upload manually or connect M365/Google Workspace. BATCHING: when the user asks you to generate MULTIPLE artifacts at once (e.g. 'yes, generate the first four'), emit ALL of the generate_evidence_artifact tool_use blocks in a SINGLE assistant message — parallel tool use is supported and is far faster than serializing them across multiple turns. Then summarize all artifacts in one closing text reply.",
+      "Generate a real evidence artifact directly into the user's evidence vault for the practice they're currently working on. Use this when the user has given you enough information to fill an evidence slot AND that slot's destinations include 'generated' (rosters, service-account lists, written procedures, scoping statements). DO NOT type the artifact's full content into chat — call this tool, and the artifact appears in the middle pane's Evidence section ready for the user to download or replace. FORMAT CHOICE: default to 'pdf' for procedures, rosters, scoping statements, and any narrative deliverable — the platform renders these into a branded, themed PDF with serif typography, cream/navy letterhead, the org name, the control id, an effective date, and a page footer. The PDF is the deliverable the user hands to their assessor. Use 'csv' ONLY for raw tabular data exports the user or an assessor will load into a spreadsheet (e.g. authorized users roster, patch log). Use 'markdown' / 'text' only when the user explicitly asks for plain-text source. After calling this, give a 1-2 sentence chat summary of what you produced, e.g. 'I dropped a branded Authorized Users Roster PDF into your evidence — it lists you as the sole user, on Windows 11 + Pixel 9a. Replace it if anything's wrong.' Do NOT call this tool for evidence that requires a screenshot or live system export — those still need the user to upload manually or connect M365/Google Workspace. BATCHING: when the user asks you to generate MULTIPLE artifacts at once (e.g. 'yes, generate the first four'), emit ALL of the generate_evidence_artifact tool_use blocks in a SINGLE assistant message — parallel tool use is supported and is far faster than serializing them across multiple turns. Then summarize all artifacts in one closing text reply.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -364,18 +364,18 @@ export const officerTools = [
         filename: {
           type: "string",
           description:
-            "Filename including extension. Use .md for narrative procedures and .csv for tabular rosters/inventories. Example: 'authorized-users-roster.csv', 'access-grant-removal-procedure.md'.",
+            "Filename WITHOUT extension (the platform appends the right one based on `format`). Use kebab-case, e.g. 'authorized-users-roster', 'access-grant-removal-procedure'. If you include an extension the platform will strip and replace it.",
         },
         format: {
           type: "string",
-          enum: ["markdown", "csv", "text"],
+          enum: ["pdf", "csv", "markdown", "text"],
           description:
-            "How to interpret `content`. 'csv' must be valid RFC4180 CSV. 'markdown' is rendered as text/markdown. 'text' is plain text.",
+            "'pdf' = branded, themed deliverable rendered from lightweight Markdown (`#` / `##` headings, `- ` bullets, `1. ` numbered lists, blank-line paragraphs, `**bold**` / `*italic*`). USE PDF for procedures, scoping statements, roster summaries — anything narrative. 'csv' = raw RFC4180 tabular data, header row required. 'markdown' / 'text' = plain text source, only when the user asks for it.",
         },
         content: {
           type: "string",
           description:
-            "Full file content. For CSV, include the header row. For markdown procedures, use a clean H1 + numbered steps + an 'as of' date. Be specific to the user's environment using only facts they have actually confirmed in the conversation — never invent names, emails, or system details.",
+            "Full file content. For 'pdf', author it as lightweight Markdown — the renderer styles `#`/`##`/`###` headings, bullets, numbered lists, and paragraph breaks. Start with a single `# Title` line; the platform promotes it to the cover headline. For 'csv', include the header row. Be specific to the user's environment using only facts they have actually confirmed — never invent names, emails, or system details.",
         },
         summary: {
           type: "string",
@@ -1593,12 +1593,14 @@ const ARTIFACT_FORMAT_MIME: Record<string, string> = {
   csv: "text/csv",
   markdown: "text/markdown",
   text: "text/plain",
+  pdf: "application/pdf",
 };
 
 const ARTIFACT_FORMAT_EXT: Record<string, string> = {
   csv: ".csv",
   markdown: ".md",
   text: ".txt",
+  pdf: ".pdf",
 };
 
 /**
@@ -1635,7 +1637,10 @@ async function handleGenerateEvidenceArtifact(
   if (!slotKey) return { ok: false, error: "slot_key is required." };
   if (!filename) return { ok: false, error: "filename is required." };
   if (!format || !ARTIFACT_FORMAT_MIME[format])
-    return { ok: false, error: "format must be 'csv', 'markdown', or 'text'." };
+    return {
+      ok: false,
+      error: "format must be 'pdf', 'csv', 'markdown', or 'text'.",
+    };
   if (!content) return { ok: false, error: "content is required." };
   if (content.length > 200_000)
     return { ok: false, error: "content too large (200 KB max)." };
@@ -1668,16 +1673,54 @@ async function handleGenerateEvidenceArtifact(
   // Normalize filename + ensure correct extension.
   const ext = ARTIFACT_FORMAT_EXT[format];
   const baseName = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
-  const withExt = baseName.toLowerCase().endsWith(ext)
-    ? baseName
-    : `${baseName}${ext}`;
+  // If the model handed us a `.md`/`.txt` filename but asked for pdf,
+  // strip the old ext so we don't end up with `roster.md.pdf`.
+  const baseNoExt = baseName.replace(/\.(md|markdown|txt|csv|pdf)$/i, "");
+  const withExt = `${baseNoExt}${ext}`;
   // Prefix with `[slot:KEY]__` so the practice page can bucket this
   // artifact into the correct slot card. Mirrors `uploadEvidenceAction`.
   const finalName = `[slot:${slotKey}]__${withExt}`;
   const mime = ARTIFACT_FORMAT_MIME[format];
 
+  // For pdf format we render a themed deliverable (serif type, cream/navy
+  // palette, branded letterhead + footer) — `content` is treated as
+  // lightweight Markdown and laid out by `renderDeliverablePdf`. For every
+  // other format we upload `content` verbatim.
+  let body: Buffer | string;
+  let sizeBytes: number;
+  if (format === "pdf") {
+    const { renderDeliverablePdf } = await import(
+      "@/lib/cmmc/pdf-deliverable"
+    );
+    // Derive a polished title: first H1 in body if present, else filename.
+    const h1 = /^\s*#\s+(.+)$/m.exec(content);
+    const derivedTitle = h1
+      ? h1[1].trim()
+      : baseNoExt
+          .replace(/[-_]+/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+    body = await renderDeliverablePdf({
+      meta: {
+        organizationName: assessmentCtx.organization.name,
+        title: derivedTitle,
+        subtitle: summary,
+        controlId: spec.controlId,
+        controlTitle: spec.shortName,
+        effectiveDate: new Date(),
+        documentType: "EVIDENCE DELIVERABLE",
+      },
+      // Strip the H1 we already promoted to the cover title to avoid a
+      // duplicate "Title / Title" stack on page 1.
+      body: h1 ? content.replace(h1[0], "").trimStart() : content,
+    });
+    sizeBytes = body.length;
+  } else {
+    body = content;
+    sizeBytes = Buffer.byteLength(content, "utf8");
+  }
+
   const pathname = `evidence/${ctx.activeAssessmentId}/${ctx.activeControlId}/${Date.now()}-charlie-${finalName}`;
-  const blob = await put(pathname, content, {
+  const blob = await put(pathname, body, {
     access: "private",
     addRandomSuffix: true,
     contentType: mime,
@@ -1692,7 +1735,7 @@ async function handleGenerateEvidenceArtifact(
        ai_reviewed_at, ai_review_model)
     VALUES
       (${ctx.activeAssessmentId}, ${ctx.activeControlId}, ${finalName},
-       ${blob.url}, ${mime}, ${Buffer.byteLength(content, "utf8")},
+       ${blob.url}, ${mime}, ${sizeBytes},
        ${ctx.userId},
        'sufficient', ${summary},
        ${[ctx.activeControlId]},
