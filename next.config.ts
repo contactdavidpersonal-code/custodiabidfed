@@ -87,6 +87,17 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // PDFKit (used by src/lib/cmmc/pdf-deliverable.ts to render Charlie's
+  // evidence artifacts as branded PDFs) loads its 14 built-in AFM fonts
+  // via fs.readFileSync at runtime from `node_modules/pdfkit/js/data/`.
+  // Next/Turbopack's automatic file tracing does NOT follow that dynamic
+  // path, so without this hint the Vercel lambda is missing the fonts
+  // and `doc.font("Times-Roman")` throws ENOENT — which is exactly the
+  // "Charlie says 'Generating now…' and nothing happens" failure mode.
+  outputFileTracingIncludes: {
+    "/api/chat": ["./node_modules/pdfkit/js/data/**/*"],
+    "/api/chat/route": ["./node_modules/pdfkit/js/data/**/*"],
+  },
   async headers() {
     return [
       {

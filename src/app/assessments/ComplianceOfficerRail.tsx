@@ -14,6 +14,13 @@ type ToolEvent = {
   id: string;
   name: string;
   status: "running" | "done" | "error";
+  /**
+   * Snapshot of the tool's input arguments captured from the `tool_start`
+   * SSE event. We surface the human-meaningful fields (filename, slot_key)
+   * inside the running progress chip so the user sees *what* is being
+   * drafted, not just "working…".
+   */
+  input?: Record<string, unknown> | null;
 };
 
 type Message = {
@@ -23,7 +30,13 @@ type Message = {
   tools: ToolEvent[];
 };
 
-type StoredContentBlock = { type: string; text?: string; name?: string; id?: string };
+type StoredContentBlock = {
+  type: string;
+  text?: string;
+  name?: string;
+  id?: string;
+  input?: Record<string, unknown>;
+};
 
 const TOOL_LABELS: Record<string, string> = {
   read_assessment_state: "Reading your assessment",
@@ -43,6 +56,11 @@ const TOOL_LABELS: Record<string, string> = {
   set_affirming_official: "Recording your affirming official",
   add_fci_flow: "Documenting an FCI data flow",
   add_out_of_scope_item: "Declaring an out-of-scope item",
+  generate_evidence_artifact: "Drafting evidence deliverable",
+  tag_evidence_to_practice: "Filing evidence into the practice",
+  save_control_narrative: "Saving your control narrative",
+  set_objective_response: "Recording your objective answer",
+  set_objective_status: "Updating your objective status",
 };
 
 const STORAGE_OPEN_KEY = "custodia.chat.open";
@@ -319,9 +337,13 @@ export function ComplianceOfficerRail({
         } else if (event === "tool_start") {
           const id = String(data.id ?? "");
           const name = String(data.name ?? "");
+          const input =
+            data && typeof data.input === "object" && data.input !== null
+              ? (data.input as Record<string, unknown>)
+              : null;
           patchAssistant((m) => ({
             ...m,
-            tools: [...m.tools, { id, name, status: "running" }],
+            tools: [...m.tools, { id, name, status: "running", input }],
           }));
         } else if (event === "tool_end") {
           const id = String(data.id ?? "");
@@ -736,7 +758,8 @@ function MessageBubble({
     <div className="flex gap-2">
       <div className="flex max-w-[92%] flex-col gap-1.5">
         {tools.length > 0 && (
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
+            <GenerationProgressBanner tools={tools} />
             {tools.map((t) => (
               <ToolChip key={t.id} tool={t} />
             ))}
@@ -755,6 +778,68 @@ function MessageBubble({
   );
 }
 
+/**
+ * Aggregate progress banner shown above the per-tool chips whenever Charlie
+ * has one or more `generate_evidence_artifact` calls in flight. Gives the
+ * user a clear "drafting 2 of 4" signal so the wait feels intentional. Once
+ * every artifact tool resolves the banner disappears and the chips stand
+ * on their own.
+ */
+function GenerationProgressBanner({ tools }: { tools: ToolEvent[] }) {
+  const artifacts = tools.filter((t) => t.name === "generate_evidence_artifact");
+  if (artifacts.length === 0) return null;
+  const running = artifacts.filter((t) => t.status === "running").length;
+  if (running === 0) return null;
+  const done = artifacts.filter((t) => t.status === "done").length;
+  const errored = artifacts.filter((t) => t.status === "error").length;
+  const total = artifacts.length;
+  const completed = done + errored;
+  const headline =
+    total > 1
+      ? `Drafting evidence deliverables — ${completed} of ${total}`
+      : `Drafting evidence deliverable…`;
+  const currentName = readArtifactFilename(
+    artifacts.find((t) => t.status === "running"),
+  );
+  return (
+    <div className="flex flex-col gap-2 border border-[#cfe3d9] bg-[#f7fcf9] px-3 py-2.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="font-serif text-[13px] font-bold text-[#10231d]">
+          {headline}
+        </span>
+        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[#2f8f6d]">
+          Charlie
+        </span>
+      </div>
+      {currentName && (
+        <div className="truncate font-mono text-[11px] text-[#44695c]">
+          {currentName}
+        </div>
+      )}
+      <div
+        className="relative h-1 w-full overflow-hidden bg-[#dcece4]"
+        aria-hidden
+      >
+        <div className="custodia-progress-bar absolute inset-y-0 left-0 w-2/5 bg-[#2f8f6d]" />
+      </div>
+      <div className="text-[10px] leading-snug text-[#5a7d70]">
+        Rendering a branded PDF straight into your evidence vault — serif
+        type, your org letterhead, the control id, page numbers.
+      </div>
+    </div>
+  );
+}
+
+function readArtifactFilename(tool: ToolEvent | undefined): string | null {
+  if (!tool || !tool.input) return null;
+  const raw =
+    typeof tool.input.filename === "string" ? tool.input.filename.trim() : "";
+  if (!raw) return null;
+  // Normalize the way the server will: strip any extension Claude appended
+  // (`.md`, `.pdf`, etc.) so the user sees just the deliverable's name.
+  return raw.replace(/\.(md|markdown|txt|csv|pdf)$/i, "");
+}
+
 function ToolChip({ tool }: { tool: ToolEvent }) {
   const label = TOOL_LABELS[tool.name] ?? tool.name;
   const tone =
@@ -769,12 +854,23 @@ function ToolChip({ tool }: { tool: ToolEvent }) {
       : tool.status === "done"
         ? "bg-[#2f8f6d]"
         : "bg-[#a06b1a] animate-pulse";
+  // For generate_evidence_artifact we also tag the filename onto the chip so
+  // even after the banner fades the user can read what Charlie produced.
+  const detail =
+    tool.name === "generate_evidence_artifact"
+      ? readArtifactFilename(tool)
+      : null;
   return (
     <div
       className={`inline-flex items-center gap-2 self-start  border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${tone}`}
     >
       <span className={`h-1.5 w-1.5  ${dot}`} />
       {label}
+      {detail && (
+        <span className="font-mono text-[10px] font-normal normal-case tracking-normal opacity-80">
+          · {detail}
+        </span>
+      )}
       {tool.status === "running" && "…"}
     </div>
   );
@@ -867,6 +963,13 @@ function extractToolUses(content: unknown): ToolEvent[] {
       // Hydrated from history: the tool has already completed, so surface it
       // as a done pill rather than a spinner.
       status: "done" as const,
+      // Preserve the original input so chips like `generate_evidence_artifact`
+      // can still show the filename after a reload.
+      input:
+        b && typeof (b as { input?: unknown }).input === "object" &&
+        (b as { input?: unknown }).input !== null
+          ? ((b as { input: Record<string, unknown> }).input)
+          : null,
     }));
 }
 

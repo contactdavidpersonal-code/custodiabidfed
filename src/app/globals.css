@@ -26,6 +26,20 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
+/*
+ * Indeterminate progress sweep used by Charlie's chat (ComplianceOfficerRail)
+ * while a long-running tool like `generate_evidence_artifact` is in flight.
+ * 40%-wide bar that wipes left-to-right and loops. Keep this in globals so
+ * Tailwind 4 doesn't have to be taught a one-off keyframe.
+ */
+@keyframes custodia-progress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(350%); }
+}
+.custodia-progress-bar {
+  animation: custodia-progress 1.2s ease-in-out infinite;
+}
+
 /* Mobile / safe-area utilities */
 .pt-safe { padding-top: var(--safe-top); }
 .pb-safe { padding-bottom: var(--safe-bottom); }
