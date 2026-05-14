@@ -32,6 +32,40 @@ const BULK_PROGRESS_TOOLS = new Set([
   "save_control_narrative",
 ]);
 
+// Pre-announce stall detector. Failure mode: user says "yes, generate them",
+// Claude replies with a short text like "Generating all three now." with NO
+// tool_use blocks, stop_reason="end_turn" — the agent loop exits and the
+// user's request is silently dropped. Prompt-engineering this away in the
+// tool description ("NO PRE-ANNOUNCING…") helps but does not eliminate it:
+// the model still defects occasionally. The architecturally-correct rail
+// per Anthropic's tool_use docs is `tool_choice: {type: "any"}` on retry —
+// the API then prefills the assistant turn so Claude MUST emit tool_use
+// blocks and cannot emit a leading text explanation. We detect the stall,
+// drop the stalled assistant message (do not persist — it would create an
+// invalid two-assistant-in-a-row history), and re-run the SAME turn once
+// with forced tool_choice. One retry per user message.
+//
+// Heuristic: text-only completion (no tool_use), short body (≤ 60 words),
+// containing at least one action-promise verb. Conservative on purpose —
+// we'd rather miss a stall than retry-loop on a legitimate informational
+// reply.
+const PREANNOUNCE_VERB_RX =
+  /\b(?:generat\w*|draft\w*|creat\w*|build\w*|produc\w*|prepar\w*|writ\w*|render\w*|attach\w*|sav\w*|fetch\w*|pull\w*|kick\w*\s*off|spin\w*\s*up|put\s+together|whip\s+up|on\s+it|i'?ll|let\s+me|going\s+to|hang\s+on|one\s+moment|will\s+do|here\s+goes|coming\s+up|hold\s+on|stand\s+by)\b/i;
+
+function looksLikePreAnnounceStall(blocks: AssistantBlock[]): boolean {
+  const toolUses = blocks.filter((b) => b.type === "tool_use");
+  if (toolUses.length > 0) return false;
+  const text = blocks
+    .filter((b): b is TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join(" ")
+    .trim();
+  if (!text) return false;
+  const wordCount = text.split(/\s+/).length;
+  if (wordCount > 60) return false;
+  return PREANNOUNCE_VERB_RX.test(text);
+}
+
 type TextBlock = { type: "text"; text: string };
 type ToolUseBlock = {
   type: "tool_use";
@@ -107,6 +141,16 @@ export function runOfficerAgentStream(
         let addCallsThisMessage = 0;
         let consecutiveToolOnlyTurns = 0;
         const seenAddKeysThisMessage = new Set<string>();
+        // One forced-tool retry per user message: if Claude pre-announces
+        // ("Generating now…") with no tool_use, we re-run the SAME turn
+        // with tool_choice="any" so the API prefills assistant content to
+        // tool_use blocks. After one retry we stop trying — if the model
+        // still won't use a tool, persist the text and let the user nudge.
+        let preAnnounceRetried = false;
+        let forceToolChoice:
+          | { type: "any" }
+          | { type: "tool"; name: string }
+          | undefined = undefined;
 
         for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
           const priorRows = await listMessages(input.conversationId, 50);
@@ -117,7 +161,25 @@ export function runOfficerAgentStream(
             systemText: input.systemPrompt,
             contextText: input.contextBlock,
             send,
+            toolChoice: forceToolChoice,
           });
+          // tool_choice is per-turn; reset before persistence so it can't
+          // leak into the next iteration.
+          forceToolChoice = undefined;
+
+          // Pre-announce stall: text-only completion that promises an
+          // action. Drop the stalled message (do NOT persist — Anthropic
+          // rejects two assistant rows in a row) and re-enter the loop
+          // with tool_choice="any" forcing the model into tool_use.
+          if (
+            !preAnnounceRetried &&
+            turn.stopReason !== "tool_use" &&
+            looksLikePreAnnounceStall(turn.assistantBlocks)
+          ) {
+            preAnnounceRetried = true;
+            forceToolChoice = { type: "any" };
+            continue;
+          }
 
           if (turn.assistantBlocks.length > 0) {
             await appendMessage({
@@ -377,6 +439,10 @@ export function runOfficerAgentStream(
     systemText: string;
     contextText: string;
     send: (event: string, data: unknown) => void;
+    toolChoice?:
+      | { type: "auto" }
+      | { type: "any" }
+      | { type: "tool"; name: string };
   }): Promise<{
     assistantBlocks: AssistantBlock[];
     stopReason: string | null;
@@ -387,7 +453,7 @@ export function runOfficerAgentStream(
       cacheCreationTokens: number;
     };
   }> {
-    const { priorMessages, systemText, contextText, send } = args;
+    const { priorMessages, systemText, contextText, send, toolChoice } = args;
 
     const anthropicStream = client.messages.stream({
       model: CHAT_MODEL,
@@ -411,6 +477,12 @@ export function runOfficerAgentStream(
           ? { ...t, cache_control: { type: "ephemeral" as const } }
           : t,
       ),
+      // tool_choice is per-turn. Default ("auto") is implied when omitted;
+      // we only pass it explicitly on a pre-announce retry. Note: changing
+      // tool_choice between turns invalidates the message-block cache but
+      // leaves the tools/system cache intact — acceptable for the rare
+      // retry path.
+      ...(toolChoice ? { tool_choice: toolChoice } : {}),
       system: [
         {
           type: "text",
