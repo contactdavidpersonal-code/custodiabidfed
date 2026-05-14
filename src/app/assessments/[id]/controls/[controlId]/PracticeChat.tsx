@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { EvidenceArtifactRow } from "@/lib/assessment";
@@ -94,6 +94,34 @@ export function PracticeChat(props: Props) {
     window.addEventListener("evidence-changed", handler);
     return () => window.removeEventListener("evidence-changed", handler);
   }, [router]);
+
+  // When the user pastes or drops an image into the Charlie chat composer,
+  // the rail emits `charlie-image-incoming` with the File. We catch it here
+  // and pop a small picker: which evidence slot should this screenshot
+  // satisfy? The picker dispatches `charlie-image-dropped` with the chosen
+  // slot key, which the slot's own dropzone already listens for.
+  const [pendingImage, setPendingImage] = useState<{
+    file: File;
+    previewUrl: string;
+  } | null>(null);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ file: File }>).detail;
+      if (!detail?.file) return;
+      const previewUrl = URL.createObjectURL(detail.file);
+      setPendingImage((prev) => {
+        if (prev) URL.revokeObjectURL(prev.previewUrl);
+        return { file: detail.file, previewUrl };
+      });
+    };
+    window.addEventListener("charlie-image-incoming", handler);
+    return () => window.removeEventListener("charlie-image-incoming", handler);
+  }, []);
+  useEffect(() => {
+    return () => {
+      if (pendingImage) URL.revokeObjectURL(pendingImage.previewUrl);
+    };
+  }, [pendingImage]);
 
   const allCovered = props.spec.objectives.every(
     (o) => verdicts[o.letter]?.status === "covered",
@@ -223,6 +251,37 @@ export function PracticeChat(props: Props) {
           onReverify={onReverify}
           reverifying={reverifying}
         />
+        {pendingImage && (
+          <ChatImageSlotPicker
+            file={pendingImage.file}
+            previewUrl={pendingImage.previewUrl}
+            spec={props.spec}
+            evidence={props.evidence}
+            onPick={(slotKey) => {
+              window.dispatchEvent(
+                new CustomEvent("charlie-image-dropped", {
+                  detail: { slotKey, file: pendingImage.file },
+                }),
+              );
+              // Nudge Charlie to verify what was just uploaded for that slot.
+              const slot = props.spec.evidenceSlots.find(
+                (s) => s.key === slotKey,
+              );
+              if (slot) {
+                const letters = slot.satisfies.join(", ");
+                window.dispatchEvent(
+                  new CustomEvent("charlie-send-message", {
+                    detail: {
+                      message: `I just dropped a screenshot into the "${slot.label}" slot (objective ${letters}). Once the AI vision review finishes, confirm whether it satisfies the assessor expectation — and if it doesn't, tell me exactly what to capture instead.`,
+                    },
+                  }),
+                );
+              }
+              setPendingImage(null);
+            }}
+            onCancel={() => setPendingImage(null)}
+          />
+        )}
         <EvidencePanel
           spec={props.spec}
           evidence={props.evidence}
@@ -678,30 +737,368 @@ function SlotActions({
   connectedProviders: ConnectorProvider[];
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
 }) {
+  // Split destinations into the upload (rendered as the big drop zone — the
+  // primary affordance for any slot that accepts a file) and everything else
+  // (rendered as small chip-style buttons under "or…").
+  const uploadDest = slot.destinations.find((d) => d.type === "upload");
+  const otherDests = slot.destinations.filter((d) => d !== uploadDest);
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-2">
-      {slot.destinations.map((dest, i) => (
-        <DestinationButton
-          key={`${slot.key}-${dest.type}-${i}`}
+    <div className="mt-4 space-y-3">
+      {uploadDest && uploadDest.type === "upload" && (
+        <SlotDropzone
           slot={slot}
-          dest={dest}
-          recommended={i === 0}
           assessmentId={assessmentId}
           controlId={controlId}
-          connectedProviders={connectedProviders}
           uploadEvidenceAction={uploadEvidenceAction}
+          label={uploadDest.label}
+          describes={uploadDest.describes}
+          accept={uploadDest.accept}
         />
-      ))}
-      {slot.templatePath && (
-        <a
-          href={slot.templatePath}
-          download
-          className="ml-1 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline"
-        >
-          Download template
-        </a>
+      )}
+      {(otherDests.length > 0 || slot.templatePath) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {uploadDest && (
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70]">
+              Or
+            </span>
+          )}
+          {otherDests.map((dest, i) => (
+            <DestinationButton
+              key={`${slot.key}-${dest.type}-${i}`}
+              slot={slot}
+              dest={dest}
+              recommended={!uploadDest && i === 0}
+              assessmentId={assessmentId}
+              controlId={controlId}
+              connectedProviders={connectedProviders}
+              uploadEvidenceAction={uploadEvidenceAction}
+            />
+          ))}
+          {slot.templatePath && (
+            <a
+              href={slot.templatePath}
+              download
+              className="ml-1 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline"
+            >
+              Download template
+            </a>
+          )}
+        </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Full-bleed drop zone for an evidence slot — drag-and-drop, click-to-browse,
+ * AND clipboard paste. Auto-submits the file as soon as it's selected, so
+ * the user never has to hunt for an "Upload" button. The slot's `slotKey`
+ * is bound to a hidden input so the server action routes the artifact to
+ * this exact card on the page. Listens for window `charlie-image-dropped`
+ * events tagged with this `slotKey` so the chat-rail paste/drop pathway can
+ * fire the same upload pipeline.
+ */
+function SlotDropzone({
+  slot,
+  assessmentId,
+  controlId,
+  uploadEvidenceAction,
+  label,
+  describes,
+  accept,
+}: {
+  slot: EvidenceSlot;
+  assessmentId: string;
+  controlId: string;
+  uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
+  label: string;
+  describes: string;
+  accept?: string[];
+}) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const zoneRef = useRef<HTMLDivElement>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submitWithFile = useCallback((file: File) => {
+    if (!inputRef.current || !formRef.current) return;
+    if (file.size > 25 * 1024 * 1024) {
+      setError("File is over 25 MB. Try splitting it or compressing.");
+      return;
+    }
+    setError(null);
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    inputRef.current.files = dt.files;
+    setUploading(true);
+    formRef.current.requestSubmit();
+  }, []);
+
+  const onDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setDragActive(false);
+      const f = e.dataTransfer.files?.[0];
+      if (f) submitWithFile(f);
+    },
+    [submitWithFile],
+  );
+
+  // Paste support: when the zone is hovered/focused, intercept clipboard
+  // image data and treat it as a drop. This is how a user can grab a
+  // screenshot with Win+Shift+S and drop it straight into the slot.
+  useEffect(() => {
+    const el = zoneRef.current;
+    if (!el) return;
+    const onPaste = (e: ClipboardEvent) => {
+      if (document.activeElement !== el && !el.matches(":hover")) return;
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of items) {
+        if (item.kind === "file") {
+          const f = item.getAsFile();
+          if (f) {
+            e.preventDefault();
+            submitWithFile(f);
+            return;
+          }
+        }
+      }
+    };
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [submitWithFile]);
+
+  // Cross-component pipe: when the Charlie chat receives a pasted/dropped
+  // image and the user picks this slot, the slot picker dispatches a
+  // `charlie-image-dropped` event with our slot key. Treat it as a direct
+  // file submission so the same auto-review + revalidate path runs.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ slotKey: string; file: File }>).detail;
+      if (!detail || detail.slotKey !== slot.key) return;
+      submitWithFile(detail.file);
+    };
+    window.addEventListener("charlie-image-dropped", handler);
+    return () => window.removeEventListener("charlie-image-dropped", handler);
+  }, [slot.key, submitWithFile]);
+
+  return (
+    <form
+      ref={formRef}
+      action={uploadEvidenceAction}
+      encType="multipart/form-data"
+    >
+      <input type="hidden" name="assessmentId" value={assessmentId} />
+      <input type="hidden" name="controlId" value={controlId} />
+      <input type="hidden" name="slotKey" value={slot.key} />
+      <input
+        ref={inputRef}
+        type="file"
+        name="file"
+        accept={accept?.join(",")}
+        className="sr-only"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) submitWithFile(f);
+        }}
+      />
+      <div
+        ref={zoneRef}
+        title={describes}
+        onDrop={onDrop}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setDragActive(true);
+        }}
+        onDragEnter={(e) => {
+          e.preventDefault();
+          setDragActive(true);
+        }}
+        onDragLeave={(e) => {
+          e.preventDefault();
+          setDragActive(false);
+        }}
+        onClick={() => !uploading && inputRef.current?.click()}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            inputRef.current?.click();
+          }
+        }}
+        className={`flex cursor-pointer flex-col items-center border-2 border-dashed px-6 py-8 text-center transition-colors ${
+          uploading
+            ? "cursor-progress border-[#2f8f6d] bg-[#eaf3ee]"
+            : dragActive
+              ? "border-[#2f8f6d] bg-[#eaf3ee]"
+              : "border-[#cfe3d9] bg-[#f7fcf9] hover:border-[#2f8f6d] hover:bg-[#f4faf6]"
+        }`}
+      >
+        <span className="flex h-10 w-10 items-center justify-center bg-[#08201a] text-[#bdf2cf]">
+          {uploading ? (
+            <svg
+              viewBox="0 0 20 20"
+              className="h-5 w-5 animate-spin"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden
+            >
+              <circle cx="10" cy="10" r="7" opacity="0.25" />
+              <path d="M17 10a7 7 0 0 1-7 7" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 20 20" className="h-5 w-5" fill="currentColor" aria-hidden>
+              <path d="M10 3a1 1 0 01.7.29l4 4a1 1 0 11-1.4 1.42L11 6.41V13a1 1 0 11-2 0V6.41L6.7 8.71A1 1 0 015.29 7.3l4-4A1 1 0 0110 3zM4 14a1 1 0 011 1v1h10v-1a1 1 0 112 0v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2a1 1 0 011-1z" />
+            </svg>
+          )}
+        </span>
+        <div className="mt-3 font-serif text-base font-bold text-[#10231d]">
+          {uploading
+            ? "Uploading…"
+            : dragActive
+              ? "Drop to attach"
+              : label}
+        </div>
+        <div className="mt-1 text-[12px] text-[#5a7d70]">
+          Drag a screenshot here, paste from clipboard, or click to browse.
+          25&nbsp;MB max.
+        </div>
+      </div>
+      {error && (
+        <p className="mt-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-rose-700">
+          {error}
+        </p>
+      )}
+    </form>
+  );
+}
+
+/**
+ * In-page picker shown when the user pastes or drops an image into the
+ * Charlie chat rail. Renders the image thumbnail above a list of every
+ * evidence slot for this practice (required first, then optional), letting
+ * the user route the screenshot to the right slot in one click. The
+ * resulting `charlie-image-dropped` event triggers the slot's own upload
+ * pipeline, so a single server action handles both pathways.
+ */
+function ChatImageSlotPicker({
+  file,
+  previewUrl,
+  spec,
+  evidence,
+  onPick,
+  onCancel,
+}: {
+  file: File;
+  previewUrl: string;
+  spec: PracticeSpec;
+  evidence: ClientEvidenceRow[];
+  onPick: (slotKey: string) => void;
+  onCancel: () => void;
+}) {
+  // Slots already covered by a `sufficient` artifact go to the bottom — the
+  // user can still pick them (replacement) but we don't want them stealing
+  // attention from genuinely-empty required slots.
+  const slotsWithStatus = spec.evidenceSlots.map((s) => {
+    const filled = evidence.some(
+      (ev) =>
+        ev.ai_review_verdict === "sufficient" &&
+        inferSlotKey(ev.filename, spec) === s.key,
+    );
+    return { slot: s, filled };
+  });
+  const ordered = [
+    ...slotsWithStatus.filter((x) => x.slot.required && !x.filled),
+    ...slotsWithStatus.filter((x) => !x.slot.required && !x.filled),
+    ...slotsWithStatus.filter((x) => x.filled),
+  ];
+  const sizeKb = Math.round(file.size / 1024);
+  return (
+    <section className="border border-[#2f8f6d]/40 bg-[#f7fcf9] p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+            From Charlie · screenshot ready
+          </p>
+          <h3 className="mt-1 font-serif text-lg font-bold text-[#10231d]">
+            Which slot does this satisfy?
+          </h3>
+          <p className="mt-1 text-[13px] text-[#3a544a]">
+            Pick a slot below and we&apos;ll save the screenshot, run an AI
+            vision review, and ask Charlie to confirm it matches the
+            assessor expectation.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] hover:text-[#10231d]"
+        >
+          Discard
+        </button>
+      </div>
+      <div className="mt-4 grid gap-4 md:grid-cols-[200px_1fr]">
+        <div className="border border-[#cfe3d9] bg-white p-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={previewUrl}
+            alt="Pasted screenshot preview"
+            className="block h-auto w-full"
+          />
+          <p className="mt-2 truncate font-mono text-[10px] text-[#5a7d70]">
+            {file.name || "clipboard.png"} · {sizeKb}&nbsp;KB
+          </p>
+        </div>
+        <ul className="space-y-2">
+          {ordered.map(({ slot, filled }) => (
+            <li key={slot.key}>
+              <button
+                type="button"
+                onClick={() => onPick(slot.key)}
+                className="group flex w-full items-start gap-3 border border-[#cfe3d9] bg-white px-4 py-3 text-left transition-colors hover:border-[#2f8f6d] hover:bg-[#f4faf6]"
+              >
+                <span
+                  className={`mt-0.5 inline-flex shrink-0 rounded-full px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-[0.22em] ring-1 ${
+                    filled
+                      ? "bg-[#f4faf6] text-[#2f8f6d] ring-[#2f8f6d]/40"
+                      : slot.required
+                        ? "bg-[#fcfdfb] text-[#10231d] ring-[#cfe3d9]"
+                        : "bg-[#fcfdfb] text-[#5a7d70] ring-[#cfe3d9]"
+                  }`}
+                >
+                  {filled
+                    ? "Replace"
+                    : slot.required
+                      ? "Required"
+                      : "Optional"}
+                </span>
+                <span className="flex-1">
+                  <span className="block font-serif text-[15px] font-bold text-[#10231d] group-hover:text-[#0e2a23]">
+                    {slot.label}
+                  </span>
+                  <span className="block text-[12px] text-[#5a7d70]">
+                    {slot.hint}
+                  </span>
+                </span>
+                <span
+                  aria-hidden
+                  className="mt-1 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d] opacity-0 group-hover:opacity-100"
+                >
+                  Save →
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }
 

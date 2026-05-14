@@ -708,6 +708,43 @@ export function ComplianceOfficerRail({
           e.preventDefault();
           void send();
         }}
+        onPaste={(e) => {
+          // Image paste from clipboard → forward the File to the active
+          // practice page. PracticeChat owns the slot picker because it
+          // knows which slots are empty.
+          const items = e.clipboardData?.items;
+          if (!items) return;
+          for (const item of items) {
+            if (item.kind === "file" && item.type.startsWith("image/")) {
+              const f = item.getAsFile();
+              if (f) {
+                e.preventDefault();
+                window.dispatchEvent(
+                  new CustomEvent("charlie-image-incoming", {
+                    detail: { file: f },
+                  }),
+                );
+                return;
+              }
+            }
+          }
+        }}
+        onDrop={(e) => {
+          const f = e.dataTransfer?.files?.[0];
+          if (f && f.type.startsWith("image/")) {
+            e.preventDefault();
+            window.dispatchEvent(
+              new CustomEvent("charlie-image-incoming", {
+                detail: { file: f },
+              }),
+            );
+          }
+        }}
+        onDragOver={(e) => {
+          // Accept image drops onto the composer area without the
+          // browser hijacking and opening the file.
+          if (e.dataTransfer?.types?.includes("Files")) e.preventDefault();
+        }}
         className="border-t border-[#cfe3d9] bg-[#f7fcf9] p-3"
       >
         <div className="flex items-end gap-2  border border-[#cfe3d9] bg-white p-2 focus-within:border-[#2f8f6d] focus-within:ring-2 focus-within:ring-[#2f8f6d]/20">
