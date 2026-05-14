@@ -1,9 +1,11 @@
-import { CHAT_MODEL, getAnthropic } from "@/lib/anthropic";
+import { CHAT_MODEL, getAnthropic, metadataForOrg } from "@/lib/anthropic";
 import {
   appendMessage,
   listMessages,
   toAnthropicMessages,
 } from "@/lib/ai/conversations";
+import { recordToolAudit } from "@/lib/ai/audit";
+import { scrubHighRiskEgress } from "@/lib/security/charlie-redaction";
 import {
   executeOfficerTool,
   officerTools,
@@ -102,6 +104,7 @@ export function runOfficerAgentStream(
           if (turn.assistantBlocks.length > 0) {
             await appendMessage({
               conversationId: input.conversationId,
+              organizationId: input.toolContext.organizationId,
               role: "assistant",
               content: turn.assistantBlocks,
               inputTokens: turn.usage.inputTokens,
@@ -152,6 +155,7 @@ export function runOfficerAgentStream(
             }
             await appendMessage({
               conversationId: input.conversationId,
+              organizationId: input.toolContext.organizationId,
               role: "tool",
               content: forcedResults,
             });
@@ -234,6 +238,7 @@ export function runOfficerAgentStream(
                 input: block.input,
               });
               let result: { ok: boolean; [k: string]: unknown };
+              const toolStartedAt = Date.now();
               try {
                 result = await executeOfficerTool(
                   block.name,
@@ -245,15 +250,33 @@ export function runOfficerAgentStream(
                   toolErr instanceof Error ? toolErr.message : String(toolErr);
                 result = { ok: false, error: "tool_threw", message: msg };
               }
+              // Tamper-evident audit row — hashes only; payloads live
+              // encrypted on the matching ai_messages row.
+              recordToolAudit({
+                organizationId: input.toolContext.organizationId,
+                userId: input.toolContext.userId,
+                conversationId: input.toolContext.conversationId,
+                toolName: block.name,
+                input: toolInput,
+                output: result,
+                status: result.ok ? "ok" : "error",
+                durationMs: Date.now() - toolStartedAt,
+              });
               if (isAdd) {
                 addCallsThisMessage++;
                 if (addKey) seenAddKeysThisMessage.add(addKey);
               }
               send("tool_end", { id: block.id, ok: result.ok });
+              // Scrub high-risk identifiers from the tool result before
+              // it is sent BACK to Anthropic in the next iteration. The
+              // real (unscrubbed) value is still persisted encrypted on
+              // ai_messages — only the wire payload to the model is
+              // redacted, so Charlie cannot accidentally echo an SSN/CC/EIN.
+              const resultJson = scrubHighRiskEgress(JSON.stringify(result));
               toolResults.push({
                 type: "tool_result",
                 tool_use_id: block.id,
-                content: JSON.stringify(result),
+                content: resultJson,
                 is_error: !result.ok,
               });
             }
@@ -280,6 +303,7 @@ export function runOfficerAgentStream(
               try {
                 await appendMessage({
                   conversationId: input.conversationId,
+                  organizationId: input.toolContext.organizationId,
                   role: "tool",
                   content: toolResults,
                 });
@@ -328,6 +352,12 @@ export function runOfficerAgentStream(
     const anthropicStream = client.messages.stream({
       model: CHAT_MODEL,
       max_tokens: 700,
+      // Opaque per-tenant user id for Anthropic abuse signals. SHA-256
+      // hex of (org, user, salt) — never leaks our tenant graph.
+      metadata: metadataForOrg(
+        input.toolContext.organizationId,
+        input.toolContext.userId,
+      ),
       // Tools and system prompt are stable across every turn for an org.
       // Marking the LAST tool with `cache_control: ephemeral` tells Anthropic
       // to cache the full tools array (~2K tokens). Marking the system

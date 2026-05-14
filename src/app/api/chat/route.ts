@@ -17,6 +17,11 @@ import { ensureOrgForUser, getBusinessProfile } from "@/lib/assessment";
 import {
   enforceCharlieBudget,
 } from "@/lib/security/rate-limit";
+import {
+  detectHighRiskIngress,
+  wrapUserField,
+  wrapJsonFields,
+} from "@/lib/security/charlie-redaction";
 
 const MAX_MESSAGE_LEN = 8_000;
 
@@ -53,6 +58,28 @@ export async function POST(req: NextRequest) {
   if (blocked) return blocked;
 
   const org = await ensureOrgForUser(userId);
+
+  // High-risk identifier ingress block. We do NOT want SSN/CC/EIN values
+  // landing in `ai_messages.content` (even encrypted) or being shipped to
+  // Anthropic. Reject with a friendly synthetic reply and persist nothing.
+  const ingressFindings = detectHighRiskIngress(userMessage);
+  if (ingressFindings.length > 0) {
+    const labels = ingressFindings.map((f) => f.label).join(", ");
+    const refusal = `I can't accept that — your message looks like it contains a sensitive identifier (${labels}). Please remove it and resend. Charlie does not need SSNs, full credit-card numbers, EINs, or similar identifiers to walk you through CMMC Level 1.`;
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(
+          encoder.encode(
+            `event: text\ndata: ${JSON.stringify({ text: refusal })}\n\n`,
+          ),
+        );
+        controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
+        controller.close();
+      },
+    });
+    return new Response(stream, { headers: SSE_HEADERS });
+  }
 
   // `/reset` escape hatch — archives the current workspace conversation
   // and starts fresh on the next request. The user types this when Charlie
@@ -194,10 +221,16 @@ function buildWorkspaceContextBlock(input: {
   memoryBlock: string;
 }): string {
   const parts: string[] = [];
-  parts.push(`## Current user context\n- Organization: ${input.orgName}`);
+  parts.push(
+    `## Current user context\n- Organization: ${wrapUserField(input.orgName, "organization.name")}`,
+  );
 
   if (input.profile && Object.keys(input.profile).length > 0) {
-    parts.push(`- Business profile so far: ${JSON.stringify(input.profile)}`);
+    // Wrap every free-text leaf inside the profile object so a malicious
+    // profile field (e.g. a "company description" containing "ignore
+    // previous instructions") cannot hijack the model.
+    const wrapped = wrapJsonFields(input.profile, "business_profile");
+    parts.push(`- Business profile so far: ${JSON.stringify(wrapped)}`);
   } else {
     parts.push(
       `- Business profile: not yet captured — if the user asks for compliance advice without context, politely ask one or two questions about what they do before answering generically.`,

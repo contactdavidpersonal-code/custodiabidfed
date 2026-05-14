@@ -3,7 +3,7 @@ import {
   getSql,
   type EvidenceVerdict,
 } from "@/lib/db";
-import { VISION_MODEL, getAnthropic } from "@/lib/anthropic";
+import { VISION_MODEL, getAnthropic, metadataForOrg } from "@/lib/anthropic";
 import { playbookById } from "@/lib/playbook";
 import { get as getBlob } from "@vercel/blob";
 import {
@@ -237,6 +237,7 @@ export async function reviewEvidenceArtifact(input: {
       max_tokens: 512,
       tools: [REPORT_REVIEW_TOOL],
       tool_choice: { type: "tool", name: "report_review" },
+      metadata: metadataForOrg(input.organizationId, null),
       messages: [
         {
           role: "user",

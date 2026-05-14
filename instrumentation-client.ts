@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { scrubSentryEvent } from "@/lib/security/sentry-scrub";
 
 /**
  * Client-runtime Sentry init. Next.js 15+ loads this automatically as
@@ -15,6 +16,7 @@ Sentry.init({
     "ResizeObserver loop limit exceeded",
     "Non-Error promise rejection captured",
   ],
+  beforeSend: scrubSentryEvent,
 });
 
 // Required for App Router navigation transactions.

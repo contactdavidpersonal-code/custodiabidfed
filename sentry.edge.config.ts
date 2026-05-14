@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { scrubSentryEvent } from "@/lib/security/sentry-scrub";
 
 /**
  * Edge-runtime Sentry init. Loaded by `instrumentation.ts` when Next.js
@@ -10,4 +11,5 @@ Sentry.init({
   environment: process.env.VERCEL_ENV ?? process.env.NODE_ENV,
   tracesSampleRate: 0.1,
   sendDefaultPii: false,
+  beforeSend: scrubSentryEvent,
 });

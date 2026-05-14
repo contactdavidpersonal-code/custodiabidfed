@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { scrubSentryEvent } from "@/lib/security/sentry-scrub";
 
 /**
  * Server-runtime Sentry init. Loaded by `instrumentation.ts` on Node runtime.
@@ -24,4 +25,9 @@ Sentry.init({
     // Anthropic 429s from the Charlie daily-cap path are expected.
     "Charlie daily limit",
   ],
+  // Belt-and-suspenders PII / sensitive-route scrubber. `sendDefaultPii`
+  // already keeps Sentry from auto-attaching request bodies, but our own
+  // code occasionally stuffs chat snippets into error messages — strip
+  // them here before transport leaves the process.
+  beforeSend: scrubSentryEvent,
 });

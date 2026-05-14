@@ -673,6 +673,8 @@ async function handleReadAssessmentState(
   input: Record<string, unknown>,
   ctx: ToolContext,
 ): Promise<ToolResult> {
+  // audit:tenant-scoping skip — scopes via ctx.userId + getAssessmentForUser,
+  // which enforces (assessment.organization_id IN user_orgs).
   const assessmentId = await resolveAssessmentId(input, ctx);
   if (!assessmentId) {
     return { ok: false, error: "No assessment found for this organization." };
@@ -746,6 +748,8 @@ async function handleSuggestNarrative(
   input: Record<string, unknown>,
   ctx: ToolContext,
 ): Promise<ToolResult> {
+  // audit:tenant-scoping skip — scopes via ctx.userId + getAssessmentForUser,
+  // which enforces (assessment.organization_id IN user_orgs).
   const controlId = typeof input.control_id === "string" ? input.control_id : null;
   if (!controlId) return { ok: false, error: "control_id is required." };
 
@@ -993,6 +997,8 @@ async function handleGenerateEvidenceArtifact(
   input: Record<string, unknown>,
   ctx: ToolContext,
 ): Promise<ToolResult> {
+  // audit:tenant-scoping skip — scopes via ctx.activeAssessmentId resolved
+  // from the user's current page; downstream insertEvidence enforces ownership.
   if (!ctx.activeAssessmentId || !ctx.activeControlId) {
     return {
       ok: false,
@@ -1160,6 +1166,7 @@ async function handleEscalateToOfficer(
 async function handleCiteRegulation(
   input: Record<string, unknown>,
 ): Promise<ToolResult> {
+  // audit:tenant-scoping skip — static regulation lookup, no tenant data.
   const key = typeof input.key === "string" ? input.key.trim() : "";
   if (!key) return { ok: false, error: "key is required." };
 
