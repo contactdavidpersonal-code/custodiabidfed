@@ -118,25 +118,54 @@ export function rateLimitKey(opts: {
  * compliance is far more expensive (in churn) than a few extra dollars of
  * spend. Override per-route via `opts`. Daily ceilings can be tightened
  * platform-wide via `CHARLIE_DAILY_CAP_*` env vars without a code change.
+ *
+ * Three windows fire in series — first one to trip wins:
+ *   1. Per-MINUTE burst cap (~scripted-flood defense)
+ *   2. Per-HOUR cap (accidental loop / pasted-prompt defense)
+ *   3. Per-DAY cap (runaway spend ceiling)
+ *
+ * Sizing rationale (chat scope, default):
+ *   - Realistic full CMMC L1 self-assessment is ~200–300 turns end-to-end:
+ *     onboarding (20) + profile/registration (20) + scope inventory (50) +
+ *     15 practices × ~8 turns each (120) + sign/affirmation (20). Daily 600
+ *     gives ~2 full walkthroughs per user-day before throttling.
+ *   - At ~$0.02/turn (cached system+tools, ~7K input + 600 output on
+ *     Sonnet 4.6), a fully-saturated user costs ~$12/day. 100 users worst
+ *     case = ~$1200/day platform-wide.
+ *   - Minute cap of 20 stops scripted floods cold (a real user is physically
+ *     incapable of sending 20 chat turns in 60 seconds).
  */
 export type CharlieBudgetOptions = {
   /** Logical scope. Used to namespace the rate-limit buckets. */
   scope: "chat" | "onboard" | "practice-chat";
   userId: string;
-  /** Per-hour ceiling. Default 60. */
+  /** Per-minute burst cap. Default 20. */
+  minuteMax?: number;
+  /** Per-hour ceiling. Default 150 for chat, 90 for onboard, 120 for practice-chat. */
   hourMax?: number;
-  /** Per-day ceiling. Default 200 for chat, 50 for onboard, 100 for practice-chat. */
+  /** Per-day ceiling. Default 600 for chat, 200 for onboard, 400 for practice-chat. */
   dayMax?: number;
 };
 
 export async function enforceCharlieBudget(
   opts: CharlieBudgetOptions,
 ): Promise<Response | null> {
-  const hourMax = opts.hourMax ?? 60;
+  const minuteMax = opts.minuteMax ?? 20;
+  const hourMax = opts.hourMax ?? defaultHourlyCap(opts.scope);
   const dayMax =
     opts.dayMax ??
     defaultDailyCapFromEnv(opts.scope) ??
     defaultDailyCap(opts.scope);
+
+  // Burst window first — cheap, catches scripted abuse before we ever talk to Anthropic.
+  const minute = await checkRateLimit(
+    rateLimitKey({
+      scope: `${opts.scope}:min`,
+      userId: opts.userId,
+    }),
+    { max: minuteMax, windowSec: 60 },
+  );
+  if (!minute.allowed) return rateLimitResponse(minute);
 
   const hourly = await checkRateLimit(
     rateLimitKey({ scope: opts.scope, userId: opts.userId }),
@@ -156,14 +185,25 @@ export async function enforceCharlieBudget(
   return null;
 }
 
+function defaultHourlyCap(scope: CharlieBudgetOptions["scope"]): number {
+  switch (scope) {
+    case "chat":
+      return 150;
+    case "practice-chat":
+      return 120;
+    case "onboard":
+      return 90;
+  }
+}
+
 function defaultDailyCap(scope: CharlieBudgetOptions["scope"]): number {
   switch (scope) {
     case "chat":
-      return 200;
+      return 600;
     case "practice-chat":
-      return 100;
+      return 400;
     case "onboard":
-      return 50;
+      return 200;
   }
 }
 

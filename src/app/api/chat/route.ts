@@ -10,9 +10,9 @@ import {
   ensureMemoryForOrg,
   memoryToContextBlock,
 } from "@/lib/ai/memory";
+import { buildPageContextBlock } from "@/lib/ai/page-context";
 import { runOfficerAgentStream, SSE_HEADERS } from "@/lib/ai/stream";
 import { ensureOrgForUser, getBusinessProfile } from "@/lib/assessment";
-import { getPracticeSpec } from "@/lib/cmmc/practice-spec";
 import {
   enforceCharlieBudget,
 } from "@/lib/security/rate-limit";
@@ -116,68 +116,24 @@ function buildWorkspaceContextBlock(input: {
     parts.push(input.memoryBlock);
   }
 
-  if (input.pageContext?.route) {
-    parts.push(`- Current page: ${input.pageContext.route}`);
-  }
-  if (input.pageContext?.controlId) {
-    parts.push(
-      `- Currently viewing practice: ${input.pageContext.controlId} (anchor answers to this control when relevant)`,
-    );
-    // Hybrid practice mode: when the user is on a practice with a published
-    // CMMC L1 spec, embed the verbatim control statement, NIST 800-171A
-    // objectives, and required evidence slots so Charlie acts as a CMMC
-    // consultant for THIS practice — one shaped question at a time, mapping
-    // the user's plain-English answers onto each objective letter.
-    const spec = getPracticeSpec(input.pageContext.controlId);
-    if (spec) {
-      parts.push("");
-      parts.push(`## ACTIVE PRACTICE — guided walkthrough mode`);
-      parts.push(`The user is working **${spec.controlId} — ${spec.shortName}** right now. The middle pane shows live objective coverage as the conversation progresses; you are the chat. Stay focused on filling each objective letter [a]/[b]/[c]/...`);
-      parts.push("");
-      parts.push(`### Verbatim control statement (FAR 52.204-21 / NIST 800-171 §3.1.1)`);
-      parts.push(`"${spec.statement}"`);
-      parts.push("");
-      parts.push(`### NIST 800-171A objectives the assessor will check:`);
-      for (const o of spec.objectives) {
-        parts.push(`  [${o.letter}] ${o.text}`);
-      }
-      parts.push("");
-      parts.push(`### Evidence slots an assessor accepts:`);
-      for (const s of spec.evidenceSlots) {
-        const dests = s.destinations
-          .map((d) => {
-            if (d.type === "generate") return `generate→${d.filename}`;
-            if (d.type === "connect") return `connect→${d.providers.join("|")}`;
-            return "upload";
-          })
-          .join(", ");
-        parts.push(
-          `  - key='${s.key}' — ${s.label} (${s.required ? "required" : "optional"}; satisfies [${s.satisfies.join(", ")}]; rails: ${dests}): ${s.hint}`,
-        );
-      }
-      parts.push("");
-      parts.push(
-        `### Behaviour for this practice:
-- ONE question at a time. Plain English. No jargon without defining it.
-- The user is not a security expert. Assume zero prior knowledge.
-- Convert their plain description of their business into a clean mapping of each objective letter onto reality.
-- When you have enough for an objective, briefly note "Got what I need for [letter]" and move on.
-
-### Evidence — close the loop, do not type documents in chat:
-- The middle pane has an Evidence section listing every slot above. As the user gives you facts, FILL THE SLOTS by calling the \`generate_evidence_artifact\` tool — do NOT paste roster tables, procedures, or service-account lists into chat.
-- Use \`generate_evidence_artifact\` for: rosters (CSV), inventories (CSV), service-account lists (CSV), written procedures (markdown), scoping statements (markdown). Pass the slot's \`key\` exactly as listed above.
-- After the tool succeeds, give a 1-2 sentence chat summary like: "I dropped an Authorized Users Roster into your evidence — listed you as the sole user on Windows 11 + Pixel 9a. Replace it if anything's wrong."
-- For evidence that requires a screenshot or live system export (e.g. enforcement_proof), do NOT generate — instead ask the user to either upload one OR connect Microsoft 365 / Google Workspace from /dashboard so Custodia can auto-collect it. A "Connect" callout is already shown above the practice for slots a connector can satisfy.
-- NEVER mark the practice MET on your own — the platform handles that. You just gather facts and produce artifacts.
-- Keep replies short — 2-5 sentences. The middle pane is doing the visual tracking.`,
-      );
-    }
-  }
   if (input.pageContext?.assessmentId) {
     parts.push(`- Active assessment: ${input.pageContext.assessmentId}`);
   }
+
+  // Per-page context pack — single source of truth for "where am I, what's
+  // expected on this page, which tools belong here." See src/lib/ai/page-context.ts.
+  const pageBlock = buildPageContextBlock({
+    route: input.pageContext?.route,
+    assessmentId: input.pageContext?.assessmentId,
+    controlId: input.pageContext?.controlId,
+  });
+  if (pageBlock) {
+    parts.push("");
+    parts.push(pageBlock);
+  }
+
   parts.push(
-    `\n## Tools\nYou have read-mostly tools to inspect the user's actual state (read_assessment_state, describe_evidence, check_readiness), a draft-generator (suggest_narrative), a regulatory-citation lookup (cite_regulation), and mutators (propose_milestone, update_organization_fields, update_business_profile, escalate_to_officer). PREFER calling a tool over guessing — if the user asks "where am I", "what's left", or references specific evidence, call the relevant tool before answering. ALWAYS call cite_regulation before quoting FAR / NIST / 32 CFR text.`,
+    `\n## Tools\nYou have read-mostly tools to inspect the user's actual state (read_assessment_state, describe_evidence, check_readiness), a draft-generator (suggest_narrative), a regulatory-citation lookup (cite_regulation), and mutators (propose_milestone, update_organization_fields, update_business_profile, escalate_to_officer). PREFER calling a tool over guessing — if the user asks "where am I", "what's left", or references specific evidence, call the relevant tool before answering. ALWAYS call cite_regulation before quoting FAR / NIST / 32 CFR text. When citing a primary source, also point the user at the matching /regulations page so they can read the official PDF in-browser (/regulations, /regulations/scoping-guide-level-1, /regulations/assessment-guide-level-1, /regulations/model-overview).`,
   );
   return parts.join("\n");
 }
