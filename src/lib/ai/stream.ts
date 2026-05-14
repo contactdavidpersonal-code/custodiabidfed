@@ -68,15 +68,32 @@ function looksLikePreAnnounceStall(blocks: AssistantBlock[]): boolean {
 }
 
 // Confirmation patterns the user types to authorize an offered action.
-// Kept tight on purpose — we only want to force tool_use when the user is
-// CLEARLY saying "do it". A bare "yes" or "go ahead" mid-conversation can
-// also legitimately just be confirming something informational, so we also
-// require the previous assistant turn to contain an explicit offer.
+// Broader than strict single-word match — also catches "yes please",
+// "yeah go ahead", "yes do it", "ok generate them", etc. We require the
+// prior assistant turn to look like an offer (ends in '?' OR mentions an
+// action verb) so a "yes" to an informational question doesn't force a
+// tool call.
 const CONFIRMATION_RX =
-  /^(?:yes|yeah|yep|yup|y|sure|ok|okay|please|please\s+do|do\s+it|do\s+them|do\s+all|do\s+all\s+of\s+them|go|go\s+ahead|go\s+for\s+it|let'?s\s+go|let'?s\s+do\s+it|sounds\s+good|sounds?\s+great|generate|generate\s+them|generate\s+all|draft\s+them|create\s+them|build\s+them|make\s+them|run\s+it|fire\s+away|all\s+four|all\s+three|all\s+five|all\s+of\s+them)\W*$/i;
+  /^(?:(?:yes|yeah|yep|yup|y|sure|ok|okay|alright|aight|absolutely|definitely|affirmative|please|please\s+do|do\s+it|do\s+them|do\s+all(?:\s+of\s+them)?|go|go\s+ahead|go\s+for\s+it|let'?s\s+go|let'?s\s+do\s+(?:it|this)|sounds\s+(?:good|great)|generate(?:\s+(?:them|all|it|those|these))?|draft(?:\s+(?:them|all|it))?|create(?:\s+(?:them|all|it))?|build(?:\s+(?:them|all|it))?|make(?:\s+(?:them|all|it))?|run(?:\s+it)?|fire\s+away|all\s+(?:four|three|five|of\s+them)|proceed)(?:[\s,.!]+.{0,80})?)\W*$/i;
 
-const OFFER_RX =
-  /\b(?:want\s+me\s+to|should\s+i|shall\s+i|ready\s+for\s+me\s+to|ok(?:ay)?\s+(?:for\s+me\s+)?to|can\s+i\s+(?:go\s+ahead|generate|draft|create|build)|i\s+can\s+(?:generate|draft|create|build)|generate\s+(?:all|the)\s+\w+\s+now|right\s+now\?|now\?)/i;
+// "Looks like an offer" heuristic — used to require the OFFER_RX above
+// before forcing tool_choice. That regex was too narrow ("ready for me to"
+// didn't match Charlie's actual "Ready to generate those artifacts?" copy).
+// Replaced with a soft check: the prior assistant message ends in '?', OR
+// it contains an action verb that maps to a real tool. False positives are
+// benign — the model picks whichever tool fits best, and pre-flight only
+// fires on the FIRST iteration anyway.
+const ASSISTANT_OFFER_HEURISTIC_RX =
+  /\b(?:generat\w*|draft\w*|creat\w*|build\w*|produc\w*|prepar\w*|writ\w*|render\w*|save|saving|set\s+up|assemble\w*|put\s+together|whip\s+up|kick\s+off|spin\s+up|file|record|tag|add)\b/i;
+
+// Keywords in the prior assistant message that indicate the offer was
+// specifically about generating an evidence ARTIFACT (roster, inventory,
+// procedure, etc.) for the current control. When we see these AND the
+// user is on a /controls/:controlId page, we don't just force "any" —
+// we pin tool_choice to `generate_evidence_artifact` so the chat does
+// exactly what the in-page "Draft with Charlie" button does.
+const EVIDENCE_GENERATION_OFFER_RX =
+  /\b(?:artifact|artifacts|roster|inventory|procedure|deliverable|csv|pdf|evidence|service[- ]account|access[- ]grant|access[- ]removal|users?[- ]roster|devices?[- ]inventory|enforcement[- ]proof)\b/i;
 
 function extractText(content: unknown): string {
   if (typeof content === "string") return content;
@@ -91,9 +108,22 @@ function extractText(content: unknown): string {
   return "";
 }
 
+type ForcedToolChoice =
+  | { type: "any" }
+  | { type: "tool"; name: string }
+  | undefined;
+
 /**
  * Pre-flight decision: should we force tool_choice on the FIRST turn,
  * before the model has a chance to defect into pre-announce text?
+ *
+ * Returns:
+ *   - `{type: "tool", name: "generate_evidence_artifact"}` when the user
+ *     confirmed an offer that clearly concerned generating an evidence
+ *     artifact AND we're on a /controls/:controlId page. This makes the
+ *     chat fire the SAME tool as the in-page "Draft with Charlie" button.
+ *   - `{type: "any"}` when the user confirmed any other offered action.
+ *   - `undefined` when no force is needed.
  *
  * Triggers when the user's latest message is a short confirmation AND the
  * previous assistant message contained an offer to perform an action. This
@@ -101,27 +131,46 @@ function extractText(content: unknown): string {
  *   Charlie: "Want me to generate all four now?"
  *   User:    "yes"
  *   Charlie: "Generating all four now."   ← stall, no tools fired
- * Without depending on a post-hoc retry, this saves the model round-trip
- * and the user's tokens.
  */
-function shouldForceToolUseOnFirstTurn(
+function decideForcedToolChoiceForFirstTurn(
   priorMessages: Array<{ role: "user" | "assistant"; content: unknown }>,
-): boolean {
-  if (priorMessages.length < 2) return false;
+  activeControlId: string | undefined,
+): ForcedToolChoice {
+  if (priorMessages.length < 2) return undefined;
   const last = priorMessages[priorMessages.length - 1];
-  if (last.role !== "user") return false;
+  if (last.role !== "user") return undefined;
   const lastText = extractText(last.content).trim();
-  if (!lastText || lastText.length > 60) return false;
-  if (!CONFIRMATION_RX.test(lastText)) return false;
-  // Walk back to the most recent assistant text and look for an offer.
+  // Allow up to ~120 chars so phrases like "yes please go ahead and generate
+  // all four for me" still trip the gate.
+  if (!lastText || lastText.length > 120) return undefined;
+  if (!CONFIRMATION_RX.test(lastText)) return undefined;
+  // Walk back to the most recent assistant text. Treat it as an offer when
+  // it (a) ends in a question mark, OR (b) contains any action-verb keyword
+  // that maps to a real Charlie tool.
   for (let i = priorMessages.length - 2; i >= 0; i--) {
     const m = priorMessages[i];
     if (m.role !== "assistant") continue;
-    const text = extractText(m.content);
-    if (!text.trim()) continue;
-    return OFFER_RX.test(text);
+    const text = extractText(m.content).trim();
+    if (!text) continue;
+    const endsInQuestion = text.trimEnd().endsWith("?");
+    const looksLikeOffer =
+      endsInQuestion || ASSISTANT_OFFER_HEURISTIC_RX.test(text);
+    if (!looksLikeOffer) return undefined;
+    // If the assistant message also mentions evidence-generation keywords
+    // AND we're on a control page, pin to the specific evidence tool —
+    // same behavior as the "Draft with Charlie" button.
+    if (
+      activeControlId &&
+      EVIDENCE_GENERATION_OFFER_RX.test(text) &&
+      /\bgenerat\w*|\bdraft\w*|\bcreat\w*|\bbuild\w*|\bproduc\w*|\bprepar\w*/i.test(
+        text,
+      )
+    ) {
+      return { type: "tool", name: "generate_evidence_artifact" };
+    }
+    return { type: "any" };
   }
-  return false;
+  return undefined;
 }
 
 type TextBlock = { type: "text"; text: string };
@@ -217,17 +266,23 @@ export function runOfficerAgentStream(
           // Pre-flight: on the FIRST iteration only, force tool_choice when
           // the user is clearly confirming a recent offer. Saves one round
           // trip vs. waiting for the post-hoc detector to catch a stall.
-          if (
-            i === 0 &&
-            !preAnnounceRetried &&
-            shouldForceToolUseOnFirstTurn(priorMessages)
-          ) {
-            preAnnounceRetried = true;
-            forceToolChoice = { type: "any" };
-            console.warn(
-              "[charlie] pre-flight forcing tool_choice=any on confirmation",
-              { conversationId: input.conversationId },
+          if (i === 0 && !preAnnounceRetried) {
+            const decided = decideForcedToolChoiceForFirstTurn(
+              priorMessages,
+              input.toolContext.activeControlId,
             );
+            if (decided) {
+              preAnnounceRetried = true;
+              forceToolChoice = decided;
+              console.warn(
+                "[charlie] pre-flight forcing tool_choice on confirmation",
+                {
+                  conversationId: input.conversationId,
+                  toolChoice: decided,
+                  activeControlId: input.toolContext.activeControlId,
+                },
+              );
+            }
           }
 
           const turn = await runOneTurn({
@@ -240,6 +295,29 @@ export function runOfficerAgentStream(
           // tool_choice is per-turn; reset before persistence so it can't
           // leak into the next iteration.
           forceToolChoice = undefined;
+
+          // Diagnostic: surface every turn's shape to Vercel logs so we can
+          // tell from production what the model actually emitted on a given
+          // user message. Cheap (one console.log per turn) and invaluable
+          // when chasing "model defected to text-only" bugs.
+          const turnToolUses = turn.assistantBlocks.filter(
+            (b): b is ToolUseBlock => b.type === "tool_use",
+          );
+          const turnText = turn.assistantBlocks
+            .filter((b): b is TextBlock => b.type === "text")
+            .map((b) => b.text)
+            .join(" ")
+            .trim();
+          console.log("[charlie] turn complete", {
+            conversationId: input.conversationId,
+            iteration: i,
+            stopReason: turn.stopReason,
+            toolCount: turnToolUses.length,
+            toolNames: turnToolUses.map((b) => b.name),
+            textLen: turnText.length,
+            textSample: turnText.slice(0, 200),
+            forcedToolChoice: false, // forceToolChoice already reset above
+          });
 
           // Pre-announce stall: text-only completion that promises an
           // action. Drop the stalled message (do NOT persist — Anthropic
