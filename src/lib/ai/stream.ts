@@ -95,6 +95,38 @@ const ASSISTANT_OFFER_HEURISTIC_RX =
 const EVIDENCE_GENERATION_OFFER_RX =
   /\b(?:artifact|artifacts|roster|inventory|procedure|deliverable|csv|pdf|evidence|service[- ]account|access[- ]grant|access[- ]removal|users?[- ]roster|devices?[- ]inventory|enforcement[- ]proof)\b/i;
 
+/**
+ * Map raw upstream errors (Anthropic SDK messages, fetch failures, etc.) to
+ * a human-readable line that's safe to render verbatim in the chat UI. The
+ * default Anthropic message for an overloaded turn is the literal JSON
+ * `{"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}`
+ * which leaks raw machine output to the end user.
+ */
+function friendlyErrorMessage(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (lower.includes("overloaded_error") || lower.includes('"overloaded"')) {
+    return "Charlie's model provider is overloaded right now. Wait a few seconds and send your message again — your progress is saved.";
+  }
+  if (lower.includes("rate_limit") || lower.includes("rate-limit") || lower.includes("429")) {
+    return "We're being rate-limited by the model provider. Give it about a minute and try again — your progress is saved.";
+  }
+  if (lower.includes("timeout") || lower.includes("timed out")) {
+    return "Charlie timed out waiting on the model. Try sending your message again.";
+  }
+  if (lower.includes("api_error") || lower.includes("internal_server_error") || lower.includes("503")) {
+    return "The model provider had a hiccup. Try again — your progress is saved.";
+  }
+  if (lower.includes("invalid_request_error")) {
+    return "Charlie hit an invalid-request error talking to the model. If this keeps happening, hit the reset button (top-right of the chat) and try again.";
+  }
+  // Fallback: if the message looks like raw JSON, hide it behind a generic
+  // line; otherwise pass the cleaned text through.
+  if (raw.trim().startsWith("{") || raw.trim().startsWith("[")) {
+    return "Charlie hit an unexpected error talking to the model. Try again — your progress is saved.";
+  }
+  return raw;
+}
+
 function extractText(content: unknown): string {
   if (typeof content === "string") return content;
   if (Array.isArray(content)) {
@@ -577,10 +609,11 @@ export function runOfficerAgentStream(
                 // Surface but don't swallow — if we can't persist, the
                 // next turn will at least be healed by toAnthropicMessages.
                 send("error", {
-                  message:
+                  message: friendlyErrorMessage(
                     persistErr instanceof Error
                       ? persistErr.message
                       : String(persistErr),
+                  ),
                 });
               }
             }
@@ -590,8 +623,8 @@ export function runOfficerAgentStream(
 
         send("done", {});
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        send("error", { message: msg });
+        const rawMsg = err instanceof Error ? err.message : String(err);
+        send("error", { message: friendlyErrorMessage(rawMsg) });
       } finally {
         controller.close();
       }

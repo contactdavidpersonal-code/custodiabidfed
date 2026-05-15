@@ -565,6 +565,21 @@ export function ComplianceOfficerRail({
     const sessionKey = `custodia.practice-kickoff.${ctx.controlId}`;
     // Per-tab dedupe (survives refresh, dies on tab close).
     if (window.sessionStorage.getItem(sessionKey)) return;
+    // Suppress one kickoff right after the user hits the reset button.
+    // Otherwise the auto-greeting fires immediately on top of the
+    // "Conversation reset" message and contradicts "Fresh start".
+    try {
+      if (window.sessionStorage.getItem("custodia.charlie-just-reset") === "1") {
+        window.sessionStorage.removeItem("custodia.charlie-just-reset");
+        // Mark this control as already-kicked so the next pathname
+        // change doesn't immediately re-fire either.
+        window.sessionStorage.setItem(sessionKey, "1");
+        kickoffFiredRef.current.add(ctx.controlId);
+        return;
+      }
+    } catch {
+      // sessionStorage unavailable — fall through.
+    }
     // Per-mount dedupe (prevents racing between effect re-runs in the same
     // render cycle, before sessionStorage has been written).
     if (kickoffFiredRef.current.has(ctx.controlId)) return;
@@ -686,9 +701,14 @@ export function ComplianceOfficerRail({
                     ss.removeItem(k);
                   }
                 }
+                // One-shot flag: the next kickoff effect run will see this,
+                // bail out, and clear it. Prevents the auto-resume message
+                // from immediately overwriting the "Fresh start" greeting.
+                ss.setItem("custodia.charlie-just-reset", "1");
               } catch {
                 // sessionStorage unavailable — non-fatal.
               }
+              kickoffFiredRef.current.clear();
               void send("/reset");
             }}
             disabled={streaming}
