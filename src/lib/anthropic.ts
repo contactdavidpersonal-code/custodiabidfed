@@ -17,7 +17,16 @@ export function getAnthropic(): Anthropic {
   if (!apiKey) {
     throw new Error("ANTHROPIC_API_KEY environment variable is not set");
   }
-  _client = new Anthropic({ apiKey });
+  _client = new Anthropic({
+    apiKey,
+    // SDK auto-retries on 408/409/429/500/502/503/504/529 (Anthropic
+    // returns 529 "overloaded_error" when capacity is squeezed). Default
+    // is 2; we bump to 4 with the SDK's built-in exponential backoff so a
+    // transient overload doesn't bubble up to the chat UI as a hard error.
+    // This runs BEFORE any stream events fire — once message_start has
+    // been emitted, retries are a no-op.
+    maxRetries: 4,
+  });
   return _client;
 }
 

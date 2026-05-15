@@ -97,6 +97,9 @@ export function ComplianceOfficerRail({
   const pendingDraftRef = useRef<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // Last user message we tried to send — so the banner's Retry button
+  // can resend it without making the user re-type. Cleared on success.
+  const lastSentTextRef = useRef<string | null>(null);
   const [recap, setRecap] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -335,6 +338,7 @@ export function ComplianceOfficerRail({
       return;
     }
     setErrorMsg(null);
+    lastSentTextRef.current = text;
     if (textOverride === undefined) setDraft("");
     setStreaming(true);
     // Slash-command parity with the reset button: if the user TYPES /reset
@@ -489,10 +493,13 @@ export function ComplianceOfficerRail({
         } else if (event === "error") {
           const msg = typeof data.message === "string" ? data.message : "unknown error";
           setErrorMsg(msg);
-          patchAssistant((m) => ({
-            ...m,
-            text: m.text || `I hit an error: ${msg}`,
-          }));
+          // Don't double-render: the red banner below the chat carries the
+          // error copy + retry/dismiss controls. Remove the empty assistant
+          // bubble (and the user message that produced it) so the conversation
+          // doesn't keep a ghost "officer said the overload message" turn.
+          setMessages((prev) =>
+            prev.filter((m) => m.id !== assistantId),
+          );
         }
       });
 
@@ -537,11 +544,7 @@ export function ComplianceOfficerRail({
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setErrorMsg(msg);
-      patchAssistant((m) =>
-        m.text === ""
-          ? { ...m, text: `I couldn't reach the officer: ${msg}` }
-          : m,
-      );
+      setMessages((prev) => prev.filter((m) => m.id !== assistantId));
     } finally {
       setStreaming(false);
     }
@@ -552,6 +555,15 @@ export function ComplianceOfficerRail({
   useEffect(() => {
     sendRef.current = send;
   }, [send]);
+
+  // Auto-clear the error banner after 12s so a transient hiccup doesn't
+  // linger on screen forever (the old behavior). User can also dismiss
+  // manually via the X button, or hit Retry to resend the last message.
+  useEffect(() => {
+    if (!errorMsg) return;
+    const t = window.setTimeout(() => setErrorMsg(null), 12000);
+    return () => window.clearTimeout(t);
+  }, [errorMsg]);
 
   // Listen for `charlie-send-message` events fired by other parts of the
   // assessment workspace (e.g. the per-slot "Charlie generates from chat"
@@ -787,8 +799,35 @@ export function ComplianceOfficerRail({
       </div>
 
       {errorMsg && (
-        <div className="border-t border-rose-200 bg-rose-50 px-4 py-2 text-xs text-rose-700">
-          {errorMsg}
+        <div className="flex items-start gap-3 border-t border-rose-200 bg-rose-50 px-4 py-2 text-xs text-rose-700">
+          <p className="flex-1 leading-relaxed">{errorMsg}</p>
+          <div className="flex shrink-0 items-center gap-2">
+            {lastSentTextRef.current && (
+              <button
+                type="button"
+                onClick={() => {
+                  const t = lastSentTextRef.current;
+                  if (!t || streaming) return;
+                  setErrorMsg(null);
+                  void send(t);
+                }}
+                disabled={streaming}
+                className="rounded-full border border-rose-300 bg-white px-2.5 py-0.5 text-[11px] font-medium text-rose-700 transition-colors hover:bg-rose-100 disabled:opacity-50"
+              >
+                Retry
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setErrorMsg(null)}
+              aria-label="Dismiss error"
+              className="rounded-full p-1 text-rose-500 transition-colors hover:bg-rose-100 hover:text-rose-700"
+            >
+              <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
+                <path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" />
+              </svg>
+            </button>
+          </div>
         </div>
       )}
 
