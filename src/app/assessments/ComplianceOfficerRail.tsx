@@ -269,11 +269,12 @@ export function ComplianceOfficerRail({
   // `send` further down, so this effect references the latest closure via
   // the ref-style accessor below.
   const sendRef = useRef<((t?: string) => Promise<void>) | null>(null);
-  // Per-mount guard set: which controlIds have we already kicked off in this
-  // mounted rail instance? Backstops sessionStorage in case the kickoff effect
-  // re-fires synchronously before the sessionStorage write lands (it depends
-  // on `send`, which is reborn whenever streaming/draft flip).
+  // The controlId Charlie last auto-greeted on. We greet on every transition
+  // to a NEW controlId (or on first load), but suppress re-firing if the user
+  // just refreshed the same practice page — sessionStorage backs the ref so
+  // a bare F5 doesn't double-greet.
   const kickoffFiredRef = useRef<Set<string>>(new Set());
+  const lastKickoffControlRef = useRef<string | null>(null);
   // Tracks which tool each in-flight `tool_use` id maps to. We can't read
   // this off React state during the SSE handler because React's state
   // updates are scheduled — by the time `tool_end` arrives, `messages`
@@ -362,6 +363,7 @@ export function ComplianceOfficerRail({
         // sessionStorage unavailable — non-fatal.
       }
       kickoffFiredRef.current.clear();
+      lastKickoffControlRef.current = null;
     }
     const userId = `local-${Date.now()}`;
     const assistantId = `local-a-${Date.now()}`;
@@ -596,30 +598,39 @@ export function ComplianceOfficerRail({
     const ctx = extractPageContext(pathname);
     if (!ctx.assessmentId || !ctx.controlId) return;
 
+    // Same control as last greet on this mount? Treat as a refresh/no-op.
+    // Different control (or first time) — fire a fresh kickoff so Charlie
+    // always says something when the user lands on a practice page.
+    if (lastKickoffControlRef.current === ctx.controlId) return;
+
     const sessionKey = `custodia.practice-kickoff.${ctx.controlId}`;
-    // Per-tab dedupe (survives refresh, dies on tab close).
-    if (window.sessionStorage.getItem(sessionKey)) return;
+    // Refresh-suppression: if sessionStorage already has a kickoff stamp
+    // AND this is the first effect run on this mount (ref is null), the
+    // user just refreshed — don't re-greet. Any subsequent navigation
+    // updates the ref, so back-and-forth between practices DOES greet.
+    if (
+      lastKickoffControlRef.current === null &&
+      window.sessionStorage.getItem(sessionKey)
+    ) {
+      lastKickoffControlRef.current = ctx.controlId;
+      return;
+    }
     // Suppress one kickoff right after the user hits the reset button.
     // Otherwise the auto-greeting fires immediately on top of the
     // "Conversation reset" message and contradicts "Fresh start".
     try {
       if (window.sessionStorage.getItem("custodia.charlie-just-reset") === "1") {
         window.sessionStorage.removeItem("custodia.charlie-just-reset");
-        // Mark this control as already-kicked so the next pathname
-        // change doesn't immediately re-fire either.
         window.sessionStorage.setItem(sessionKey, "1");
-        kickoffFiredRef.current.add(ctx.controlId);
+        lastKickoffControlRef.current = ctx.controlId;
         return;
       }
     } catch {
       // sessionStorage unavailable — fall through.
     }
-    // Per-mount dedupe (prevents racing between effect re-runs in the same
-    // render cycle, before sessionStorage has been written).
-    if (kickoffFiredRef.current.has(ctx.controlId)) return;
     // Claim the kickoff slot SYNCHRONOUSLY so any concurrent effect re-fire
     // bails out before issuing a duplicate request.
-    kickoffFiredRef.current.add(ctx.controlId);
+    lastKickoffControlRef.current = ctx.controlId;
     window.sessionStorage.setItem(sessionKey, "1");
 
     let cancelled = false;
@@ -641,7 +652,7 @@ export function ComplianceOfficerRail({
         const userTurns = data.messages.filter((m) => m.role === "user").length;
         const opener =
           userTurns > 0
-            ? `I'm back on ${ctx.controlId} — pick up where we left off.`
+            ? `I just jumped back to ${ctx.controlId}. Briefly recap where we left off in one or two sentences, then ask whether I want to continue, jump to a specific objective, or need help with anything.`
             : `Let's start ${ctx.controlId}. Walk me through it.`;
         setOpen(true);
         window.localStorage.setItem(STORAGE_OPEN_KEY, "1");
@@ -743,6 +754,7 @@ export function ComplianceOfficerRail({
                 // sessionStorage unavailable — non-fatal.
               }
               kickoffFiredRef.current.clear();
+              lastKickoffControlRef.current = null;
               void send("/reset");
             }}
             disabled={streaming}
