@@ -28,7 +28,7 @@ const statusLabels: Record<ControlResponseRow["status"], string> = {
 const statusDotStyles: Record<ControlResponseRow["status"], string> = {
   unanswered: "bg-[#cfe3d9]",
   yes: "bg-[#2f8f6d]",
-  partial: "bg-[#a06b1a]",
+  partial: "bg-[#7ba87f]",
   no: "bg-[#b03a2e]",
   not_applicable: "bg-[#5a7d70]",
 };
@@ -36,7 +36,7 @@ const statusDotStyles: Record<ControlResponseRow["status"], string> = {
 const statusPillStyles: Record<ControlResponseRow["status"], string> = {
   unanswered: "bg-[#f1f6f3] text-[#5a7d70] ring-[#cfe3d9]",
   yes: "bg-[#eaf3ee] text-[#0e2a23] ring-[#bde0cc]",
-  partial: "bg-[#fff4e0] text-[#a06b1a] ring-[#f1d9a5]",
+  partial: "bg-[#eef6ea] text-[#3d6b3a] ring-[#cfe3c2]",
   no: "bg-[#fbe9e6] text-[#b03a2e] ring-[#f1c4bd]",
   not_applicable: "bg-[#f1f6f3] text-[#5a7d70] ring-[#cfe3d9]",
 };
@@ -57,7 +57,7 @@ const statusPercent: Record<ControlResponseRow["status"], number> = {
 const statusBarColor: Record<ControlResponseRow["status"], string> = {
   unanswered: "bg-[#cfe3d9]",
   yes: "bg-[#2f8f6d]",
-  partial: "bg-[#a06b1a]",
+  partial: "bg-[#7ba87f]",
   no: "bg-[#b03a2e]",
   not_applicable: "bg-[#5a7d70]",
 };
@@ -261,19 +261,19 @@ export default async function AssessmentOverviewPage(
                               On mobile (< sm) the title wraps below the FAR ID; on desktop
                               everything sits inline with [FCI Data] tag + dotted leader. */}
                           <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 sm:flex-nowrap sm:overflow-hidden">
-                            <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] text-[#063f2e]/60">
+                            <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.18em] text-[#2f8f6d]">
                               {reqId}
                             </span>
-                            <span className="font-serif text-base font-normal text-[#063f2e] sm:truncate">
+                            <span className="font-serif text-xl font-medium tracking-[-0.01em] text-[#063f2e] transition-colors group-hover:text-[#2f8f6d] sm:truncate">
                               {meta.shortName}
                             </span>
-                            <span className="hidden shrink-0 font-mono text-[10px] uppercase tracking-[0.16em] text-[#063f2e]/40 sm:inline">
+                            <span className="hidden shrink-0 font-serif text-[11px] italic tracking-[0.05em] text-[#063f2e]/45 sm:inline">
                               [FCI Data]
                             </span>
                             {/* Dotted leader — fills remaining horizontal space like a print TOC */}
                             <span
                               aria-hidden
-                              className="hidden min-w-0 flex-1 translate-y-[-3px] border-b border-dotted border-[#063f2e]/25 sm:block"
+                              className="hidden min-w-0 flex-1 translate-y-[-3px] border-b border-dotted border-[#063f2e]/20 sm:block"
                             />
                           </span>
 
