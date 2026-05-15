@@ -133,12 +133,6 @@ export default async function AssessmentOverviewPage(
 
   return (
     <main className="relative mx-auto max-w-6xl px-6 py-10 md:px-10 md:py-16">
-      {/* Ambient luxe accent */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-24 left-1/2 h-[380px] w-[680px] -translate-x-1/2 rounded-full bg-[#bef4be] opacity-[0.18] blur-[120px]"
-      />
-
       <div className="relative">
         {justSigned && <CelebrationBanner assessmentId={ctx.assessment.id} />}
 
