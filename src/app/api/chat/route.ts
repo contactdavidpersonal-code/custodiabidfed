@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
       start(controller) {
         controller.enqueue(
           encoder.encode(
-            `event: text\ndata: ${JSON.stringify({ text: refusal })}\n\n`,
+            `event: delta\ndata: ${JSON.stringify({ text: refusal })}\n\n`,
           ),
         );
         controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       start(controller) {
         controller.enqueue(
           encoder.encode(
-            `event: text\ndata: ${JSON.stringify({ text: greeting })}\n\n`,
+            `event: delta\ndata: ${JSON.stringify({ text: greeting })}\n\n`,
           ),
         );
         controller.enqueue(encoder.encode(`event: done\ndata: {}\n\n`));

@@ -598,40 +598,14 @@ export function ComplianceOfficerRail({
     const ctx = extractPageContext(pathname);
     if (!ctx.assessmentId || !ctx.controlId) return;
 
-    // Same control as last greet on this mount? Treat as a refresh/no-op.
-    // Different control (or first time) — fire a fresh kickoff so Charlie
-    // always says something when the user lands on a practice page.
+    // Same control as last greet on this mount — don't re-fire. Any
+    // navigation to a DIFFERENT controlId (or back to one we've seen)
+    // updates the ref and greets again. On a hard refresh the ref is
+    // null, so we always greet on the first land — which is exactly
+    // what the user expects ("even if I've worked on it before, say
+    // something about where I left off").
     if (lastKickoffControlRef.current === ctx.controlId) return;
-
-    const sessionKey = `custodia.practice-kickoff.${ctx.controlId}`;
-    // Refresh-suppression: if sessionStorage already has a kickoff stamp
-    // AND this is the first effect run on this mount (ref is null), the
-    // user just refreshed — don't re-greet. Any subsequent navigation
-    // updates the ref, so back-and-forth between practices DOES greet.
-    if (
-      lastKickoffControlRef.current === null &&
-      window.sessionStorage.getItem(sessionKey)
-    ) {
-      lastKickoffControlRef.current = ctx.controlId;
-      return;
-    }
-    // Suppress one kickoff right after the user hits the reset button.
-    // Otherwise the auto-greeting fires immediately on top of the
-    // "Conversation reset" message and contradicts "Fresh start".
-    try {
-      if (window.sessionStorage.getItem("custodia.charlie-just-reset") === "1") {
-        window.sessionStorage.removeItem("custodia.charlie-just-reset");
-        window.sessionStorage.setItem(sessionKey, "1");
-        lastKickoffControlRef.current = ctx.controlId;
-        return;
-      }
-    } catch {
-      // sessionStorage unavailable — fall through.
-    }
-    // Claim the kickoff slot SYNCHRONOUSLY so any concurrent effect re-fire
-    // bails out before issuing a duplicate request.
     lastKickoffControlRef.current = ctx.controlId;
-    window.sessionStorage.setItem(sessionKey, "1");
 
     let cancelled = false;
     (async () => {
@@ -669,9 +643,7 @@ export function ComplianceOfficerRail({
       cancelled = true;
     };
     // Intentionally exclude `send` from the dep list — we resolve it through
-    // sendRef inside the effect. Including it caused the effect to re-fire
-    // every time draft/streaming changed, which raced the sessionStorage
-    // dedupe write and double-kicked the chat.
+    // sendRef inside the effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, hydrated, streaming]);
 
