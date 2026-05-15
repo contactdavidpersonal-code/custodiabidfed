@@ -21,7 +21,7 @@ export default function GlobalRouteError({
 
   return (
     <main
-      className="flex min-h-[100dvh] items-center bg-[#f7f7f3] px-4 py-12 text-[#10231d] md:px-6"
+      className="flex min-h-[100dvh] items-center bg-[#e9efea] px-4 py-12 text-[#10231d] md:px-6"
       style={{
         paddingTop: "calc(2rem + var(--safe-top))",
         paddingBottom: "calc(2rem + var(--safe-bottom))",

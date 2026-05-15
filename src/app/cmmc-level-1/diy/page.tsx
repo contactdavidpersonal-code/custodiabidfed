@@ -302,7 +302,7 @@ export default function DiyHubPage() {
       </section>
 
       {/* ---------- Honesty section ---------- */}
-      <section className="border-b border-[#cfe3d9] bg-[#f7f7f3] px-6 py-16 md:py-20">
+      <section className="border-b border-[#cfe3d9] bg-[#e9efea] px-6 py-16 md:py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-10 grid gap-10 md:grid-cols-[1.1fr_1fr]">
             <div>
@@ -485,7 +485,7 @@ export default function DiyHubPage() {
       </section>
 
       {/* ---------- Template library ---------- */}
-      <section className="border-b border-[#cfe3d9] bg-[#f7f7f3] px-6 py-16 md:py-24">
+      <section className="border-b border-[#cfe3d9] bg-[#e9efea] px-6 py-16 md:py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10">
             <div className="font-mono text-[10px] font-bold uppercase tracking-[0.32em] text-[#2f8f6d]">

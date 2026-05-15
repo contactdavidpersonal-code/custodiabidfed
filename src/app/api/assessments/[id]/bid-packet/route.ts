@@ -365,7 +365,7 @@ function formatProse(text: string): string {
 const PACKET_CSS = `
   @page { size: letter; margin: 0.6in; }
   * { box-sizing: border-box; }
-  body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #10231d; background: #f7f7f3; margin: 0; padding: 32px 16px; line-height: 1.55; }
+  body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #10231d; background: #e9efea; margin: 0; padding: 32px 16px; line-height: 1.55; }
   article { max-width: 820px; margin: 0 auto; background: white; border: 1px solid #cfe3d9; padding: 56px 48px; }
   h1 { font-family: "Source Serif Pro", Georgia, serif; font-size: 36px; margin: 8px 0 0; letter-spacing: -0.01em; }
   h2 { font-family: "Source Serif Pro", Georgia, serif; font-size: 18px; margin: 32px 0 12px; letter-spacing: -0.005em; color: #0e2a23; border-bottom: 1px solid #cfe3d9; padding-bottom: 6px; }

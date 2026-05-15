@@ -36,7 +36,7 @@ export default async function OpportunitiesPage() {
   ]);
 
   return (
-    <main className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
+    <main className="min-h-screen bg-[#e9efea] text-[#10231d]">
       <header className="border-b border-[#cfe3d9] bg-white">
         <div className="mx-auto flex max-w-5xl flex-wrap items-start justify-between gap-3 px-4 py-4 md:gap-6 md:px-6 md:py-5">
           <div className="min-w-0 flex-1">

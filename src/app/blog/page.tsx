@@ -191,7 +191,7 @@ export default function BlogIndexPage() {
       </section>
 
       {/* ---------- 3-step path explainer ---------- */}
-      <section className="border-b border-[#cfe3d9] bg-[#f7f7f3] px-6 py-16 md:py-20">
+      <section className="border-b border-[#cfe3d9] bg-[#e9efea] px-6 py-16 md:py-20">
         <div className="mx-auto max-w-6xl">
           <div className="mb-10 flex items-end justify-between gap-6">
             <div>
@@ -321,7 +321,7 @@ export default function BlogIndexPage() {
             </div>
             <Link
               href={`/blog/${featured.meta.slug}`}
-              className="group block border border-[#cfe3d9] bg-[#f7f7f3] transition-colors hover:border-[#2f8f6d]"
+              className="group block border border-[#cfe3d9] bg-[#e9efea] transition-colors hover:border-[#2f8f6d]"
             >
               <div className="grid gap-0 md:grid-cols-[1.1fr_1fr]">
                 <div className="relative overflow-hidden border-b border-[#cfe3d9] bg-[#08201a] p-10 text-white md:border-b-0 md:border-r md:p-14">

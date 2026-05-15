@@ -26,7 +26,7 @@ export async function sendSamKeyAlert(args: {
       <table style="border-collapse:collapse;margin:18px 0;font-size:14px">
         <tr><td style="padding:4px 12px 4px 0;color:#5a7d70"><b>Status</b></td><td>${args.status}</td></tr>
         <tr><td style="padding:4px 12px 4px 0;color:#5a7d70"><b>Orgs that would have received digests</b></td><td>${args.orgsAffected}</td></tr>
-        <tr><td style="padding:4px 12px 4px 0;color:#5a7d70;vertical-align:top"><b>SAM.gov response</b></td><td><pre style="background:#f7f7f3;padding:8px;border-radius:6px;white-space:pre-wrap;margin:0">${snippet}</pre></td></tr>
+        <tr><td style="padding:4px 12px 4px 0;color:#5a7d70;vertical-align:top"><b>SAM.gov response</b></td><td><pre style="background:#e9efea;padding:8px;border-radius:6px;white-space:pre-wrap;margin:0">${snippet}</pre></td></tr>
       </table>
       <p><b>To fix:</b></p>
       <ol>

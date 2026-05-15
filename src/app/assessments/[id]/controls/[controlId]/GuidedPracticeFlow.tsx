@@ -196,7 +196,7 @@ export function GuidedPracticeFlow(props: Props) {
       </header>
 
       {/* ========== STICKY STEPPER ========== */}
-      <div className="sticky top-0 z-30 -mx-6 mb-6 border-b border-[#cfe3d9] bg-[#f7f7f3]/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-[#f7f7f3]/80">
+      <div className="sticky top-0 z-30 -mx-6 mb-6 border-b border-[#cfe3d9] bg-[#e9efea]/95 px-6 py-3 backdrop-blur supports-[backdrop-filter]:bg-[#e9efea]/80">
         <ol className="flex items-stretch gap-1">
           {STAGES.map((s, i) => {
             const completed =

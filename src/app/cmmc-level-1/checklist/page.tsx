@@ -276,7 +276,7 @@ export default function ChecklistPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
+    <div className="min-h-screen bg-[#e9efea] text-[#10231d]">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}

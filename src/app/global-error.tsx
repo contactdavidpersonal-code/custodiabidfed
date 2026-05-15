@@ -25,7 +25,7 @@ export default function GlobalError({
         style={{
           margin: 0,
           fontFamily: '"Segoe UI", system-ui, sans-serif',
-          background: "#f7f7f3",
+          background: "#e9efea",
           color: "#10231d",
           minHeight: "100dvh",
           display: "flex",

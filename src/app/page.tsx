@@ -383,7 +383,7 @@ export default function Home() {
 
 
       {/* 4 — Opportunity (the deal + the gap) */}
-      <RevealSection id="product" className="scroll-mt-16 bg-[#f7f7f3] px-6 py-24">
+      <RevealSection id="product" className="scroll-mt-16 bg-[#e9efea] px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
             the opportunity
@@ -606,7 +606,7 @@ export default function Home() {
       </RevealSection>
 
       {/* 5.5 — See it in action: onboarding chat */}
-      <RevealSection className="bg-[#f7f7f3] px-6 py-24">
+      <RevealSection className="bg-[#e9efea] px-6 py-24">
         <div className="mx-auto max-w-6xl">
           <div className="mb-12 grid items-end gap-8 md:grid-cols-[1.1fr_1fr]">
             <div>
@@ -641,7 +641,7 @@ export default function Home() {
       </RevealSection>
 
       {/* 6 — Stakes + Custodia Shield */}
-      <RevealSection className="bg-[#f7f7f3] px-6 py-24">
+      <RevealSection className="bg-[#e9efea] px-6 py-24">
         <div className="mx-auto max-w-6xl">
           {/* Stakes header */}
           <div className="mb-14 text-center">
@@ -1211,7 +1211,7 @@ export default function Home() {
       </RevealSection>
 
       {/* 9 — Your journey */}
-      <RevealSection className="bg-[#f7f7f3] px-6 py-24">
+      <RevealSection className="bg-[#e9efea] px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <div className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">your journey</div>
           <h2 className="font-serif text-4xl font-bold leading-[1.05] text-[#10231d] md:text-6xl">
@@ -2199,7 +2199,7 @@ export default function Home() {
       </RevealSection>
 
       {/* 15 — Footer */}
-      <footer className="border-t border-[#d5e5dd] bg-[#f7f7f3] px-6 py-14 text-[#44695c]">
+      <footer className="border-t border-[#d5e5dd] bg-[#e9efea] px-6 py-14 text-[#44695c]">
         <div className="mx-auto max-w-6xl">
           {/* Top CTA strip */}
           <div className="mb-12 flex flex-col items-start justify-between gap-4  border border-[#cfe3d9] bg-white p-6 md:flex-row md:items-center">

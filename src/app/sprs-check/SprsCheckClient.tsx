@@ -664,7 +664,7 @@ function ResultView({
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.1, duration: 0.6, ease: EASE_OUT }}
-        className="mt-12 border border-[#c4f0b8]/30 bg-[#f7f7f3] p-8 text-[#0a2620] print:hidden"
+        className="mt-12 border border-[#c4f0b8]/30 bg-[#e9efea] p-8 text-[#0a2620] print:hidden"
       >
         <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-[#0a2620]/60">
           Recommended next step

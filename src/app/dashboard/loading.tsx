@@ -4,7 +4,7 @@
  */
 export default function DashboardLoading() {
   return (
-    <main className="min-h-screen bg-[#f7f7f3] text-[#10231d]" aria-busy="true">
+    <main className="min-h-screen bg-[#e9efea] text-[#10231d]" aria-busy="true">
       <div className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-10">
         <div className="h-3 w-32 animate-pulse bg-[#e3ede8]" />
         <div className="mt-2 h-7 w-56 max-w-full animate-pulse bg-[#dde8e2]" />

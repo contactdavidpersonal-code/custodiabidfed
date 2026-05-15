@@ -5,7 +5,7 @@
  */
 export default function OpportunitiesLoading() {
   return (
-    <main className="min-h-screen bg-[#f7f7f3] text-[#10231d]" aria-busy="true">
+    <main className="min-h-screen bg-[#e9efea] text-[#10231d]" aria-busy="true">
       <header className="border-b border-[#cfe3d9] bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-5 md:px-6">
           <div className="min-w-0 flex-1">

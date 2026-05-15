@@ -63,7 +63,7 @@ export function BlogShell({ children }: { children: ReactNode }) {
 
       <BlogTrialCTA />
 
-      <footer className="border-t border-[#cfe3d9] bg-[#f7f7f3] px-6 py-12 text-sm text-[#5a7d70]">
+      <footer className="border-t border-[#cfe3d9] bg-[#e9efea] px-6 py-12 text-sm text-[#5a7d70]">
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div>
             <div className="font-serif text-lg font-bold text-[#10231d]">

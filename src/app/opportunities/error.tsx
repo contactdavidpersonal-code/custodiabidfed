@@ -20,7 +20,7 @@ export default function OpportunitiesError({
   }, [error]);
 
   return (
-    <main className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
+    <main className="min-h-screen bg-[#e9efea] text-[#10231d]">
       <header className="border-b border-[#cfe3d9] bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-5">
           <div>

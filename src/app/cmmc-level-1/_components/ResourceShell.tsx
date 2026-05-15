@@ -23,7 +23,7 @@ export function ResourceShell({
   children: ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#f7f7f3] text-[#10231d]">
+    <div className="min-h-screen bg-[#e9efea] text-[#10231d]">
       <style>{`
         @media print {
           @page { size: Letter; margin: 0.55in 0.5in; }
@@ -98,7 +98,7 @@ export function ResourceShell({
         </div>
       </section>
 
-      <footer className="no-print border-t border-[#cfe3d9] bg-[#f7f7f3] px-6 py-12 text-sm text-[#5a7d70]">
+      <footer className="no-print border-t border-[#cfe3d9] bg-[#e9efea] px-6 py-12 text-sm text-[#5a7d70]">
         <div className="mx-auto flex max-w-5xl flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <div>
             <div className="font-serif text-lg font-bold text-[#10231d]">

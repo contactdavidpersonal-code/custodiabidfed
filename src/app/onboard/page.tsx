@@ -29,7 +29,7 @@ export default async function OnboardPage() {
   // workspace is an org.
   if (isMsp && !orgId) {
     return (
-      <div className="flex min-h-screen flex-col bg-[#f7f7f3] text-[#10231d]">
+      <div className="flex min-h-screen flex-col bg-[#e9efea] text-[#10231d]">
         <header className="flex-none border-b border-[#cfe3d9] bg-white">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-3">
             <Link href="/" className="flex items-center gap-3">
@@ -82,7 +82,7 @@ export default async function OnboardPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-[#f7f7f3] text-[#10231d]">
+    <div className="flex h-screen flex-col bg-[#e9efea] text-[#10231d]">
       <header className="flex-none border-b border-[#cfe3d9] bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-6 px-6 py-3">
           <Link href="/" className="flex items-center gap-3">
