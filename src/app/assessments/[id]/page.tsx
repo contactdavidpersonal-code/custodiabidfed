@@ -260,11 +260,12 @@ export default async function AssessmentOverviewPage(
                           </span>
 
                           {/* Practice ID + title — the "entry" text in the TOC.
-                              Title wraps freely; never truncate. The dotted leader
-                              fills whatever horizontal space remains on the title's
-                              final line (or wraps below on narrow viewports). */}
+                              Title always wraps below the FAR ID so every row reads
+                              the same regardless of title length. Title never truncates;
+                              the dotted leader fills whatever horizontal space remains
+                              on the title's final line. */}
                           <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
-                            <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.18em] text-[#2f8f6d]">
+                            <span className="block w-full shrink-0 font-mono text-[11px] uppercase tracking-[0.18em] text-[#2f8f6d]">
                               {reqId}
                             </span>
                             <span className="font-serif text-xl font-medium tracking-[-0.01em] text-[#063f2e] transition-colors group-hover:text-[#2f8f6d]">
