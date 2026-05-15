@@ -153,7 +153,7 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
                           <span
-                            className={`truncate text-sm font-medium tracking-tight ${
+                            className={`text-sm font-medium leading-snug tracking-tight ${
                               isActive
                                 ? "text-[#063f2e]"
                                 : complete
@@ -175,7 +175,7 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
                           )}
                         </div>
                         <div
-                          className={`mt-0.5 truncate text-[11px] ${
+                          className={`mt-0.5 text-[11px] leading-snug ${
                             isActive
                               ? "text-[#063f2e]/75"
                               : complete
