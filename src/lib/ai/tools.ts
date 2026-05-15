@@ -3018,10 +3018,9 @@ const NAVIGATE_ALLOWED_PREFIXES = [
 
 async function handleNavigateUserTo(
   input: Record<string, unknown>,
-  _ctx: ToolContext,
+  ctx: ToolContext,
 ): Promise<ToolResult> {
   // audit:tenant-scoping skip — emits a client-side navigation hint only; no data read or written.
-  void _ctx;
   const raw = typeof input.path === "string" ? input.path.trim() : "";
   if (!raw) return { ok: false, error: "path is required." };
   if (!raw.startsWith("/")) {
@@ -3043,6 +3042,21 @@ async function handleNavigateUserTo(
       ok: false,
       error: `path '${pathOnly}' is not in the allowed navigation set: ${NAVIGATE_ALLOWED_PREFIXES.join(", ")}.`,
     };
+  }
+  // Reject self-navigation: if the user is already on this control page,
+  // calling navigate_user_to is a hallucinated no-op that confuses the
+  // model into re-introducing the same practice. Force Charlie to keep
+  // working on the current practice instead of pretending it just moved.
+  const activeControlId = ctx.activeControlId;
+  const activeAssessmentId = ctx.activeAssessmentId;
+  if (activeAssessmentId && activeControlId) {
+    const currentControlPath = `/assessments/${activeAssessmentId}/controls/${activeControlId}`;
+    if (pathOnly === currentControlPath) {
+      return {
+        ok: false,
+        error: `already_on_target: The user is already on '${currentControlPath}'. Do NOT navigate — you are on this practice right now. Continue the interview for '${activeControlId}' by calling 'interview_for_control_narrative' with the user's last answer, or ask the next focused question.`,
+      };
+    }
   }
   const reason = typeof input.reason === "string" ? input.reason.trim() : "";
   return {

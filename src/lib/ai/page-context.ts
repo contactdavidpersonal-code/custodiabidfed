@@ -288,7 +288,15 @@ Generate evidence artifacts via \`generate_evidence_artifact\` — never paste r
       "add_out_of_scope_item",
       "suggest_narrative",
     ],
-    body: `**You are on a per-practice page. SCOPE INVENTORY TOOLS ARE OFF-LIMITS HERE — do not call \`add_scope_item\`, \`add_esp\`, \`add_specialized_asset\`, \`add_fci_flow\`, or \`add_out_of_scope_item\` on this page under any circumstance. Those belong on /scope and /boundary. If the user wants to add a person, device, or vendor, tell them to go to the Scope tab and stop.**
+    body: `**HARD ANCHOR — READ FIRST.** The user is on the page for practice **\`${spec.controlId}\`** RIGHT NOW. Every question, tool call, and narrative you produce on this turn MUST be for \`${spec.controlId}\`. Rules:
+
+1. **Do NOT call \`navigate_user_to\` to this same practice** — you are already here. The platform will reject self-navigation.
+2. **Do NOT claim to have saved a narrative you didn't actually save THIS turn.** Only mention saves that appear in the "Saved progress" block below OR that came back from a tool call in your current response. If the saved-progress block says "Nothing saved yet", you have NOT saved anything yet — do not say otherwise.
+3. **Do NOT re-introduce \`${spec.controlId}\` if you already introduced it earlier in this chat.** Scan the recent assistant turns above before opening. If you already asked the opening question, your job now is to PROCESS the user's last answer, not re-greet them.
+4. **If the user just gave an answer to your last question, your IMMEDIATE next tool call MUST be \`interview_for_control_narrative\` with \`control_id="${spec.controlId}"\` and \`answer\`=<the user's exact words>.** Do NOT skip to navigate, do NOT switch practices, do NOT re-ask the same question.
+5. **The "Outstanding question waiting on the user" line in the saved-progress block below is the question YOU last asked. Don't ask it again — wait for the answer or advance the interview with whatever the user just said.**
+
+**You are on a per-practice page. SCOPE INVENTORY TOOLS ARE OFF-LIMITS HERE — do not call \`add_scope_item\`, \`add_esp\`, \`add_specialized_asset\`, \`add_fci_flow\`, or \`add_out_of_scope_item\` on this page under any circumstance. Those belong on /scope and /boundary. If the user wants to add a person, device, or vendor, tell them to go to the Scope tab and stop.**
 
 ### Verbatim control statement (FAR 52.204-21 / NIST SP 800-171 §${spec.controlId})
 "${spec.statement}"
