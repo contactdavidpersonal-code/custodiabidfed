@@ -40,63 +40,6 @@ body {
   animation: custodia-progress 1.2s ease-in-out infinite;
 }
 
-/*
- * Liquid-flow course sidebar indicator (CourseSidebar.tsx).
- * - `course-rail-flow` shifts a banded gradient downward so the filled
- *   rail reads as liquid moving through a vertical pipe.
- * - `course-halo-pulse` gently breathes the radial halo behind the
- *   active step dot.
- * - `course-shimmer` sweeps a soft highlight across the trailing pill
- *   in expanded sidebar mode.
- */
-@keyframes course-rail-flow {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 32px; }
-}
-@keyframes course-halo-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.55; }
-  50% { transform: scale(1.12); opacity: 0.85; }
-}
-@keyframes course-shimmer {
-  0% { transform: translateX(-30%); opacity: 0; }
-  40% { opacity: 0.7; }
-  100% { transform: translateX(130%); opacity: 0; }
-}
-.course-rail-flow {
-  background-image: linear-gradient(
-    180deg,
-    #063f2e 0%,
-    #2f8f6d 18%,
-    #7ed8a0 38%,
-    #bef4be 50%,
-    #7ed8a0 62%,
-    #2f8f6d 82%,
-    #063f2e 100%
-  );
-  background-size: 100% 32px;
-  background-repeat: repeat-y;
-  animation: course-rail-flow 1.8s linear infinite;
-}
-.course-halo-pulse {
-  animation: course-halo-pulse 2.6s ease-in-out infinite;
-  transform-origin: center;
-}
-.course-shimmer::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.55) 50%,
-    transparent 100%
-  );
-  transform: translateX(-30%);
-  animation: course-shimmer 3.2s ease-in-out infinite;
-  pointer-events: none;
-}
-
 /* Mobile / safe-area utilities */
 .pt-safe { padding-top: var(--safe-top); }
 .pb-safe { padding-bottom: var(--safe-bottom); }

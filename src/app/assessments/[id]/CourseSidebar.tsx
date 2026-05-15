@@ -123,105 +123,6 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
         </div>
 
         <nav className="relative flex-1 overflow-y-auto px-2 py-3">
-          {/* Liquid course indicator. Geometry note: the step dot is 28px wide,
-              positioned by `flex items-center gap-3 px-3` inside a Link that
-              fills the row. The indicator div uses `inset-0` so its (0,0) is
-              the nav's content origin — which means the dot's centre x is
-              link-px-3 (12) + dot-half (14) = 26 in BOTH the collapsed (56px
-              rail) and expanded (288px rail) states. We anchor every visual
-              to that x so the rail threads cleanly through each step dot. */}
-          {(() => {
-            const dotCenterX = 26;
-            const activeCenterY = indicator.visible
-              ? indicator.top + indicator.height / 2
-              : 0;
-            const visible = indicator.visible && hydrated;
-            return (
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0 z-0"
-              >
-                {/* Empty rail — faint full-height track behind every dot. */}
-                <div
-                  className="absolute rounded-full bg-[#063f2e]/10"
-                  style={{
-                    left: dotCenterX - 1.5,
-                    top: 18,
-                    bottom: 18,
-                    width: 3,
-                  }}
-                />
-
-                {/* Filled rail — animated banded gradient that reads as liquid
-                    flowing downward. Height animates between active steps. */}
-                <div
-                  className="course-rail-flow absolute rounded-full transition-[height,opacity] duration-[750ms] ease-[cubic-bezier(0.65,0,0.35,1)]"
-                  style={{
-                    left: dotCenterX - 2,
-                    top: 18,
-                    width: 4,
-                    height: visible ? Math.max(0, activeCenterY - 18) : 0,
-                    opacity: visible ? 0.95 : 0,
-                    boxShadow: visible
-                      ? "0 0 10px -1px rgba(47,143,109,0.45)"
-                      : "none",
-                  }}
-                />
-
-                {/* Pulsing halo behind the active step's dot. Mint radial that
-                    breathes; sits beneath the dot via z-0 / the dot's z-10. */}
-                <div
-                  className="course-halo-pulse absolute rounded-full transition-[top] duration-[700ms] ease-[cubic-bezier(0.34,1.2,0.64,1)]"
-                  style={{
-                    top: activeCenterY - 24,
-                    left: dotCenterX - 24,
-                    width: 48,
-                    height: 48,
-                    background:
-                      "radial-gradient(circle, #bef4be 0%, #a8e8b0 35%, rgba(190,244,190,0.0) 72%)",
-                    opacity: visible ? 1 : 0,
-                  }}
-                />
-
-                {/* Tail droplet at the leading edge of the filled rail — a
-                    teardrop bulge right above the active dot for a "liquid
-                    arrives at the step" beat. */}
-                <div
-                  className="absolute rounded-full bg-gradient-to-b from-[#2f8f6d] to-[#5fb98a] transition-[top] duration-[750ms] ease-[cubic-bezier(0.65,0,0.35,1)]"
-                  style={{
-                    top: activeCenterY - 18,
-                    left: dotCenterX - 4,
-                    width: 8,
-                    height: 12,
-                    opacity: visible ? 0.85 : 0,
-                    filter: "blur(0.3px)",
-                  }}
-                />
-
-                {/* Trailing highlight pill (expanded mode only) — soft mint wash
-                    extending from the dot toward the right of the row, with a
-                    diagonal shimmer sweep. Hidden when collapsed since there's
-                    no row body to fill. */}
-                {open && (
-                  <div
-                    className="course-shimmer absolute overflow-hidden transition-[top,height,opacity] duration-[700ms] ease-[cubic-bezier(0.34,1.2,0.64,1)]"
-                    style={{
-                      top: indicator.top + 4,
-                      height: indicator.height - 8,
-                      left: dotCenterX + 18,
-                      right: 8,
-                      borderRadius: 14,
-                      background:
-                        "linear-gradient(90deg, rgba(190,244,190,0.55) 0%, rgba(190,244,190,0.18) 60%, rgba(190,244,190,0.0) 100%)",
-                      boxShadow:
-                        "inset 0 1px 0 rgba(255,255,255,0.5), 0 4px 14px -8px rgba(47,143,109,0.35)",
-                      opacity: visible ? 1 : 0,
-                    }}
-                  />
-                )}
-              </div>
-            );
-          })()}
 
           <ul className="relative z-10 space-y-1">
             {sections.map((s) => {
@@ -325,7 +226,7 @@ function StepDot({
     <span
       className={`relative z-10 flex h-7 w-7 flex-none items-center justify-center rounded-full text-[11px] font-medium tabular-nums ${
         active
-          ? "bg-[#063f2e] text-[#bef4be]"
+          ? "bg-[#bef4be] text-[#063f2e] ring-2 ring-[#2f8f6d] shadow-[0_0_0_4px_rgba(190,244,190,0.35)]"
           : status === "locked"
             ? "border border-dashed border-[#063f2e]/20 bg-white text-[#063f2e]/40"
             : "border border-[#063f2e]/15 bg-white text-[#063f2e]"
