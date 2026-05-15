@@ -337,6 +337,28 @@ export function ComplianceOfficerRail({
     setErrorMsg(null);
     if (textOverride === undefined) setDraft("");
     setStreaming(true);
+    // Slash-command parity with the reset button: if the user TYPES /reset
+    // (or "reset charlie" / "reset chat") we have to do the same client-side
+    // bookkeeping the button does — clear per-control kickoff dedupe and
+    // set the one-shot suppression flag — otherwise the auto-resume effect
+    // fires "I'm back on … pick up where we left off" right on top of the
+    // server's "Conversation reset. Fresh start" greeting.
+    const lowered = text.toLowerCase();
+    if (lowered === "/reset" || lowered === "reset charlie" || lowered === "reset chat") {
+      try {
+        const ss = window.sessionStorage;
+        for (let i = ss.length - 1; i >= 0; i -= 1) {
+          const k = ss.key(i);
+          if (k && k.startsWith("custodia.practice-kickoff.")) {
+            ss.removeItem(k);
+          }
+        }
+        ss.setItem("custodia.charlie-just-reset", "1");
+      } catch {
+        // sessionStorage unavailable — non-fatal.
+      }
+      kickoffFiredRef.current.clear();
+    }
     const userId = `local-${Date.now()}`;
     const assistantId = `local-a-${Date.now()}`;
     setMessages((prev) => [
