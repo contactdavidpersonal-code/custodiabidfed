@@ -172,6 +172,8 @@ export default async function AssessmentOverviewPage(
       <NextStepBanner
         profileDone={profileDone}
         allAnswered={allAnswered}
+        answeredCount={progress.total - progress.unanswered}
+        totalCount={progress.total}
         hasBlockers={hasBlockers}
         attested={attested}
         assessmentId={ctx.assessment.id}
@@ -486,12 +488,16 @@ function ProgressRing({ percent }: { percent: number }) {
 function NextStepBanner({
   profileDone,
   allAnswered,
+  answeredCount,
+  totalCount,
   hasBlockers,
   attested,
   assessmentId,
 }: {
   profileDone: boolean;
   allAnswered: boolean;
+  answeredCount: number;
+  totalCount: number;
   hasBlockers: boolean;
   attested: boolean;
   assessmentId: string;
@@ -572,7 +578,9 @@ function NextStepBanner({
         <div className="max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-[#063f2e] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.18em] text-[#bef4be]">
             <span className="h-1 w-1 rounded-full bg-[#bef4be]" />
-            Step 4 of 8 · You are here
+            {answeredCount === 0
+              ? `${totalCount} requirements · You are here`
+              : `${answeredCount} of ${totalCount} answered · Keep going`}
           </div>
           <h2 className="mt-4 font-serif text-3xl font-normal leading-tight tracking-[-0.03em] text-[#063f2e]">
             Answer the 15 requirements.
