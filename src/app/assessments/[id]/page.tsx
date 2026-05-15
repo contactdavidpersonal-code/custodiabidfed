@@ -258,13 +258,14 @@ export default async function AssessmentOverviewPage(
                           </span>
 
                           {/* Practice ID + title — the "entry" text in the TOC.
-                              On mobile (< sm) the title wraps below the FAR ID; on desktop
-                              everything sits inline with [FCI Data] tag + dotted leader. */}
-                          <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 sm:flex-nowrap sm:overflow-hidden">
+                              Title wraps freely; never truncate. The dotted leader
+                              fills whatever horizontal space remains on the title's
+                              final line (or wraps below on narrow viewports). */}
+                          <span className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
                             <span className="shrink-0 font-mono text-[11px] uppercase tracking-[0.18em] text-[#2f8f6d]">
                               {reqId}
                             </span>
-                            <span className="font-serif text-xl font-medium tracking-[-0.01em] text-[#063f2e] transition-colors group-hover:text-[#2f8f6d] sm:truncate">
+                            <span className="font-serif text-xl font-medium tracking-[-0.01em] text-[#063f2e] transition-colors group-hover:text-[#2f8f6d]">
                               {meta.shortName}
                             </span>
                             <span className="hidden shrink-0 font-serif text-[11px] italic tracking-[0.05em] text-[#063f2e]/45 sm:inline">
@@ -273,7 +274,7 @@ export default async function AssessmentOverviewPage(
                             {/* Dotted leader — fills remaining horizontal space like a print TOC */}
                             <span
                               aria-hidden
-                              className="hidden min-w-0 flex-1 translate-y-[-3px] border-b border-dotted border-[#063f2e]/20 sm:block"
+                              className="hidden min-w-[2rem] flex-1 translate-y-[-3px] border-b border-dotted border-[#063f2e]/20 sm:block"
                             />
                           </span>
 
