@@ -123,22 +123,102 @@ export function CourseSidebar({ sections, currentStepHref }: Props) {
         </div>
 
         <nav className="relative flex-1 overflow-y-auto px-2 py-3">
-          {/* Soft mint pill active indicator. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-2 z-0"
-      >
-        <div
-          className="absolute left-0 right-0 transition-[top,height,opacity] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-          style={{
-            top: indicator.top,
-            height: indicator.height,
-            opacity: indicator.visible && hydrated ? 1 : 0,
-          }}
-        >
-          <div className="absolute inset-y-1 left-0 right-1 rounded-xl bg-gradient-to-br from-[#bef4be] to-[#a8e8b0] shadow-[0_4px_12px_-4px_rgba(6,63,46,0.20)]" />
-        </div>
-      </div>
+          {/* SVG goo filter: blurs + thresholds alpha so adjacent green shapes
+              (vertical rail, leading droplet, active pill) merge into a single
+              continuous liquid blob as the indicator moves between steps. */}
+          <svg
+            aria-hidden
+            width="0"
+            height="0"
+            className="pointer-events-none absolute"
+          >
+            <defs>
+              <filter id="course-liquid-goo">
+                <feGaussianBlur
+                  in="SourceGraphic"
+                  stdDeviation="4"
+                  result="blur"
+                />
+                <feColorMatrix
+                  in="blur"
+                  mode="matrix"
+                  values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -11"
+                  result="goo"
+                />
+                <feBlend in="SourceGraphic" in2="goo" />
+              </filter>
+            </defs>
+          </svg>
+
+          {/* Liquid indicator group — wrapped so the goo filter merges shapes. */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 z-0"
+            style={{ filter: "url(#course-liquid-goo)" }}
+          >
+            {(() => {
+              // Geometry: nav has px-2 (8px). When collapsed the dot is centred
+              // in the 56px rail (28px dot, sidebar inner 40px, link px-3 12+14
+              // = dot centre 26px from link left + 8px nav pad = 34px from rail).
+              const dotCenterX = open ? 24 : 26; // x within indicator container
+              const activeCenterY = indicator.visible
+                ? indicator.top + indicator.height / 2
+                : 0;
+              const pillTop = open
+                ? indicator.top + 3
+                : activeCenterY - 18;
+              const pillHeight = open ? indicator.height - 6 : 36;
+              const pillLeft = open ? 4 : dotCenterX - 18;
+              const pillRight = open ? 6 : undefined;
+              const pillWidth = open ? undefined : 36;
+              const visible = indicator.visible && hydrated;
+              return (
+                <>
+                  {/* Vertical rail — a column of liquid running from the top of the
+                      nav down to the active step's centre. Height animates as the
+                      user navigates so it reads as flow. */}
+                  <div
+                    className="absolute rounded-full bg-gradient-to-b from-[#2f8f6d] via-[#5fb98a] to-[#bef4be] transition-[height,opacity] duration-[700ms] ease-[cubic-bezier(0.65,0,0.35,1)]"
+                    style={{
+                      top: 8,
+                      left: dotCenterX - 1.5,
+                      width: 3,
+                      height: visible ? Math.max(0, activeCenterY - 8) : 0,
+                      opacity: visible ? 0.85 : 0,
+                    }}
+                  />
+
+                  {/* Leading droplet — sits at the head of the rail and slides to
+                      the active step. Goo filter fuses it into the pill below. */}
+                  <div
+                    className="absolute rounded-full bg-[#2f8f6d] transition-[top,opacity] duration-[700ms] ease-[cubic-bezier(0.65,0,0.35,1)]"
+                    style={{
+                      top: activeCenterY - 6,
+                      left: dotCenterX - 6,
+                      width: 12,
+                      height: 12,
+                      opacity: visible ? 1 : 0,
+                    }}
+                  />
+
+                  {/* Active step pill / halo. Circle when collapsed (wraps the
+                      step dot tightly), full-width pill when expanded. */}
+                  <div
+                    className="absolute bg-gradient-to-br from-[#bef4be] via-[#a8e8b0] to-[#7ed8a0] shadow-[0_4px_14px_-6px_rgba(47,143,109,0.45)] transition-[top,height,left,right,width,border-radius,opacity] duration-[700ms] ease-[cubic-bezier(0.34,1.2,0.64,1)]"
+                    style={{
+                      top: pillTop,
+                      height: pillHeight,
+                      left: pillLeft,
+                      right: pillRight,
+                      width: pillWidth,
+                      borderRadius: open ? 16 : 999,
+                      opacity: visible ? 1 : 0,
+                    }}
+                  />
+                </>
+              );
+            })()}
+          </div>
 
           <ul className="relative z-10 space-y-1">
             {sections.map((s) => {
