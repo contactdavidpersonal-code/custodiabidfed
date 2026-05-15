@@ -35,7 +35,7 @@ export default async function AssessmentsLayout({
     : 0;
 
   return (
-    <div className="min-h-screen bg-[#e9efea] text-[#10231d]">
+    <div data-luxe="dark" className="min-h-screen bg-[#e9efea] text-[#10231d]">
       <header
         className="sticky top-0 z-30 border-b border-[#cfe3d9] bg-white/95 backdrop-blur"
         style={{ paddingTop: "var(--safe-top)" }}

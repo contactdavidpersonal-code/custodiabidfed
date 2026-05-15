@@ -134,3 +134,172 @@ body {
     page-break-inside: avoid;
   }
 }
+
+/* =============================================================
+ * Rhetorich-inspired Luxe Dark Theme
+ * Scoped to [data-luxe="dark"] (the assessments workspace shell).
+ *
+ * Strategy: the entire app uses Tailwind v4 arbitrary-value classes
+ * like `bg-[#063f2e]`, `text-[#10231d]`, etc. Instead of editing
+ * dozens of components by hand, we override those generated classes
+ * inside the luxe scope only. Marketing pages outside the scope are
+ * untouched.
+ *
+ * Palette (after Rhetorich.ai):
+ *   --luxe-bg          deep forest canvas   #0a2b1e
+ *   --luxe-surface     raised panel         #11402d
+ *   --luxe-surface-2   chip / nested        #163e2c
+ *   --luxe-border      hairline on dark     #1f4f3a
+ *   --luxe-border-soft very subtle          rgba(190,244,190,0.08)
+ *   --luxe-mint        accent / button bg   #cdf5d0
+ *   --luxe-mint-soft   secondary mint       #a8e8b0
+ *   --luxe-emerald     brand emerald        #2f8f6d
+ *   --luxe-text        warm off-white       #f3faf4
+ *   --luxe-text-2      body                 #cfe5d6
+ *   --luxe-text-muted  sage muted           #8db09c
+ *   --luxe-text-subtle 60% sage             #6f9080
+ * ============================================================= */
+[data-luxe="dark"] {
+  --luxe-bg: #0a2b1e;
+  --luxe-surface: #11402d;
+  --luxe-surface-2: #163e2c;
+  --luxe-border: #1f4f3a;
+  --luxe-border-soft: rgba(190, 244, 190, 0.10);
+  --luxe-mint: #cdf5d0;
+  --luxe-mint-soft: #a8e8b0;
+  --luxe-emerald: #2f8f6d;
+  --luxe-text: #f3faf4;
+  --luxe-text-2: #cfe5d6;
+  --luxe-text-muted: #8db09c;
+  --luxe-text-subtle: #6f9080;
+
+  background: var(--luxe-bg);
+  color: var(--luxe-text);
+}
+
+/* ---- Page / shell backgrounds ---- */
+[data-luxe="dark"].bg-\[\#e9efea\],
+[data-luxe="dark"] .bg-\[\#e9efea\] { background-color: var(--luxe-bg) !important; }
+
+/* Light "white" panels become raised dark surfaces inside the luxe shell.
+   We deliberately don't override every plain `bg-white` (would break
+   nested modals); we override the ones used by the workspace chrome. */
+[data-luxe="dark"] .bg-white\/95 { background-color: rgba(10, 43, 30, 0.92) !important; }
+[data-luxe="dark"] .bg-white\/70 { background-color: rgba(17, 64, 45, 0.65) !important; }
+[data-luxe="dark"] .bg-white\/60 { background-color: rgba(17, 64, 45, 0.55) !important; }
+[data-luxe="dark"] .bg-white { background-color: var(--luxe-surface) !important; }
+
+/* Off-white panel tones */
+[data-luxe="dark"] .bg-\[\#fbfcf9\],
+[data-luxe="dark"] .bg-\[\#f7fcf9\],
+[data-luxe="dark"] .bg-\[\#f3f7f1\] { background-color: var(--luxe-surface) !important; }
+[data-luxe="dark"] .bg-\[\#f1f6f3\] { background-color: var(--luxe-surface-2) !important; }
+[data-luxe="dark"] .hover\:bg-\[\#f1f6f3\]:hover { background-color: rgba(190, 244, 190, 0.08) !important; }
+[data-luxe="dark"] .from-\[\#fbfcf9\] { --tw-gradient-from: var(--luxe-surface) !important; }
+[data-luxe="dark"] .to-\[\#f3f7f1\] { --tw-gradient-to: var(--luxe-bg) !important; }
+
+/* ---- Dark-on-light brand colors flip role on dark canvas ---- */
+/* `bg-[#063f2e]` was the dark badge bg → on dark canvas use mint accent */
+[data-luxe="dark"] .bg-\[\#063f2e\] { background-color: var(--luxe-mint) !important; color: #07291c !important; }
+[data-luxe="dark"] .bg-\[\#0e2a23\] { background-color: var(--luxe-surface) !important; }
+[data-luxe="dark"] .bg-\[\#0f2f26\] { background-color: var(--luxe-mint) !important; color: #07291c !important; }
+[data-luxe="dark"] .bg-\[\#10231d\] { background-color: var(--luxe-surface) !important; }
+[data-luxe="dark"] .hover\:bg-\[\#10231d\]:hover { background-color: var(--luxe-mint-soft) !important; }
+[data-luxe="dark"] .hover\:bg-\[\#0a1814\]:hover { background-color: var(--luxe-mint-soft) !important; }
+
+/* `text-[#063f2e]` was the primary text color → becomes warm white */
+[data-luxe="dark"] .text-\[\#063f2e\] { color: var(--luxe-text) !important; }
+[data-luxe="dark"] .text-\[\#10231d\] { color: var(--luxe-text) !important; }
+[data-luxe="dark"] .text-\[\#0e2a23\] { color: var(--luxe-text) !important; }
+[data-luxe="dark"] .text-\[\#0f2f26\] { color: var(--luxe-text) !important; }
+[data-luxe="dark"] .hover\:text-\[\#063f2e\]:hover { color: var(--luxe-mint) !important; }
+[data-luxe="dark"] .hover\:text-\[\#10231d\]:hover { color: var(--luxe-mint) !important; }
+
+/* Opacity-suffixed text variants — Tailwind compiles these as separate rules.
+   Cover the common ones we saw in the inventory (40, 45, 50, 55, 60, 65, 75, 8, 10, 15, 20, 25). */
+[data-luxe="dark"] .text-\[\#063f2e\]\/40 { color: rgba(243, 250, 244, 0.45) !important; }
+[data-luxe="dark"] .text-\[\#063f2e\]\/45 { color: rgba(243, 250, 244, 0.50) !important; }
+[data-luxe="dark"] .text-\[\#063f2e\]\/50 { color: rgba(243, 250, 244, 0.55) !important; }
+[data-luxe="dark"] .text-\[\#063f2e\]\/55 { color: rgba(243, 250, 244, 0.60) !important; }
+[data-luxe="dark"] .text-\[\#063f2e\]\/60 { color: rgba(243, 250, 244, 0.65) !important; }
+[data-luxe="dark"] .text-\[\#063f2e\]\/65 { color: rgba(243, 250, 244, 0.72) !important; }
+[data-luxe="dark"] .text-\[\#063f2e\]\/75 { color: rgba(243, 250, 244, 0.82) !important; }
+[data-luxe="dark"] .text-\[\#063f2e\]\/35 { color: rgba(243, 250, 244, 0.40) !important; }
+[data-luxe="dark"] .hover\:text-\[\#063f2e\]\/65:hover { color: rgba(205, 245, 208, 0.85) !important; }
+
+/* Border variants based on `#063f2e` */
+[data-luxe="dark"] .border-\[\#063f2e\]\/8 { border-color: var(--luxe-border-soft) !important; }
+[data-luxe="dark"] .border-\[\#063f2e\]\/10 { border-color: var(--luxe-border-soft) !important; }
+[data-luxe="dark"] .border-\[\#063f2e\]\/15 { border-color: var(--luxe-border) !important; }
+[data-luxe="dark"] .border-\[\#063f2e\]\/20 { border-color: var(--luxe-border) !important; }
+[data-luxe="dark"] .border-\[\#063f2e\]\/25 { border-color: var(--luxe-border) !important; }
+[data-luxe="dark"] .divide-\[\#063f2e\]\/8 > :not([hidden]) ~ :not([hidden]) { border-color: var(--luxe-border-soft) !important; }
+[data-luxe="dark"] .bg-\[\#063f2e\]\/5 { background-color: rgba(190, 244, 190, 0.06) !important; }
+[data-luxe="dark"] .bg-\[\#063f2e\]\/6 { background-color: rgba(190, 244, 190, 0.07) !important; }
+[data-luxe="dark"] .bg-\[\#063f2e\]\/8 { background-color: rgba(190, 244, 190, 0.10) !important; }
+[data-luxe="dark"] .hover\:bg-\[\#063f2e\]\/5:hover { background-color: rgba(190, 244, 190, 0.07) !important; }
+[data-luxe="dark"] .hover\:bg-\[\#063f2e\]\/8:hover { background-color: rgba(190, 244, 190, 0.10) !important; }
+
+/* ---- Mint/lime accents — keep light on dark, slightly tuned ---- */
+[data-luxe="dark"] .text-\[\#bef4be\] { color: var(--luxe-mint) !important; }
+[data-luxe="dark"] .text-\[\#bdf2cf\] { color: var(--luxe-mint) !important; }
+[data-luxe="dark"] .bg-\[\#bef4be\] { background-color: var(--luxe-mint) !important; }
+[data-luxe="dark"] .from-\[\#bef4be\] { --tw-gradient-from: var(--luxe-mint) !important; }
+[data-luxe="dark"] .to-\[\#a8e8b0\] { --tw-gradient-to: var(--luxe-mint-soft) !important; }
+[data-luxe="dark"] .hover\:bg-\[\#bef4be\]\/12:hover { background-color: rgba(205, 245, 208, 0.10) !important; }
+
+/* ---- Borders & dividers (light gray-green → mid forest) ---- */
+[data-luxe="dark"] .border-\[\#cfe3d9\] { border-color: var(--luxe-border) !important; }
+[data-luxe="dark"] .bg-\[\#cfe3d9\] { background-color: var(--luxe-border) !important; }
+[data-luxe="dark"] .ring-\[\#cfe3d9\] { --tw-ring-color: var(--luxe-border) !important; }
+[data-luxe="dark"] .focus-within\:border-\[\#2f8f6d\]:focus-within { border-color: var(--luxe-mint) !important; }
+[data-luxe="dark"] .focus-within\:ring-\[\#2f8f6d\]\/20:focus-within { --tw-ring-color: rgba(205, 245, 208, 0.25) !important; }
+[data-luxe="dark"] .ring-white { --tw-ring-color: var(--luxe-bg) !important; }
+
+/* ---- Muted text colors → sage on dark ---- */
+[data-luxe="dark"] .text-\[\#456c5f\] { color: var(--luxe-text-muted) !important; }
+[data-luxe="dark"] .text-\[\#5a7d70\] { color: var(--luxe-text-muted) !important; }
+[data-luxe="dark"] .text-\[\#9ab8ac\] { color: var(--luxe-text-subtle) !important; }
+[data-luxe="dark"] .hover\:text-\[\#456c5f\]:hover { color: var(--luxe-text) !important; }
+
+/* ---- Status pill backgrounds — soften on dark canvas ---- */
+[data-luxe="dark"] .bg-\[\#eaf3ee\] { background-color: rgba(190, 244, 190, 0.12) !important; }
+[data-luxe="dark"] .text-\[\#0e2a23\] { color: var(--luxe-mint) !important; }
+[data-luxe="dark"] .ring-\[\#bde0cc\] { --tw-ring-color: rgba(190, 244, 190, 0.30) !important; }
+
+/* Partial — shift "ugly brown" amber to a warmer gold that reads on dark */
+[data-luxe="dark"] .bg-\[\#fff4e0\] { background-color: rgba(245, 197, 110, 0.14) !important; }
+[data-luxe="dark"] .text-\[\#a06b1a\] { color: #f5c56e !important; }
+[data-luxe="dark"] .ring-\[\#f1d9a5\] { --tw-ring-color: rgba(245, 197, 110, 0.35) !important; }
+[data-luxe="dark"] .bg-\[\#a06b1a\] { background-color: #f5c56e !important; }
+
+/* Not Met — coral instead of muddy red on dark */
+[data-luxe="dark"] .bg-\[\#fbe9e6\] { background-color: rgba(244, 138, 124, 0.14) !important; }
+[data-luxe="dark"] .text-\[\#b03a2e\] { color: #f48a7c !important; }
+[data-luxe="dark"] .ring-\[\#f1c4bd\] { --tw-ring-color: rgba(244, 138, 124, 0.35) !important; }
+[data-luxe="dark"] .bg-\[\#b03a2e\] { background-color: #f48a7c !important; }
+
+/* Emerald (yes) keeps its hue */
+[data-luxe="dark"] .bg-\[\#2f8f6d\] { background-color: var(--luxe-emerald) !important; }
+[data-luxe="dark"] .text-\[\#2f8f6d\] { color: var(--luxe-mint) !important; }
+
+/* ---- Gradient backgrounds shipped on the assessment page ---- */
+[data-luxe="dark"] .from-emerald-50 { --tw-gradient-from: var(--luxe-surface) !important; }
+[data-luxe="dark"] .to-amber-50 { --tw-gradient-to: var(--luxe-surface-2) !important; }
+[data-luxe="dark"] .via-white { --tw-gradient-via: var(--luxe-surface) !important; }
+
+/* ---- Chat-rail specific tweaks ---- */
+[data-luxe="dark"] [data-charlie-rail] {
+  background-color: var(--luxe-bg) !important;
+}
+
+/* Placeholder text in the composer */
+[data-luxe="dark"] textarea::placeholder,
+[data-luxe="dark"] input::placeholder { color: var(--luxe-text-subtle) !important; }
+
+/* ---- Print: opt out of luxe overrides entirely ---- */
+@media print {
+  [data-luxe="dark"] { background: white !important; color: black !important; }
+  [data-luxe="dark"] * { background-color: revert !important; color: revert !important; border-color: revert !important; }
+}
+
