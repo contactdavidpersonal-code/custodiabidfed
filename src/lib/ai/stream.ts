@@ -75,15 +75,18 @@ function looksLikePreAnnounceStall(blocks: AssistantBlock[]): boolean {
 // user sees Charlie go silent. We catch that case here and treat it as a
 // stall — same retry path with tool_choice forcing.
 function looksLikeEmptyStall(blocks: AssistantBlock[]): boolean {
+  // True only when the response is structurally empty — zero blocks, or
+  // every text block is whitespace AND no tool_use blocks. This is the
+  // silent-Charlie failure mode. A legitimate short reply like "OK" or
+  // "yes" has length > 0 and must NOT trigger a forced-tool retry.
+  if (blocks.length === 0) return true;
   const toolUses = blocks.filter((b) => b.type === "tool_use");
   if (toolUses.length > 0) return false;
   const text = blocks
     .filter((b): b is TextBlock => b.type === "text")
     .map((b) => b.text)
-    .join("")
-    .trim();
-  // Zero blocks, or only whitespace text, with no tool_use = empty stall.
-  return text.length < 3;
+    .join("");
+  return text.trim().length === 0;
 }
 
 // Confirmation patterns the user types to authorize an offered action.
