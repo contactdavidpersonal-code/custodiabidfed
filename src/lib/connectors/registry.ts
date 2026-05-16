@@ -88,3 +88,17 @@ export function redirectUri(req: Request, provider: ConnectorProvider): string {
     provider === "google_workspace" ? "google" : provider
   }/callback`;
 }
+
+/**
+ * Returns the subset of `providers` whose registry `controlsCovered` actually
+ * includes the given control. Used to filter `connect`-type evidence
+ * destinations so we never show "Connect Microsoft 365 / Google Workspace"
+ * for a slot on a practice the connector can't actually pull data for.
+ */
+export function providersCoveringControl(
+  providers: ReadonlyArray<ConnectorProvider>,
+  controlId: string,
+): ConnectorProvider[] {
+  return providers.filter((p) => CONNECTORS[p].controlsCovered.includes(controlId));
+}
+
