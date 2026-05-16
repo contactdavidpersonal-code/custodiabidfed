@@ -98,8 +98,9 @@ export function ComplianceOfficerRail({
   const [hydrated, setHydrated] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // Last user message we tried to send — so the banner's Retry button
-  // can resend it without making the user re-type. Cleared on success.
-  const lastSentTextRef = useRef<string | null>(null);
+  // can resend it without making the user re-type. State (not ref) because
+  // the banner conditionally renders on its presence.
+  const [lastSentText, setLastSentText] = useState<string | null>(null);
   const [recap, setRecap] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -339,7 +340,7 @@ export function ComplianceOfficerRail({
       return;
     }
     setErrorMsg(null);
-    lastSentTextRef.current = text;
+    setLastSentText(text);
     if (textOverride === undefined) setDraft("");
     setStreaming(true);
     // Slash-command parity with the reset button: if the user TYPES /reset
@@ -786,11 +787,11 @@ export function ComplianceOfficerRail({
         <div className="flex items-start gap-3 border-t border-rose-200 bg-rose-50 px-4 py-2 text-xs text-rose-700">
           <p className="flex-1 leading-relaxed">{errorMsg}</p>
           <div className="flex shrink-0 items-center gap-2">
-            {lastSentTextRef.current && (
+            {lastSentText && (
               <button
                 type="button"
                 onClick={() => {
-                  const t = lastSentTextRef.current;
+                  const t = lastSentText;
                   if (!t || streaming) return;
                   setErrorMsg(null);
                   void send(t);

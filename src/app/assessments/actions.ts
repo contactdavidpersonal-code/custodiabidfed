@@ -81,6 +81,14 @@ import {
   rotateTrustSlug,
   updateTrustPageContentAction,
 } from "@/lib/trust-page";
+import {
+  buildPracticeSnapshot,
+  createPracticeAffirmation,
+} from "@/lib/cmmc/affirmation";
+import {
+  getOrCreatePracticeConversation,
+} from "@/lib/cmmc/practice-chat";
+import { listEvidenceForControl } from "@/lib/assessment";
 
 async function requireUserId(): Promise<string> {
   const { userId } = await auth();
@@ -2263,4 +2271,61 @@ export async function updateBusinessProfileManualAction(formData: FormData) {
   revalidatePath(`/assessments/${assessmentId}/ssp`);
   revalidatePath(`/assessments/${assessmentId}/affirmation`);
   redirect(`/assessments/${assessmentId}/profile?saved=1`);
+}
+
+/**
+ * Affirm a single practice. Captures a tamper-evident snapshot of
+ * (intake answers + objective verdicts + tagged evidence ids), signs it
+ * with the user's typed name, and stores the SHA-256 hash. The SPRS
+ * deliverable refuses to render until the LATEST affirmation's hash
+ * matches the current snapshot — that's how we surface drift.
+ *
+ * Tenant-gated via getAssessmentForUser. Caller is responsible for
+ * client-side validation of the signed name (we re-validate here as a
+ * defense-in-depth check).
+ */
+export async function affirmPracticeAction(formData: FormData) {
+  const userId = await requireUserId();
+  const assessmentId = String(formData.get("assessmentId") ?? "");
+  const controlId = String(formData.get("controlId") ?? "");
+  const signedName = String(formData.get("signedName") ?? "").trim();
+  const acknowledged = String(formData.get("acknowledged") ?? "") === "on";
+
+  if (!signedName || signedName.length < 2 || signedName.length > 120) {
+    throw new Error("Signed name must be between 2 and 120 characters");
+  }
+  if (!acknowledged) {
+    throw new Error("You must acknowledge the attestation to sign");
+  }
+
+  const ctx = await getAssessmentForUser(assessmentId, userId);
+  if (!ctx) throw new Error("Not found");
+
+  // Pull current state. The conversation row holds intake answers and
+  // objective verdicts; the evidence list holds artifact ids tagged to
+  // this control (legacy single-tag + cross-tagged via join table).
+  const [conv, evidence] = await Promise.all([
+    getOrCreatePracticeConversation(assessmentId, controlId),
+    listEvidenceForControl(assessmentId, controlId),
+  ]);
+
+  const snapshot = buildPracticeSnapshot({
+    controlId,
+    intakeAnswers: conv.intake_answers,
+    verdicts: conv.objective_verdicts,
+    evidenceIds: evidence.map((e) => e.id),
+  });
+
+  await createPracticeAffirmation({
+    assessmentId,
+    controlId,
+    signedByUserId: userId,
+    signedName,
+    snapshot,
+  });
+
+  revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
+  revalidatePath(`/assessments/${assessmentId}`);
+  revalidatePath(`/assessments/${assessmentId}/sign`);
+  revalidatePath(`/assessments/${assessmentId}/bid-packet`);
 }

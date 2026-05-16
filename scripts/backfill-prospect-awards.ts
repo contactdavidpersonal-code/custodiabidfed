@@ -52,7 +52,7 @@ async function main() {
 
   let backfilled = 0;
   let skippedNoPiid = 0;
-  let skippedNoActionDate = 0;
+  const skippedNoActionDate = 0;
   let alreadyPresent = 0;
 
   for (const p of rows) {

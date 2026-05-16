@@ -24,11 +24,13 @@ import {
   uploadEvidenceAction,
   upsertRemediationPlanAction,
   useSuggestedNarrativeAction,
+  affirmPracticeAction,
 } from "../../../actions";
 import { ConnectorHint } from "../../../_components/ConnectorHint";
 import { PracticeWizard } from "./PracticeWizard";
 import { PracticeQuiz } from "./PracticeQuiz";
 import { PracticeChat } from "./PracticeChat";
+import { PracticeAffirmCard } from "./PracticeAffirmCard";
 import {
   getPracticeSpec,
   personalizeSpec,
@@ -36,6 +38,12 @@ import {
   toClientPersonalizedSpec,
 } from "@/lib/cmmc/practice-spec";
 import { getOrCreatePracticeConversation } from "@/lib/cmmc/practice-chat";
+import {
+  buildPracticeSnapshot,
+  computePracticeContentHash,
+  getLatestAffirmation,
+  isAffirmationStale,
+} from "@/lib/cmmc/affirmation";
 import { getConnectorTokenStatus } from "@/lib/connectors/storage";
 import { providersCoveringControl } from "@/lib/connectors/registry";
 import type { ConnectorProvider } from "@/lib/connectors/types";
@@ -157,6 +165,29 @@ export default async function ControlDetailPage(
   const chatSpecClientFiltered = stripUnsupportedConnect(chatSpecClient);
   const personalizedClientFiltered = stripUnsupportedConnect(personalizedClient);
 
+  // Sign & Affirm state (per-practice). Only meaningful for chat-enabled
+  // practices today, since those are the ones with intake + verdicts. We
+  // compute the CURRENT content hash from the live conversation row +
+  // evidence list and compare against the latest non-superseded
+  // affirmation. If the hashes match: the signed snapshot is current. If
+  // they don't (or there is no affirmation): show the sign form / stale
+  // banner so the SPRS deliverable can refuse to render until the user
+  // re-affirms.
+  let currentAffirmHash: string | null = null;
+  let latestAffirmation: Awaited<ReturnType<typeof getLatestAffirmation>> = null;
+  let affirmStale = false;
+  if (chatSpec && chatConv) {
+    const snapshot = buildPracticeSnapshot({
+      controlId,
+      intakeAnswers: chatConv.intake_answers,
+      verdicts: chatConv.objective_verdicts,
+      evidenceIds: evidence.map((e) => e.id),
+    });
+    currentAffirmHash = computePracticeContentHash(snapshot);
+    latestAffirmation = await getLatestAffirmation(id, controlId);
+    affirmStale = isAffirmationStale(latestAffirmation, currentAffirmHash);
+  }
+
   return (
     <main>
       <div className="mx-auto max-w-4xl px-4 pt-4 md:px-6 md:pt-6">
@@ -172,25 +203,35 @@ export default async function ControlDetailPage(
         // `src/lib/cmmc/practice-spec.ts` (the chat UI/API auto-picks it up).
         if (chatSpec && chatConv && chatSpecClient) {
           return (
-            <PracticeChat
-              assessmentId={id}
-              controlId={controlId}
-              spec={chatSpecClientFiltered!}
-              initialPersonalized={personalizedClientFiltered}
-              initialVerdicts={chatConv.objective_verdicts}
-              initiallyLocked={!!chatConv.locked_at}
-              initialIntakeAnswers={chatConv.intake_answers}
-              initialIntakeCompletedAt={chatConv.intake_completed_at}
-              evidence={evidenceForClient}
-              connectedProviders={connectedProviders}
-              uploadEvidenceAction={uploadEvidenceAction}
-              reReviewEvidenceAction={reReviewEvidenceAction}
-              deleteEvidenceAction={deleteEvidenceAction}
-              prevId={prevId}
-              nextId={nextId}
-              currentIdx={displayIdx}
-              total={totalRequirements}
-            />
+            <>
+              <PracticeChat
+                assessmentId={id}
+                controlId={controlId}
+                spec={chatSpecClientFiltered!}
+                initialPersonalized={personalizedClientFiltered}
+                initialVerdicts={chatConv.objective_verdicts}
+                initiallyLocked={!!chatConv.locked_at}
+                initialIntakeAnswers={chatConv.intake_answers}
+                initialIntakeCompletedAt={chatConv.intake_completed_at}
+                evidence={evidenceForClient}
+                connectedProviders={connectedProviders}
+                uploadEvidenceAction={uploadEvidenceAction}
+                reReviewEvidenceAction={reReviewEvidenceAction}
+                deleteEvidenceAction={deleteEvidenceAction}
+                prevId={prevId}
+                nextId={nextId}
+                currentIdx={displayIdx}
+                total={totalRequirements}
+              />
+              <PracticeAffirmCard
+                assessmentId={id}
+                controlId={controlId}
+                locked={!!chatConv.locked_at}
+                latest={latestAffirmation}
+                stale={affirmStale}
+                affirmAction={affirmPracticeAction}
+              />
+            </>
           );
         }
         const quiz = getPracticeQuiz(controlId);

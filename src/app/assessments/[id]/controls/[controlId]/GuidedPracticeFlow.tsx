@@ -56,11 +56,15 @@ function parseQ(filename: string): { display: string } {
 
 export function GuidedPracticeFlow(props: Props) {
   const router = useRouter();
-  const sectionRefs = {
-    orient: useRef<HTMLDivElement>(null),
-    confirm: useRef<HTMLDivElement>(null),
-    prove: useRef<HTMLDivElement>(null),
-    lock: useRef<HTMLDivElement>(null),
+  const orientRef = useRef<HTMLDivElement>(null);
+  const confirmRef = useRef<HTMLDivElement>(null);
+  const proveRef = useRef<HTMLDivElement>(null);
+  const lockRef = useRef<HTMLDivElement>(null);
+  const sectionRefs: Record<StageKey, React.RefObject<HTMLDivElement | null>> = {
+    orient: orientRef,
+    confirm: confirmRef,
+    prove: proveRef,
+    lock: lockRef,
   };
 
   const sufficientCount = props.evidence.filter(
@@ -240,7 +244,7 @@ export function GuidedPracticeFlow(props: Props) {
       </div>
 
       {/* ========== STAGE 1: ORIENT ========== */}
-      <section ref={sectionRefs.orient} className="mb-8 scroll-mt-20">
+      <section ref={orientRef} className="mb-8 scroll-mt-20">
         <StageHeading number={1} label="What we're protecting" />
         <div className="border border-[#cfe3d9] bg-white p-5 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
           <p className="text-base leading-relaxed text-[#10231d]">
@@ -313,7 +317,7 @@ export function GuidedPracticeFlow(props: Props) {
       </section>
 
       {/* ========== STAGE 2: CONFIRM (objectives Q&A) ========== */}
-      <section ref={sectionRefs.confirm} className="mb-8 scroll-mt-20">
+      <section ref={confirmRef} className="mb-8 scroll-mt-20">
         <StageHeading
           number={2}
           label="Confirm what you do"
@@ -461,7 +465,7 @@ export function GuidedPracticeFlow(props: Props) {
       </section>
 
       {/* ========== STAGE 3: PROVE ========== */}
-      <section ref={sectionRefs.prove} className="mb-8 scroll-mt-20">
+      <section ref={proveRef} className="mb-8 scroll-mt-20">
         <StageHeading
           number={3}
           label="Prove it"

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -229,12 +230,12 @@ export default function PublicCmmcL1Agent() {
               .
             </span>
           </div>
-          <a
+          <Link
             href="/sign-up"
             className="shrink-0 font-bold text-[#2f8f6d] underline hover:text-[#0e2a23]"
           >
             Skip the wait →
-          </a>
+          </Link>
         </div>
       )}
 
@@ -279,12 +280,12 @@ export default function PublicCmmcL1Agent() {
         Charlie answers <strong>CMMC Level 1 questions only</strong> and is
         not legal advice. For a guided, end-to-end Level 1 self-assessment
         with a real human Compliance Officer on call, start a{" "}
-        <a
+        <Link
           href="/sign-up"
           className="font-bold text-[#2f8f6d] underline hover:text-[#0e2a23]"
         >
           14-day Custodia trial
-        </a>{" "}
+        </Link>{" "}
         (no credit card).
       </div>
     </div>

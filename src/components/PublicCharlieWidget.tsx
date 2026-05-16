@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -229,12 +230,12 @@ export function PublicCharlieWidget() {
             )}
             <div className="mt-2 px-1 text-[10px] text-[#9bb5a8]">
               Charlie can be wrong. Always verify against the{" "}
-              <a
+              <Link
                 href="/regulations"
                 className="underline hover:text-[#2f8f6d]"
               >
                 official DoD docs
-              </a>
+              </Link>
               .
             </div>
           </div>

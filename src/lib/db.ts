@@ -1585,6 +1585,42 @@ async function runInitDdl() {
       ADD COLUMN IF NOT EXISTS intake_completed_at TIMESTAMPTZ
   `;
 
+  // Per-practice signed affirmations. Each row is a tamper-evident snapshot
+  // of (intake answers + objective verdicts + final evidence ids) hashed
+  // with SHA-256, signed by a named human, and timestamped. The SPRS bid
+  // package refuses to render unless the LATEST affirmation's content_hash
+  // matches the practice's current content_hash — that's how we surface
+  // drift ("you signed last Tuesday; evidence has changed since then —
+  // re-affirm to ship").
+  //
+  // Multiple rows per (assessment, control) are intentional: when a user
+  // re-affirms, we INSERT a new row and set the previous row's
+  // superseded_at. This preserves the historical audit trail rather than
+  // overwriting it. The "current" affirmation is the row with the latest
+  // signed_at where superseded_at IS NULL.
+  await sql`
+    CREATE TABLE IF NOT EXISTS practice_affirmations (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      assessment_id UUID NOT NULL REFERENCES assessments(id) ON DELETE CASCADE,
+      control_id TEXT NOT NULL,
+      content_hash TEXT NOT NULL,
+      signed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      signed_by_user_id TEXT NOT NULL,
+      signed_name TEXT NOT NULL,
+      snapshot_json JSONB NOT NULL,
+      superseded_at TIMESTAMPTZ
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_practice_affirmations_assessment_control
+      ON practice_affirmations (assessment_id, control_id, signed_at DESC)
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS idx_practice_affirmations_current
+      ON practice_affirmations (assessment_id, control_id)
+      WHERE superseded_at IS NULL
+  `;
+
   // ─────────────────────────────────────────────────────────────────────
   // CMMC L1 v2.13 (Sept 2024) + DFARS final rule (Sept 2025) additions.
   // The previous single-status `control_responses` row continues to work
