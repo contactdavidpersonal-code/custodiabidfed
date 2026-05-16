@@ -339,22 +339,23 @@ export function PracticeChat(props: Props) {
             {locked ? "MET" : allCovered ? "READY TO LOCK" : "IN PROGRESS"}
           </span>
         </div>
-        {/* Restart button — wipes the per-practice intake answers + the
-            attestation artifacts that were auto-staged from them, then
-            sends the user back to the questionnaire from question 1.
-            Always visible on every practice with an intake (whether the
-            user is mid-quiz or post-quiz) so users can correct a wrong
-            chip answer at any time and so annual re-affirmation has an
-            obvious entry point. Hidden only when locked — any change
-            after Sign & Affirm requires a new Sign & Affirm cycle. */}
-        {intakeRequired && !locked && (
+        {/* Reset button — clears intake answers (if any), all objective
+            verdicts, and intake-derived auto-attestations so the user can
+            re-walk this practice from scratch and verify it works.
+            Chat history with Charlie and any uploaded artifacts are
+            preserved (audit trail). Visible on every practice when not
+            locked — once Sign & Affirm is signed, any change requires
+            a new affirmation cycle. */}
+        {!locked && (
           <div className="mt-4 flex items-center justify-end">
             <button
               type="button"
               onClick={() => {
                 if (resettingIntake) return;
                 const ok = window.confirm(
-                  "Restart this practice?\n\nThis sends you back to question 1 of the questionnaire so you can re-answer it. Your chat history with Charlie and any uploaded artifacts are preserved. Intake-derived attestations are cleared so they re-stamp from your new answers.",
+                  intakeRequired
+                    ? "Reset this practice?\n\nThis sends you back to question 1 of the questionnaire and clears all objective grades so you can re-walk it from scratch. Your chat history with Charlie and any uploaded artifacts are preserved. Intake-derived attestations are cleared so they re-stamp from your new answers."
+                    : "Reset this practice?\n\nThis clears all objective grades so you can re-walk it from scratch and verify it works. Your chat history with Charlie and any uploaded artifacts are preserved.",
                 );
                 if (!ok) return;
                 onEditIntake();
@@ -362,7 +363,11 @@ export function PracticeChat(props: Props) {
               disabled={resettingIntake}
               className="inline-flex items-center gap-1.5 rounded-full border border-[#cfe3d9] bg-white px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#10231d] shadow-sm hover:border-[#2f8f6d] hover:bg-[#f4faf6] hover:text-[#0e2a23] disabled:opacity-50"
             >
-              {resettingIntake ? "Restarting…" : "↻ Restart this practice"}
+              {resettingIntake
+                ? "Resetting…"
+                : intakeRequired
+                  ? "↻ Restart this practice"
+                  : "↻ Reset this practice"}
             </button>
           </div>
         )}
