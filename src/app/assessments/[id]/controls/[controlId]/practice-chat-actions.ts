@@ -285,3 +285,95 @@ export async function resetIntakeAction(args: {
   revalidatePath(`/assessments/${args.assessmentId}/controls/${args.controlId}`);
   return { ok: true };
 }
+
+/**
+ * Hard reset a single practice back to a clean slate so the user can
+ * re-walk it from scratch and verify the flow end-to-end.
+ *
+ * What gets wiped (scoped to this assessment_id + control_id only):
+ *   - All evidence artifacts (rows + join-table tags)
+ *   - All chat messages with Charlie
+ *   - Intake answers + intake_completed_at
+ *   - Objective verdicts
+ *   - locked_at (the practice un-locks)
+ *   - control_responses row (status returns to 'unanswered')
+ *   - Any remediation plans on this practice
+ *   - Active practice_affirmations rows are marked superseded
+ *
+ * Note: the practice_conversations row itself is kept (its `id` keeps
+ * referential integrity for older affirmation rows). Its contents are
+ * zeroed out — fresh slate the next time the user opens the page.
+ *
+ * Locked or unlocked: this action works either way. Once Sign & Affirm
+ * has been signed at the assessment level, signing again is required
+ * before the SPRS packet renders.
+ */
+export async function hardResetPracticeAction(args: {
+  assessmentId: string;
+  controlId: string;
+}): Promise<{ ok: boolean; reason?: string }> {
+  const { userId } = await auth();
+  if (!userId) return { ok: false, reason: "Unauthorized" };
+
+  const ctx = await getAssessmentForUser(args.assessmentId, userId);
+  if (!ctx) return { ok: false, reason: "Assessment not found" };
+
+  const sql = getSql();
+  const { assessmentId, controlId } = args;
+
+  // 1. Evidence join-table rows (must come before the artifact deletes so
+  //    we don't depend on cascade ordering in edge cases).
+  await sql`
+    DELETE FROM evidence_artifact_practices
+    WHERE assessment_id = ${assessmentId}
+      AND control_id = ${controlId}
+  `;
+  // 2. Evidence artifacts themselves. The legacy single-control column
+  //    decides ownership; cross-tagged copies remain owned by their
+  //    primary control.
+  await sql`
+    DELETE FROM evidence_artifacts
+    WHERE assessment_id = ${assessmentId}
+      AND control_id = ${controlId}
+  `;
+  // 3. Wipe the conversation: messages, intake, verdicts, lock state.
+  await sql`
+    UPDATE practice_conversations
+    SET messages = '[]'::jsonb,
+        intake_answers = NULL,
+        intake_completed_at = NULL,
+        objective_verdicts = '{}'::jsonb,
+        verdict_updated_at = NOW(),
+        locked_at = NULL,
+        updated_at = NOW()
+    WHERE assessment_id = ${assessmentId}
+      AND control_id = ${controlId}
+  `;
+  // 4. Wipe the SSP narrative + status for this control.
+  await sql`
+    DELETE FROM control_responses
+    WHERE assessment_id = ${assessmentId}
+      AND control_id = ${controlId}
+  `;
+  // 5. Clear any open POA&M / remediation plan for this practice.
+  await sql`
+    DELETE FROM remediation_plans
+    WHERE assessment_id = ${assessmentId}
+      AND control_id = ${controlId}
+  `;
+  // 6. Supersede any prior signed affirmation rows so the bid-packet gate
+  //    forces a fresh signature once the user re-walks the practice.
+  await sql`
+    UPDATE practice_affirmations
+    SET superseded_at = NOW()
+    WHERE assessment_id = ${assessmentId}
+      AND control_id = ${controlId}
+      AND superseded_at IS NULL
+  `;
+
+  revalidatePath(`/assessments/${assessmentId}`);
+  revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);
+  revalidatePath(`/assessments/${assessmentId}/sign`);
+  revalidatePath(`/assessments/${assessmentId}/bid-packet`);
+  return { ok: true };
+}

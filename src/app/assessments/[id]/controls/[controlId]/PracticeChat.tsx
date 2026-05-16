@@ -15,7 +15,11 @@ import type {
 import { inferSlotKey } from "@/lib/cmmc/practice-spec";
 import type { ConnectorProvider } from "@/lib/connectors/types";
 import type { ObjectiveVerdict } from "@/lib/cmmc/practice-chat";
-import { lockPracticeAction, resetIntakeAction } from "./practice-chat-actions";
+import {
+  hardResetPracticeAction,
+  lockPracticeAction,
+  resetIntakeAction,
+} from "./practice-chat-actions";
 import { GuidedPracticeQuiz } from "./GuidedPracticeQuiz";
 
 type ClientEvidenceRow = Omit<EvidenceArtifactRow, "blob_url">;
@@ -119,6 +123,26 @@ export function PracticeChat(props: Props) {
       if (!res.ok) return;
       setIntakeAnswers(null);
       setIntakeCompletedAt(null);
+      router.refresh();
+    });
+  };
+  // Full nuke: wipes evidence, chat, intake, verdicts, lock, SSP narrative,
+  // remediation plans, and supersedes signed affirmations for this practice
+  // only. Used by the "Reset this practice" button on every control page so
+  // users can re-walk a single practice from zero without touching the others.
+  const onHardReset = () => {
+    startResetIntake(async () => {
+      const res = await hardResetPracticeAction({
+        assessmentId: props.assessmentId,
+        controlId: props.controlId,
+      });
+      if (!res.ok) return;
+      setIntakeAnswers(null);
+      setIntakeCompletedAt(null);
+      setVerdicts({});
+      setEvidence([]);
+      setLocked(false);
+      setLockError(null);
       router.refresh();
     });
   };
@@ -339,38 +363,31 @@ export function PracticeChat(props: Props) {
             {locked ? "MET" : allCovered ? "READY TO LOCK" : "IN PROGRESS"}
           </span>
         </div>
-        {/* Reset button — clears intake answers (if any), all objective
-            verdicts, and intake-derived auto-attestations so the user can
-            re-walk this practice from scratch and verify it works.
-            Chat history with Charlie and any uploaded artifacts are
-            preserved (audit trail). Visible on every practice when not
-            locked — once Sign & Affirm is signed, any change requires
-            a new affirmation cycle. */}
-        {!locked && (
-          <div className="mt-4 flex items-center justify-end">
-            <button
-              type="button"
-              onClick={() => {
-                if (resettingIntake) return;
-                const ok = window.confirm(
-                  intakeRequired
-                    ? "Reset this practice?\n\nThis sends you back to question 1 of the questionnaire and clears all objective grades so you can re-walk it from scratch. Your chat history with Charlie and any uploaded artifacts are preserved. Intake-derived attestations are cleared so they re-stamp from your new answers."
-                    : "Reset this practice?\n\nThis clears all objective grades so you can re-walk it from scratch and verify it works. Your chat history with Charlie and any uploaded artifacts are preserved.",
-                );
-                if (!ok) return;
-                onEditIntake();
-              }}
-              disabled={resettingIntake}
-              className="inline-flex items-center gap-1.5 rounded-full border border-[#cfe3d9] bg-white px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#10231d] shadow-sm hover:border-[#2f8f6d] hover:bg-[#f4faf6] hover:text-[#0e2a23] disabled:opacity-50"
-            >
-              {resettingIntake
-                ? "Resetting…"
-                : intakeRequired
-                  ? "↻ Restart this practice"
-                  : "↻ Reset this practice"}
-            </button>
-          </div>
-        )}
+        {/* Reset button — full nuke of this single practice. Wipes
+            evidence, chat with Charlie, intake answers, objective grades,
+            lock state, SSP narrative, and supersedes any signed
+            affirmation row so the bid-packet gate forces a fresh
+            signature. Scoped to this control only — the other 14
+            practices are untouched. Always visible (works locked or
+            unlocked) so users can fully restart a practice that's gone
+            sideways. */}
+        <div className="mt-4 flex items-center justify-end">
+          <button
+            type="button"
+            onClick={() => {
+              if (resettingIntake) return;
+              const ok = window.confirm(
+                `Reset ${props.spec.controlId} back to a clean slate?\n\nThis permanently deletes ALL evidence files, chat history with Charlie, quiz answers, objective grades, and the SSP narrative for THIS practice only. The other 14 practices are not touched.\n\nThis cannot be undone.`,
+              );
+              if (!ok) return;
+              onHardReset();
+            }}
+            disabled={resettingIntake}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#e7c9c9] bg-white px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#8b1f1f] shadow-sm hover:border-[#8b1f1f] hover:bg-[#fbf4f4] hover:text-[#6d1818] disabled:opacity-50"
+          >
+            {resettingIntake ? "Resetting…" : "↻ Reset this practice"}
+          </button>
+        </div>
       </header>
 
       <PracticeProgressBar
