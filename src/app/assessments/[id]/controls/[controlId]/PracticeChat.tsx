@@ -413,12 +413,6 @@ export function PracticeChat(props: Props) {
             locked={locked}
           />
         )}
-        <ObjectivesPanel
-          spec={activeSpec}
-          verdicts={verdicts}
-          onReverify={onReverify}
-          reverifying={reverifying}
-        />
         {pendingImage && (
           <ChatImageSlotPicker
             file={pendingImage.file}
@@ -450,8 +444,9 @@ export function PracticeChat(props: Props) {
             onCancel={() => setPendingImage(null)}
           />
         )}
-        <EvidencePanel
+        <ObjectiveEvidencePanel
           spec={activeSpec}
+          verdicts={verdicts}
           slotAnnotations={slotAnnotations}
           evidence={evidence}
           assessmentId={props.assessmentId}
@@ -460,12 +455,8 @@ export function PracticeChat(props: Props) {
           uploadEvidenceAction={props.uploadEvidenceAction}
           reReviewEvidenceAction={props.reReviewEvidenceAction}
           deleteEvidenceAction={props.deleteEvidenceAction}
-          // Evidence collection is a living document. Even after the practice
-          // is signed/locked, users keep their packet current year-round:
-          // new hires, retired devices, refreshed rosters. The signed
-          // narrative + transcript stay frozen (audit trail); evidence keeps
-          // evolving. So we never disable the panel.
-          disabled={false}
+          onReverify={onReverify}
+          reverifying={reverifying}
           locked={locked}
         />
         <LockPanel
@@ -583,48 +574,125 @@ function CharliePrompt({ locked, controlId }: { locked: boolean; controlId: stri
   );
 }
 
-function ObjectivesPanel({
+// ────────────────────────────────────────────────────────────────────────
+// Unified Objectives × Evidence panel (post-intake review view).
+// Each objective is the spine; the slots that satisfy it nest under it,
+// so the user reads the same hierarchy an assessor reads:
+//   "objective (a) → here is the proof you submitted for (a)".
+// A slot that satisfies multiple objectives is rendered under the FIRST
+// objective it satisfies to avoid duplicate evidence cards. Slots tied to
+// no objective land in a trailing "Supporting evidence" bucket.
+// ────────────────────────────────────────────────────────────────────────
+function ObjectiveEvidencePanel({
   spec,
   verdicts,
+  slotAnnotations,
+  evidence,
+  assessmentId,
+  controlId,
+  connectedProviders,
+  uploadEvidenceAction,
+  reReviewEvidenceAction,
+  deleteEvidenceAction,
   onReverify,
   reverifying,
+  locked,
 }: {
   spec: ClientPracticeSpec;
   verdicts: Record<string, ObjectiveVerdict>;
+  slotAnnotations: Record<string, SlotAnnotation>;
+  evidence: ClientEvidenceRow[];
+  assessmentId: string;
+  controlId: string;
+  connectedProviders: ConnectorProvider[];
+  uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
+  reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
+  deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
   onReverify: () => void;
   reverifying: boolean;
+  locked: boolean;
 }) {
+  // Bucket artifacts by slot (same logic as EvidencePanel).
+  const bySlot: Record<string, ClientEvidenceRow[]> = {};
+  const unmatched: ClientEvidenceRow[] = [];
+  for (const ev of evidence) {
+    const slotKey = inferSlotKey(ev.filename, spec);
+    if (slotKey) (bySlot[slotKey] ??= []).push(ev);
+    else unmatched.push(ev);
+  }
+
+  // Bucket each slot to the FIRST objective in spec.objectives that it satisfies.
+  const slotsByObjective: Record<string, typeof spec.evidenceSlots> = {};
+  const orphanSlots: typeof spec.evidenceSlots = [];
+  for (const slot of spec.evidenceSlots) {
+    const firstHit = spec.objectives.find((o) =>
+      slot.satisfies.includes(o.letter),
+    );
+    if (firstHit) {
+      (slotsByObjective[firstHit.letter] ??= [] as typeof spec.evidenceSlots).push(slot);
+    } else {
+      orphanSlots.push(slot);
+    }
+  }
+
+  const filledCount = spec.evidenceSlots.filter((s) => {
+    const items = bySlot[s.key] ?? [];
+    return items.some((it) => it.ai_review_verdict === "sufficient");
+  }).length;
+  const totalRequired = spec.evidenceSlots.filter((s) => s.required).length;
+
+  // Running slot index so the SlotRow numbering matches across objectives.
+  let slotIndex = 0;
+
   return (
     <section>
       <div className="mb-5 flex items-end justify-between gap-3">
         <div>
           <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
-            What an auditor checks
+            {filledCount} of {totalRequired} evidence collected
           </div>
           <h2 className="mt-2 font-serif text-2xl font-bold tracking-tight text-[#10231d]">
-            Assessment objectives
+            What an auditor checks
           </h2>
+          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-[#5a7d70]">
+            Each objective is what the assessor scores. Its evidence is right
+            beneath it — fill, replace, or refresh anytime.
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={onReverify}
-          disabled={reverifying}
-          className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline disabled:opacity-50"
-        >
-          {reverifying ? "Re-grading…" : "Re-grade"}
-        </button>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <ProgressDots filled={filledCount} total={totalRequired} />
+          <button
+            type="button"
+            onClick={onReverify}
+            disabled={reverifying}
+            className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline disabled:opacity-50"
+          >
+            {reverifying ? "Re-grading…" : "Re-grade"}
+          </button>
+        </div>
       </div>
-      <ol className="space-y-3">
+
+      {locked && (
+        <div className="mb-5 border-l-4 border-[#08201a] bg-[#f4faf6] px-6 py-4">
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+            Keep your packet current
+          </div>
+          <p className="mt-2 text-[14px] leading-relaxed text-[#10231d]">
+            This practice is signed and locked as MET — that snapshot is
+            preserved for the assessor. Evidence here stays editable: as you
+            hire, retire devices, or refresh accounts, upload a new version
+            and we&apos;ll review it. Your current packet always reflects
+            today.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-8">
         {spec.objectives.map((o) => {
-          const v = verdicts[o.letter] ?? {
-            status: "missing" as const,
-            reason: "",
-          };
+          const v = verdicts[o.letter] ?? { status: "missing" as const, reason: "" };
+          const slots = slotsByObjective[o.letter] ?? [];
           return (
-            <li
-              key={o.letter}
-              className="border border-[#cfe3d9] bg-white p-5 transition-colors hover:border-[#2f8f6d]"
-            >
+            <div key={o.letter} className="border-l-2 border-[#cfe3d9] pl-5">
               <div className="flex items-start justify-between gap-3">
                 <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70]">
                   Objective {o.letter.toUpperCase()}
@@ -648,117 +716,63 @@ function ObjectivesPanel({
                   Missing: {v.missing}
                 </p>
               )}
-            </li>
+
+              {slots.length > 0 && (
+                <ol className="mt-4 space-y-4">
+                  {slots.map((slot) => {
+                    slotIndex += 1;
+                    return (
+                      <SlotRow
+                        key={slot.key}
+                        index={slotIndex}
+                        slot={slot}
+                        annotation={slotAnnotations[slot.key]}
+                        artifacts={bySlot[slot.key] ?? []}
+                        assessmentId={assessmentId}
+                        controlId={controlId}
+                        connectedProviders={connectedProviders}
+                        uploadEvidenceAction={uploadEvidenceAction}
+                        reReviewEvidenceAction={reReviewEvidenceAction}
+                        deleteEvidenceAction={deleteEvidenceAction}
+                        disabled={false}
+                      />
+                    );
+                  })}
+                </ol>
+              )}
+            </div>
           );
         })}
-      </ol>
-    </section>
-  );
-}
 
-function EvidencePanel({
-  spec,
-  slotAnnotations,
-  evidence,
-  assessmentId,
-  controlId,
-  connectedProviders,
-  uploadEvidenceAction,
-  reReviewEvidenceAction,
-  deleteEvidenceAction,
-  disabled,
-  locked = false,
-}: {
-  spec: ClientPracticeSpec;
-  /** Per-slot personalization (recommended destination, attestation, etc.) */
-  slotAnnotations: Record<string, SlotAnnotation>;
-  evidence: ClientEvidenceRow[];
-  assessmentId: string;
-  controlId: string;
-  connectedProviders: ConnectorProvider[];
-  uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
-  reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
-  deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
-  /** When true, suppresses upload / replace / re-review affordances. Today
-   * this is always false from the practice page; reserved for read-only
-   * audit-share views in the future. */
-  disabled: boolean;
-  /** When true, the practice itself is locked as MET. Evidence stays
-   * editable (living document), but we show a banner explaining that the
-   * signed snapshot is preserved separately. */
-  locked?: boolean;
-}) {
-  // Bucket every artifact tagged to this practice into the slot it satisfies.
-  // Anything we can't pin to a specific slot (legacy uploads from before the
-  // hybrid flow) lands in `unmatched` and renders as a generic row.
-  const bySlot: Record<string, ClientEvidenceRow[]> = {};
-  const unmatched: ClientEvidenceRow[] = [];
-  for (const ev of evidence) {
-    const slotKey = inferSlotKey(ev.filename, spec);
-    if (slotKey) {
-      (bySlot[slotKey] ??= []).push(ev);
-    } else {
-      unmatched.push(ev);
-    }
-  }
-
-  const filledCount = spec.evidenceSlots.filter((s) => {
-    const items = bySlot[s.key] ?? [];
-    return items.some((it) => it.ai_review_verdict === "sufficient");
-  }).length;
-  const totalRequired = spec.evidenceSlots.filter((s) => s.required).length;
-
-  return (
-    <section>
-      <div className="mb-5 flex items-end justify-between gap-3">
-        <div>
-          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
-            {filledCount} of {totalRequired} collected
+        {orphanSlots.length > 0 && (
+          <div className="border-l-2 border-[#cfe3d9] pl-5">
+            <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70]">
+              Supporting evidence
+            </div>
+            <ol className="mt-4 space-y-4">
+              {orphanSlots.map((slot) => {
+                slotIndex += 1;
+                return (
+                  <SlotRow
+                    key={slot.key}
+                    index={slotIndex}
+                    slot={slot}
+                    annotation={slotAnnotations[slot.key]}
+                    artifacts={bySlot[slot.key] ?? []}
+                    assessmentId={assessmentId}
+                    controlId={controlId}
+                    connectedProviders={connectedProviders}
+                    uploadEvidenceAction={uploadEvidenceAction}
+                    reReviewEvidenceAction={reReviewEvidenceAction}
+                    deleteEvidenceAction={deleteEvidenceAction}
+                    disabled={false}
+                  />
+                );
+              })}
+            </ol>
           </div>
-          <h2 className="mt-2 font-serif text-2xl font-bold tracking-tight text-[#10231d]">
-            Evidence required
-          </h2>
-          <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-[#5a7d70]">
-            Each row is a separate artifact an assessor would ask for. Fill it
-            with Charlie, a connector, or your own upload.
-          </p>
-        </div>
-        <ProgressDots filled={filledCount} total={totalRequired} />
+        )}
       </div>
-
-      {locked && (
-        <div className="mb-5 border-l-4 border-[#08201a] bg-[#f4faf6] px-6 py-4">
-          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
-            Keep your packet current
-          </div>
-          <p className="mt-2 text-[14px] leading-relaxed text-[#10231d]">
-            This practice is signed and locked as MET — that snapshot is
-            preserved for the assessor. Evidence here stays editable: as you
-            hire, retire devices, or refresh accounts, upload a new version
-            and we&apos;ll review it. Your current packet always reflects
-            today.
-          </p>
-        </div>
-      )}
-
-      <ol className="space-y-4">
-        {spec.evidenceSlots.map((slot, idx) => (
-          <SlotRow
-            key={slot.key}
-            index={idx + 1}
-            slot={slot}
-            annotation={slotAnnotations[slot.key]}
-            artifacts={bySlot[slot.key] ?? []}
-            assessmentId={assessmentId}
-            controlId={controlId}
-            connectedProviders={connectedProviders}
-            uploadEvidenceAction={uploadEvidenceAction}
-            reReviewEvidenceAction={reReviewEvidenceAction}
-            deleteEvidenceAction={deleteEvidenceAction}
-            disabled={disabled}
-          />
-        ))}
-      </ol>
 
       {unmatched.length > 0 && (
         <div className="mt-8 border-t border-[#cfe3d9] pt-5">
@@ -774,7 +788,7 @@ function EvidencePanel({
                 controlId={controlId}
                 reReviewEvidenceAction={reReviewEvidenceAction}
                 deleteEvidenceAction={deleteEvidenceAction}
-                disabled={disabled}
+                disabled={false}
               />
             ))}
           </div>
