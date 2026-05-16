@@ -597,6 +597,48 @@ export function isIntakeComplete(
   return spec.intake.questions.every((q) => Boolean(answers[q.id]));
 }
 
+// ────────────────────────────────────────────────────────────────────────
+// Client-safe shapes. RSC cannot serialize functions across the
+// server→client boundary; the `personalize` / `charlieBrief` callbacks on
+// `PracticeIntakeSpec` must be stripped before the spec is passed to a
+// "use client" component. These helpers produce plain-data clones that
+// keep every field the client UI actually reads.
+// ────────────────────────────────────────────────────────────────────────
+export type ClientPracticeIntakeSpec = {
+  preamble: string;
+  questions: IntakeQuestion[];
+};
+
+export type ClientPracticeSpec = Omit<PracticeSpec, "intake"> & {
+  intake?: ClientPracticeIntakeSpec;
+};
+
+export type ClientPersonalizedSpec = ClientPracticeSpec & {
+  slotAnnotations: Record<string, SlotAnnotation>;
+  situationSummary: string;
+};
+
+export function toClientPracticeSpec(spec: PracticeSpec): ClientPracticeSpec {
+  const { intake, ...rest } = spec;
+  if (!intake) return { ...rest };
+  return {
+    ...rest,
+    intake: { preamble: intake.preamble, questions: intake.questions },
+  };
+}
+
+export function toClientPersonalizedSpec(
+  personalized: PersonalizedSpec | null,
+): ClientPersonalizedSpec | null {
+  if (!personalized) return null;
+  const base = toClientPracticeSpec(personalized);
+  return {
+    ...base,
+    slotAnnotations: personalized.slotAnnotations,
+    situationSummary: personalized.situationSummary,
+  };
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // IA.L1-3.5.2 intake (Authentication)
 // ════════════════════════════════════════════════════════════════════════════
@@ -2696,7 +2738,10 @@ export function getPracticeSpec(controlId: string): PracticeSpec | null {
  * helper handles both, returning null when no slot can be inferred (legacy
  * pre-hybrid uploads).
  */
-export function inferSlotKey(filename: string, spec: PracticeSpec): string | null {
+export function inferSlotKey(
+  filename: string,
+  spec: Pick<PracticeSpec, "evidenceSlots">,
+): string | null {
   const lower = filename.toLowerCase();
   // Explicit prefix from per-slot upload form / Charlie's tool handler.
   const prefix = lower.match(/^\[slot:([a-z0-9_]+)\]__/);

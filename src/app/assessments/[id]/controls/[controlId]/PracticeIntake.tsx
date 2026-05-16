@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type {
+  ClientPracticeIntakeSpec,
   IntakeAnswers,
-  PracticeIntakeSpec,
 } from "@/lib/cmmc/practice-spec";
 import { saveIntakeAction } from "./practice-chat-actions";
 
@@ -23,7 +23,7 @@ export function PracticeIntake(props: {
   assessmentId: string;
   controlId: string;
   controlShortName: string;
-  intake: PracticeIntakeSpec;
+  intake: ClientPracticeIntakeSpec;
   /** Existing answers (e.g. user re-opened the intake to edit). */
   initialAnswers?: IntakeAnswers;
 }) {

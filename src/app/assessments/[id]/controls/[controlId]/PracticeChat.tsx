@@ -1,17 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { EvidenceArtifactRow } from "@/lib/assessment";
 import type {
+  ClientPersonalizedSpec,
+  ClientPracticeSpec,
   EvidenceDestination,
   EvidenceSlot,
   IntakeAnswers,
-  PracticeSpec,
   SlotAnnotation,
 } from "@/lib/cmmc/practice-spec";
-import { inferSlotKey, personalizeSpec } from "@/lib/cmmc/practice-spec";
+import { inferSlotKey } from "@/lib/cmmc/practice-spec";
 import type { ConnectorProvider } from "@/lib/connectors/types";
 import type { ObjectiveVerdict } from "@/lib/cmmc/practice-chat";
 import { lockPracticeAction, resetIntakeAction } from "./practice-chat-actions";
@@ -22,7 +23,14 @@ type ClientEvidenceRow = Omit<EvidenceArtifactRow, "blob_url">;
 type Props = {
   assessmentId: string;
   controlId: string;
-  spec: PracticeSpec;
+  spec: ClientPracticeSpec;
+  /**
+   * Result of `personalizeSpec(spec, intake_answers)` computed server-side.
+   * Null when the practice has no intake spec or the user hasn't completed
+   * intake yet. The client never runs personalize() itself because the
+   * underlying callbacks aren't RSC-serializable.
+   */
+  initialPersonalized: ClientPersonalizedSpec | null;
   initialVerdicts: Record<string, ObjectiveVerdict>;
   initiallyLocked: boolean;
   /**
@@ -88,14 +96,11 @@ export function PracticeChat(props: Props) {
     setIntakeCompletedAt(props.initialIntakeCompletedAt);
   }, [props.initialIntakeAnswers, props.initialIntakeCompletedAt]);
 
-  // Personalized spec = base spec rewritten by intake answers. Returns the
-  // base spec unchanged when intake doesn't apply (no intake block or not
-  // yet complete). Memoized to avoid recomputing on every keystroke.
-  const personalized = useMemo(
-    () => personalizeSpec(props.spec, intakeAnswers),
-    [props.spec, intakeAnswers],
-  );
-  const activeSpec: PracticeSpec = personalized ?? props.spec;
+  // Personalized spec computed on the server (page.tsx) and passed in via
+  // props. Re-runs when the user saves intake answers because the server
+  // action revalidates this route, causing a fresh render with new props.
+  const personalized = props.initialPersonalized;
+  const activeSpec: ClientPracticeSpec = personalized ?? props.spec;
   const slotAnnotations: Record<string, SlotAnnotation> =
     personalized?.slotAnnotations ?? {};
   const situationSummary: string | null = personalized?.situationSummary ?? null;
@@ -549,7 +554,7 @@ function ObjectivesPanel({
   onReverify,
   reverifying,
 }: {
-  spec: PracticeSpec;
+  spec: ClientPracticeSpec;
   verdicts: Record<string, ObjectiveVerdict>;
   onReverify: () => void;
   reverifying: boolean;
@@ -629,7 +634,7 @@ function EvidencePanel({
   disabled,
   locked = false,
 }: {
-  spec: PracticeSpec;
+  spec: ClientPracticeSpec;
   /** Per-slot personalization (recommended destination, attestation, etc.) */
   slotAnnotations: Record<string, SlotAnnotation>;
   evidence: ClientEvidenceRow[];
@@ -1278,7 +1283,7 @@ function ChatImageSlotPicker({
 }: {
   file: File;
   previewUrl: string;
-  spec: PracticeSpec;
+  spec: ClientPracticeSpec;
   evidence: ClientEvidenceRow[];
   onPick: (slotKey: string) => void;
   onCancel: () => void;
