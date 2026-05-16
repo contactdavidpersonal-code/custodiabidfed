@@ -341,26 +341,26 @@ export function PracticeChat(props: Props) {
         </div>
         {/* Restart button — wipes the per-practice intake answers + the
             attestation artifacts that were auto-staged from them, then
-            sends the user back to the questionnaire. Designed for the
-            annual re-affirmation workflow ("my environment changed —
-            redo the practice") and for testing the walkthrough end-to-end.
-            Hidden when the practice has no intake (nothing to restart)
-            or when it's locked (any change after Sign & Affirm requires a
-            new Sign & Affirm cycle — that flow gates restart). */}
-        {intakeRequired && intakeComplete && !locked && (
+            sends the user back to the questionnaire from question 1.
+            Always visible on every practice with an intake (whether the
+            user is mid-quiz or post-quiz) so users can correct a wrong
+            chip answer at any time and so annual re-affirmation has an
+            obvious entry point. Hidden only when locked — any change
+            after Sign & Affirm requires a new Sign & Affirm cycle. */}
+        {intakeRequired && !locked && (
           <div className="mt-4 flex items-center justify-end">
             <button
               type="button"
               onClick={() => {
                 if (resettingIntake) return;
                 const ok = window.confirm(
-                  "Restart this practice?\n\nThis sends you back to the questionnaire so you can re-answer it (e.g. for annual updates, an environment change, or testing). Your chat history with Charlie and any uploaded artifacts are preserved. Intake-derived attestations are cleared so they re-stamp from your new answers.",
+                  "Restart this practice?\n\nThis sends you back to question 1 of the questionnaire so you can re-answer it. Your chat history with Charlie and any uploaded artifacts are preserved. Intake-derived attestations are cleared so they re-stamp from your new answers.",
                 );
                 if (!ok) return;
                 onEditIntake();
               }}
               disabled={resettingIntake}
-              className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-full border border-[#cfe3d9] bg-white px-3 py-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#10231d] shadow-sm hover:border-[#2f8f6d] hover:bg-[#f4faf6] hover:text-[#0e2a23] disabled:opacity-50"
             >
               {resettingIntake ? "Restarting…" : "↻ Restart this practice"}
             </button>
