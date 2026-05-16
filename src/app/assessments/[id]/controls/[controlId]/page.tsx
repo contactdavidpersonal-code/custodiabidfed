@@ -176,6 +176,7 @@ export default async function ControlDetailPage(
   let currentAffirmHash: string | null = null;
   let latestAffirmation: Awaited<ReturnType<typeof getLatestAffirmation>> = null;
   let affirmStale = false;
+  let allObjectivesCovered = false;
   if (chatSpec && chatConv) {
     const snapshot = buildPracticeSnapshot({
       controlId,
@@ -186,7 +187,23 @@ export default async function ControlDetailPage(
     currentAffirmHash = computePracticeContentHash(snapshot);
     latestAffirmation = await getLatestAffirmation(id, controlId);
     affirmStale = isAffirmationStale(latestAffirmation, currentAffirmHash);
+    allObjectivesCovered = chatSpec.objectives.every(
+      (o) => chatConv.objective_verdicts[o.letter]?.status === "covered",
+    );
   }
+  // Only surface the Sign & Affirm card once the practice is at 100%
+  // (every 800-171A objective covered) AND the per-practice intake is
+  // complete. Locked practices count because lock requires full coverage.
+  // While the user is still in intake or below 100%, the card stays
+  // hidden so they can focus on questions and evidence.
+  const intakeComplete = chatSpec?.intake
+    ? !!chatConv?.intake_completed_at
+    : true;
+  const showAffirmCard =
+    !!chatSpec &&
+    !!chatConv &&
+    intakeComplete &&
+    (allObjectivesCovered || !!chatConv.locked_at);
 
   return (
     <main>
@@ -223,14 +240,16 @@ export default async function ControlDetailPage(
                 currentIdx={displayIdx}
                 total={totalRequirements}
               />
-              <PracticeAffirmCard
-                assessmentId={id}
-                controlId={controlId}
-                locked={!!chatConv.locked_at}
-                latest={latestAffirmation}
-                stale={affirmStale}
-                affirmAction={affirmPracticeAction}
-              />
+              {showAffirmCard && (
+                <PracticeAffirmCard
+                  assessmentId={id}
+                  controlId={controlId}
+                  locked={!!chatConv.locked_at}
+                  latest={latestAffirmation}
+                  stale={affirmStale}
+                  affirmAction={affirmPracticeAction}
+                />
+              )}
             </>
           );
         }
