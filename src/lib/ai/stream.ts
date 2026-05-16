@@ -168,13 +168,33 @@ function decideForcedToolChoiceForFirstTurn(
   priorMessages: Array<{ role: "user" | "assistant"; content: unknown }>,
   activeControlId: string | undefined,
 ): ForcedToolChoice {
-  if (priorMessages.length < 2) return undefined;
+  if (priorMessages.length < 1) return undefined;
   const last = priorMessages[priorMessages.length - 1];
   if (last.role !== "user") return undefined;
   const lastText = extractText(last.content).trim();
+  if (!lastText) return undefined;
+
+  // Explicit-directive shortcut: the in-page "Have Charlie draft this with
+  // me" button dispatches a deterministic message that names the tool and
+  // the slot inline (e.g. `Call \`generate_evidence_artifact\` with
+  // slot_key="password_policy", filename="...", format="markdown"`). When
+  // we see that pattern AND we're on a control page, skip the
+  // assistant-offer heuristic entirely and pin tool_choice — otherwise the
+  // model sometimes loops back into `interview_for_control_narrative` and
+  // never calls the requested tool, which the user perceives as Charlie
+  // ignoring the "draft this" button.
+  if (
+    activeControlId &&
+    /generate_evidence_artifact/i.test(lastText) &&
+    /\bslot_key\s*[:=]/i.test(lastText)
+  ) {
+    return { type: "tool", name: "generate_evidence_artifact" };
+  }
+
+  if (priorMessages.length < 2) return undefined;
   // Allow up to ~120 chars so phrases like "yes please go ahead and generate
   // all four for me" still trip the gate.
-  if (!lastText || lastText.length > 120) return undefined;
+  if (lastText.length > 120) return undefined;
   if (!CONFIRMATION_RX.test(lastText)) return undefined;
   // Walk back to the most recent assistant text. Treat it as an offer when
   // it (a) ends in a question mark, OR (b) contains any action-verb keyword
