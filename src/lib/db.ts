@@ -1567,6 +1567,24 @@ async function runInitDdl() {
       ON practice_conversations (assessment_id, control_id)
   `;
 
+  // Per-practice intake (the TurboTax-style triage the user fills in before
+  // evidence collection). `intake_answers` is a JSONB envelope keyed by the
+  // practice's intake question ids; the schema is owned by `practice-spec.ts`
+  // and validated at the server-action boundary. `intake_completed_at` gates
+  // the personalized slot view — null means "still in intake," non-null means
+  // "show the personalized evidence slots and wake Charlie up."
+  //
+  // Both columns are nullable + additive so existing rows (and practices
+  // without an intake spec) continue to work unchanged.
+  await sql`
+    ALTER TABLE practice_conversations
+      ADD COLUMN IF NOT EXISTS intake_answers JSONB
+  `;
+  await sql`
+    ALTER TABLE practice_conversations
+      ADD COLUMN IF NOT EXISTS intake_completed_at TIMESTAMPTZ
+  `;
+
   // ─────────────────────────────────────────────────────────────────────
   // CMMC L1 v2.13 (Sept 2024) + DFARS final rule (Sept 2025) additions.
   // The previous single-status `control_responses` row continues to work

@@ -1,18 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { EvidenceArtifactRow } from "@/lib/assessment";
 import type {
   EvidenceDestination,
   EvidenceSlot,
+  IntakeAnswers,
   PracticeSpec,
+  SlotAnnotation,
 } from "@/lib/cmmc/practice-spec";
-import { inferSlotKey } from "@/lib/cmmc/practice-spec";
+import { inferSlotKey, personalizeSpec } from "@/lib/cmmc/practice-spec";
 import type { ConnectorProvider } from "@/lib/connectors/types";
 import type { ObjectiveVerdict } from "@/lib/cmmc/practice-chat";
-import { lockPracticeAction } from "./practice-chat-actions";
+import { lockPracticeAction, resetIntakeAction } from "./practice-chat-actions";
+import { PracticeIntake } from "./PracticeIntake";
 
 type ClientEvidenceRow = Omit<EvidenceArtifactRow, "blob_url">;
 
@@ -22,6 +25,13 @@ type Props = {
   spec: PracticeSpec;
   initialVerdicts: Record<string, ObjectiveVerdict>;
   initiallyLocked: boolean;
+  /**
+   * Per-practice intake answers, or null if the user hasn't completed the
+   * intake yet. When the spec has an intake block AND this is null, the
+   * page renders the intake gate before the slot list.
+   */
+  initialIntakeAnswers: IntakeAnswers | null;
+  initialIntakeCompletedAt: string | null;
   evidence: ClientEvidenceRow[];
   connectedProviders: ConnectorProvider[];
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
@@ -62,6 +72,50 @@ export function PracticeChat(props: Props) {
   const [lockError, setLockError] = useState<string | null>(null);
   const [reverifying, setReverifying] = useState(false);
   const [, startTransition] = useTransition();
+
+  // Per-practice intake state. When the spec has an intake block and we
+  // don't have a completed-at stamp, render the intake gate instead of
+  // the slot list. Once the server-side `saveIntakeAction` resolves, the
+  // page revalidates and these props refresh.
+  const [intakeAnswers, setIntakeAnswers] = useState<IntakeAnswers | null>(
+    props.initialIntakeAnswers,
+  );
+  const [intakeCompletedAt, setIntakeCompletedAt] = useState<string | null>(
+    props.initialIntakeCompletedAt,
+  );
+  useEffect(() => {
+    setIntakeAnswers(props.initialIntakeAnswers);
+    setIntakeCompletedAt(props.initialIntakeCompletedAt);
+  }, [props.initialIntakeAnswers, props.initialIntakeCompletedAt]);
+
+  // Personalized spec = base spec rewritten by intake answers. Returns the
+  // base spec unchanged when intake doesn't apply (no intake block or not
+  // yet complete). Memoized to avoid recomputing on every keystroke.
+  const personalized = useMemo(
+    () => personalizeSpec(props.spec, intakeAnswers),
+    [props.spec, intakeAnswers],
+  );
+  const activeSpec: PracticeSpec = personalized ?? props.spec;
+  const slotAnnotations: Record<string, SlotAnnotation> =
+    personalized?.slotAnnotations ?? {};
+  const situationSummary: string | null = personalized?.situationSummary ?? null;
+
+  const intakeRequired = Boolean(props.spec.intake);
+  const intakeComplete = intakeRequired ? Boolean(intakeCompletedAt) : true;
+
+  const [resettingIntake, startResetIntake] = useTransition();
+  const onEditIntake = () => {
+    startResetIntake(async () => {
+      const res = await resetIntakeAction({
+        assessmentId: props.assessmentId,
+        controlId: props.controlId,
+      });
+      if (!res.ok) return;
+      setIntakeAnswers(null);
+      setIntakeCompletedAt(null);
+      router.refresh();
+    });
+  };
 
   // Local mirror of the server-rendered evidence list. We seed it from
   // props (so the first paint matches the RSC) and refetch the list any
@@ -188,12 +242,12 @@ export function PracticeChat(props: Props) {
   const partialObjectives = props.spec.objectives.filter(
     (o) => verdicts[o.letter]?.status === "partial",
   ).length;
-  const requiredSlots = props.spec.evidenceSlots.filter((s) => s.required);
+  const requiredSlots = activeSpec.evidenceSlots.filter((s) => s.required);
   const filledSlots = requiredSlots.filter((s) => {
     const slotKey = s.key;
     return evidence.some((ev) => {
       if (ev.ai_review_verdict !== "sufficient") return false;
-      return inferSlotKey(ev.filename, props.spec) === slotKey;
+      return inferSlotKey(ev.filename, activeSpec) === slotKey;
     });
   }).length;
   const objectiveScore =
@@ -292,9 +346,35 @@ export function PracticeChat(props: Props) {
 
       <CharliePrompt locked={locked} controlId={props.controlId} />
 
+      {/* Intake gate: render the TurboTax-style intake until every question
+          has an answer. Once complete, fall through to the regular objectives
+          + personalized evidence layout. Bypasses entirely for practices
+          without an intake spec. */}
+      {intakeRequired && !intakeComplete && props.spec.intake && (
+        <div className="mt-8">
+          <PracticeIntake
+            assessmentId={props.assessmentId}
+            controlId={props.controlId}
+            controlShortName={props.spec.shortName}
+            intake={props.spec.intake}
+            initialAnswers={intakeAnswers ?? undefined}
+          />
+        </div>
+      )}
+
+      {intakeComplete && (
       <div className="mt-8 space-y-10">
+        {situationSummary && (
+          <YourSituationCard
+            summary={situationSummary}
+            completedAt={intakeCompletedAt}
+            onEdit={onEditIntake}
+            resetting={resettingIntake}
+            locked={locked}
+          />
+        )}
         <ObjectivesPanel
-          spec={props.spec}
+          spec={activeSpec}
           verdicts={verdicts}
           onReverify={onReverify}
           reverifying={reverifying}
@@ -303,7 +383,7 @@ export function PracticeChat(props: Props) {
           <ChatImageSlotPicker
             file={pendingImage.file}
             previewUrl={pendingImage.previewUrl}
-            spec={props.spec}
+            spec={activeSpec}
             evidence={evidence}
             onPick={(slotKey) => {
               window.dispatchEvent(
@@ -312,7 +392,7 @@ export function PracticeChat(props: Props) {
                 }),
               );
               // Nudge Charlie to verify what was just uploaded for that slot.
-              const slot = props.spec.evidenceSlots.find(
+              const slot = activeSpec.evidenceSlots.find(
                 (s) => s.key === slotKey,
               );
               if (slot) {
@@ -331,7 +411,8 @@ export function PracticeChat(props: Props) {
           />
         )}
         <EvidencePanel
-          spec={props.spec}
+          spec={activeSpec}
+          slotAnnotations={slotAnnotations}
           evidence={evidence}
           assessmentId={props.assessmentId}
           controlId={props.controlId}
@@ -354,6 +435,7 @@ export function PracticeChat(props: Props) {
           onLock={onLock}
         />
       </div>
+      )}
 
       <NavRow
         assessmentId={props.assessmentId}
@@ -536,6 +618,7 @@ function ObjectivesPanel({
 
 function EvidencePanel({
   spec,
+  slotAnnotations,
   evidence,
   assessmentId,
   controlId,
@@ -547,6 +630,8 @@ function EvidencePanel({
   locked = false,
 }: {
   spec: PracticeSpec;
+  /** Per-slot personalization (recommended destination, attestation, etc.) */
+  slotAnnotations: Record<string, SlotAnnotation>;
   evidence: ClientEvidenceRow[];
   assessmentId: string;
   controlId: string;
@@ -622,6 +707,7 @@ function EvidencePanel({
             key={slot.key}
             index={idx + 1}
             slot={slot}
+            annotation={slotAnnotations[slot.key]}
             artifacts={bySlot[slot.key] ?? []}
             assessmentId={assessmentId}
             controlId={controlId}
@@ -677,6 +763,7 @@ function ProgressDots({ filled, total }: { filled: number; total: number }) {
 function SlotRow({
   index,
   slot,
+  annotation,
   artifacts,
   assessmentId,
   controlId,
@@ -688,6 +775,7 @@ function SlotRow({
 }: {
   index: number;
   slot: EvidenceSlot;
+  annotation?: SlotAnnotation;
   artifacts: ClientEvidenceRow[];
   assessmentId: string;
   controlId: string;
@@ -711,6 +799,13 @@ function SlotRow({
         ? { label: "Needs review", tone: "bg-amber-50 text-amber-800 ring-amber-300" }
         : { label: "Empty", tone: "bg-[#fcfdfb] text-[#5a7d70] ring-[#cfe3d9]" };
 
+  // Attestation path: when intake says a roster doesn't apply (e.g. no
+  // service accounts touch FCI), the slot collapses into a one-click signed
+  // attestation. The button creates an evidence_artifact whose contents are
+  // the verbatim auto-narrative; the verifier credits the objective from
+  // that artifact like any other piece of evidence.
+  const attestation = annotation?.attestation;
+
   return (
     <li className="border border-[#cfe3d9] bg-white p-6 transition-colors hover:border-[#2f8f6d]">
       <div className="flex items-start justify-between gap-4">
@@ -725,7 +820,7 @@ function SlotRow({
             {slot.label}
           </h3>
           <p className="mt-2 text-[14px] leading-relaxed text-[#3a544a]">
-            {slot.hint}
+            {attestation ? attestation.reason : slot.hint}
           </p>
         </div>
         <span
@@ -734,6 +829,16 @@ function SlotRow({
           {statusBadge.label}
         </span>
       </div>
+
+      {/* Intake-derived context note: "Based on what you told us…" */}
+      {!attestation && annotation?.contextNote && (
+        <div className="mt-4 border-l-2 border-[#2f8f6d] bg-[#f7fcf9] px-4 py-3 text-[13px] leading-relaxed text-[#10231d]">
+          <div className="mb-1 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+            Based on your setup
+          </div>
+          {annotation.contextNote}
+        </div>
+      )}
 
       {/* Filled artifacts for this slot */}
       {artifacts.length > 0 && (
@@ -752,10 +857,23 @@ function SlotRow({
         </div>
       )}
 
-      {/* Action rail (hidden once locked) */}
-      {!disabled && status !== "filled" && (
+      {/* Attestation action — replaces the standard upload/connect/generate
+          actions when the user's environment makes a roster inapplicable. */}
+      {!disabled && status !== "filled" && attestation && (
+        <AttestationAction
+          slot={slot}
+          attestation={attestation}
+          assessmentId={assessmentId}
+          controlId={controlId}
+          uploadEvidenceAction={uploadEvidenceAction}
+        />
+      )}
+
+      {/* Action rail (hidden once locked or when attestation replaces it) */}
+      {!disabled && status !== "filled" && !attestation && (
         <SlotActions
           slot={slot}
+          recommendedIdx={annotation?.recommendedDestinationIdx}
           assessmentId={assessmentId}
           controlId={controlId}
           connectedProviders={connectedProviders}
@@ -764,7 +882,7 @@ function SlotRow({
       )}
 
       {/* "Replace" rail when filled — same actions, different label */}
-      {!disabled && status === "filled" && (
+      {!disabled && status === "filled" && !attestation && (
         <details className="mt-3">
           <summary className="cursor-pointer font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] hover:text-[#10231d]">
             Replace this artifact
@@ -772,6 +890,7 @@ function SlotRow({
           <div className="mt-3">
             <SlotActions
               slot={slot}
+              recommendedIdx={annotation?.recommendedDestinationIdx}
               assessmentId={assessmentId}
               controlId={controlId}
               connectedProviders={connectedProviders}
@@ -784,14 +903,91 @@ function SlotRow({
   );
 }
 
+/**
+ * One-click signed attestation. Submits the verbatim auto-narrative as a
+ * .txt evidence artifact through the same uploadEvidenceAction the rest of
+ * the slot rail uses, so the artifact lands in the same audit pipeline
+ * (AI review, SSP inclusion, lock gate). The user clicking the button is
+ * the "signature" — server-side this writes the artifact under their
+ * authenticated session.
+ */
+function AttestationAction({
+  slot,
+  attestation,
+  assessmentId,
+  controlId,
+  uploadEvidenceAction,
+}: {
+  slot: EvidenceSlot;
+  attestation: NonNullable<SlotAnnotation["attestation"]>;
+  assessmentId: string;
+  controlId: string;
+  uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
+}) {
+  const [submitting, setSubmitting] = useState(false);
+  const onSign = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      // Build a .txt file with the verbatim narrative. Filename embeds the
+      // slot key so inferSlotKey() can route it back to the right objective.
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      const filename = `attestation-${slot.key}-${stamp}.txt`;
+      const blob = new Blob([attestation.autoNarrative], {
+        type: "text/plain",
+      });
+      const file = new File([blob], filename, { type: "text/plain" });
+      const fd = new FormData();
+      fd.append("assessmentId", assessmentId);
+      fd.append("controlId", controlId);
+      fd.append("file", file);
+      await uploadEvidenceAction(fd);
+      // Let the rest of the page (PracticeChat itself, EvidencePanel,
+      // ObjectivesPanel) know an artifact landed.
+      window.dispatchEvent(new CustomEvent("evidence-changed"));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  return (
+    <div className="mt-4 border border-[#cfe3d9] bg-[#f7fcf9] p-4">
+      <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+        Signed attestation
+      </div>
+      <p className="mt-2 text-[14px] leading-relaxed text-[#10231d]">
+        Clicking below signs the following statement with your Custodia
+        account, stamps the date, and saves it as evidence:
+      </p>
+      <blockquote className="mt-3 border-l-2 border-[#08201a] bg-white px-4 py-3 font-serif text-[14px] italic leading-relaxed text-[#10231d]">
+        “{attestation.autoNarrative}”
+      </blockquote>
+      <button
+        type="button"
+        onClick={onSign}
+        disabled={submitting}
+        className="mt-3 bg-[#08201a] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf] hover:bg-[#10231d] disabled:opacity-50"
+      >
+        {submitting ? "Signing…" : attestation.buttonLabel}
+      </button>
+    </div>
+  );
+}
+
 function SlotActions({
   slot,
+  recommendedIdx,
   assessmentId,
   controlId,
   connectedProviders,
   uploadEvidenceAction,
 }: {
   slot: EvidenceSlot;
+  /**
+   * Intake-derived hint at which destination the user should pick. Mapped
+   * against `slot.destinations` (the full unfiltered list). When the entry
+   * at this index lives in `otherDests`, it gets the "Recommended" pill.
+   */
+  recommendedIdx?: number;
   assessmentId: string;
   controlId: string;
   connectedProviders: ConnectorProvider[];
@@ -801,6 +997,10 @@ function SlotActions({
   // primary affordance for any slot that accepts a file) and everything else
   // (rendered as small chip-style buttons under "or…").
   const uploadDest = slot.destinations.find((d) => d.type === "upload");
+  const recommendedDest =
+    typeof recommendedIdx === "number"
+      ? slot.destinations[recommendedIdx]
+      : undefined;
   const otherDests = slot.destinations.filter((d) => d !== uploadDest);
   return (
     <div className="mt-4 space-y-3">
@@ -827,7 +1027,11 @@ function SlotActions({
               key={`${slot.key}-${dest.type}-${i}`}
               slot={slot}
               dest={dest}
-              recommended={!uploadDest && i === 0}
+              recommended={
+                recommendedDest
+                  ? dest === recommendedDest
+                  : !uploadDest && i === 0
+              }
               assessmentId={assessmentId}
               controlId={controlId}
               connectedProviders={connectedProviders}
@@ -1469,6 +1673,60 @@ function ArtifactCard({
         </div>
       )}
     </div>
+  );
+}
+
+/**
+ * Compact summary card rendered above the objectives/evidence panels once
+ * the user has completed the per-practice intake. Shows the situation
+ * summary built from their answers plus an "Edit answers" link that wipes
+ * `intake_answers` and `intake_completed_at` server-side so the user can
+ * retake the intake. Disabled once the practice is locked — at that point
+ * the intake answers are part of the signed audit trail.
+ */
+function YourSituationCard({
+  summary,
+  completedAt,
+  onEdit,
+  resetting,
+  locked,
+}: {
+  summary: string;
+  completedAt: string | null;
+  onEdit: () => void;
+  resetting: boolean;
+  locked: boolean;
+}) {
+  const when = completedAt
+    ? new Date(completedAt).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : null;
+  return (
+    <section className="border border-[#cfe3d9] bg-[#f7fcf9] px-5 py-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+            Your situation{when ? ` · captured ${when}` : ""}
+          </div>
+          <p className="mt-2 text-[14px] leading-relaxed text-[#10231d]">
+            {summary}
+          </p>
+        </div>
+        {!locked && (
+          <button
+            type="button"
+            onClick={onEdit}
+            disabled={resetting}
+            className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline disabled:opacity-40"
+          >
+            {resetting ? "Resetting…" : "Edit answers"}
+          </button>
+        )}
+      </div>
+    </section>
   );
 }
 
