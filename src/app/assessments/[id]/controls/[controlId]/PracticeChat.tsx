@@ -16,9 +16,10 @@ import { inferSlotKey } from "@/lib/cmmc/practice-spec";
 import type { ConnectorProvider } from "@/lib/connectors/types";
 import type { ObjectiveVerdict } from "@/lib/cmmc/practice-chat";
 import { lockPracticeAction, resetIntakeAction } from "./practice-chat-actions";
-import { PracticeIntake } from "./PracticeIntake";
+import { GuidedPracticeQuiz } from "./GuidedPracticeQuiz";
 
 type ClientEvidenceRow = Omit<EvidenceArtifactRow, "blob_url">;
+export type { ClientEvidenceRow };
 
 type Props = {
   assessmentId: string;
@@ -378,18 +379,25 @@ export function PracticeChat(props: Props) {
 
       <CharliePrompt locked={locked} controlId={props.controlId} />
 
-      {/* Intake gate: render the TurboTax-style intake until every question
-          has an answer. Once complete, fall through to the regular objectives
-          + personalized evidence layout. Bypasses entirely for practices
-          without an intake spec. */}
+      {/* Guided quiz: render the unified "quiz IS the practice" flow when
+          the practice has an intake spec and the user hasn't completed it
+          yet. Each question is followed inline by the evidence slots that
+          objective drives — Charlie / upload / connect / attest are all
+          present without making the user dump evidence in a separate step
+          at the end. Practices without intake bypass entirely. */}
       {intakeRequired && !intakeComplete && props.spec.intake && (
         <div className="mt-8">
-          <PracticeIntake
+          <GuidedPracticeQuiz
             assessmentId={props.assessmentId}
             controlId={props.controlId}
-            controlShortName={props.spec.shortName}
+            spec={props.spec}
             intake={props.spec.intake}
             initialAnswers={intakeAnswers ?? undefined}
+            evidence={evidence}
+            connectedProviders={props.connectedProviders}
+            uploadEvidenceAction={props.uploadEvidenceAction}
+            reReviewEvidenceAction={props.reReviewEvidenceAction}
+            deleteEvidenceAction={props.deleteEvidenceAction}
           />
         </div>
       )}
@@ -792,7 +800,7 @@ function ProgressDots({ filled, total }: { filled: number; total: number }) {
   );
 }
 
-function SlotRow({
+export function SlotRow({
   index,
   slot,
   annotation,

@@ -9,6 +9,7 @@ import {
   lockPractice,
   resetIntakeAnswers,
   saveIntakeAnswers,
+  saveIntakeStep,
   autoStageAttestationsForControl,
   verifyPracticeObjectives,
   type ChatMessage,
@@ -152,6 +153,45 @@ async function buildNarrativeFromChat(args: {
     `Captured during the guided assessment chat. User-described facts:`,
     userMessages,
   ].join("\n");
+}
+
+/**
+ * Persist a SINGLE intake answer during the guided quiz flow. Tenant-checked,
+ * validates the value against the question's allowed options, merges into
+ * intake_answers JSONB without stamping completion. The completion stamp +
+ * Charlie kickoff + auto-attestation only happen on the final saveIntakeAction.
+ *
+ * The page is NOT revalidated here — incremental saves are background-grade
+ * persistence so a refresh restores quiz position without losing answers.
+ * Full revalidation happens once at quiz finish.
+ */
+export async function saveIntakeStepAction(args: {
+  assessmentId: string;
+  controlId: string;
+  questionId: string;
+  value: string;
+}): Promise<{ ok: boolean; reason?: string }> {
+  const { userId } = await auth();
+  if (!userId) return { ok: false, reason: "Unauthorized" };
+
+  const spec = getPracticeSpec(args.controlId);
+  if (!spec?.intake) {
+    return { ok: false, reason: "This practice does not have an intake." };
+  }
+  const question = spec.intake.questions.find((q) => q.id === args.questionId);
+  if (!question) {
+    return { ok: false, reason: "Unknown question." };
+  }
+  const validValue = question.options.some((o) => o.value === args.value);
+  if (!validValue) {
+    return { ok: false, reason: "Invalid answer for this question." };
+  }
+
+  const ctx = await getAssessmentForUser(args.assessmentId, userId);
+  if (!ctx) return { ok: false, reason: "Assessment not found" };
+
+  await saveIntakeStep(args.assessmentId, args.controlId, args.questionId, args.value);
+  return { ok: true };
 }
 
 /**

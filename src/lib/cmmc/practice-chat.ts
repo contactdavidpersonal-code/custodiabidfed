@@ -104,6 +104,45 @@ export async function getOrCreatePracticeConversation(
 }
 
 /**
+ * Persist a SINGLE intake answer mid-quiz, without stamping completion.
+ * Used by the guided quiz flow where the user answers one question, drops
+ * the inline evidence for that question, then moves to the next. Each step
+ * merges its {questionId: value} into the existing intake_answers JSONB.
+ *
+ * Does NOT trigger auto-attestation staging or Charlie kickoff — those only
+ * fire from the final completion save (saveIntakeAnswers + saveIntakeAction).
+ *
+ * Caller MUST tenant-check via getAssessmentForUser before invoking.
+ */
+export async function saveIntakeStep(
+  assessmentId: string,
+  controlId: string,
+  questionId: string,
+  value: string,
+): Promise<IntakeAnswers> {
+  const sql = getSql();
+  // Lazy-init conversation row if it doesn't exist yet. Practices without
+  // any chat activity may not have a row by the time the user starts the
+  // quiz — create one so jsonb_set has something to write into.
+  await sql`
+    INSERT INTO practice_conversations
+      (assessment_id, control_id, messages, objective_verdicts, intake_answers)
+    VALUES (${assessmentId}, ${controlId}, '[]'::jsonb, '{}'::jsonb, '{}'::jsonb)
+    ON CONFLICT (assessment_id, control_id) DO NOTHING
+  `;
+  const rows = (await sql`
+    UPDATE practice_conversations
+    SET intake_answers = COALESCE(intake_answers, '{}'::jsonb)
+                         || jsonb_build_object(${questionId}::text, ${value}::text),
+        updated_at = NOW()
+    WHERE assessment_id = ${assessmentId}
+      AND control_id = ${controlId}
+    RETURNING intake_answers
+  `) as { intake_answers: IntakeAnswers | null }[];
+  return rows[0]?.intake_answers ?? { [questionId]: value };
+}
+
+/**
  * Persist a complete set of intake answers and stamp `intake_completed_at`.
  * Also re-writes the opener message in the transcript so the SSP shows the
  * environment summary in context (the user's intake is the first thing an
