@@ -46,6 +46,7 @@ import {
   type EvidenceArtifactRow,
 } from "@/lib/assessment";
 import { getScopeProfile } from "@/lib/cmmc/boundary";
+import { getPracticeSpec, personalizeSpec } from "@/lib/cmmc/practice-spec";
 import { lookupCitation, type ControlCitation } from "@/lib/regulations";
 
 // Use Haiku for cheap chat turns (interview questions); Sonnet for drafting
@@ -815,6 +816,11 @@ export type ControlSavedState = {
     draftReady: boolean;
   };
   objectives: Array<{ letter: string; status: string; reason: string | null }>;
+  // Bug 2 fix: fresh `intake_answers` situation summary, computed from the
+  // user's most recent intake answers on the practice_conversations row.
+  // When non-null, Charlie's auto-recap should ground in this rather than
+  // any stale narrative on the control_responses row.
+  intakeSituationSummary: string | null;
 };
 
 export async function getControlSavedState(args: {
@@ -855,22 +861,43 @@ export async function getControlSavedState(args: {
       WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
     ` as unknown as Promise<Array<{ n: number }>>,
     sql`
-      SELECT objective_verdicts
+      SELECT objective_verdicts, intake_answers
       FROM practice_conversations
       WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
       LIMIT 1
-    ` as unknown as Promise<Array<{ objective_verdicts: Record<string, { status: string; reason?: string }> }>>,
+    ` as unknown as Promise<Array<{
+      objective_verdicts: Record<string, { status: string; reason?: string }>;
+      intake_answers: Record<string, string> | null;
+    }>>,
   ]);
 
   const response = resp[0] ?? null;
   const session = sessRows[0] ?? null;
   const evidenceCount = evRows[0]?.n ?? 0;
   const verdicts = convRows[0]?.objective_verdicts ?? {};
+  const intakeAnswers = convRows[0]?.intake_answers ?? null;
 
   const turns: InterviewTurn[] = session?.turns ?? [];
   const answered = turns.filter((t) => t.a !== null);
   const lastAnswered = answered[answered.length - 1] ?? null;
   const pending = turns.find((t) => t.a === null) ?? null;
+
+  // Bug 2 fix: derive a fresh situation summary from the user's most
+  // recent intake answers. If the user has updated their answers since
+  // the last narrative save, this string is the up-to-date truth — and
+  // Charlie should ground the auto-recap in it.
+  let intakeSituationSummary: string | null = null;
+  try {
+    const spec = getPracticeSpec(controlId);
+    if (spec) {
+      const personalized = personalizeSpec(spec, intakeAnswers);
+      if (personalized?.situationSummary) {
+        intakeSituationSummary = personalized.situationSummary;
+      }
+    }
+  } catch {
+    // best-effort
+  }
 
   return {
     controlId,
@@ -892,6 +919,7 @@ export async function getControlSavedState(args: {
       status: v.status,
       reason: v.reason ?? null,
     })),
+    intakeSituationSummary,
   };
 }
 
@@ -908,12 +936,26 @@ export function formatSavedStateBlock(state: ControlSavedState): string {
     state.narrativeSavedChars === 0 &&
     state.evidenceCount === 0 &&
     state.interview.turnCount === 0 &&
-    state.objectives.length === 0;
+    state.objectives.length === 0 &&
+    !state.intakeSituationSummary;
   if (nothing) {
     lines.push(
       `- Nothing saved yet for this practice. Open with \`interview_for_control_narrative\` (no \`answer\`) to start the conversation.`,
     );
     return lines.join("\n");
+  }
+
+  // Bug 2 fix: fresh intake answers go FIRST so Charlie's recap grounds in
+  // them — not in a possibly-stale saved narrative. If the user updated
+  // their intake answers since the narrative was written, this is the
+  // current truth.
+  if (state.intakeSituationSummary) {
+    lines.push(
+      `- Fresh intake answers (most recent — use THESE for any recap, prefer over older saved narrative):`,
+    );
+    for (const ln of state.intakeSituationSummary.split("\n")) {
+      lines.push(`  ${ln}`);
+    }
   }
 
   lines.push(`- Response status: ${state.responseStatus ?? "unanswered"}`);

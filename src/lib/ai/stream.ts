@@ -67,6 +67,25 @@ function looksLikePreAnnounceStall(blocks: AssistantBlock[]): boolean {
   return PREANNOUNCE_VERB_RX.test(text);
 }
 
+// Empty-response stall detector. Failure mode (Bug 1): after several
+// successful generate_evidence_artifact calls in one conversation, the
+// model occasionally returns a completion with ZERO blocks (no text, no
+// tool_use) and stop_reason="end_turn". The pre-announce detector above
+// requires text content to fire, so empty responses slip through and the
+// user sees Charlie go silent. We catch that case here and treat it as a
+// stall — same retry path with tool_choice forcing.
+function looksLikeEmptyStall(blocks: AssistantBlock[]): boolean {
+  const toolUses = blocks.filter((b) => b.type === "tool_use");
+  if (toolUses.length > 0) return false;
+  const text = blocks
+    .filter((b): b is TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("")
+    .trim();
+  // Zero blocks, or only whitespace text, with no tool_use = empty stall.
+  return text.length < 3;
+}
+
 // Confirmation patterns the user types to authorize an offered action.
 // Broader than strict single-word match — also catches "yes please",
 // "yeah go ahead", "yes do it", "ok generate them", etc. We require the
@@ -375,18 +394,42 @@ export function runOfficerAgentStream(
           // action. Drop the stalled message (do NOT persist — Anthropic
           // rejects two assistant rows in a row) and re-enter the loop
           // with tool_choice="any" forcing the model into tool_use.
+          //
+          // Same path catches the EMPTY-RESPONSE stall (Bug 1): after
+          // several successful tool calls in one conversation, the model
+          // sometimes returns zero blocks with stop_reason="end_turn".
+          // The user sees Charlie go silent. We retry with tool_choice
+          // forcing so the next attempt MUST emit a tool_use block.
           if (
             !preAnnounceRetried &&
             turn.stopReason !== "tool_use" &&
-            looksLikePreAnnounceStall(turn.assistantBlocks)
+            (looksLikePreAnnounceStall(turn.assistantBlocks) ||
+              looksLikeEmptyStall(turn.assistantBlocks))
           ) {
             preAnnounceRetried = true;
-            forceToolChoice = { type: "any" };
+            // If the last user message looked like an evidence-generation
+            // ask, pin the specific tool — otherwise allow any tool.
+            const lastUser = priorMessages[priorMessages.length - 1];
+            const lastUserText =
+              lastUser?.role === "user" ? extractText(lastUser.content) : "";
+            const wantsEvidence =
+              input.toolContext.activeControlId &&
+              /generate_evidence_artifact|\bslot_key\s*[:=]|artifact|roster|inventory|procedure|register/i.test(
+                lastUserText,
+              );
+            forceToolChoice = wantsEvidence
+              ? { type: "tool", name: "generate_evidence_artifact" }
+              : { type: "any" };
             console.warn(
-              "[charlie] post-hoc pre-announce stall detected, retrying with tool_choice=any",
+              "[charlie] post-hoc stall detected, retrying with tool_choice",
               {
                 conversationId: input.conversationId,
                 stopReason: turn.stopReason,
+                blockCount: turn.assistantBlocks.length,
+                kind: looksLikeEmptyStall(turn.assistantBlocks)
+                  ? "empty"
+                  : "pre-announce",
+                forcedToolChoice: forceToolChoice,
                 textSample: turn.assistantBlocks
                   .filter((b): b is TextBlock => b.type === "text")
                   .map((b) => b.text)

@@ -91,7 +91,7 @@ import {
   type ScopeFlow,
 } from "@/lib/cmmc/boundary";
 import { randomUUID } from "node:crypto";
-import { getPracticeSpec } from "@/lib/cmmc/practice-spec";
+import { getPracticeSpec, personalizeSpec } from "@/lib/cmmc/practice-spec";
 import { put } from "@vercel/blob";
 
 /**
@@ -1653,11 +1653,36 @@ async function handleGenerateEvidenceArtifact(
       error: `Practice ${ctx.activeControlId} is not in the hybrid flow yet.`,
     };
   }
-  const slot = spec.evidenceSlots.find((s) => s.key === slotKey);
+  // Bug 3 fix: validate slot_key against the PERSONALIZED spec, not the
+  // base spec. Practices like AC.L1-3.1.1 add dynamic slots (e.g.
+  // `byod_acknowledgement_register`) based on the user's intake answers.
+  // If we validate against the base 5-slot spec, Charlie's
+  // generate_evidence_artifact call for a dynamic slot is rejected with
+  // "Unknown slot_key" — and the user sees Charlie refuse to draft an
+  // artifact for a slot that is clearly visible on the page.
+  let effectiveSpec: typeof spec = spec;
+  try {
+    const sql = getSql();
+    const intakeRows = (await sql`
+      SELECT intake_answers
+      FROM practice_conversations
+      WHERE assessment_id = ${ctx.activeAssessmentId}
+        AND control_id = ${ctx.activeControlId}
+      LIMIT 1
+    `) as Array<{ intake_answers: Record<string, string> | null }>;
+    const intake = intakeRows[0]?.intake_answers ?? null;
+    const personalized = personalizeSpec(spec, intake);
+    if (personalized) effectiveSpec = personalized;
+  } catch (err) {
+    // Personalization is a refinement; if the lookup fails we fall back
+    // to the base spec rather than blocking the tool call.
+    console.warn("[generate_evidence_artifact] personalize lookup failed", err);
+  }
+  const slot = effectiveSpec.evidenceSlots.find((s) => s.key === slotKey);
   if (!slot) {
     return {
       ok: false,
-      error: `Unknown slot_key '${slotKey}' for ${spec.controlId}. Valid slots: ${spec.evidenceSlots.map((s) => s.key).join(", ")}.`,
+      error: `Unknown slot_key '${slotKey}' for ${effectiveSpec.controlId}. Valid slots: ${effectiveSpec.evidenceSlots.map((s) => s.key).join(", ")}.`,
     };
   }
 

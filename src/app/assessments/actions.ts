@@ -88,6 +88,7 @@ import {
 import {
   getOrCreatePracticeConversation,
 } from "@/lib/cmmc/practice-chat";
+import { getPracticeSpec, personalizeSpec } from "@/lib/cmmc/practice-spec";
 import { listEvidenceForControl } from "@/lib/assessment";
 
 async function requireUserId(): Promise<string> {
@@ -550,6 +551,43 @@ export async function uploadEvidenceAction(formData: FormData) {
         ctx.organization.scoped_systems,
         profile?.data,
       );
+      // Bug 4 fix: thread the slot's label/hint/satisfies into the
+      // reviewer so it judges against the SLOT's narrow purpose, not
+      // the parent practice's full requirement. Resolve via the
+      // PERSONALIZED spec so dynamic slots (e.g. BYOD) are found.
+      let slotContext: {
+        key: string;
+        label: string;
+        hint: string;
+        satisfies: string[];
+      } | undefined;
+      const baseSpec = getPracticeSpec(controlId);
+      if (baseSpec) {
+        let effSpec: typeof baseSpec = baseSpec;
+        try {
+          const convRows = (await sql`
+            SELECT intake_answers
+            FROM practice_conversations
+            WHERE assessment_id = ${assessmentId}
+              AND control_id = ${controlId}
+            LIMIT 1
+          `) as Array<{ intake_answers: Record<string, string> | null }>;
+          const intake = convRows[0]?.intake_answers ?? null;
+          const personalized = personalizeSpec(baseSpec, intake);
+          if (personalized) effSpec = personalized;
+        } catch {
+          // Personalization is a refinement; fall back silently.
+        }
+        const slot = effSpec.evidenceSlots.find((s) => s.key === slotKey);
+        if (slot) {
+          slotContext = {
+            key: slot.key,
+            label: slot.label,
+            hint: slot.hint,
+            satisfies: slot.satisfies,
+          };
+        }
+      }
       await reviewEvidenceArtifact({
         artifactId,
         claimedControlId: controlId,
@@ -559,6 +597,7 @@ export async function uploadEvidenceAction(formData: FormData) {
         companyContext,
         organizationId: ctx.organization.id,
         assessmentId,
+        slotContext,
       });
     } catch (err) {
       console.error("auto-review on slot upload failed:", err);
@@ -824,6 +863,44 @@ export async function reReviewEvidenceAction(formData: FormData) {
     profile?.data,
   );
 
+  // Bug 4 fix: when an artifact's filename is prefixed with [slot:KEY]__,
+  // resolve the slot from the personalized spec so the re-review judges
+  // against the slot's narrow purpose rather than the parent practice.
+  let slotContext:
+    | { key: string; label: string; hint: string; satisfies: string[] }
+    | undefined;
+  const slotMatch = /^\[slot:([a-z0-9_]+)\]__/i.exec(row.filename);
+  if (slotMatch) {
+    const slotKey = slotMatch[1].toLowerCase();
+    const baseSpec = getPracticeSpec(row.control_id);
+    if (baseSpec) {
+      let effSpec: typeof baseSpec = baseSpec;
+      try {
+        const convRows = (await sql`
+          SELECT intake_answers
+          FROM practice_conversations
+          WHERE assessment_id = ${assessmentId}
+            AND control_id = ${row.control_id}
+          LIMIT 1
+        `) as Array<{ intake_answers: Record<string, string> | null }>;
+        const intake = convRows[0]?.intake_answers ?? null;
+        const personalized = personalizeSpec(baseSpec, intake);
+        if (personalized) effSpec = personalized;
+      } catch {
+        // fall through with base spec
+      }
+      const slot = effSpec.evidenceSlots.find((s) => s.key === slotKey);
+      if (slot) {
+        slotContext = {
+          key: slot.key,
+          label: slot.label,
+          hint: slot.hint,
+          satisfies: slot.satisfies,
+        };
+      }
+    }
+  }
+
   await reviewEvidenceArtifact({
     artifactId: row.id,
     claimedControlId: row.control_id,
@@ -833,6 +910,7 @@ export async function reReviewEvidenceAction(formData: FormData) {
     companyContext,
     organizationId: ctx.organization.id,
     assessmentId,
+    slotContext,
   });
 
   // Mirror the review into the workspace chat so the user can ask

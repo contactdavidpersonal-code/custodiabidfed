@@ -63,6 +63,19 @@ export async function reviewEvidenceArtifact(input: {
   // the AAD used at upload time (org × evidence:assessment:control).
   organizationId: string;
   assessmentId: string;
+  // Bug 4 fix: when an artifact is uploaded to a SPECIFIC evidence slot
+  // (rather than the legacy free-form evidence drawer), pass the slot's
+  // label + hint + satisfies so the verifier judges against the slot's
+  // narrow expected-content shape, not the parent practice's full
+  // requirement. Without this, a BYOD acknowledgement register gets
+  // judged against "the authorized users roster" and fails, even though
+  // the slot was correctly asking for an acknowledgement register.
+  slotContext?: {
+    key: string;
+    label: string;
+    hint: string;
+    satisfies: string[];
+  };
 }): Promise<EvidenceReviewResult> {
   const entry = playbookById[input.claimedControlId];
   if (!entry) {
@@ -150,6 +163,17 @@ export async function reviewEvidenceArtifact(input: {
     `**What this practice requires (plain English):** ${entry.plainEnglish}`,
     `**FAR reference:** ${entry.farReference}`,
     `**What would pass:** ${entry.providerGuidance.map((g) => `(${g.label}) ${g.capture}`).join(" · ")}`,
+    ``,
+    input.slotContext
+      ? [
+          `**⚠️ NARROW SLOT REVIEW — judge against THIS slot, not the whole practice:**`,
+          `This artifact was uploaded to a specific evidence slot: **${input.slotContext.label}** (slot key: \`${input.slotContext.key}\`).`,
+          `Slot purpose / what passes here: ${input.slotContext.hint}`,
+          `Satisfies objective(s): ${input.slotContext.satisfies.join(", ") || "(none)"}.`,
+          ``,
+          `Judge the artifact ONLY against this slot's purpose. If the file is the right KIND of artifact for this specific slot — even if it doesn't cover every aspect of the parent practice — that is sufficient. Other slots cover the other aspects. Example: a BYOD acknowledgement register is sufficient for the "BYOD acknowledgement register" slot even if it doesn't list every authorized user, because a separate "authorized users roster" slot exists for that.`,
+        ].join("\n")
+      : `**Slot context:** none provided — judge against the parent practice's full requirement.`,
     ``,
     input.companyContext
       ? `**Business context (untrusted user-supplied facts):** ${input.companyContext}`
