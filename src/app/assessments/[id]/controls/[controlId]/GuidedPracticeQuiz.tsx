@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type {
+  ClientPersonalizedSpec,
   ClientPracticeIntakeSpec,
   ClientPracticeSpec,
   EvidenceSlot,
   IntakeAnswers,
 } from "@/lib/cmmc/practice-spec";
 import { inferSlotKey } from "@/lib/cmmc/practice-spec";
+import type { ObjectiveVerdict } from "@/lib/cmmc/practice-chat";
 import type { ConnectorProvider } from "@/lib/connectors/types";
 import {
   saveIntakeAction,
@@ -50,11 +52,28 @@ export function GuidedPracticeQuiz(props: {
   spec: ClientPracticeSpec;
   intake: ClientPracticeIntakeSpec;
   initialAnswers?: IntakeAnswers;
+  /** Server-computed personalization for the CURRENT (possibly partial)
+   *  intake answers. Used to know which required slots will collapse into
+   *  a signed attestation on Finish — those don't need a user-uploaded
+   *  artifact to satisfy the Finish gate. */
+  personalized: ClientPersonalizedSpec | null;
   evidence: ClientEvidenceRow[];
   connectedProviders: ConnectorProvider[];
   uploadEvidenceAction: (formData: FormData) => Promise<void> | void;
   reReviewEvidenceAction: (formData: FormData) => Promise<void> | void;
   deleteEvidenceAction: (formData: FormData) => Promise<void> | void;
+  /** Latest AI-graded verdict for each NIST 800-171A objective letter.
+   *  Source of truth: the parent PracticeChat's `verdicts` state, which is
+   *  kept warm by `practice-graded` events and the verify endpoint. */
+  objectiveVerdicts: Record<string, ObjectiveVerdict>;
+  /** CMMC L1 is binary MET/NOT MET — for prod-grade practices we refuse to
+   *  stamp intake-complete and land users on the summary view until every
+   *  objective is covered. Off for practices not yet upgraded to that bar. */
+  requireFullCoverageToFinish: boolean;
+  /** Force a server-side re-grade and return the fresh verdicts. Called
+   *  from the Finish handler so a click immediately reflects the latest
+   *  evidence reviews instead of waiting for the next event tick. */
+  onRequestVerify: () => Promise<Record<string, ObjectiveVerdict> | null>;
 }) {
   const router = useRouter();
   const [stepIdx, setStepIdx] = useState(() => {
@@ -143,6 +162,40 @@ export function GuidedPracticeQuiz(props: {
   const isLast = stepIdx === totalSteps - 1;
   const allAnswered = questions.every((q) => Boolean(answers[q.id]));
 
+  // Required-evidence gate. A required slot is considered satisfied when
+  // either (a) the personalized spec marks it as attestation — those get
+  // auto-stamped server-side on Finish — or (b) at least one artifact
+  // already exists for the slot (any review verdict; the post-intake page
+  // re-verifies). We DO NOT block on AI-review status here because the
+  // verdict can lag the upload by a few seconds and we don't want users
+  // staring at a disabled button. The summary page is the final gate on
+  // verdict quality.
+  const slotAnnotations = props.personalized?.slotAnnotations ?? {};
+  const requiredSlots = props.spec.evidenceSlots.filter((s) => s.required);
+  const slotHasArtifact = (slotKey: string) =>
+    props.evidence.some(
+      (ev) => inferSlotKey(ev.filename, props.spec) === slotKey,
+    );
+  const missingRequiredSlots = requiredSlots.filter((s) => {
+    if (slotAnnotations[s.key]?.attestation) return false;
+    return !slotHasArtifact(s.key);
+  });
+  const allRequiredEvidenceCollected = missingRequiredSlots.length === 0;
+
+  // Objective coverage gate (CMMC L1 is MET/NOT MET — 100% required).
+  // When `requireFullCoverageToFinish` is true we ALSO require every
+  // 800-171A objective letter to be graded "covered" before we'll stamp
+  // the practice intake-complete. Verdicts are AI-graded and may lag the
+  // most recent upload by a beat, so onFinish forces a verify first.
+  const uncoveredObjectives = props.spec.objectives.filter(
+    (o) => props.objectiveVerdicts[o.letter]?.status !== "covered",
+  );
+  const allObjectivesCovered = uncoveredObjectives.length === 0;
+  const canFinish =
+    allAnswered &&
+    allRequiredEvidenceCollected &&
+    (!props.requireFullCoverageToFinish || allObjectivesCovered);
+
   const onSelect = (value: string) => {
     setError(null);
     setAnswers((prev) => ({ ...prev, [currentQ.id]: value }));
@@ -174,9 +227,10 @@ export function GuidedPracticeQuiz(props: {
 
   const onFinish = () => {
     // Final validation: every question needs an answer before we stamp
-    // completion. (Slots don't need to be filled — the user can still
-    // come back to empty ones after, and attestation-eligible ones will
-    // be auto-stamped server-side here.)
+    // completion, and every required slot that doesn't auto-attest needs
+    // an artifact. This is the LAST gate before the summary view — we
+    // refuse to land users on a "saved" summary that's actually still
+    // incomplete.
     for (const q of questions) {
       if (!answers[q.id]) {
         const missingIdx = questions.findIndex((qq) => !answers[qq.id]);
@@ -185,7 +239,40 @@ export function GuidedPracticeQuiz(props: {
         return;
       }
     }
+    // Required-evidence gate: refuse to stamp completion if any required
+    // slot (other than auto-attestation ones) is still empty. The user
+    // gets jumped to the first question that owns a missing slot so they
+    // see the dropzone they still need to fill.
+    if (missingRequiredSlots.length > 0) {
+      const firstMissing = missingRequiredSlots[0];
+      const ownerIdx = questions.findIndex((q) =>
+        q.objectives.some((o) => firstMissing.satisfies.includes(o)),
+      );
+      if (ownerIdx !== -1) setStepIdx(ownerIdx);
+      setError(
+        `Still missing required evidence: "${firstMissing.label}". Drop it in below before saving.`,
+      );
+      return;
+    }
     startFinish(async () => {
+      // Coverage gate (CMMC L1 = MET/NOT MET). Force a fresh server-side
+      // re-grade so the verdict reflects the latest uploads, then refuse
+      // to stamp complete unless every objective letter is covered. We
+      // do this INSIDE the transition so the button shows "Saving…" while
+      // the verify call is in flight — no separate spinner needed.
+      if (props.requireFullCoverageToFinish) {
+        const fresh = await props.onRequestVerify();
+        const verdicts = fresh ?? props.objectiveVerdicts;
+        const stillUncovered = props.spec.objectives.filter(
+          (o) => verdicts[o.letter]?.status !== "covered",
+        );
+        if (stillUncovered.length > 0) {
+          setError(
+            `Cannot save yet — ${stillUncovered.length} of ${props.spec.objectives.length} assessment objectives are not yet "covered". CMMC L1 is MET / NOT MET; every objective has to be covered before this practice can be saved. See the list above for what's still pending.`,
+          );
+          return;
+        }
+      }
       const res = await saveIntakeAction({
         assessmentId: props.assessmentId,
         controlId: props.controlId,
@@ -463,20 +550,99 @@ export function GuidedPracticeQuiz(props: {
             <button
               type="button"
               onClick={onFinish}
-              disabled={!allAnswered || finishing || savingStep}
+              disabled={!canFinish || finishing || savingStep}
               className="bg-[#08201a] px-5 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf] hover:bg-[#10231d] disabled:opacity-50"
             >
-              {finishing ? "Finishing…" : "Finish & open evidence packet"}
+              {finishing ? "Saving…" : "Save & view practice summary"}
             </button>
           )}
         </div>
       </div>
 
+      {isLast && allAnswered && missingRequiredSlots.length > 0 && (
+        <div className="mt-5 border-l-2 border-[#c14a3a] bg-[#fbeae6] px-4 py-3">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#7a2a1f]">
+            Required evidence still missing
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-[12px] leading-relaxed text-[#3a1a13]">
+            {missingRequiredSlots.map((s) => (
+              <li key={s.key}>
+                <span className="font-semibold">{s.label}</span>
+                {s.hint ? (
+                  <span className="text-[#5a7d70]"> — {s.hint}</span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[11px] text-[#5a7d70]">
+            Scroll up to the matching question to drop in (or generate /
+            connect) the artifact. The button unlocks the moment every
+            required slot has evidence.
+          </p>
+        </div>
+      )}
+
+      {/* Coverage gate (CMMC L1 = MET / NOT MET). Once every question is
+          answered and every required slot is filled, the user still has to
+          clear the AI-graded objective coverage check — every 800-171A
+          assessment objective letter for this practice has to be "covered".
+          We surface what's still pending so the user knows EXACTLY what to
+          fix instead of staring at a disabled button. The list updates
+          live as the Charlie rail re-grades after each upload. */}
+      {props.requireFullCoverageToFinish &&
+        isLast &&
+        allAnswered &&
+        missingRequiredSlots.length === 0 &&
+        uncoveredObjectives.length > 0 && (
+          <div className="mt-5 border-l-2 border-[#c1893a] bg-[#fbf3e6] px-4 py-3">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#7a4f1f]">
+              Coverage not yet 100% ·{" "}
+              {props.spec.objectives.length - uncoveredObjectives.length}
+              /{props.spec.objectives.length} objectives covered
+            </p>
+            <p className="mt-2 text-[12px] leading-relaxed text-[#3a2913]">
+              CMMC Level 1 is <strong>MET or NOT MET</strong> — there is no
+              partial credit. Every NIST 800-171A assessment objective for
+              this practice has to be graded &ldquo;covered&rdquo; before we&rsquo;ll
+              save the practice and let you advance.
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-[12px] leading-relaxed text-[#3a2913]">
+              {uncoveredObjectives.map((o) => {
+                const v = props.objectiveVerdicts[o.letter];
+                return (
+                  <li key={o.letter}>
+                    <span className="font-mono text-[11px] font-bold">
+                      [{o.letter}]
+                    </span>{" "}
+                    <span>{o.text}</span>
+                    {v?.reason ? (
+                      <span className="block text-[11px] text-[#7a5f4f]">
+                        {v.status === "missing" ? "Missing: " : "Partial: "}
+                        {v.reason}
+                      </span>
+                    ) : (
+                      <span className="block text-[11px] text-[#7a5f4f]">
+                        No evidence graded for this objective yet.
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-2 text-[11px] text-[#7a5f4f]">
+              Re-upload or generate evidence above and the AI re-grades
+              automatically. The save button will unlock as soon as every
+              objective is covered.
+            </p>
+          </div>
+        )}
+
       <p className="mt-6 text-[12px] leading-relaxed text-[#5a7d70]">
-        Note: every NIST 800-171A objective still has to reach &ldquo;covered&rdquo;
-        for this practice to lock as MET. Your answers personalize the
-        evidence path (which artifact, which connector, or a signed
-        attestation) — nothing is skipped.
+        Saving lands you on this practice&rsquo;s summary — every question, every
+        answer, every piece of evidence on one page. Edit any answer, swap
+        artifacts, or reset the whole practice from there. You can&rsquo;t move
+        on to the next practice until every NIST 800-171A objective for this
+        one is &ldquo;covered&rdquo; (100%).
       </p>
     </section>
   );

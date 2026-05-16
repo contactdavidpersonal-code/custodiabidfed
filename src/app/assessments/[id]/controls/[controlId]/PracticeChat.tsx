@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { EvidenceArtifactRow } from "@/lib/assessment";
 import type {
   ClientPersonalizedSpec,
+  ClientPracticeIntakeSpec,
   ClientPracticeSpec,
   EvidenceDestination,
   EvidenceSlot,
@@ -19,6 +20,7 @@ import {
   hardResetPracticeAction,
   lockPracticeAction,
   resetIntakeAction,
+  saveIntakeStepAction,
 } from "./practice-chat-actions";
 import { GuidedPracticeQuiz } from "./GuidedPracticeQuiz";
 
@@ -222,10 +224,27 @@ export function PracticeChat(props: Props) {
       // 2. Also refresh the RSC tree so server-rendered panels (progress
       //    rollups, audit timeline) reflect the same fresh row.
       startTransition(() => router.refresh());
+      // 3. Re-grade objective verdicts so the coverage gate (CMMC L1 =
+      //    MET / NOT MET) reflects the freshly-uploaded artifact without
+      //    requiring the user to click anything. Fire-and-forget; the
+      //    quiz's onFinish handler also re-verifies on click as a
+      //    belt-and-suspenders check.
+      void fetch(
+        `/api/assessments/${props.assessmentId}/practice-chat/${encodeURIComponent(props.controlId)}/verify`,
+        { method: "POST" },
+      )
+        .then(async (res) => {
+          if (!res.ok) return;
+          const data = (await res.json()) as {
+            objectiveVerdicts: Record<string, ObjectiveVerdict>;
+          };
+          if (data.objectiveVerdicts) setVerdicts(data.objectiveVerdicts);
+        })
+        .catch(() => {});
     };
     window.addEventListener("evidence-changed", handler);
     return () => window.removeEventListener("evidence-changed", handler);
-  }, [router, refetchEvidence]);
+  }, [router, refetchEvidence, props.assessmentId, props.controlId]);
 
   // When the user pastes or drops an image into the Charlie chat composer,
   // the rail emits `charlie-image-incoming` with the File. We catch it here
@@ -415,11 +434,35 @@ export function PracticeChat(props: Props) {
             spec={props.spec}
             intake={props.spec.intake}
             initialAnswers={intakeAnswers ?? undefined}
+            personalized={personalized}
             evidence={evidence}
             connectedProviders={props.connectedProviders}
             uploadEvidenceAction={props.uploadEvidenceAction}
             reReviewEvidenceAction={props.reReviewEvidenceAction}
             deleteEvidenceAction={props.deleteEvidenceAction}
+            objectiveVerdicts={verdicts}
+            requireFullCoverageToFinish={props.controlId === "AC.L1-3.1.1"}
+            onRequestVerify={async () => {
+              // Force a fresh server-side re-grade and propagate the new
+              // verdicts up so the rest of the page reflects them too.
+              // Falls back to null on transport errors — caller will use
+              // the last-known verdicts and gate accordingly.
+              try {
+                const res = await fetch(
+                  `/api/assessments/${props.assessmentId}/practice-chat/${encodeURIComponent(props.controlId)}/verify`,
+                  { method: "POST" },
+                );
+                if (!res.ok) return null;
+                const data = (await res.json()) as {
+                  objectiveVerdicts: Record<string, ObjectiveVerdict>;
+                };
+                const fresh = data.objectiveVerdicts ?? {};
+                setVerdicts(fresh);
+                return fresh;
+              } catch {
+                return null;
+              }
+            }}
           />
         </div>
       )}
@@ -435,6 +478,26 @@ export function PracticeChat(props: Props) {
             locked={locked}
           />
         )}
+        {/* Per-practice answers summary — every quiz question and the
+            user's selected answer, with inline edit per row. Scoped to
+            AC.L1-3.1.1 for now while we ship the prod-grade summary
+            flow; other practices keep the legacy "Edit answers" full
+            reset until they're upgraded one at a time. */}
+        {props.controlId === "AC.L1-3.1.1" &&
+          props.spec.intake &&
+          intakeAnswers && (
+            <AnsweredQuestionsCard
+              assessmentId={props.assessmentId}
+              controlId={props.controlId}
+              intake={props.spec.intake}
+              answers={intakeAnswers}
+              locked={locked}
+              onAnswerSaved={(qid, value) => {
+                setIntakeAnswers((prev) => ({ ...(prev ?? {}), [qid]: value }));
+                startTransition(() => router.refresh());
+              }}
+            />
+          )}
         {pendingImage && (
           <ChatImageSlotPicker
             file={pendingImage.file}
@@ -494,6 +557,12 @@ export function PracticeChat(props: Props) {
         assessmentId={props.assessmentId}
         prevId={props.prevId}
         nextId={props.nextId}
+        // Gate the "Next practice" link on 100% — but only for the
+        // practices we've upgraded to the prod-level summary flow. Every
+        // other practice keeps the legacy unconditional next link until
+        // it's been upgraded too.
+        gateOnComplete={props.controlId === "AC.L1-3.1.1"}
+        canAdvance={allCovered || locked}
       />
     </div>
   );
@@ -1889,11 +1958,19 @@ function NavRow({
   assessmentId,
   prevId,
   nextId,
+  gateOnComplete,
+  canAdvance,
 }: {
   assessmentId: string;
   prevId: string | null;
   nextId: string | null;
+  /** When true, the "Next practice" link is gated behind canAdvance.
+   *  When false, behaves like the legacy unconditional next link. */
+  gateOnComplete: boolean;
+  /** Only consulted when gateOnComplete is true. */
+  canAdvance: boolean;
 }) {
+  const showLockedNext = gateOnComplete && !canAdvance;
   return (
     <div className="mt-10 flex items-center justify-between border-t border-[#cfe3d9] pt-6">
       {prevId ? (
@@ -1907,15 +1984,180 @@ function NavRow({
         <span />
       )}
       {nextId ? (
-        <Link
-          href={`/assessments/${assessmentId}/controls/${nextId}`}
-          className="font-serif text-lg font-bold tracking-tight text-[#10231d] underline-offset-4 hover:text-[#2f8f6d] hover:underline"
-        >
-          Next practice →
-        </Link>
+        showLockedNext ? (
+          <div className="text-right">
+            <span
+              aria-disabled
+              className="cursor-not-allowed font-serif text-lg font-bold tracking-tight text-[#a8cfc0]"
+              title="Reach 100% (every objective covered) to unlock the next practice"
+            >
+              Next practice →
+            </span>
+            <div className="mt-1 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#8b1f1f]">
+              Locked · finish this practice (100%) first
+            </div>
+          </div>
+        ) : (
+          <Link
+            href={`/assessments/${assessmentId}/controls/${nextId}`}
+            className="font-serif text-lg font-bold tracking-tight text-[#10231d] underline-offset-4 hover:text-[#2f8f6d] hover:underline"
+          >
+            Next practice →
+          </Link>
+        )
       ) : (
         <span />
       )}
     </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// AnsweredQuestionsCard — post-intake editable summary of every quiz
+// question + the user's selected answer. Lives between YourSituationCard
+// and the ObjectiveEvidencePanel on practices that have been upgraded to
+// the prod-grade summary flow (AC.L1-3.1.1 first, others to follow).
+//
+// Each row is read-only by default. Clicking "Change" reveals the option
+// list inline; picking a new option fires `saveIntakeStepAction` and then
+// calls `onAnswerSaved`, which the parent uses to update local state and
+// trigger a router.refresh() so personalized situation summary + slot
+// annotations re-derive from the new answer.
+// ────────────────────────────────────────────────────────────────────────
+function AnsweredQuestionsCard({
+  assessmentId,
+  controlId,
+  intake,
+  answers,
+  locked,
+  onAnswerSaved,
+}: {
+  assessmentId: string;
+  controlId: string;
+  intake: ClientPracticeIntakeSpec;
+  answers: IntakeAnswers;
+  locked: boolean;
+  onAnswerSaved: (questionId: string, value: string) => void;
+}) {
+  const [editingQid, setEditingQid] = useState<string | null>(null);
+  const [saving, startSaving] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  const onPick = (questionId: string, value: string) => {
+    setError(null);
+    startSaving(async () => {
+      const res = await saveIntakeStepAction({
+        assessmentId,
+        controlId,
+        questionId,
+        value,
+      });
+      if (!res.ok) {
+        setError(res.reason ?? "Could not save your change.");
+        return;
+      }
+      setEditingQid(null);
+      onAnswerSaved(questionId, value);
+    });
+  };
+
+  return (
+    <section className="border border-[#cfe3d9] bg-white">
+      <header className="border-b border-[#cfe3d9] bg-[#f4faf6] px-6 py-4">
+        <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+          Your answers · {intake.questions.length} questions
+        </div>
+        <h3 className="mt-2 font-serif text-2xl font-bold tracking-tight text-[#10231d]">
+          Quiz summary
+        </h3>
+        <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-[#5a7d70]">
+          Every question you answered, with the exact words you picked. Edit
+          any answer to re-personalize the evidence path below — your saved
+          evidence stays put. Use “Reset this practice” at the top to wipe
+          everything and start over.
+        </p>
+      </header>
+      {error && (
+        <div className="border-b border-rose-200 bg-rose-50 px-6 py-3 text-[13px] text-rose-800">
+          {error}
+        </div>
+      )}
+      <ol className="divide-y divide-[#e3eee9]">
+        {intake.questions.map((q, idx) => {
+          const value = answers[q.id];
+          const chosen = q.options.find((o) => o.value === value);
+          const isEditing = editingQid === q.id;
+          return (
+            <li key={q.id} className="px-6 py-5">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70]">
+                    Question {idx + 1} of {intake.questions.length} · Objective{" "}
+                    {q.objectives.map((o) => o.toUpperCase()).join(", ")}
+                  </div>
+                  <div className="mt-1 font-serif text-[16px] font-semibold text-[#10231d]">
+                    {q.prompt}
+                  </div>
+                  <div className="mt-2 text-[14px] leading-relaxed text-[#3a544a]">
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+                      Your answer →
+                    </span>{" "}
+                    <span className="font-semibold text-[#10231d]">
+                      {chosen?.label ?? "(not answered)"}
+                    </span>
+                    {chosen?.description && (
+                      <div className="mt-1 text-[13px] text-[#5a7d70]">
+                        {chosen.description}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {!locked && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditingQid((cur) => (cur === q.id ? null : q.id))
+                    }
+                    disabled={saving}
+                    className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline disabled:opacity-40"
+                  >
+                    {isEditing ? "Cancel" : "Change"}
+                  </button>
+                )}
+              </div>
+              {isEditing && !locked && (
+                <div className="mt-4 space-y-2">
+                  {q.options.map((opt) => {
+                    const selected = opt.value === value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => onPick(q.id, opt.value)}
+                        disabled={saving}
+                        className={`block w-full border bg-white px-4 py-3 text-left transition-colors ${
+                          selected
+                            ? "border-[#2f8f6d] bg-[#f4faf6] ring-1 ring-[#2f8f6d]"
+                            : "border-[#cfe3d9] hover:border-[#2f8f6d]"
+                        } disabled:opacity-50`}
+                      >
+                        <div className="font-serif text-[15px] font-semibold text-[#10231d]">
+                          {opt.label}
+                        </div>
+                        {opt.description && (
+                          <div className="mt-1 text-[12px] leading-relaxed text-[#5a7d70]">
+                            {opt.description}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
