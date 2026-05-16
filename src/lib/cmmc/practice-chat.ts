@@ -30,7 +30,7 @@ import {
   type IntakeAnswers,
   type PracticeSpec,
 } from "@/lib/cmmc/practice-spec";
-import { listEvidenceForControl } from "@/lib/assessment";
+import { listEvidenceForControl, tagArtifactPractice } from "@/lib/assessment";
 
 export type ChatMessage = {
   role: "user" | "assistant";
@@ -162,19 +162,56 @@ export async function saveIntakeAnswers(
 }
 
 /**
- * Clear intake answers — used when the user clicks "Edit answers" on the
- * personalized summary card. The transcript is left intact (it's the
- * audit trail); only the answers + completed-at stamp are reset.
+ * Restart a practice. The user clicks "Restart this practice" to either
+ * (a) re-do the per-practice intake yearly when their environment has
+ * changed, or (b) start fresh to re-test the walkthrough.
+ *
+ * What gets wiped:
+ *   - Intake answers + intake_completed_at (back to the questionnaire).
+ *   - Objective verdicts (re-graded from zero on next turn).
+ *   - Auto-staged attestation artifacts (ai_review_model='intake-auto-attest')
+ *     — those are derived from intake answers and would be stale.
+ *
+ * What is preserved:
+ *   - The chat transcript (audit trail; the assessor sees prior turns).
+ *   - User-uploaded artifacts.
+ *   - Charlie-generated artifacts (ai_review_model='charlie-generated').
+ *
+ * Locked practices CANNOT be restarted directly — the user must first
+ * unlock and re-sign on the final Sign & Affirm page (out of scope here).
  */
 export async function resetIntakeAnswers(
   assessmentId: string,
   controlId: string,
 ): Promise<void> {
   const sql = getSql();
+  // Remove intake-derived attestation artifacts so the slot goes back to
+  // "empty" and the user can re-answer. We tombstone the practice tag row
+  // first, then the artifact itself (FK cascade would also work, but being
+  // explicit makes the intent clear in audit log review).
+  await sql`
+    DELETE FROM evidence_artifact_practices
+    WHERE assessment_id = ${assessmentId}
+      AND control_id = ${controlId}
+      AND artifact_id IN (
+        SELECT id FROM evidence_artifacts
+        WHERE assessment_id = ${assessmentId}
+          AND control_id = ${controlId}
+          AND ai_review_model = 'intake-auto-attest'
+      )
+  `;
+  await sql`
+    DELETE FROM evidence_artifacts
+    WHERE assessment_id = ${assessmentId}
+      AND control_id = ${controlId}
+      AND ai_review_model = 'intake-auto-attest'
+  `;
   await sql`
     UPDATE practice_conversations
     SET intake_answers = NULL,
         intake_completed_at = NULL,
+        objective_verdicts = '{}'::jsonb,
+        verdict_updated_at = NOW(),
         updated_at = NOW()
     WHERE assessment_id = ${assessmentId}
       AND control_id = ${controlId}
@@ -214,6 +251,92 @@ export async function setObjectiveVerdicts(
     WHERE assessment_id = ${assessmentId}
       AND control_id = ${controlId}
   `;
+}
+
+/**
+ * Auto-stage intake-derived attestations as evidence artifacts.
+ *
+ * When the user's intake answers collapse a slot to a signed attestation
+ * (slotAnnotations[key].attestation), the verbatim auto-narrative IS the
+ * evidence — under NIST 800-171A determination statements, an organizational
+ * affirmation of a factual environment claim satisfies the objective.
+ *
+ * Per the platform's single-signature design, the user does NOT click an
+ * "ATTEST" button per slot. The act of completing the per-practice intake IS
+ * the affirmation; the user's authenticated session stamps it. The final
+ * Sign & Affirm page (one signature, hash-locked packet) is what produces
+ * the SPRS-defensible bundle of all 15/15 practices.
+ *
+ * Idempotent: a slot that already has an attestation artifact is skipped.
+ * Best-effort: failures (e.g. blob storage hiccup) are logged but do not
+ * fail the intake save — the user can re-trigger by editing and re-saving.
+ */
+export async function autoStageAttestationsForControl(args: {
+  assessmentId: string;
+  controlId: string;
+  userId: string;
+  answers: IntakeAnswers;
+}): Promise<{ staged: number; skipped: number }> {
+  const spec = getPracticeSpec(args.controlId);
+  if (!spec?.intake) return { staged: 0, skipped: 0 };
+  const personalization = spec.intake.personalize(args.answers);
+  const annotations = personalization.slotAnnotations ?? {};
+  const existing = await listEvidenceForControl(args.assessmentId, args.controlId);
+
+  let staged = 0;
+  let skipped = 0;
+  for (const slot of spec.evidenceSlots) {
+    const ann = annotations[slot.key];
+    if (!ann?.attestation) continue;
+    // Skip if any artifact tagged to this slot already looks like an
+    // attestation (filename pattern) — auto-stage is a one-time op.
+    const already = existing.some((e) =>
+      e.filename.toLowerCase().startsWith(`attestation-${slot.key.toLowerCase()}`),
+    );
+    if (already) {
+      skipped += 1;
+      continue;
+    }
+    try {
+      const { put } = await import("@vercel/blob");
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      const filename = `attestation-${slot.key}-${stamp}.txt`;
+      const pathname = `evidence/${args.assessmentId}/${args.controlId}/${Date.now()}-intake-${filename}`;
+      const body = ann.attestation.autoNarrative;
+      const blob = await put(pathname, body, {
+        access: "private",
+        addRandomSuffix: true,
+        contentType: "text/plain",
+      });
+      const sql = getSql();
+      const inserted = (await sql`
+        INSERT INTO evidence_artifacts
+          (assessment_id, control_id, filename, blob_url, mime_type,
+           size_bytes, uploaded_by_user_id,
+           ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
+           ai_reviewed_at, ai_review_model)
+        VALUES
+          (${args.assessmentId}, ${args.controlId}, ${filename},
+           ${blob.url}, 'text/plain', ${Buffer.byteLength(body, "utf8")},
+           ${args.userId},
+           'sufficient', ${ann.attestation.autoNarrative},
+           ${[args.controlId]},
+           NOW(), 'intake-auto-attest')
+        RETURNING id
+      `) as Array<{ id: string }>;
+      await tagArtifactPractice({
+        artifactId: inserted[0].id,
+        assessmentId: args.assessmentId,
+        controlId: args.controlId,
+        objectives: slot.satisfies,
+        userId: args.userId,
+      });
+      staged += 1;
+    } catch (err) {
+      console.warn(`auto-stage attestation failed for slot ${slot.key}`, err);
+    }
+  }
+  return { staged, skipped };
 }
 
 export async function lockPractice(

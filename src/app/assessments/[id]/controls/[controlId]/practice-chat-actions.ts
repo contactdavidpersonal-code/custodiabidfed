@@ -9,6 +9,7 @@ import {
   lockPractice,
   resetIntakeAnswers,
   saveIntakeAnswers,
+  autoStageAttestationsForControl,
   verifyPracticeObjectives,
   type ChatMessage,
   type ObjectiveVerdict,
@@ -191,6 +192,21 @@ export async function saveIntakeAction(args: {
   if (!ctx) return { ok: false, reason: "Assessment not found" };
 
   await saveIntakeAnswers(args.assessmentId, args.controlId, cleaned);
+  // Auto-stage intake-derived attestations. Under the single-signature
+  // model, the user only signs once on the final Sign & Affirm page — but
+  // any objective satisfied by a factual environment affirmation gets
+  // stamped here so the slot covers immediately and the user can see
+  // forward motion on the practice page.
+  try {
+    await autoStageAttestationsForControl({
+      assessmentId: args.assessmentId,
+      controlId: args.controlId,
+      userId,
+      answers: cleaned,
+    });
+  } catch (err) {
+    console.warn("auto-stage attestations failed", err);
+  }
   // Re-verify objectives so any environment-based evidence (e.g. existing
   // uploads tagged from before intake) gets re-scored with the personalized
   // slot list. Best-effort: don't fail the action if grading misfires.
