@@ -1,0 +1,8 @@
+﻿node.exe : Error: The --follow flag does not support filtering. Remove: --since
+At C:\Users\salvf\AppData\Roaming\npm\vercel.ps1:24 char:5
++     & "node$exe"  "$basedir/node_modules/vercel/dist/vc.js" $args
++     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Error: The --fo...Remove: --since 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
