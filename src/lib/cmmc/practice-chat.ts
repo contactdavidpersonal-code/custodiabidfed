@@ -23,7 +23,13 @@
 
 import { CHAT_MODEL, getAnthropic } from "@/lib/anthropic";
 import { getSql } from "@/lib/db";
-import { getPracticeSpec, type PracticeSpec } from "@/lib/cmmc/practice-spec";
+import {
+  getPracticeSpec,
+  isIntakeComplete,
+  personalizeSpec,
+  type IntakeAnswers,
+  type PracticeSpec,
+} from "@/lib/cmmc/practice-spec";
 import { listEvidenceForControl } from "@/lib/assessment";
 
 export type ChatMessage = {
@@ -46,9 +52,21 @@ export type PracticeConversationRow = {
   objective_verdicts: Record<string, ObjectiveVerdict>;
   verdict_updated_at: string | null;
   locked_at: string | null;
+  /**
+   * Per-practice intake answers (TurboTax-style triage). Schema is owned by
+   * `practice-spec.ts` PracticeIntakeSpec.questions — each key is a question
+   * id, each value is one of the question's IntakeOption.value strings.
+   * Null until the user completes the intake gate.
+   */
+  intake_answers: IntakeAnswers | null;
+  intake_completed_at: string | null;
   created_at: string;
   updated_at: string;
 };
+
+const CONV_COLS = `id, assessment_id, control_id, messages, objective_verdicts,
+         verdict_updated_at, locked_at, intake_answers, intake_completed_at,
+         created_at, updated_at`;
 
 export async function getOrCreatePracticeConversation(
   assessmentId: string,
@@ -57,7 +75,8 @@ export async function getOrCreatePracticeConversation(
   const sql = getSql();
   const existing = (await sql`
     SELECT id, assessment_id, control_id, messages, objective_verdicts,
-           verdict_updated_at, locked_at, created_at, updated_at
+           verdict_updated_at, locked_at, intake_answers, intake_completed_at,
+           created_at, updated_at
     FROM practice_conversations
     WHERE assessment_id = ${assessmentId}
       AND control_id = ${controlId}
@@ -66,7 +85,11 @@ export async function getOrCreatePracticeConversation(
   if (existing[0]) return existing[0];
 
   const spec = getPracticeSpec(controlId);
-  const opener = spec ? buildOpener(spec) : "Hi, I'm Charlie. Let's walk through this practice together.";
+  // Note: we seed the opener with no intake (the row doesn't have answers
+  // yet on first create). After the user completes intake, buildOpener is
+  // re-run via saveIntakeAnswers() and the row's first assistant message is
+  // upgraded with the environment summary.
+  const opener = spec ? buildOpener(spec, null) : "Hi, I'm Charlie. Let's walk through this practice together.";
   const seed: ChatMessage[] = [
     { role: "assistant", text: opener, at: new Date().toISOString() },
   ];
@@ -74,9 +97,88 @@ export async function getOrCreatePracticeConversation(
     INSERT INTO practice_conversations (assessment_id, control_id, messages)
     VALUES (${assessmentId}, ${controlId}, ${JSON.stringify(seed)}::jsonb)
     RETURNING id, assessment_id, control_id, messages, objective_verdicts,
-              verdict_updated_at, locked_at, created_at, updated_at
+              verdict_updated_at, locked_at, intake_answers, intake_completed_at,
+              created_at, updated_at
   `) as PracticeConversationRow[];
   return inserted[0];
+}
+
+/**
+ * Persist a complete set of intake answers and stamp `intake_completed_at`.
+ * Also re-writes the opener message in the transcript so the SSP shows the
+ * environment summary in context (the user's intake is the first thing an
+ * assessor reading the transcript should see).
+ *
+ * Caller MUST tenant-check via getAssessmentForUser before invoking.
+ */
+export async function saveIntakeAnswers(
+  assessmentId: string,
+  controlId: string,
+  answers: IntakeAnswers,
+): Promise<PracticeConversationRow> {
+  const sql = getSql();
+  // Ensure the row exists.
+  await getOrCreatePracticeConversation(assessmentId, controlId);
+
+  const spec = getPracticeSpec(controlId);
+  // If the spec doesn't expose intake (defensive), just store the answers.
+  if (!spec?.intake) {
+    const updated = (await sql`
+      UPDATE practice_conversations
+      SET intake_answers = ${JSON.stringify(answers)}::jsonb,
+          intake_completed_at = NOW(),
+          updated_at = NOW()
+      WHERE assessment_id = ${assessmentId}
+        AND control_id = ${controlId}
+      RETURNING id, assessment_id, control_id, messages, objective_verdicts,
+                verdict_updated_at, locked_at, intake_answers, intake_completed_at,
+                created_at, updated_at
+    `) as PracticeConversationRow[];
+    return updated[0];
+  }
+
+  // Re-derive the opener with the intake summary baked in, then splice it
+  // into messages[0] (the first assistant turn). All subsequent turns are
+  // preserved verbatim.
+  const newOpener = buildOpener(spec, answers);
+  const updated = (await sql`
+    UPDATE practice_conversations
+    SET intake_answers = ${JSON.stringify(answers)}::jsonb,
+        intake_completed_at = NOW(),
+        messages = jsonb_set(
+          messages,
+          '{0,text}',
+          to_jsonb(${newOpener}::text),
+          false
+        ),
+        updated_at = NOW()
+    WHERE assessment_id = ${assessmentId}
+      AND control_id = ${controlId}
+    RETURNING id, assessment_id, control_id, messages, objective_verdicts,
+              verdict_updated_at, locked_at, intake_answers, intake_completed_at,
+              created_at, updated_at
+  `) as PracticeConversationRow[];
+  return updated[0];
+}
+
+/**
+ * Clear intake answers — used when the user clicks "Edit answers" on the
+ * personalized summary card. The transcript is left intact (it's the
+ * audit trail); only the answers + completed-at stamp are reset.
+ */
+export async function resetIntakeAnswers(
+  assessmentId: string,
+  controlId: string,
+): Promise<void> {
+  const sql = getSql();
+  await sql`
+    UPDATE practice_conversations
+    SET intake_answers = NULL,
+        intake_completed_at = NULL,
+        updated_at = NOW()
+    WHERE assessment_id = ${assessmentId}
+      AND control_id = ${controlId}
+  `;
 }
 
 export async function appendPracticeMessages(
@@ -92,7 +194,8 @@ export async function appendPracticeMessages(
     WHERE assessment_id = ${assessmentId}
       AND control_id = ${controlId}
     RETURNING id, assessment_id, control_id, messages, objective_verdicts,
-              verdict_updated_at, locked_at, created_at, updated_at
+              verdict_updated_at, locked_at, intake_answers, intake_completed_at,
+              created_at, updated_at
   `) as PracticeConversationRow[];
   return updated[0];
 }
@@ -126,18 +229,32 @@ export async function lockPractice(
   `;
 }
 
-function buildOpener(spec: PracticeSpec): string {
+function buildOpener(
+  spec: PracticeSpec,
+  intake: IntakeAnswers | null,
+): string {
   // This text seeds the per-practice transcript and ends up in the SSP as
   // the assessor-readable opening of the conversation. The user never sees
   // it directly — the live chat happens in the Charlie rail. Keep it tight
   // and assessor-oriented.
-  return [
+  const lines: string[] = [
     `[Guided walkthrough — ${spec.controlId} ${spec.shortName}]`,
     ``,
     `Control statement: ${spec.statement}`,
+  ];
+  if (intake && spec.intake && isIntakeComplete(spec, intake)) {
+    const summary = spec.intake.personalize(intake).situationSummary;
+    lines.push(
+      ``,
+      `Pre-interview captured before the conversation began (intake answers):`,
+      summary,
+    );
+  }
+  lines.push(
     ``,
     `Conversation captured below maps the operator's environment onto each NIST 800-171A objective letter [a]–[${spec.objectives[spec.objectives.length - 1]?.letter ?? "z"}]. Evidence artifacts attached to this practice are listed in the SSP after the transcript.`,
-  ].join("\n");
+  );
+  return lines.join("\n");
 }
 
 /**
@@ -145,16 +262,28 @@ function buildOpener(spec: PracticeSpec): string {
  * CMMC L1 SAG text + NIST 800-171A objectives. He never paraphrases the
  * standard and always shapes questions toward filling missing objectives.
  */
-export function buildPracticeSystemPrompt(spec: PracticeSpec, evidenceSummary: string): string {
+export function buildPracticeSystemPrompt(
+  spec: PracticeSpec,
+  evidenceSummary: string,
+  intake: IntakeAnswers | null = null,
+): string {
   const objectivesList = spec.objectives
     .map((o) => `  [${o.letter}] ${o.text}`)
     .join("\n");
-  const slotsList = spec.evidenceSlots
+  // If intake is complete, personalize the slot list so Charlie sees the
+  // attestation/connector recommendations the UI will also show.
+  const personalized = personalizeSpec(spec, intake);
+  const activeSpec: PracticeSpec = personalized ?? spec;
+  const slotsList = activeSpec.evidenceSlots
     .map(
       (s) =>
         `  - ${s.label} (${s.required ? "required" : "optional"}; satisfies [${s.satisfies.join(", ")}]): ${s.hint}`,
     )
     .join("\n");
+  const intakeBlock =
+    intake && spec.intake && isIntakeComplete(spec, intake)
+      ? `\n\n${spec.intake.charlieBrief(intake)}`
+      : "";
   return `You are Charlie, a senior CMMC Level 1 compliance consultant embedded in the Custodia platform. Right now you are walking ONE user through ONE practice: **${spec.controlId} — ${spec.shortName}**.
 
 ## Authority
@@ -173,7 +302,7 @@ ${spec.furtherDiscussion}
 ${slotsList}
 
 ## Currently attached evidence
-${evidenceSummary || "(no evidence uploaded yet)"}
+${evidenceSummary || "(no evidence uploaded yet)"}${intakeBlock}
 
 ## How you behave
 - ONE question at a time. Plain English. No jargon without defining it.
@@ -206,7 +335,7 @@ export async function runPracticeTurn(args: {
 
   const conv = await getOrCreatePracticeConversation(args.assessmentId, args.controlId);
   const evidenceSummary = await summarizeEvidence(args.assessmentId, args.controlId);
-  const systemPrompt = buildPracticeSystemPrompt(spec, evidenceSummary);
+  const systemPrompt = buildPracticeSystemPrompt(spec, evidenceSummary, conv.intake_answers);
 
   const history = conv.messages.map((m) => ({
     role: m.role,

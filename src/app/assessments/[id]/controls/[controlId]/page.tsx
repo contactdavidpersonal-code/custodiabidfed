@@ -123,6 +123,8 @@ export default async function ControlDetailPage(
               spec={chatSpec}
               initialVerdicts={chatConv.objective_verdicts}
               initiallyLocked={!!chatConv.locked_at}
+              initialIntakeAnswers={chatConv.intake_answers}
+              initialIntakeCompletedAt={chatConv.intake_completed_at}
               evidence={evidenceForClient}
               connectedProviders={connectedProviders}
               uploadEvidenceAction={uploadEvidenceAction}

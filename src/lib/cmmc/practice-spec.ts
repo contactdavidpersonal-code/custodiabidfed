@@ -104,6 +104,111 @@ export type EvidenceSlot = {
   destinations: EvidenceDestination[];
 };
 
+/**
+ * Per-practice intake ("TurboTax for the practice"): a short set of
+ * fact-finding questions whose answers personalize the evidence slot list.
+ *
+ * Every question MUST be anchored in the official standard (NIST SP 800-171A
+ * Rev 2, CMMC Self-Assessment Guide — Level 1 v2.13, or FAR 52.204-21). The
+ * `regAnchor` + `regQuote` fields surface that traceability in the UI so a
+ * user can always see *why* we're asking and which assessor objective it
+ * maps to. This is a compliance product — no business-vibes questions.
+ *
+ * Critical invariant: intake NEVER excuses a NIST 800-171A objective.
+ * Every objective letter still has to reach "covered" before MET. Intake
+ * answers only personalize the *path* (which evidence slot, which
+ * destination, what auto-narrative replaces a roster when none exists).
+ * If an answer means a roster is genuinely N/A (e.g. "no processes act on
+ * behalf of users"), the matching slot collapses into a signed-attestation
+ * card that itself satisfies the objective — the objective is still
+ * covered, by attestation rather than artifact.
+ */
+export type IntakeOption = {
+  /** stable id stored in intake_answers JSON */
+  value: string;
+  /** what the user sees on the chip */
+  label: string;
+  /** optional one-liner under the chip for clarification */
+  description?: string;
+};
+
+export type IntakeQuestion = {
+  /** stable id (snake_case) — keys the `intake_answers` JSONB envelope */
+  id: string;
+  /** user-facing prompt */
+  prompt: string;
+  /** which 800-171A objective letter(s) this question shapes the path for */
+  objectives: string[];
+  /** plain-English citation, e.g. "NIST SP 800-171A §3.5.1 objective [a]" */
+  regAnchor: string;
+  /** verbatim passage from the standard that drives the question */
+  regQuote: string;
+  /** answer chips, exactly one selected per question */
+  options: IntakeOption[];
+  /** optional helper text shown above the options */
+  helpText?: string;
+  /** if true, the user can pick "Not sure" and Charlie will follow up */
+  allowNotSure?: boolean;
+};
+
+/** A specific slot rewrite that a single intake answer can produce. */
+export type SlotAnnotation = {
+  /** which destination index (in slot.destinations) should be highlighted */
+  recommendedDestinationIdx?: number;
+  /** "Based on what you told us" callout shown above the slot's actions */
+  contextNote?: string;
+  /**
+   * If set, replaces the slot's normal destinations with a one-click signed
+   * attestation that itself satisfies the slot's objectives. Used when the
+   * user's environment makes a roster-style artifact inapplicable (e.g. no
+   * service accounts means objective [b] is satisfied by a written
+   * attestation, not by a list).
+   */
+  attestation?: {
+    /** Plain-English label for the attestation button */
+    buttonLabel: string;
+    /** The exact narrative line written into the SSP and audit trail */
+    autoNarrative: string;
+    /** Reason shown to the user for why a roster is not needed here */
+    reason: string;
+  };
+};
+
+export type PracticeIntakeSpec = {
+  /** Lead copy shown above the first question. Cite the relevant guide. */
+  preamble: string;
+  questions: IntakeQuestion[];
+  /**
+   * Pure transform: given a complete answers map, return the per-slot
+   * annotations + any extra dynamic slots the answers introduced (e.g. a
+   * "shared-credential exception register" only required when the user
+   * says shared logins exist).
+   */
+  personalize: (answers: IntakeAnswers) => IntakePersonalization;
+  /**
+   * Short markdown block injected into Charlie's system prompt so his
+   * first message is grounded in the user's environment instead of
+   * starting from zero.
+   */
+  charlieBrief: (answers: IntakeAnswers) => string;
+};
+
+export type IntakeAnswers = Record<string, string>;
+
+export type IntakePersonalization = {
+  /** Annotations keyed by evidenceSlot.key */
+  slotAnnotations: Record<string, SlotAnnotation>;
+  /** Extra slots added by the answers (rare; e.g. shared-account register) */
+  dynamicSlots: EvidenceSlot[];
+  /** Slot keys that should be hidden completely (rare; pre-attested elsewhere) */
+  hiddenSlotKeys: string[];
+  /**
+   * One-line situation summary shown above the slot list and stamped into
+   * the SSP. Plain English, no jargon.
+   */
+  situationSummary: string;
+};
+
 export type PracticeSpec = {
   controlId: string;
   shortName: string;
@@ -119,6 +224,714 @@ export type PracticeSpec = {
   evidenceSlots: EvidenceSlot[];
   /** key references (FAR, NIST) shown to the user on demand */
   keyReferences: string[];
+  /**
+   * Optional intake gate ("TurboTax for the practice"). When set, the
+   * practice page renders the intake before showing slots, then uses
+   * `intake.personalize(answers)` to tailor the slot list. Practices
+   * without an intake spec render slots immediately, unchanged.
+   */
+  intake?: PracticeIntakeSpec;
+};
+
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — IA.L1-3.5.1 (Identification)
+//
+// Every question below is anchored to an assessor-facing primary source:
+//   • NIST SP 800-171A Rev 2 §3.5.1 determination statements [a], [b], [c]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, IA.L1-b.1.v ("Further
+//     Discussion" + "Potential Assessment Considerations")
+//   • FAR 52.204-21(b)(1)(v)
+//
+// Hard rule: intake answers NEVER drop an objective. They route the
+// evidence path. For example, "no processes act on behalf of users" turns
+// objective [b]'s slot into a signed attestation card — the objective is
+// still satisfied, just by attestation rather than by a roster.
+// ────────────────────────────────────────────────────────────────────────
+const IA351_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "idp",
+    objectives: ["a"],
+    prompt:
+      "Where do the people who touch Federal Contract Information sign in?",
+    helpText:
+      "Whichever system is the authoritative source for who can log in. We'll pull (or generate) the unique-ID roster from here.",
+    regAnchor: "NIST SP 800-171A §3.5.1 [a]; CMMC L1 SAG (v2.13) Further Discussion",
+    regQuote:
+      "Determine if: [a] system users are identified. … Identify the users, processes, and devices that are allowed to use company computers and can log on to the company network.",
+    options: [
+      { value: "m365", label: "Microsoft 365 / Entra ID" },
+      { value: "google", label: "Google Workspace" },
+      { value: "hybrid", label: "Both M365 and Google" },
+      { value: "ad_onprem", label: "On-prem Active Directory" },
+      {
+        value: "local_only",
+        label: "Local accounts only",
+        description: "No central IdP — accounts live on individual machines.",
+      },
+    ],
+  },
+  {
+    id: "devices",
+    objectives: ["c"],
+    prompt:
+      "How do you keep track of the laptops, desktops, and phones that can reach FCI?",
+    helpText:
+      "Pick whatever you actually use today. We're matching you to an evidence path, not grading you.",
+    regAnchor:
+      "NIST SP 800-171A §3.5.1 [c]; CMMC L1 SAG (v2.13) Further Discussion",
+    regQuote:
+      "Determine if: [c] devices accessing the system are identified. … any other device an employee may use to log on to the company network and conduct work tasks.",
+    options: [
+      { value: "intune", label: "Microsoft Intune / Entra-joined" },
+      { value: "google_endpoint", label: "Google Endpoint Management" },
+      { value: "other_mdm", label: "Another MDM (Jamf, Kandji, etc.)" },
+      { value: "ad_domain", label: "On-prem Active Directory" },
+      {
+        value: "manual_csv",
+        label: "A spreadsheet I keep by hand",
+        description: "Inventory exists, but it's not pulled from a tool.",
+      },
+      {
+        value: "none",
+        label: "No inventory yet",
+        description: "We'll help you draft one with Charlie.",
+      },
+    ],
+  },
+  {
+    id: "processes",
+    objectives: ["b"],
+    prompt:
+      "Are there any non-human accounts or automations that read or move FCI?",
+    helpText:
+      "Service accounts, scheduled tasks, integrations (Zapier/Power Automate), backup agents, RMM/PSA tools, and the like.",
+    regAnchor:
+      "NIST SP 800-171A §3.5.1 [b]; CMMC L1 SAG (v2.13) Further Discussion",
+    regQuote:
+      "Determine if: [b] processes acting on behalf of users are identified. … Automated updates and other automatic processes should be associated with the user who initiated (authorized) the process.",
+    options: [
+      {
+        value: "idp_managed",
+        label: "Yes — they live in our IdP as service accounts",
+      },
+      {
+        value: "external",
+        label: "Yes — but they live outside the IdP (RMM, app-level, scripts)",
+      },
+      {
+        value: "none",
+        label: "No — only people log in, nothing automated touches FCI",
+        description: "We'll convert this slot into a signed attestation.",
+      },
+      {
+        value: "unsure",
+        label: "Not sure",
+        description: "Charlie will help you figure it out.",
+      },
+    ],
+  },
+  {
+    id: "shared_credentials",
+    objectives: ["a"],
+    prompt:
+      "Does any login on an FCI system get shared between more than one person?",
+    helpText:
+      "Examples: an info@ mailbox someone else can read, a reception PC that everyone uses, an admin password kept in a vault and reused.",
+    regAnchor:
+      "NIST SP 800-171A §3.5.1 [a]; NIST SP 800-171 Rev 2 §3.5.1 Discussion",
+    regQuote:
+      "Identifying who is requesting access … is essential to authorize access. … Common device identifiers include … Authentication of user identities is accomplished through the use of passwords, tokens, biometrics …",
+    options: [
+      {
+        value: "no",
+        label: "No — every login belongs to one person",
+      },
+      {
+        value: "yes",
+        label: "Yes — one or more shared logins exist",
+        description:
+          "We'll add a register so each shared credential has a named owner and a plan to retire it.",
+      },
+    ],
+  },
+];
+
+const IDP_LABEL: Record<string, string> = {
+  m365: "Microsoft 365 / Entra ID",
+  google: "Google Workspace",
+  hybrid: "Microsoft 365 + Google Workspace",
+  ad_onprem: "on-prem Active Directory",
+  local_only: "local machine accounts only",
+};
+
+const DEVICE_LABEL: Record<string, string> = {
+  intune: "Microsoft Intune",
+  google_endpoint: "Google Endpoint Management",
+  other_mdm: "an MDM (Jamf/Kandji/other)",
+  ad_domain: "on-prem Active Directory",
+  manual_csv: "a hand-maintained spreadsheet",
+  none: "no device inventory yet",
+};
+
+const PROCESSES_LABEL: Record<string, string> = {
+  idp_managed: "service accounts managed in the IdP",
+  external: "automations that live outside the IdP",
+  none: "no non-human processes that touch FCI",
+  unsure: "unsure — to be confirmed with Charlie",
+};
+
+const ia351Intake: PracticeIntakeSpec = {
+  preamble:
+    "Three quick questions about your environment — every question maps to a specific NIST 800-171A determination statement for IA.L1-3.5.1. Your answers personalize the evidence list so you only get asked for what an assessor would actually check for *your* setup. None of the three objectives will be skipped — only the path to satisfying them changes.",
+  questions: IA351_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // ─── Objective [a] · user_identifiers_list ───
+    // Route the roster path based on where users actually sign in.
+    const idp = answers.idp;
+    if (idp === "m365" || idp === "hybrid") {
+      slotAnnotations.user_identifiers_list = {
+        // destinations[1] is the M365/Google connector
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "You said your users sign in through Microsoft 365 / Entra ID — the fastest path is to connect M365 and let Charlie pull the unique-principal list. We'll fall back to a CSV if the connector isn't available.",
+      };
+    } else if (idp === "google") {
+      slotAnnotations.user_identifiers_list = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "You said your users sign in through Google Workspace — the fastest path is to connect Google and pull the unique-account list.",
+      };
+    } else if (idp === "ad_onprem") {
+      slotAnnotations.user_identifiers_list = {
+        // destinations[2] is upload (Get-ADUser export)
+        recommendedDestinationIdx: 2,
+        contextNote:
+          "On-prem AD: export your users with `Get-ADUser -Filter * | Select SamAccountName, UserPrincipalName, Enabled | Export-Csv` and upload that file. Charlie can guide you if you'd rather draft a roster manually.",
+      };
+    } else if (idp === "local_only") {
+      slotAnnotations.user_identifiers_list = {
+        // destinations[0] is generate-with-Charlie
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Local accounts only — there's no IdP to pull from, so we'll draft the unique-IDs roster with Charlie. You'll list each machine's local account by user, then we'll save the roster as evidence.",
+      };
+    }
+
+    // ─── Objective [b] · process_identifiers_list ───
+    // The critical "no processes" case: collapse the slot into a signed
+    // attestation. The objective is still satisfied — by attestation, not
+    // by a roster. The verifier sees the attestation and credits [b].
+    const processes = answers.processes;
+    if (processes === "none") {
+      slotAnnotations.process_identifiers_list = {
+        attestation: {
+          buttonLabel: "Attest: no non-human processes touch FCI",
+          autoNarrative:
+            "The organization attests that no automated processes, service accounts, scheduled tasks, integrations, or other non-human actors access Federal Contract Information systems. Only authenticated human users interact with FCI. This attestation satisfies NIST SP 800-171A §3.5.1 determination statement [b] for this environment; if a non-human process is introduced in the future the organization will create a unique service identity and re-open this objective.",
+          reason:
+            "You said no automated processes touch FCI — under NIST 800-171A this objective is satisfied by a signed attestation rather than a roster. The attestation is stamped with your account, the date, and is included verbatim in the SSP.",
+        },
+      };
+    } else if (processes === "idp_managed") {
+      slotAnnotations.process_identifiers_list = {
+        recommendedDestinationIdx: 1, // M365 connector
+        contextNote:
+          "You said service accounts live in your IdP — connect M365 to pull every service principal and automation account in one click.",
+      };
+    } else if (processes === "external") {
+      slotAnnotations.process_identifiers_list = {
+        recommendedDestinationIdx: 0, // generate w/ Charlie
+        contextNote:
+          "Automations live outside your IdP — Charlie will walk you through listing each one (RMM agent, scheduled task, integration) with the human owner accountable for it.",
+      };
+    } else if (processes === "unsure") {
+      slotAnnotations.process_identifiers_list = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Not sure yet — start by chatting with Charlie. He'll ask about RMM, backups, integrations, and scheduled tasks, and either draft the list with you or convert this into a signed attestation if it turns out nothing applies.",
+      };
+    }
+
+    // ─── Objective [c] · device_identifiers_list ───
+    const devices = answers.devices;
+    if (devices === "intune") {
+      slotAnnotations.device_identifiers_list = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Intune is connected to your evidence pipeline — pull the device list and we'll match it to objective [c] automatically.",
+      };
+    } else if (devices === "google_endpoint") {
+      slotAnnotations.device_identifiers_list = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Connect Google Workspace and we'll pull the endpoint-management device list (hostname + serial + last-seen user).",
+      };
+    } else if (devices === "other_mdm" || devices === "ad_domain") {
+      slotAnnotations.device_identifiers_list = {
+        recommendedDestinationIdx: 2, // upload
+        contextNote:
+          devices === "other_mdm"
+            ? "Export the device list from your MDM and upload the CSV — Charlie will check that it includes a unique identifier (hostname or serial) and an owner for every row."
+            : "Export your AD computer objects (`Get-ADComputer -Filter * | Select Name, OperatingSystem, LastLogonDate | Export-Csv`) and upload the result.",
+      };
+    } else if (devices === "manual_csv") {
+      slotAnnotations.device_identifiers_list = {
+        recommendedDestinationIdx: 2,
+        contextNote:
+          "Upload the spreadsheet you already maintain — Charlie will review it against the assessor checklist (unique identifier + owner per device).",
+      };
+    } else if (devices === "none") {
+      slotAnnotations.device_identifiers_list = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "No inventory yet — Charlie will draft one with you. We'll start with the laptops + phones that can open email or your file share.",
+      };
+    }
+
+    // ─── Shared credentials: adds an exception register slot ───
+    // Doesn't change objective [a]'s primary slot, but adds a register
+    // documenting each shared credential's owner + retirement plan. CMMC
+    // L1 SAG Further Discussion makes clear shared accounts undermine
+    // accountability; the register documents the compensating control.
+    if (answers.shared_credentials === "yes") {
+      dynamicSlots.push({
+        key: "shared_credential_register",
+        label: "Shared-credential register",
+        hint: "For every login that's shared between more than one person, record: the login, every human who knows the password, the named owner, the reason it can't be split yet, and the plan + target date to retire it.",
+        kind: "roster_csv",
+        satisfies: ["a"],
+        required: true,
+        templatePath: "/templates/role-matrix.csv",
+        destinations: [
+          {
+            type: "generate",
+            label: "Draft my shared-credential register with Charlie",
+            filename: "shared-credential-register.csv",
+            format: "csv",
+          },
+          {
+            type: "upload",
+            label: "Upload an existing register",
+            describes: "CSV or PDF listing each shared login + named owner.",
+            accept: ["text/csv", "application/pdf"],
+          },
+        ],
+      });
+    }
+
+    const situationSummary = [
+      `Users sign in through ${IDP_LABEL[idp] ?? "an unspecified system"}.`,
+      `Device inventory comes from ${DEVICE_LABEL[devices] ?? "an unspecified source"}.`,
+      `Non-human access: ${PROCESSES_LABEL[processes] ?? "unspecified"}.`,
+      answers.shared_credentials === "yes"
+        ? "One or more shared logins exist — a shared-credential register is included as a compensating control."
+        : "No shared logins; every account has one named owner.",
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's environment",
+      `- Identity provider: ${IDP_LABEL[answers.idp] ?? "(not specified)"}`,
+      `- Device inventory source: ${DEVICE_LABEL[answers.devices] ?? "(not specified)"}`,
+      `- Non-human processes that touch FCI: ${PROCESSES_LABEL[answers.processes] ?? "(not specified)"}`,
+      `- Shared logins exist: ${answers.shared_credentials === "yes" ? "YES — at least one. Treat as compensating-control territory; require a register with owner + retirement plan." : "No — every login belongs to one person."}`,
+      "",
+      "Do NOT re-ask these facts. Skip generic intros. Open by acknowledging the environment in one sentence, then drive the next concrete step toward satisfying the objective letter that's still missing. If `processes = none`, objective [b] is satisfied by attestation — confirm the attestation is captured rather than chasing a roster.",
+    ].join("\n");
+  },
+};
+
+/**
+ * Run a practice's intake personalization safely.
+ *
+ * - If the practice has no intake spec, returns the original spec unchanged.
+ * - If the intake spec exists but answers are incomplete (or missing), returns
+ *   the original spec unchanged. The page renders the intake UI in that case.
+ * - If answers are complete, returns a new spec where evidenceSlots have been
+ *   tailored, attestation-only slots are tagged, and any answer-driven
+ *   dynamic slots are appended.
+ */
+export type PersonalizedSpec = PracticeSpec & {
+  /** Per-slot annotations (recommended destination, attestation, etc.) */
+  slotAnnotations: Record<string, SlotAnnotation>;
+  /** Human-readable summary of the user's environment */
+  situationSummary: string;
+};
+
+export function personalizeSpec(
+  spec: PracticeSpec,
+  answers: IntakeAnswers | null,
+): PersonalizedSpec | null {
+  if (!spec.intake) return null;
+  if (!answers) return null;
+  // Every question must be answered to apply personalization.
+  for (const q of spec.intake.questions) {
+    if (!answers[q.id]) return null;
+  }
+  const { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary } =
+    spec.intake.personalize(answers);
+  const evidenceSlots: EvidenceSlot[] = [
+    ...spec.evidenceSlots.filter((s) => !hiddenSlotKeys.includes(s.key)),
+    ...dynamicSlots,
+  ];
+  return { ...spec, evidenceSlots, slotAnnotations, situationSummary };
+}
+
+/**
+ * True if the user has answered every required question in the practice's
+ * intake. Used by both the page and the verifier to decide whether to apply
+ * personalization or surface the intake UI.
+ */
+export function isIntakeComplete(
+  spec: PracticeSpec,
+  answers: IntakeAnswers | null,
+): boolean {
+  if (!spec.intake) return true; // no intake = always "complete"
+  if (!answers) return false;
+  return spec.intake.questions.every((q) => Boolean(answers[q.id]));
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// IA.L1-3.5.2 intake (Authentication)
+// ════════════════════════════════════════════════════════════════════════════
+// Mirrors the 3.5.1 pattern — every question maps to one of the 800-171A
+// determination statements ([a] user auth / [b] process auth / [c] device
+// auth). The "no automations" answer collapses objective [b]'s slot into
+// a signed attestation; every other answer simply re-routes the path
+// (connector vs upload vs generate-with-Charlie) without skipping anything.
+
+const IA352_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "mfa_method",
+    objectives: ["a"],
+    prompt:
+      "How do the humans who touch FCI prove who they are when they sign in?",
+    helpText:
+      "Pick what's enforced today, not what's on the roadmap. We'll match you to the right evidence path.",
+    regAnchor:
+      "NIST SP 800-171A §3.5.2 [a]; CMMC L1 SAG (v2.13) Further Discussion",
+    regQuote:
+      "Determine if: [a] the identity of each user is authenticated or verified as a prerequisite to system access. … Authentication is achieved through the use of any one or combination of passwords, tokens (something you possess), biometrics, or, in the case of multi-factor authentication, some combination thereof.",
+    options: [
+      {
+        value: "m365_ca",
+        label: "Microsoft 365 Conditional Access enforces MFA",
+        description:
+          "Entra Conditional Access policy requires MFA for every user touching FCI.",
+      },
+      {
+        value: "google_2sv",
+        label: "Google Workspace 2-Step Verification (enforced)",
+      },
+      {
+        value: "other_idp",
+        label: "Another IdP enforces MFA (Okta, JumpCloud, Duo…)",
+      },
+      {
+        value: "per_app",
+        label: "MFA at the app level (per-app, not centrally enforced)",
+        description:
+          "Each SaaS app has its own MFA toggle and we rely on those.",
+      },
+      {
+        value: "password_only",
+        label: "Password only — no MFA today",
+        description:
+          "We'll still need MFA evidence eventually; Charlie will help you get there.",
+      },
+    ],
+  },
+  {
+    id: "process_auth",
+    objectives: ["b"],
+    prompt:
+      "How do non-human accounts (service accounts, scripts, integrations) authenticate?",
+    helpText:
+      "If you said 'no non-human accounts' on IA.L1-3.5.1, pick the matching option here — we'll collapse this into an attestation.",
+    regAnchor:
+      "NIST SP 800-171A §3.5.2 [b]; NIST SP 800-171 Rev 2 §3.5.2 Discussion",
+    regQuote:
+      "Determine if: [b] the identity of each process acting on behalf of a user is authenticated or verified as a prerequisite to system access. … Authenticators include passwords, cryptographic devices, biometrics, certificates, one-time password devices, and ID badges.",
+    options: [
+      {
+        value: "managed_identity",
+        label: "Managed identities / workload identities in our IdP",
+        description:
+          "Entra managed identity, Google service account, IAM role — no static secret in code.",
+      },
+      {
+        value: "vaulted_secret",
+        label: "Client secrets or API keys stored in a secrets vault",
+        description:
+          "Azure Key Vault, AWS Secrets Manager, 1Password, Doppler, etc.",
+      },
+      {
+        value: "certificate",
+        label: "Certificate-based authentication",
+      },
+      {
+        value: "hardcoded",
+        label: "Secrets are in config files / env vars on the host",
+        description:
+          "We'll flag this as a finding and Charlie will walk you to a vaulted path.",
+      },
+      {
+        value: "none",
+        label: "No automations touch FCI",
+        description:
+          "Objective [b] is satisfied by a signed attestation — no roster needed.",
+      },
+    ],
+  },
+  {
+    id: "device_auth",
+    objectives: ["c"],
+    prompt:
+      "How does a laptop or phone prove it's allowed to connect before it reaches FCI?",
+    helpText:
+      "Device authentication is separate from user authentication — the assessor wants both. Pick the strongest mechanism in place.",
+    regAnchor:
+      "NIST SP 800-171A §3.5.2 [c]; CMMC L1 SAG (v2.13) Further Discussion",
+    regQuote:
+      "Determine if: [c] the identity of each device accessing or connecting to the system is authenticated or verified as a prerequisite to system access. … Devices may be identified by MAC, IP address, or device certificate.",
+    options: [
+      {
+        value: "intune_compliant",
+        label: "Intune / Entra device compliance gates access",
+        description:
+          "Conditional Access requires a compliant, Entra-joined device.",
+      },
+      {
+        value: "google_managed",
+        label: "Google endpoint management with context-aware access",
+      },
+      {
+        value: "domain_joined",
+        label: "On-prem domain-joined machines only",
+      },
+      {
+        value: "cert_based",
+        label: "Device certificates (Wi-Fi 802.1x, VPN cert, mTLS)",
+      },
+      {
+        value: "unmanaged",
+        label: "Personal / unmanaged devices can connect",
+        description:
+          "We'll require a written narrative explaining how access is constrained.",
+      },
+    ],
+  },
+  {
+    id: "password_policy",
+    objectives: ["a"],
+    prompt:
+      "Do you have a written password / authentication policy today?",
+    helpText:
+      "Even a one-page version counts. The assessor will look for minimum length, complexity, rotation, lockout, and MFA scope.",
+    regAnchor:
+      "NIST SP 800-171A §3.5.2 [a]; NIST SP 800-171 Rev 2 §3.5.2 Discussion",
+    regQuote:
+      "Authenticators include … passwords … Authentication of user identities is accomplished through the use of passwords, tokens, biometrics, or some combination thereof.",
+    options: [
+      {
+        value: "have_doc",
+        label: "Yes — I have a policy I can upload",
+      },
+      {
+        value: "informal",
+        label: "We follow rules but nothing is written down",
+        description: "Charlie will draft one based on what you tell him.",
+      },
+      {
+        value: "none",
+        label: "No policy yet",
+        description: "Charlie will draft one from scratch.",
+      },
+    ],
+  },
+];
+
+const MFA_LABEL: Record<string, string> = {
+  m365_ca: "Microsoft 365 Conditional Access (MFA enforced)",
+  google_2sv: "Google Workspace 2-Step Verification (enforced)",
+  other_idp: "a third-party IdP (Okta/JumpCloud/Duo/…)",
+  per_app: "per-app MFA toggles (no central enforcement)",
+  password_only: "passwords only — no MFA enforced yet",
+};
+
+const PROCESS_AUTH_LABEL: Record<string, string> = {
+  managed_identity: "managed / workload identities in the IdP",
+  vaulted_secret: "client secrets in a secrets vault",
+  certificate: "certificate-based authentication",
+  hardcoded: "secrets in config files (FINDING — needs remediation)",
+  none: "no automations touch FCI",
+};
+
+const DEVICE_AUTH_LABEL: Record<string, string> = {
+  intune_compliant: "Intune compliance gating via Conditional Access",
+  google_managed: "Google endpoint management + context-aware access",
+  domain_joined: "on-prem domain-joined machines",
+  cert_based: "device certificates (802.1x / VPN / mTLS)",
+  unmanaged: "unmanaged / personal devices (narrative compensating control)",
+};
+
+const ia352Intake: PracticeIntakeSpec = {
+  preamble:
+    "Four quick questions about how people, processes, and devices prove who they are. Every question maps to a specific NIST 800-171A determination statement for IA.L1-3.5.2. Your answers route the evidence path — none of the three objectives are skipped.",
+  questions: IA352_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // ─── Objective [a] · mfa_enforcement slot ───
+    const mfa = answers.mfa_method;
+    if (mfa === "m365_ca" || mfa === "google_2sv") {
+      slotAnnotations.mfa_enforcement = {
+        recommendedDestinationIdx: 0, // connect
+        contextNote:
+          mfa === "m365_ca"
+            ? "Connect Microsoft 365 — Charlie pulls your Conditional Access policy + MFA registration report and tags the artifact to objective [a]."
+            : "Connect Google Workspace — Charlie pulls the 2SV enforcement report and tags it to objective [a].",
+      };
+    } else if (mfa === "other_idp") {
+      slotAnnotations.mfa_enforcement = {
+        recommendedDestinationIdx: 1, // upload
+        contextNote:
+          "You're on a third-party IdP — export the MFA enforcement / user MFA-status report from Okta/JumpCloud/Duo and upload the PDF or PNG.",
+      };
+    } else if (mfa === "per_app") {
+      slotAnnotations.mfa_enforcement = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Per-app MFA: upload one screenshot from each material app (M365, Google, your file-share, your accounting system). Charlie will check that every app touching FCI has MFA shown ON.",
+      };
+    } else if (mfa === "password_only") {
+      slotAnnotations.mfa_enforcement = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "No MFA today — this is the #1 finding on CMMC L1 assessments. Charlie will walk you through enabling MFA in M365 or Google in ~10 minutes, then come back here to upload the screenshot.",
+      };
+    }
+
+    // ─── Objective [a] · password_policy slot ───
+    const pwPolicy = answers.password_policy;
+    if (pwPolicy === "have_doc") {
+      slotAnnotations.password_policy = {
+        recommendedDestinationIdx: 1, // upload
+        contextNote:
+          "You said you already have a written policy — upload it as-is. Charlie will check it covers minimum length, complexity, rotation, lockout, and MFA scope; if anything is missing, he'll patch the doc with you.",
+      };
+    } else if (pwPolicy === "informal" || pwPolicy === "none") {
+      slotAnnotations.password_policy = {
+        recommendedDestinationIdx: 0, // generate
+        contextNote:
+          pwPolicy === "informal"
+            ? "Have Charlie draft the policy — he'll ask you the 5 questions assessors check (length, complexity, rotation, lockout, MFA scope) and produce a one-page authentication policy ready to sign."
+            : "Charlie will draft an authentication policy from scratch matched to NIST SP 800-171 Rev 2 §3.5.x and your environment. Two minutes, signed evidence at the end.",
+      };
+    }
+
+    // ─── Objective [b] · process_auth_method slot ───
+    const procAuth = answers.process_auth;
+    if (procAuth === "none") {
+      slotAnnotations.process_auth_method = {
+        attestation: {
+          buttonLabel: "Attest: no non-human processes touch FCI",
+          autoNarrative:
+            "The organization attests that no automated processes, service accounts, scheduled tasks, or integrations authenticate to systems containing Federal Contract Information. Only authenticated human users perform actions on FCI. This attestation satisfies NIST SP 800-171A §3.5.2 determination statement [b] for this environment; if a non-human process is introduced in the future, the organization will document its authentication mechanism (managed identity, vaulted secret, or certificate) and re-open this objective.",
+          reason:
+            "You said no automations touch FCI — under NIST 800-171A this objective is satisfied by a signed attestation rather than a narrative. The attestation is stamped with your account and the date, and is included verbatim in the SSP.",
+        },
+      };
+    } else if (procAuth === "managed_identity") {
+      slotAnnotations.process_auth_method = {
+        recommendedDestinationIdx: 0, // generate
+        contextNote:
+          "Managed identities — strongest path. Charlie will draft a short narrative listing each workload identity (Entra managed identity / Google service account / IAM role), the resource it accesses, and the human owner. No secrets to rotate, no vault to document.",
+      };
+    } else if (procAuth === "vaulted_secret") {
+      slotAnnotations.process_auth_method = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Vaulted secrets — name your vault (Azure Key Vault / AWS Secrets Manager / 1Password / Doppler), the service accounts that pull from it, and the rotation cadence. Charlie will assemble the narrative; you'll add the vault name + rotation schedule.",
+      };
+    } else if (procAuth === "certificate") {
+      slotAnnotations.process_auth_method = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Cert-based auth — Charlie will draft a narrative describing where the certificates are issued (internal CA / public CA / device cert), the renewal cadence, and what authenticates with them.",
+      };
+    } else if (procAuth === "hardcoded") {
+      slotAnnotations.process_auth_method = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Secrets in config files is the most common L1 finding. Charlie will help you (1) inventory where the secrets live, (2) document a 30-day remediation plan to a vault, (3) produce both the current-state narrative and a Plan of Action & Milestones entry — both required artifacts.",
+      };
+    }
+
+    // ─── Objective [c] · device_auth_evidence slot ───
+    const devAuth = answers.device_auth;
+    if (devAuth === "intune_compliant") {
+      slotAnnotations.device_auth_evidence = {
+        recommendedDestinationIdx: 0, // connect
+        contextNote:
+          "Connect Microsoft 365 — Charlie pulls the Intune compliance policy + the Conditional Access rule that requires a compliant device, and tags both to objective [c].",
+      };
+    } else if (devAuth === "google_managed") {
+      slotAnnotations.device_auth_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Connect Google Workspace — Charlie pulls the endpoint management policy and any context-aware access rules tied to device posture.",
+      };
+    } else if (devAuth === "domain_joined") {
+      slotAnnotations.device_auth_evidence = {
+        recommendedDestinationIdx: 1, // upload
+        contextNote:
+          "Upload screenshots of (1) the domain-membership requirement in Group Policy, and (2) one client showing it's domain-joined (System Properties > Computer Name). Charlie will tag both.",
+      };
+    } else if (devAuth === "cert_based") {
+      slotAnnotations.device_auth_evidence = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Upload screenshots of the cert-issuance config (CA template, MDM cert profile, VPN/Wi-Fi 802.1x policy). One image per layer is enough — Charlie will check coverage.",
+      };
+    } else if (devAuth === "unmanaged") {
+      slotAnnotations.device_auth_evidence = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Unmanaged devices are allowed under L1 only if you have a written compensating-control narrative: how access is constrained (browser-only, no local FCI storage, app-level MFA on every login). Charlie will draft this narrative with you — upload it when ready.",
+      };
+    }
+
+    const situationSummary = [
+      `MFA: ${MFA_LABEL[mfa] ?? "(unspecified)"}.`,
+      `Process authentication: ${PROCESS_AUTH_LABEL[procAuth] ?? "(unspecified)"}.`,
+      `Device authentication: ${DEVICE_AUTH_LABEL[devAuth] ?? "(unspecified)"}.`,
+      pwPolicy === "have_doc"
+        ? "Authentication policy already documented."
+        : "Authentication policy will be drafted with Charlie.",
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's authentication setup",
+      `- MFA mechanism: ${MFA_LABEL[answers.mfa_method] ?? "(not specified)"}`,
+      `- Process / service-account auth: ${PROCESS_AUTH_LABEL[answers.process_auth] ?? "(not specified)"}`,
+      `- Device authentication: ${DEVICE_AUTH_LABEL[answers.device_auth] ?? "(not specified)"}`,
+      `- Written auth policy: ${answers.password_policy === "have_doc" ? "YES — uploaded" : "NO — drafting with Charlie"}`,
+      "",
+      "Do NOT re-ask these facts. Open by acknowledging the environment in one sentence, then drive toward the missing objective letter. If `process_auth = none`, objective [b] is satisfied by attestation — confirm the attestation is captured rather than chasing a narrative. If `mfa_method = password_only`, treat enabling MFA as the highest-priority next step.",
+    ].join("\n");
+  },
 };
 
 export const practiceSpecs: Record<string, PracticeSpec> = {
@@ -741,6 +1554,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       },
     ],
     keyReferences: ["FAR 52.204-21(b)(1)(v)", "NIST SP 800-171 Rev 2 §3.5.1"],
+    intake: ia351Intake,
   },
 
   // ────────────────────────────────────────────────────────────────────────
@@ -869,6 +1683,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       },
     ],
     keyReferences: ["FAR 52.204-21(b)(1)(vi)", "NIST SP 800-171 Rev 2 §3.5.2"],
+    intake: ia352Intake,
   },
 
   // ────────────────────────────────────────────────────────────────────────
