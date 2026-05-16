@@ -10,7 +10,7 @@ import {
   listResponsesForAssessment,
   suggestedNaJustification,
 } from "@/lib/assessment";
-import { getObjectives, playbook, playbookById } from "@/lib/playbook";
+import { getObjectives, playbook, playbookById, requirementMeta } from "@/lib/playbook";
 import { getPracticeQuiz } from "@/lib/practice-quizzes";
 import {
   deleteEvidenceAction,
@@ -37,6 +37,7 @@ import {
 } from "@/lib/cmmc/practice-spec";
 import { getOrCreatePracticeConversation } from "@/lib/cmmc/practice-chat";
 import { getConnectorTokenStatus } from "@/lib/connectors/storage";
+import { providersCoveringControl } from "@/lib/connectors/registry";
 import type { ConnectorProvider } from "@/lib/connectors/types";
 
 export default async function ControlDetailPage(
@@ -81,6 +82,18 @@ export default async function ControlDetailPage(
       ? orderedIds[currentIdx + 1]
       : null;
 
+  // User-facing counter MUST be 15 requirements, not 17 legacy practice IDs.
+  // CMMC Level 1 v2.13 = 15 safeguarding requirements across 6 domains
+  // (FAR 52.204-21(b)(1)(i)–(xv)). The playbook has 17 rows because
+  // PE.L1-b.1.ix decomposes into 3 legacy NIST 800-171 r2 controls
+  // (3.10.3 / 3.10.4 / 3.10.5) — internal-only. Display the ordinal of the
+  // parent v2.13 requirement so all three PE sub-pages show "Practice 9 of 15".
+  const requirementOrder = Object.keys(
+    requirementMeta,
+  ) as Array<keyof typeof requirementMeta>;
+  const totalRequirements = requirementOrder.length;
+  const displayIdx = requirementOrder.indexOf(practice.requirementId);
+
   // Suppress unused linter — kept for future header enrichment.
   void allResponses;
 
@@ -119,6 +132,31 @@ export default async function ControlDetailPage(
         )
       : null;
 
+  // Strip `connect`-type evidence destinations on this practice when the
+  // listed providers don't actually cover this control in the connector
+  // registry. Single source of truth: `CONNECTORS[*].controlsCovered`. Keeps
+  // the per-slot "Connect Microsoft 365 / Google" buttons from showing up on
+  // practices the OAuth integrations can't pull data for.
+  const stripUnsupportedConnect = <T extends { evidenceSlots: Array<{ destinations: Array<{ type: string; providers?: ReadonlyArray<ConnectorProvider> }> }> } | null>(
+    s: T,
+  ): T => {
+    if (!s) return s;
+    return {
+      ...s,
+      evidenceSlots: s.evidenceSlots.map((slot) => ({
+        ...slot,
+        destinations: slot.destinations.flatMap((d) => {
+          if (d.type !== "connect") return [d];
+          const providers = providersCoveringControl(d.providers ?? [], controlId);
+          if (providers.length === 0) return [];
+          return [{ ...d, providers }];
+        }),
+      })),
+    } as T;
+  };
+  const chatSpecClientFiltered = stripUnsupportedConnect(chatSpecClient);
+  const personalizedClientFiltered = stripUnsupportedConnect(personalizedClient);
+
   return (
     <main>
       <div className="mx-auto max-w-4xl px-4 pt-4 md:px-6 md:pt-6">
@@ -137,8 +175,8 @@ export default async function ControlDetailPage(
             <PracticeChat
               assessmentId={id}
               controlId={controlId}
-              spec={chatSpecClient}
-              initialPersonalized={personalizedClient}
+              spec={chatSpecClientFiltered!}
+              initialPersonalized={personalizedClientFiltered}
               initialVerdicts={chatConv.objective_verdicts}
               initiallyLocked={!!chatConv.locked_at}
               initialIntakeAnswers={chatConv.intake_answers}
@@ -150,8 +188,8 @@ export default async function ControlDetailPage(
               deleteEvidenceAction={deleteEvidenceAction}
               prevId={prevId}
               nextId={nextId}
-              currentIdx={currentIdx}
-              total={orderedIds.length}
+              currentIdx={displayIdx}
+              total={totalRequirements}
             />
           );
         }
@@ -167,8 +205,8 @@ export default async function ControlDetailPage(
               evidence={evidenceForClient}
               prevId={prevId}
               nextId={nextId}
-              currentIdx={currentIdx}
-              total={orderedIds.length}
+              currentIdx={displayIdx}
+              total={totalRequirements}
               saveResponseAction={saveControlResponseAction}
               uploadEvidenceAction={uploadEvidenceAction}
               submitVaultEntryAction={submitVaultEntryAction}
@@ -189,8 +227,8 @@ export default async function ControlDetailPage(
             suggestedNa={suggestedNaJustification(controlId)}
             prevId={prevId}
             nextId={nextId}
-            currentIdx={currentIdx}
-            total={orderedIds.length}
+            currentIdx={displayIdx}
+            total={totalRequirements}
             reuseCandidates={reuseForClient}
             saveResponseAction={saveControlResponseAction}
             uploadEvidenceAction={uploadEvidenceAction}
