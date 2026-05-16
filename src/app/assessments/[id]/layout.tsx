@@ -197,7 +197,11 @@ export default async function CourseLayout(
           : `${weighted}% complete · ${resolved} of ${total} MET`;
       })(),
       status: practicesStatus,
-      match: "exact",
+      // Prefix-match so step 4 stays highlighted while the user is deep
+      // inside a single practice at /assessments/[id]/controls/[controlId].
+      // Other sections (profile/registration/scope/sign/...) have longer
+      // hrefs and win the longest-prefix tiebreak on their own pages.
+      match: "prefix",
     },
     {
       id: "sign",
