@@ -72,14 +72,30 @@ export function PracticeIntake(props: {
         setError(res.reason ?? "Could not save. Try again.");
         return;
       }
-      // Tell the Charlie rail what we know so he opens with the right context
-      // on the user's next turn (not the generic spec-only opener).
+      // Wake Charlie up: he now has the intake answers baked into his
+      // system prompt (the server action revalidates this route, so the
+      // next /api/chat call rebuilds the prompt with `charlieBrief` + slot
+      // annotations). Fire a structured directive into the rail so he
+      // proactively walks the user through every empty evidence slot
+      // instead of waiting to be prompted.
+      const directive = [
+        `[INTAKE COMPLETE — ${props.controlId}]`,
+        ``,
+        `The user just finished the intake for ${props.controlId} (${props.controlShortName}). Their captured environment:`,
+        res.situationSummary ?? "(see system prompt for intake summary)",
+        ``,
+        `Now drive the evidence walkthrough. Do this conversationally — ONE slot at a time, ONE question at a time:`,
+        `1. Open with a single sentence that mirrors back what you heard (e.g. "Got it — local accounts only, no automations, no shared logins."). Don't restate every answer.`,
+        `2. Then start Slot #1 from the personalized evidence list in your system prompt. For that slot: (a) name it in plain English, (b) say what objective letter it covers and what an assessor is looking for in one line, (c) recommend the SPECIFIC path based on what they told you — generate-with-me, connect a tool, upload a file, or sign an attestation — using the "Based on your setup" context note baked in, (d) if I can generate the artifact for them with generate_evidence_artifact, OFFER to draft it right now and ask any single follow-up question I need, (e) if they must upload, tell them EXACTLY what to upload (e.g. "a CSV with columns: full name, email, sAMAccountName, enabled (true/false)" or "a screenshot of your Entra Users list showing all enabled accounts").`,
+        `3. After they respond, generate the artifact (if applicable), then move to the next empty slot. Repeat until every required slot is covered.`,
+        `4. Skip slots that already have a sufficient artifact attached.`,
+        `5. NEVER mark the practice MET. The platform handles that.`,
+        ``,
+        `Start with the opening sentence + Slot #1 now.`,
+      ].join("\n");
       window.dispatchEvent(
-        new CustomEvent("practice-intake-completed", {
-          detail: {
-            controlId: props.controlId,
-            situationSummary: res.situationSummary,
-          },
+        new CustomEvent("charlie-send-message", {
+          detail: { message: directive },
         }),
       );
       router.refresh();

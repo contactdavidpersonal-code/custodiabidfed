@@ -274,12 +274,44 @@ export function buildPracticeSystemPrompt(
   // attestation/connector recommendations the UI will also show.
   const personalized = personalizeSpec(spec, intake);
   const activeSpec: PracticeSpec = personalized ?? spec;
+  const slotAnnotations = personalized?.slotAnnotations ?? {};
+  // Render every slot with its destinations AND the personalized routing
+  // hint (recommended destination, attestation override, dynamic notes). This
+  // is what makes Charlie "ultra aware" of the platform — he sees the exact
+  // same options the user sees in the evidence cards, plus the situational
+  // recommendation baked in from intake.
   const slotsList = activeSpec.evidenceSlots
-    .map(
-      (s) =>
-        `  - ${s.label} (${s.required ? "required" : "optional"}; satisfies [${s.satisfies.join(", ")}]): ${s.hint}`,
-    )
-    .join("\n");
+    .map((s, idx) => {
+      const ann = slotAnnotations[s.key];
+      const destLines = (s.destinations ?? [])
+        .map((d, di) => {
+          const recommended =
+            ann?.recommendedDestinationIdx === di ? " ← RECOMMENDED" : "";
+          if (d.type === "generate") {
+            return `        • generate (\`generate_evidence_artifact\` slot_key=\`${s.key}\` filename=\`${d.filename ?? "(choose)"}\` format=${d.format ?? "markdown"}): ${d.label}${recommended}`;
+          }
+          if (d.type === "connect") {
+            return `        • connector \`${d.providers.join("|")}\`: ${d.label}${recommended} — pulls: ${d.describes}`;
+          }
+          if (d.type === "upload") {
+            const accepts = d.accept?.length ? ` (accepts ${d.accept.join(", ")})` : "";
+            return `        • upload: ${d.label}${accepts}${recommended} — what to upload: ${d.describes}`;
+          }
+          return `        • ${(d as { type: string }).type}: ${(d as { label?: string }).label ?? ""}${recommended}`;
+        })
+        .join("\n");
+      const attestation = ann?.attestation
+        ? `\n        ATTESTATION OVERRIDE — this slot collapses to a signed attestation in the user's environment. Button: "${ann.attestation.buttonLabel}". Reason: ${ann.attestation.reason}. Auto-narrative stamped into SSP: "${ann.attestation.autoNarrative}". Do NOT ask the user for an artifact here; point them at the attestation button and confirm they want to click it.`
+        : "";
+      const note = ann?.contextNote
+        ? `\n        Based on intake: ${ann.contextNote}`
+        : "";
+      return `  Slot #${idx + 1} — ${s.label} (key=\`${s.key}\`; ${s.required ? "required" : "optional"}; satisfies [${s.satisfies.join(", ")}])
+      What it proves: ${s.hint}${note}${attestation}
+      Available paths:
+${destLines || "        (no destinations defined)"}`;
+    })
+    .join("\n\n");
   const intakeBlock =
     intake && spec.intake && isIntakeComplete(spec, intake)
       ? `\n\n${spec.intake.charlieBrief(intake)}`
@@ -298,20 +330,23 @@ ${objectivesList}
 ## Further discussion (from the SAG)
 ${spec.furtherDiscussion}
 
-## Evidence slots a CMMC assessor will accept
+## Evidence slots a CMMC assessor will accept (personalized for this user)
+Each slot below shows the EXACT options the user sees in the platform UI. When you recommend a path, use the same wording. When the slot has an ATTESTATION OVERRIDE, the objective is satisfied by a signed attestation — don't ask for a roster. When a destination is marked "← RECOMMENDED", that's the fastest path based on the user's intake answers — recommend it first, but accept whatever the user chooses.
+
 ${slotsList}
 
 ## Currently attached evidence
 ${evidenceSummary || "(no evidence uploaded yet)"}${intakeBlock}
 
-## How you behave
+## How you behave (slot-walkthrough mode)
 - ONE question at a time. Plain English. No jargon without defining it.
 - The user is not a security expert. Assume zero prior knowledge.
-- Your job: convert the user's plain description of their business into a clean mapping of each objective letter [a]/[b]/[c]/... onto reality.
+- Your job: drive the user from "0 evidence" to "every required slot covered" by walking each slot in order.
+- For each empty required slot, in this order: (1) name the slot in plain English, (2) tell them in one line what an assessor would check, (3) recommend the SPECIFIC path from the slot's "Available paths" list based on what they told you in intake, (4) if generate is the right path, OFFER to draft it right now with \`generate_evidence_artifact\` and ask the single follow-up question you need, (5) if upload is the right path, tell them EXACTLY what file (filename pattern, columns, what should be visible in a screenshot), (6) if the slot has an attestation override, point them at the attestation button and confirm they want to click it.
+- When you call \`generate_evidence_artifact\`, ALWAYS pass the exact \`slot_key\` shown above (no guessing) and use a filename that makes \`inferSlotKey\` route it back to the right slot — prefer the slot key's hyphenated form (e.g. \`user_identifiers_list\` → \`user-identifiers-list-2026-05-16.md\`).
+- After each user message, briefly note "Got what I need for [letter]" or "Slot X is covered" when an objective is satisfied, then move to the next empty slot.
 - Acknowledge what they tell you, then ask the next thing you need. Don't lecture.
-- When you have enough information for an objective, briefly note "Got what I need for [letter]" and move on.
-- When the user is missing a required artifact (e.g. they have no roster), tell them concretely what to upload, AND offer to draft it for them ("If you want, I can generate a starter roster CSV from what you've told me — you'd review and approve it").
-- NEVER mark the practice MET on your own. The platform handles that — you just gather facts.
+- NEVER mark the practice MET on your own. The platform handles that — you just gather facts and generate/route evidence.
 - If the user asks something outside this practice (Level 2, DFARS, CUI, other practices), say "I'll flag that for after we lock this one in" and pull them back.
 - If the user is clearly out of scope (handles CUI, has a complex multi-tenant cloud, doesn't actually have FCI), say so plainly and recommend they escalate to a Custodia Compliance Officer.
 - Keep replies short — usually 2-5 sentences. Use a tight numbered list when you have multiple items. No emojis.
