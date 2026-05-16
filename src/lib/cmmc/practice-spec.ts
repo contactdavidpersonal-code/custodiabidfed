@@ -1003,32 +1003,43 @@ const AC311_QUESTIONS: IntakeQuestion[] = [
     id: "fci_location",
     objectives: ["a", "d"],
     prompt:
-      "Where does Federal Contract Information primarily live and get worked on today?",
+      "Where do you mostly send/receive emails and store working files for federal-contract work?",
     helpText:
-      "Pick the system that holds the bulk of FCI documents and email. We'll route which roster / enforcement evidence to pull from this answer.",
+      "Pick the closest match — Charlie routes which roster and enforcement evidence to pull. If you're a solo operator on a personal-style mailbox (Proton, iCloud, etc.) plus a laptop, the first option is for you.",
     regAnchor:
       "NIST SP 800-171A §3.1.1 [a],[d]; CMMC L1 SAG (v2.13) AC.L1-b.1.i Further Discussion",
     regQuote:
       "Determine if: [a] authorized users are identified … [d] system access is limited to authorized users. … Identify users, processes, and devices that are allowed to use company computers and can log on to the company network.",
     options: [
       {
-        value: "m365_sharepoint",
-        label: "Microsoft 365 (SharePoint / OneDrive / Teams / Outlook)",
+        value: "solo_email_laptop",
+        label: "Just my email + my laptop (no shared cloud drive)",
+        description:
+          "Most common for solo / micro contractors — Proton, iCloud, Fastmail, or another personal-style mailbox, plus one or two work laptops.",
       },
-      { value: "google_drive", label: "Google Workspace (Drive / Gmail)" },
+      {
+        value: "m365_sharepoint",
+        label: "Microsoft 365 (Outlook, SharePoint, OneDrive, Teams)",
+        description: "You sign in with a work email like name@yourcompany.com that runs on Microsoft.",
+      },
+      {
+        value: "google_drive",
+        label: "Google Workspace (Gmail + Drive for work)",
+        description: "You sign in with a work email like name@yourcompany.com that runs on Google.",
+      },
       {
         value: "on_prem_share",
-        label: "On-prem file share / NAS",
-        description: "Windows file server, Synology, etc.",
+        label: "A shared drive in the office",
+        description: "A Windows file server, Synology box, or other on-site shared storage.",
       },
       {
         value: "saas_app",
-        label: "A specific line-of-business SaaS",
-        description: "Salesforce, NetSuite, Deltek, accounting system, etc.",
+        label: "A specific business app",
+        description: "Like Salesforce, NetSuite, Deltek, QuickBooks Online, or your accounting / project system.",
       },
       {
         value: "mixed",
-        label: "Mixed across several of the above",
+        label: "A mix of the above",
       },
     ],
   },
@@ -1036,31 +1047,42 @@ const AC311_QUESTIONS: IntakeQuestion[] = [
     id: "provisioning_method",
     objectives: ["d", "e"],
     prompt:
-      "How does an employee or contractor actually get access to those FCI systems on day 1?",
+      "When a new person needs access to your federal-contract files or email, how do they get it?",
     helpText:
-      "We're matching you to an evidence path — not grading. Whatever you do today is what we'll document.",
+      "We're matching you to an evidence path — not grading. Whatever you do today is what Charlie documents.",
     regAnchor:
       "NIST SP 800-171A §3.1.1 [d],[e]; CMMC L1 SAG (v2.13) AC.L1-b.1.i Potential Assessment Considerations",
     regQuote:
       "Determine if: [d] system access is limited to authorized users [and] [e] system access is limited to processes acting on behalf of authorized users. … Set up your system so that only authorized users, processes, and devices can access the company network.",
     options: [
       {
+        value: "solo_only_me",
+        label: "It's just me — no employees or contractors with access",
+        description:
+          "You're the only person who logs in. Charlie will write a one-person attestation in place of a multi-step procedure.",
+      },
+      {
+        value: "owner_grants",
+        label: "I (or another owner) personally grant access when someone joins",
+        description: "You add them to the mailbox, share the folder, hand them the password manager invite — no IT department involved.",
+      },
+      {
         value: "idp_groups",
-        label: "IT adds them to the right IdP groups",
-        description: "M365 / Google / Okta / Entra ID — group drives access.",
+        label: "IT adds them to the right groups in our work account",
+        description: "Someone manages your Microsoft / Google / Okta tenant and adds new hires to security groups.",
       },
       {
         value: "manual_ticket",
-        label: "Manager files a ticket; IT clicks through each system",
+        label: "A manager files a ticket and IT clicks through each system",
       },
       {
         value: "self_service",
         label: "Self-service request portal",
-        description: "Jira Service Mgmt, ServiceNow, SailPoint, etc.",
+        description: "Like Jira Service Management, ServiceNow, or SailPoint — the requester picks what they need.",
       },
       {
         value: "ad_hoc",
-        label: "Ad hoc — whoever is around grants access via email/chat",
+        label: "It happens ad-hoc over email or chat — no fixed process",
       },
       {
         value: "no_process",
@@ -1072,30 +1094,35 @@ const AC311_QUESTIONS: IntakeQuestion[] = [
     id: "deprovisioning_speed",
     objectives: ["d", "e", "f"],
     prompt:
-      "When someone leaves the company or changes role, how fast does their FCI access get removed?",
+      "When someone leaves or no longer needs access, how fast does it get shut off?",
     helpText:
-      "Assessors weight this heavily — stale access is the #2 finding behind missing MFA. Same-day automation is the gold standard.",
+      "Assessors weight this heavily — stale access is the #2 finding behind missing MFA. Same-day is the gold standard. If it's just you with no one else, pick the first option.",
     regAnchor:
       "NIST SP 800-171A §3.1.1 [d],[e],[f]; CMMC L1 SAG (v2.13) AC.L1-b.1.i Further Discussion",
     regQuote:
       "Determine if: … system access is limited to authorized users [d], processes acting on behalf of authorized users [e], and devices including other systems [f]. … Limit the devices (e.g., printers) that can be accessed by company computers.",
     options: [
       {
+        value: "solo_only_me",
+        label: "Doesn't apply — it's just me",
+        description: "No one else has access today. Charlie notes this so the assessor sees a clear, dated attestation.",
+      },
+      {
         value: "auto_idp",
-        label: "Auto-deprovisioned via IdP or HRIS sync (same day)",
-        description: "Entra ID lifecycle workflows, Okta off-boarding, etc.",
+        label: "It happens automatically the same day",
+        description: "Your work account or HR system auto-removes them — e.g. Entra ID lifecycle workflows, Okta off-boarding.",
       },
       {
         value: "same_day_manual",
-        label: "Manual same-day checklist (IT runs through it)",
+        label: "Someone manually runs through a same-day off-boarding checklist",
       },
       {
         value: "within_week",
-        label: "Manual, within a week",
+        label: "Manually, within a week",
       },
       {
         value: "eventual",
-        label: "Eventually, when someone notices",
+        label: "Eventually — whenever someone notices",
       },
       {
         value: "no_process",
@@ -1107,9 +1134,9 @@ const AC311_QUESTIONS: IntakeQuestion[] = [
     id: "external_actors",
     objectives: ["c", "f"],
     prompt:
-      "Beyond your IT-managed laptops and phones, what else can connect to systems holding FCI?",
+      "Besides your own work laptops/phones, what else ever connects to your email or files for federal-contract work?",
     helpText:
-      "Pick the one closest match — we'll add an evidence slot if your answer changes what an assessor would ask for.",
+      "Pick the closest match — we'll add an evidence slot if your answer changes what an assessor would ask for.",
     regAnchor:
       "NIST SP 800-171A §3.1.1 [c],[f]; CMMC L1 SAG (v2.13) AC.L1-b.1.i Further Discussion",
     regQuote:
@@ -1117,22 +1144,22 @@ const AC311_QUESTIONS: IntakeQuestion[] = [
     options: [
       {
         value: "managed_only",
-        label: "Only IT-managed laptops and phones",
+        label: "Just my own work laptop(s) and phone(s) — nothing else",
       },
       {
         value: "plus_printers",
-        label: "Plus office printers / MFPs",
+        label: "Plus the office printer or all-in-one",
       },
       {
         value: "plus_byod",
-        label: "Plus contractors' or staff personal devices (BYOD)",
-        description: "We'll add a BYOD acceptable-use acknowledgement slot.",
+        label: "Plus personal devices (mine or a contractor's)",
+        description: "We'll add a short \"personal device signed off\" register.",
       },
       {
         value: "plus_vendor",
-        label: "Plus vendor / partner systems",
+        label: "Plus an outside system (prime contractor, partner, MSP)",
         description:
-          "Prime contractor SFTP, partner API, MSP RMM agent — we'll add an external-systems register slot.",
+          "Like a prime contractor's SFTP, a partner API, or your IT provider's remote-management agent. We'll add a one-row register of those connections.",
       },
       {
         value: "unsure",
@@ -1143,14 +1170,17 @@ const AC311_QUESTIONS: IntakeQuestion[] = [
 ];
 
 const FCI_LOCATION_LABEL: Record<string, string> = {
+  solo_email_laptop: "a personal-style mailbox (Proton, iCloud, Fastmail) plus a work laptop",
   m365_sharepoint: "Microsoft 365 (SharePoint / OneDrive / Teams)",
   google_drive: "Google Workspace (Drive / Gmail)",
-  on_prem_share: "on-prem file share / NAS",
+  on_prem_share: "an on-prem file share / NAS",
   saas_app: "a specific line-of-business SaaS",
   mixed: "a mix of several systems",
 };
 
 const PROVISIONING_LABEL: Record<string, string> = {
+  solo_only_me: "a one-person operation — only the owner has access",
+  owner_grants: "an owner who personally grants access without an IT department",
   idp_groups: "IdP group membership (IT adds users to groups)",
   manual_ticket: "manual ticketed provisioning per system",
   self_service: "a self-service request portal",
@@ -1159,6 +1189,7 @@ const PROVISIONING_LABEL: Record<string, string> = {
 };
 
 const DEPROVISIONING_LABEL: Record<string, string> = {
+  solo_only_me: "not applicable — only the owner has access today",
   auto_idp: "auto-deprovisioned same-day via IdP / HRIS sync",
   same_day_manual: "a manual same-day off-boarding checklist",
   within_week: "manual off-boarding within a week",
@@ -1167,10 +1198,10 @@ const DEPROVISIONING_LABEL: Record<string, string> = {
 };
 
 const EXTERNAL_ACTORS_LABEL: Record<string, string> = {
-  managed_only: "IT-managed laptops and phones only",
-  plus_printers: "managed devices plus office printers / MFPs",
-  plus_byod: "managed devices plus BYOD (a register is required)",
-  plus_vendor: "managed devices plus vendor / partner systems",
+  managed_only: "just the owner's own work laptops and phones",
+  plus_printers: "work devices plus the office printer / all-in-one",
+  plus_byod: "work devices plus personal devices (a short BYOD register is required)",
+  plus_vendor: "work devices plus an outside system (prime, partner, or IT-provider)",
   unsure: "an inventory still to be built",
 };
 
@@ -1185,7 +1216,18 @@ const ac311Intake: PracticeIntakeSpec = {
 
     // ─── Objective [a]/[d] · authorized_users_roster + enforcement_proof ───
     const where = answers.fci_location;
-    if (where === "m365_sharepoint") {
+    if (where === "solo_email_laptop") {
+      slotAnnotations.authorized_users_roster = {
+        recommendedDestinationIdx: 0, // generate w/ Charlie
+        contextNote:
+          "Solo operator on a personal-style mailbox plus a laptop — Charlie drafts a one-row roster (you) listing the mailbox account, the laptop user account, and the date authorized. That single row is the complete, dated artifact an assessor expects.",
+      };
+      slotAnnotations.enforcement_proof = {
+        recommendedDestinationIdx: 1, // upload
+        contextNote:
+          "Two screenshots are enough: (1) your mailbox provider's Sessions or Authentication-Logs page showing only your account is signed in, and (2) your laptop's Users / Accounts panel showing only your account exists. Charlie tags both to [d]/[e]/[f].",
+      };
+    } else if (where === "m365_sharepoint") {
       slotAnnotations.authorized_users_roster = {
         recommendedDestinationIdx: 1, // connect M365/Google
         contextNote:
@@ -1238,9 +1280,22 @@ const ac311Intake: PracticeIntakeSpec = {
     // ─── Objective [d]/[e]/[f] · access_procedure ───
     const prov = answers.provisioning_method;
     const deprov = answers.deprovisioning_speed;
+    const isSolo = prov === "solo_only_me" || deprov === "solo_only_me";
     const noProcess =
       prov === "no_process" || prov === "ad_hoc" || deprov === "no_process" || deprov === "eventual";
-    if (noProcess) {
+    if (isSolo) {
+      slotAnnotations.access_procedure = {
+        recommendedDestinationIdx: 0, // generate w/ Charlie
+        contextNote:
+          "Solo operator — Charlie drafts a one-paragraph attestation: only the owner has access today, and if/when anyone else is added (employee, contractor, family member helping out), the steps Charlie names will be followed before they get the mailbox or laptop credentials. That attestation is the dated procedure for [d]/[e]/[f].",
+      };
+    } else if (prov === "owner_grants") {
+      slotAnnotations.access_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Owner grants access directly — Charlie drafts a short procedure that names you as the approver, lists the four steps you take to give a new person access (mailbox invite, folder share, password-manager invite, MFA enrollment), and the matching steps you take to remove it. No IT department required.",
+      };
+    } else if (noProcess) {
       slotAnnotations.access_procedure = {
         recommendedDestinationIdx: 0, // generate w/ Charlie
         contextNote:
