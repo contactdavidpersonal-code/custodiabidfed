@@ -29,7 +29,12 @@ import { ConnectorHint } from "../../../_components/ConnectorHint";
 import { PracticeWizard } from "./PracticeWizard";
 import { PracticeQuiz } from "./PracticeQuiz";
 import { PracticeChat } from "./PracticeChat";
-import { getPracticeSpec } from "@/lib/cmmc/practice-spec";
+import {
+  getPracticeSpec,
+  personalizeSpec,
+  toClientPracticeSpec,
+  toClientPersonalizedSpec,
+} from "@/lib/cmmc/practice-spec";
 import { getOrCreatePracticeConversation } from "@/lib/cmmc/practice-chat";
 import { getConnectorTokenStatus } from "@/lib/connectors/storage";
 import type { ConnectorProvider } from "@/lib/connectors/types";
@@ -101,6 +106,18 @@ export default async function ControlDetailPage(
   const chatConv = chatSpec
     ? await getOrCreatePracticeConversation(id, controlId)
     : null;
+  // Personalize server-side. The intake spec contains `personalize` /
+  // `charlieBrief` function references which React Server Components cannot
+  // serialize across the client boundary — so we run personalize() here and
+  // pass only plain data forward via `toClientPracticeSpec` /
+  // `toClientPersonalizedSpec` (those helpers strip the function fields).
+  const chatSpecClient = chatSpec ? toClientPracticeSpec(chatSpec) : null;
+  const personalizedClient =
+    chatSpec && chatConv
+      ? toClientPersonalizedSpec(
+          personalizeSpec(chatSpec, chatConv.intake_answers),
+        )
+      : null;
 
   return (
     <main>
@@ -115,12 +132,13 @@ export default async function ControlDetailPage(
         // Today: AC.L1-3.1.1 only. The shape is identical for every other
         // practice — adding `IA.L1-3.5.1` etc. is a pure data edit in
         // `src/lib/cmmc/practice-spec.ts` (the chat UI/API auto-picks it up).
-        if (chatSpec && chatConv) {
+        if (chatSpec && chatConv && chatSpecClient) {
           return (
             <PracticeChat
               assessmentId={id}
               controlId={controlId}
-              spec={chatSpec}
+              spec={chatSpecClient}
+              initialPersonalized={personalizedClient}
               initialVerdicts={chatConv.objective_verdicts}
               initiallyLocked={!!chatConv.locked_at}
               initialIntakeAnswers={chatConv.intake_answers}
