@@ -486,6 +486,11 @@ export function ComplianceOfficerRail({
                 new CustomEvent("custodia:objective-changed", { detail }),
               );
             }
+            if (meta.name === "set_intake_answer") {
+              window.dispatchEvent(
+                new CustomEvent("custodia:intake-changed", { detail }),
+              );
+            }
           }
           toolMetaByIdRef.current.delete(id);
         } else if (event === "navigate") {

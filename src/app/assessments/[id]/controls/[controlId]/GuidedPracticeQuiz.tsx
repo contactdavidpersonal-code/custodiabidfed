@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type {
   ClientPracticeIntakeSpec,
@@ -67,6 +67,38 @@ export function GuidedPracticeQuiz(props: {
   const [answers, setAnswers] = useState<IntakeAnswers>(
     props.initialAnswers ?? {},
   );
+  // When Charlie fills in an intake answer via the `set_intake_answer` tool,
+  // ComplianceOfficerRail fires `custodia:intake-changed` and the server
+  // revalidates. Sync local state with the freshly-rendered props using the
+  // documented React pattern (https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  // — store the previous prop key in state and adjust other state during
+  // render when it changes. Avoids both cascading effects and ref-in-render.
+  const initialAnswersKey = JSON.stringify(props.initialAnswers ?? {});
+  const [lastSyncedKey, setLastSyncedKey] = useState<string>(initialAnswersKey);
+  if (lastSyncedKey !== initialAnswersKey) {
+    setLastSyncedKey(initialAnswersKey);
+    const incoming = props.initialAnswers;
+    if (incoming) {
+      setAnswers((prev) => ({ ...prev, ...incoming }));
+      const cur = props.intake.questions[stepIdx];
+      if (cur && incoming[cur.id]) {
+        const nextUnansweredIdx = props.intake.questions.findIndex(
+          (q) => !incoming[q.id],
+        );
+        if (nextUnansweredIdx !== -1 && nextUnansweredIdx !== stepIdx) {
+          setStepIdx(nextUnansweredIdx);
+        }
+      }
+    }
+  }
+
+  // Listen for Charlie's tool-driven intake writes and refresh server props.
+  useEffect(() => {
+    const handler = () => router.refresh();
+    window.addEventListener("custodia:intake-changed", handler);
+    return () =>
+      window.removeEventListener("custodia:intake-changed", handler);
+  }, [router]);
   const [error, setError] = useState<string | null>(null);
   const [savingStep, startSaveStep] = useTransition();
   const [finishing, startFinish] = useTransition();
@@ -163,14 +195,22 @@ export function GuidedPracticeQuiz(props: {
         setError(res.reason ?? "Could not finish. Try again.");
         return;
       }
-      // Wake Charlie up with a directive to walk any remaining empty slots.
+      // Wake Charlie up with a directive to auto-draft every generable
+      // artifact in parallel, then only ask the user for the things that
+      // genuinely cannot be auto-drafted (screenshots, signatures).
       const directive = [
         `[INTAKE COMPLETE — ${props.controlId}]`,
         ``,
-        `The user just finished the guided quiz for ${props.controlId} (${props.spec.shortName}). Their captured environment:`,
+        `The user just finished the guided quiz for ${props.controlId} (${props.spec.shortName}). They are NON-TECHNICAL — gardener / HVAC tech / handyman with a small federal contract. They expect you, Charlie, to do the work. Their captured environment:`,
         res.situationSummary ?? "(see system prompt for intake summary)",
         ``,
-        `Open with one sentence mirroring what you heard, then for each STILL-EMPTY required evidence slot (skip filled ones): name it, say what objective it covers and what an assessor wants in one line, and recommend the specific path — generate-with-me (offer to draft via generate_evidence_artifact), connect a tool, upload (state exactly what to upload — filename, columns, screenshot details), or sign an attestation. Drive ONE slot at a time. NEVER mark the practice MET.`,
+        `Do this RIGHT NOW, in this single response:`,
+        `1. Open with ONE short sentence in plain English that mirrors their setup ("Got it — solo shop, Proton email, one laptop. I'll handle the paperwork.").`,
+        `2. For EVERY required evidence slot whose destinations include a \`generate\` path AND is still empty: emit a \`generate_evidence_artifact\` tool call in this same assistant message. Parallel tool use is supported — fire them all at once. Use the recommended destination's filename + format. Compose the content from the intake summary and the slot's hint. NO MORE QUESTIONS for these slots — the user already gave you what you need via intake.`,
+        `3. For required slots that need a user-supplied artifact (upload screenshot, attestation signature, connector): list them at the end as a short numbered checklist. For each one, give the EXACT steps a non-technical person can follow ("Open Proton Mail in your browser → Settings → All Settings → Account → Sessions → take a screenshot showing the active sessions list → upload it here"). One line per step. No jargon.`,
+        `4. End with: "Want me to keep going, or do you want to handle the screenshots first?" — give them an obvious next move.`,
+        ``,
+        `RULES: Never ask the user "what should the roster say?" — you already know from intake. Never ask them to "review and confirm" before drafting — draft first, they can replace it. Never use the words FCI, CMMC, control, objective, NIST, M365, SaaS, BYOD, attestation, identifier, provisioning, deprovisioning, baseline. Translate every one of those into gardener words.`,
       ].join("\n");
       window.dispatchEvent(
         new CustomEvent("charlie-send-message", {
@@ -263,7 +303,48 @@ export function GuidedPracticeQuiz(props: {
       )}
 
       {/* Answer chips */}
-      <div className="mt-6 space-y-2">
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() => {
+            const directive = [
+              `[INTAKE HELP — ${props.controlId} / ${currentQ.id}]`,
+              ``,
+              `The user is non-technical (think gardener, HVAC tech, small handyman shop with a federal contract). They clicked "Help me pick this one" because they can't self-classify their IT setup. Drive the answer FOR them.`,
+              ``,
+              `The question is: "${currentQ.prompt}"`,
+              ``,
+              `Allowed option values (value → label → description):`,
+              ...currentQ.options.map(
+                (o) =>
+                  `  - ${o.value} → ${o.label}${o.description ? ` — ${o.description}` : ""}`,
+              ),
+              ``,
+              `What to do RIGHT NOW (in this single reply):`,
+              `1. Ask ONE plain-English question a gardener could answer in 5 seconds. Examples: "What do you use for work email — Gmail, Outlook, Proton, something else?" / "Is it just you, or do you have employees with logins?" / "Do you have an IT person, or is it you?". No acronyms. No "FCI", "M365", "managed", "SaaS", "BYOD" — translate everything.`,
+              `2. Stop. Wait for their reply.`,
+              ``,
+              `When they reply: pick the matching option value from the list above, call \`set_intake_answer({question_id: "${currentQ.id}", value: "<value>"})\`, and in ONE short sentence tell them what you picked and why ("I picked 'Just my email + my laptop' because Proton + one laptop = solo setup"). Then either ask the next intake question or — if all answers are in — proceed to auto-draft every required artifact.`,
+            ].join("\n");
+            window.dispatchEvent(
+              new CustomEvent("charlie-send-message", {
+                detail: { message: directive },
+              }),
+            );
+          }}
+          disabled={savingStep || finishing}
+          className="mb-4 inline-flex items-center gap-2 border border-[#2f8f6d] bg-[#f4faf6] px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#10231d] hover:bg-[#e6f4ec] disabled:opacity-50"
+        >
+          <span
+            className="inline-flex items-center justify-center bg-[#0e2a23] px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.16em] text-[#bdf2cf]"
+            aria-hidden
+          >
+            Charlie
+          </span>
+          Help me pick this one
+        </button>
+      </div>
+      <div className="space-y-2">
         {currentQ.options.map((opt) => {
           const selected = currentValue === opt.value;
           return (

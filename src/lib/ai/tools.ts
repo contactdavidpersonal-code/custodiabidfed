@@ -92,6 +92,8 @@ import {
 } from "@/lib/cmmc/boundary";
 import { randomUUID } from "node:crypto";
 import { getPracticeSpec, personalizeSpec } from "@/lib/cmmc/practice-spec";
+import { saveIntakeStep } from "@/lib/cmmc/practice-chat";
+import { revalidatePath } from "next/cache";
 import { put } from "@vercel/blob";
 
 /**
@@ -384,6 +386,27 @@ export const officerTools = [
         },
       },
       required: ["slot_key", "filename", "format", "content", "summary"],
+    },
+  },
+  {
+    name: "set_intake_answer",
+    description:
+      "Fill in ONE answer of the practice's intake quiz on the user's behalf. Use this when the user clicked a 'Help me pick this one' button or you've gathered enough plain-English information to confidently choose one of the available option values for a single question. Workflow: (1) ask ONE short plain-English question if you don't already have what you need (e.g. 'What do you use for email — Gmail, Outlook, Proton, something else?'), (2) when the user answers, map their reply to one of the allowed option values for that question, (3) call this tool once with question_id and value. After the tool returns ok, announce in one short sentence what you picked AND why ('I picked \"Just my email + my laptop\" because Proton + one laptop = solo operator setup'). If the practice has more unanswered questions, immediately ask the NEXT plain-English question OR call set_intake_answer again if you already know that answer too — parallel tool use is supported. NEVER ask the user to read the option labels themselves; they're here because they can't self-classify.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        question_id: {
+          type: "string",
+          description:
+            "The id of the intake question you're filling in (e.g. 'fci_location', 'provisioning_method', 'deprovisioning_speed', 'external_actors'). Must match a question in the active practice's intake spec.",
+        },
+        value: {
+          type: "string",
+          description:
+            "The option value you picked. Must match one of the question's option values exactly (e.g. 'solo_email_laptop', 'solo_only_me', 'managed_only'). The server validates this — if it isn't a valid option for the question you'll get an error back.",
+        },
+      },
+      required: ["question_id", "value"],
     },
   },
   {
@@ -1190,6 +1213,8 @@ export async function executeOfficerTool(
         return await handleEscalateToOfficer(input, ctx);
       case "generate_evidence_artifact":
         return await handleGenerateEvidenceArtifact(input, ctx);
+      case "set_intake_answer":
+        return await handleSetIntakeAnswer(input, ctx);
       case "search_sam_opportunities":
         return await handleSearchSamOpportunities(input, ctx);
       case "list_inbox_opportunities":
@@ -1602,6 +1627,111 @@ const ARTIFACT_FORMAT_EXT: Record<string, string> = {
   text: ".txt",
   pdf: ".pdf",
 };
+
+/**
+ * Fill in ONE intake-quiz answer on the user's behalf. Used by the "Help me
+ * pick this one" button + by Charlie's natural-language intake-driving turns.
+ *
+ * audit:tenant-scoping — scopes via ctx.activeAssessmentId + getAssessmentForUser.
+ */
+async function handleSetIntakeAnswer(
+  input: Record<string, unknown>,
+  ctx: ToolContext,
+): Promise<ToolResult> {
+  if (!ctx.activeAssessmentId || !ctx.activeControlId) {
+    return {
+      ok: false,
+      error:
+        "set_intake_answer only works when the user is on a /controls/:controlId page.",
+    };
+  }
+  const questionId =
+    typeof input.question_id === "string" ? input.question_id.trim() : "";
+  const value = typeof input.value === "string" ? input.value.trim() : "";
+  if (!questionId) return { ok: false, error: "question_id is required." };
+  if (!value) return { ok: false, error: "value is required." };
+
+  const spec = getPracticeSpec(ctx.activeControlId);
+  if (!spec?.intake) {
+    return {
+      ok: false,
+      error: `Practice ${ctx.activeControlId} does not have an intake quiz.`,
+    };
+  }
+  const question = spec.intake.questions.find((q) => q.id === questionId);
+  if (!question) {
+    return {
+      ok: false,
+      error: `Unknown question_id '${questionId}'. Valid questions for this practice: ${spec.intake.questions
+        .map((q) => q.id)
+        .join(", ")}.`,
+    };
+  }
+  const validOption = question.options.find((o) => o.value === value);
+  if (!validOption) {
+    return {
+      ok: false,
+      error: `Invalid value '${value}' for question '${questionId}'. Allowed values: ${question.options
+        .map((o) => `${o.value} (${o.label})`)
+        .join("; ")}.`,
+    };
+  }
+
+  const assessmentCtx = await getAssessmentForUser(
+    ctx.activeAssessmentId,
+    ctx.userId,
+  );
+  if (!assessmentCtx) {
+    return { ok: false, error: "Assessment not found or you don't have access." };
+  }
+
+  await saveIntakeStep(
+    ctx.activeAssessmentId,
+    ctx.activeControlId,
+    questionId,
+    value,
+  );
+
+  // Re-read current answers so we can tell Charlie what's left.
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT intake_answers
+    FROM practice_conversations
+    WHERE assessment_id = ${ctx.activeAssessmentId}
+      AND control_id = ${ctx.activeControlId}
+    LIMIT 1
+  `) as Array<{ intake_answers: Record<string, string> | null }>;
+  const current = rows[0]?.intake_answers ?? {};
+
+  const remaining = spec.intake.questions
+    .filter((q) => !current[q.id])
+    .map((q) => ({
+      question_id: q.id,
+      prompt: q.prompt,
+      options: q.options.map((o) => ({
+        value: o.value,
+        label: o.label,
+        description: o.description ?? null,
+      })),
+    }));
+
+  revalidatePath(
+    `/assessments/${ctx.activeAssessmentId}/controls/${ctx.activeControlId}`,
+  );
+
+  return {
+    ok: true,
+    data: {
+      saved: { question_id: questionId, value, label: validOption.label },
+      remaining_questions: remaining,
+      intake_complete: remaining.length === 0,
+      message:
+        remaining.length === 0
+          ? "All intake questions are answered. The user can click 'Finish' on the quiz card — OR you can proceed to auto-draft every required generable artifact right now."
+          : `Saved. ${remaining.length} intake question${remaining.length === 1 ? "" : "s"} remaining.`,
+    },
+  };
+}
 
 /**
  * Charlie generates a real evidence artifact from facts captured in the
