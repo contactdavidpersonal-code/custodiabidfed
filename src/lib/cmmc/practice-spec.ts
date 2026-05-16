@@ -976,6 +976,406 @@ const ia352Intake: PracticeIntakeSpec = {
   },
 };
 
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — AC.L1-3.1.1 (Authorized Access Control)
+//
+// Six objectives (a–f) that split into two halves:
+//   • [a]/[b]/[c] = IDENTIFY users / processes / devices
+//   • [d]/[e]/[f] = LIMIT access to those identified actors
+//
+// IA.L1-3.5.1 covers the IDENTIFY half from a unique-ID angle; this
+// practice's intake therefore focuses on WHERE FCI lives, HOW access is
+// granted/removed, and WHAT non-laptop actors (BYOD, vendors) can reach
+// it — facts that drive the enforcement-proof and access-procedure slots.
+//
+// Every question is anchored to:
+//   • NIST SP 800-171A Rev 2 §3.1.1 determination statements [a]–[f]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, AC.L1-b.1.i
+//   • FAR 52.204-21(b)(1)(i)
+//
+// Hard rule: intake answers NEVER drop an objective. They only route the
+// evidence path. A BYOD answer ADDS a slot (acceptable-use ack) but does
+// not skip the device inventory; an unmanaged-printers answer doesn't
+// satisfy [c]/[f] without an explicit inventory of those devices.
+// ────────────────────────────────────────────────────────────────────────
+const AC311_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "fci_location",
+    objectives: ["a", "d"],
+    prompt:
+      "Where does Federal Contract Information primarily live and get worked on today?",
+    helpText:
+      "Pick the system that holds the bulk of FCI documents and email. We'll route which roster / enforcement evidence to pull from this answer.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.1 [a],[d]; CMMC L1 SAG (v2.13) AC.L1-b.1.i Further Discussion",
+    regQuote:
+      "Determine if: [a] authorized users are identified … [d] system access is limited to authorized users. … Identify users, processes, and devices that are allowed to use company computers and can log on to the company network.",
+    options: [
+      {
+        value: "m365_sharepoint",
+        label: "Microsoft 365 (SharePoint / OneDrive / Teams / Outlook)",
+      },
+      { value: "google_drive", label: "Google Workspace (Drive / Gmail)" },
+      {
+        value: "on_prem_share",
+        label: "On-prem file share / NAS",
+        description: "Windows file server, Synology, etc.",
+      },
+      {
+        value: "saas_app",
+        label: "A specific line-of-business SaaS",
+        description: "Salesforce, NetSuite, Deltek, accounting system, etc.",
+      },
+      {
+        value: "mixed",
+        label: "Mixed across several of the above",
+      },
+    ],
+  },
+  {
+    id: "provisioning_method",
+    objectives: ["d", "e"],
+    prompt:
+      "How does an employee or contractor actually get access to those FCI systems on day 1?",
+    helpText:
+      "We're matching you to an evidence path — not grading. Whatever you do today is what we'll document.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.1 [d],[e]; CMMC L1 SAG (v2.13) AC.L1-b.1.i Potential Assessment Considerations",
+    regQuote:
+      "Determine if: [d] system access is limited to authorized users [and] [e] system access is limited to processes acting on behalf of authorized users. … Set up your system so that only authorized users, processes, and devices can access the company network.",
+    options: [
+      {
+        value: "idp_groups",
+        label: "IT adds them to the right IdP groups",
+        description: "M365 / Google / Okta / Entra ID — group drives access.",
+      },
+      {
+        value: "manual_ticket",
+        label: "Manager files a ticket; IT clicks through each system",
+      },
+      {
+        value: "self_service",
+        label: "Self-service request portal",
+        description: "Jira Service Mgmt, ServiceNow, SailPoint, etc.",
+      },
+      {
+        value: "ad_hoc",
+        label: "Ad hoc — whoever is around grants access via email/chat",
+      },
+      {
+        value: "no_process",
+        label: "No defined process yet",
+      },
+    ],
+  },
+  {
+    id: "deprovisioning_speed",
+    objectives: ["d", "e", "f"],
+    prompt:
+      "When someone leaves the company or changes role, how fast does their FCI access get removed?",
+    helpText:
+      "Assessors weight this heavily — stale access is the #2 finding behind missing MFA. Same-day automation is the gold standard.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.1 [d],[e],[f]; CMMC L1 SAG (v2.13) AC.L1-b.1.i Further Discussion",
+    regQuote:
+      "Determine if: … system access is limited to authorized users [d], processes acting on behalf of authorized users [e], and devices including other systems [f]. … Limit the devices (e.g., printers) that can be accessed by company computers.",
+    options: [
+      {
+        value: "auto_idp",
+        label: "Auto-deprovisioned via IdP or HRIS sync (same day)",
+        description: "Entra ID lifecycle workflows, Okta off-boarding, etc.",
+      },
+      {
+        value: "same_day_manual",
+        label: "Manual same-day checklist (IT runs through it)",
+      },
+      {
+        value: "within_week",
+        label: "Manual, within a week",
+      },
+      {
+        value: "eventual",
+        label: "Eventually, when someone notices",
+      },
+      {
+        value: "no_process",
+        label: "No formal off-boarding process",
+      },
+    ],
+  },
+  {
+    id: "external_actors",
+    objectives: ["c", "f"],
+    prompt:
+      "Beyond your IT-managed laptops and phones, what else can connect to systems holding FCI?",
+    helpText:
+      "Pick the one closest match — we'll add an evidence slot if your answer changes what an assessor would ask for.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.1 [c],[f]; CMMC L1 SAG (v2.13) AC.L1-b.1.i Further Discussion",
+    regQuote:
+      "Determine if: [c] devices (and other systems) authorized to connect to the system are identified [and] [f] system access is limited to authorized devices (including other systems). … any other device an employee may use to log on to the company network and conduct work tasks.",
+    options: [
+      {
+        value: "managed_only",
+        label: "Only IT-managed laptops and phones",
+      },
+      {
+        value: "plus_printers",
+        label: "Plus office printers / MFPs",
+      },
+      {
+        value: "plus_byod",
+        label: "Plus contractors' or staff personal devices (BYOD)",
+        description: "We'll add a BYOD acceptable-use acknowledgement slot.",
+      },
+      {
+        value: "plus_vendor",
+        label: "Plus vendor / partner systems",
+        description:
+          "Prime contractor SFTP, partner API, MSP RMM agent — we'll add an external-systems register slot.",
+      },
+      {
+        value: "unsure",
+        label: "Not sure yet — Charlie will help me figure it out",
+      },
+    ],
+  },
+];
+
+const FCI_LOCATION_LABEL: Record<string, string> = {
+  m365_sharepoint: "Microsoft 365 (SharePoint / OneDrive / Teams)",
+  google_drive: "Google Workspace (Drive / Gmail)",
+  on_prem_share: "on-prem file share / NAS",
+  saas_app: "a specific line-of-business SaaS",
+  mixed: "a mix of several systems",
+};
+
+const PROVISIONING_LABEL: Record<string, string> = {
+  idp_groups: "IdP group membership (IT adds users to groups)",
+  manual_ticket: "manual ticketed provisioning per system",
+  self_service: "a self-service request portal",
+  ad_hoc: "ad-hoc grants over email/chat",
+  no_process: "no defined provisioning process",
+};
+
+const DEPROVISIONING_LABEL: Record<string, string> = {
+  auto_idp: "auto-deprovisioned same-day via IdP / HRIS sync",
+  same_day_manual: "a manual same-day off-boarding checklist",
+  within_week: "manual off-boarding within a week",
+  eventual: "ad-hoc, eventually when noticed",
+  no_process: "no formal off-boarding process",
+};
+
+const EXTERNAL_ACTORS_LABEL: Record<string, string> = {
+  managed_only: "IT-managed laptops and phones only",
+  plus_printers: "managed devices plus office printers / MFPs",
+  plus_byod: "managed devices plus BYOD (a register is required)",
+  plus_vendor: "managed devices plus vendor / partner systems",
+  unsure: "an inventory still to be built",
+};
+
+const ac311Intake: PracticeIntakeSpec = {
+  preamble:
+    "Four quick questions about how access actually works in your environment. Each one is anchored to a specific NIST 800-171A determination statement for AC.L1-3.1.1 — your answers route which evidence Charlie pulls or drafts, but none of the six objectives are ever skipped.",
+  questions: AC311_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // ─── Objective [a]/[d] · authorized_users_roster + enforcement_proof ───
+    const where = answers.fci_location;
+    if (where === "m365_sharepoint") {
+      slotAnnotations.authorized_users_roster = {
+        recommendedDestinationIdx: 1, // connect M365/Google
+        contextNote:
+          "FCI lives in Microsoft 365 — Charlie pulls the unique-principal list from Entra ID in one click. CSV fallback is available if the connector isn't authorized.",
+      };
+      slotAnnotations.enforcement_proof = {
+        recommendedDestinationIdx: 0, // connect (M365 CA)
+        contextNote:
+          "Connect Microsoft 365 — Charlie pulls the active Conditional Access policy as your enforcement-proof artifact, tagged to objectives [d]/[e]/[f].",
+      };
+    } else if (where === "google_drive") {
+      slotAnnotations.authorized_users_roster = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "FCI lives in Google Workspace — Charlie pulls the directory user list with names, roles, and emails.",
+      };
+      slotAnnotations.enforcement_proof = {
+        recommendedDestinationIdx: 1, // upload (no Google CA connector for enforcement yet)
+        contextNote:
+          "Upload a screenshot of your Google Workspace context-aware access rule (or the org-unit access policy) showing who can sign in to FCI apps. Charlie tags it to [d]/[e]/[f].",
+      };
+    } else if (where === "on_prem_share") {
+      slotAnnotations.authorized_users_roster = {
+        recommendedDestinationIdx: 2, // upload (export from AD)
+        contextNote:
+          "Export your AD users (`Get-ADUser -Filter * | Select SamAccountName, UserPrincipalName, Enabled | Export-Csv users.csv`) and drop the file here. Charlie checks that every account has an owner and an enable status.",
+      };
+      slotAnnotations.enforcement_proof = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Upload a screenshot of the NTFS / share permissions on the FCI folder showing the authorized group, plus the group membership list. Two images is enough.",
+      };
+    } else if (where === "saas_app" || where === "mixed") {
+      slotAnnotations.authorized_users_roster = {
+        recommendedDestinationIdx: 0, // generate w/ Charlie
+        contextNote:
+          where === "saas_app"
+            ? "FCI lives in a line-of-business SaaS — Charlie will draft a per-app roster listing each authorized user, their role in the app, and the date they were granted access."
+            : "FCI is spread across several systems — Charlie will draft a consolidated roster, one row per (user × system), so the assessor can audit the full footprint in one artifact.",
+      };
+      slotAnnotations.enforcement_proof = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          where === "saas_app"
+            ? "Upload one screenshot from the app's admin console showing the authorized user list (or the role assignment screen). Charlie will tag it to [d]/[e]/[f]."
+            : "Upload one screenshot per system that holds FCI — Charlie checks that each artifact shows enforcement (group membership, role assignment, or ACL).",
+      };
+    }
+
+    // ─── Objective [d]/[e]/[f] · access_procedure ───
+    const prov = answers.provisioning_method;
+    const deprov = answers.deprovisioning_speed;
+    const noProcess =
+      prov === "no_process" || prov === "ad_hoc" || deprov === "no_process" || deprov === "eventual";
+    if (noProcess) {
+      slotAnnotations.access_procedure = {
+        recommendedDestinationIdx: 0, // generate w/ Charlie
+        contextNote:
+          "No formal provisioning or off-boarding process today — Charlie will draft one with you in 2 minutes (5 fields: who approves, who provisions, MFA requirement, off-boarding SLA, who audits quarterly). The draft is signed evidence the moment you lock the practice.",
+      };
+    } else if (prov === "idp_groups" && deprov === "auto_idp") {
+      slotAnnotations.access_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "IdP-driven provisioning + auto-deprovisioning — Charlie will draft a one-paragraph procedure that names your IdP, the approver, the group-membership model, and the lifecycle workflow handling off-boarding. This is the strongest L1 evidence path.",
+      };
+    } else if (prov === "self_service") {
+      slotAnnotations.access_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Self-service portal — Charlie will draft a procedure that names the portal, the auto-approver / manager-approval routing, and the deprovisioning trigger. Upload a screenshot of the access-request form when prompted.",
+      };
+    } else {
+      slotAnnotations.access_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote: `Provisioning is ${PROVISIONING_LABEL[prov] ?? "manual"} and off-boarding runs ${DEPROVISIONING_LABEL[deprov] ?? "manually"} — Charlie drafts the matching procedure with the responsible roles and SLAs documented.`,
+      };
+    }
+
+    // ─── Objective [c]/[f] · authorized_devices_inventory + dynamic slot ───
+    const ext = answers.external_actors;
+    if (ext === "managed_only") {
+      slotAnnotations.authorized_devices_inventory = {
+        recommendedDestinationIdx: 1, // connect
+        contextNote:
+          "Managed devices only — Charlie pulls the device inventory directly from Intune or Google Endpoint Management.",
+      };
+    } else if (ext === "plus_printers") {
+      slotAnnotations.authorized_devices_inventory = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Managed laptops + printers — Charlie pulls managed devices via connector, then adds a row for each printer/MFP that prints FCI. We'll prompt for printer model + serial.",
+      };
+    } else if (ext === "plus_byod") {
+      slotAnnotations.authorized_devices_inventory = {
+        recommendedDestinationIdx: 0, // generate w/ Charlie (BYOD requires composition)
+        contextNote:
+          "BYOD in scope — assessors expect a register that distinguishes corporate-managed vs personal devices. Charlie will compose the consolidated inventory with you.",
+      };
+      // Dynamic slot — BYOD acknowledgement register. Required for [c]/[f]
+      // whenever personal devices can reach FCI. Not satisfied by the device
+      // inventory alone — the acknowledgement is the compensating control.
+      dynamicSlots.push({
+        key: "byod_acknowledgement_register",
+        label: "BYOD acceptable-use acknowledgement register",
+        hint: "One row per BYOD user: name, device type, date the acceptable-use policy was acknowledged, and the named owner accountable for the device's posture (managed-app config, encryption, MFA scope).",
+        kind: "roster_csv",
+        satisfies: ["c", "f"],
+        required: true,
+        templatePath: "/templates/access-device-register.csv",
+        destinations: [
+          {
+            type: "generate",
+            label: "Draft my BYOD register with Charlie",
+            filename: "byod-acknowledgement-register.csv",
+            format: "csv",
+          },
+          {
+            type: "upload",
+            label: "Upload an existing BYOD register",
+            describes:
+              "CSV or PDF listing each BYOD user, their device, date of AUP acknowledgement, and the named owner.",
+            accept: ["text/csv", "application/pdf"],
+          },
+        ],
+      });
+    } else if (ext === "plus_vendor") {
+      slotAnnotations.authorized_devices_inventory = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Vendor / partner systems in scope — Charlie will compose the device inventory AND we'll add a separate external-systems register for the partner interconnections.",
+      };
+      // Dynamic slot — external systems register. CMMC L1 SAG calls these out
+      // explicitly under AC.L1-b.1.i Further Discussion ("devices (including
+      // other systems)"). The register documents what each connection is for,
+      // the named owner, and the authorization boundary.
+      dynamicSlots.push({
+        key: "external_systems_register",
+        label: "External systems / interconnections register",
+        hint: "Every outside system that can authenticate to or read FCI: prime contractor SFTP, partner API, MSP RMM agent, etc. One row per connection — what it is, what it accesses, who owns it on both ends, and the auth method.",
+        kind: "roster_csv",
+        satisfies: ["c", "f"],
+        required: true,
+        templatePath: "/templates/external-systems-inventory.csv",
+        destinations: [
+          {
+            type: "generate",
+            label: "Draft my external-systems register with Charlie",
+            filename: "external-systems-register.csv",
+            format: "csv",
+          },
+          {
+            type: "upload",
+            label: "Upload an existing register",
+            describes:
+              "CSV or PDF listing each external system, its purpose, named owners, and auth method.",
+            accept: ["text/csv", "application/pdf"],
+          },
+        ],
+      });
+    } else if (ext === "unsure") {
+      slotAnnotations.authorized_devices_inventory = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "We'll figure it out with Charlie — start by listing the laptops and phones, then he'll probe for printers, BYOD, and vendor connections. Any uncovered category turns into a dynamic register so nothing slips through.",
+      };
+    }
+
+    const situationSummary = [
+      `FCI primarily lives in ${FCI_LOCATION_LABEL[where] ?? "an unspecified system"}.`,
+      `Access is provisioned via ${PROVISIONING_LABEL[prov] ?? "an unspecified process"}.`,
+      `Off-boarding runs on ${DEPROVISIONING_LABEL[deprov] ?? "an unspecified cadence"}.`,
+      `Beyond managed laptops: ${EXTERNAL_ACTORS_LABEL[ext] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's access-control setup",
+      `- FCI primary location: ${FCI_LOCATION_LABEL[answers.fci_location] ?? "(not specified)"}`,
+      `- Provisioning method: ${PROVISIONING_LABEL[answers.provisioning_method] ?? "(not specified)"}`,
+      `- Off-boarding speed: ${DEPROVISIONING_LABEL[answers.deprovisioning_speed] ?? "(not specified)"}`,
+      `- Non-managed actors that touch FCI: ${EXTERNAL_ACTORS_LABEL[answers.external_actors] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by acknowledging the environment in one sentence, then drive toward the next missing objective letter. If `external_actors = plus_byod`, the BYOD register is a required artifact for [c]/[f]. If `external_actors = plus_vendor`, the external-systems register is required. If provisioning OR off-boarding is `no_process`/`ad_hoc`/`eventual`, the access-grant procedure is the highest-priority slot — propose drafting it first.",
+    ].join("\n");
+  },
+};
+
 export const practiceSpecs: Record<string, PracticeSpec> = {
   "AC.L1-3.1.1": {
     controlId: "AC.L1-3.1.1",
@@ -1139,6 +1539,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       },
     ],
     keyReferences: ["FAR 52.204-21(b)(1)(i)", "NIST SP 800-171 Rev 2 §3.1.1"],
+    intake: ac311Intake,
   },
 
   // ───────────────────────────────────────────────────────────────────────
