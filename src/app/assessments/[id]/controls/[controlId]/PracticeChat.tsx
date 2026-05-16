@@ -338,6 +338,33 @@ export function PracticeChat(props: Props) {
             {locked ? "MET" : allCovered ? "READY TO LOCK" : "IN PROGRESS"}
           </span>
         </div>
+        {/* Restart button — wipes the per-practice intake answers + the
+            attestation artifacts that were auto-staged from them, then
+            sends the user back to the questionnaire. Designed for the
+            annual re-affirmation workflow ("my environment changed —
+            redo the practice") and for testing the walkthrough end-to-end.
+            Hidden when the practice has no intake (nothing to restart)
+            or when it's locked (any change after Sign & Affirm requires a
+            new Sign & Affirm cycle — that flow gates restart). */}
+        {intakeRequired && intakeComplete && !locked && (
+          <div className="mt-4 flex items-center justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                if (resettingIntake) return;
+                const ok = window.confirm(
+                  "Restart this practice?\n\nThis sends you back to the questionnaire so you can re-answer it (e.g. for annual updates, an environment change, or testing). Your chat history with Charlie and any uploaded artifacts are preserved. Intake-derived attestations are cleared so they re-stamp from your new answers.",
+                );
+                if (!ok) return;
+                onEditIntake();
+              }}
+              disabled={resettingIntake}
+              className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#5a7d70] underline-offset-4 hover:text-[#10231d] hover:underline disabled:opacity-50"
+            >
+              {resettingIntake ? "Restarting…" : "↻ Restart this practice"}
+            </button>
+          </div>
+        )}
       </header>
 
       <PracticeProgressBar
@@ -862,16 +889,28 @@ function SlotRow({
         </div>
       )}
 
-      {/* Attestation action — replaces the standard upload/connect/generate
-          actions when the user's environment makes a roster inapplicable. */}
-      {!disabled && status !== "filled" && attestation && (
-        <AttestationAction
-          slot={slot}
-          attestation={attestation}
-          assessmentId={assessmentId}
-          controlId={controlId}
-          uploadEvidenceAction={uploadEvidenceAction}
-        />
+      {/* Attestation slots — under the single-signature model, the user's
+          intake answers ARE the affirmation. The attestation artifact is
+          auto-staged server-side on intake save; the final Sign & Affirm
+          page is what hashes the packet for SPRS-defensible proof. We
+          render a passive callout so the user sees the verbatim narrative
+          that will be locked into their bundle. */}
+      {attestation && (
+        <div className="mt-4 border border-[#cfe3d9] bg-[#f7fcf9] p-4">
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
+            Auto-attested from your intake
+          </div>
+          <p className="mt-2 text-[14px] leading-relaxed text-[#10231d]">
+            Based on what you told us, this objective is satisfied by the
+            statement below. It&apos;s already stamped to your evidence vault.
+            You&apos;ll sign and hash-lock everything once on the final{" "}
+            <span className="font-semibold">Sign &amp; Affirm</span> step —
+            that&apos;s what produces your SPRS-defensible packet.
+          </p>
+          <blockquote className="mt-3 border-l-2 border-[#08201a] bg-white px-4 py-3 font-serif text-[14px] italic leading-relaxed text-[#10231d]">
+            “{attestation.autoNarrative}”
+          </blockquote>
+        </div>
       )}
 
       {/* Action rail (hidden once locked or when attestation replaces it) */}
