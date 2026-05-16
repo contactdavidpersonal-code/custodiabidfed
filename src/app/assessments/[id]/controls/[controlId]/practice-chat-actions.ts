@@ -349,11 +349,23 @@ export async function hardResetPracticeAction(args: {
     WHERE assessment_id = ${assessmentId}
       AND control_id = ${controlId}
   `;
-  // 4. Wipe the SSP narrative + status for this control.
+  // 4. Wipe the SSP narrative + status for this control. We UPSERT rather
+  //    than DELETE because the control page loader (`getResponse`) calls
+  //    notFound() when the row is missing — the row must persist for the
+  //    page to render. INSERT ... ON CONFLICT also self-heals any
+  //    previously-broken assessments where a prior bad-reset DELETEd the
+  //    row (those pages were 404'ing until this re-creates the row).
   await sql`
-    DELETE FROM control_responses
-    WHERE assessment_id = ${assessmentId}
-      AND control_id = ${controlId}
+    INSERT INTO control_responses (assessment_id, control_id, status)
+    VALUES (${assessmentId}, ${controlId}, 'unanswered')
+    ON CONFLICT (assessment_id, control_id) DO UPDATE
+    SET status = 'unanswered',
+        narrative = NULL,
+        officer_reviewed = FALSE,
+        officer_reviewed_at = NULL,
+        officer_reviewer_user_id = NULL,
+        carry_forward_status = 'kept',
+        updated_at = NOW()
   `;
   // 5. Clear any open POA&M / remediation plan for this practice.
   await sql`

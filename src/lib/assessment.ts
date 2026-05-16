@@ -1012,7 +1012,31 @@ export async function getResponse(
     WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
     LIMIT 1
   `) as ControlResponseRow[];
-  return rows[0] ?? null;
+  if (rows[0]) return rows[0];
+  // Self-heal: a missing control_responses row used to 404 the control
+  // page. That happened to any assessment that ran an early hardReset
+  // before we switched to UPSERT semantics. If the controlId is valid in
+  // any framework's playbook we re-seed the default row so the page can
+  // render — the assessment isn't broken, just under-seeded.
+  const seeded = (await sql`
+    INSERT INTO control_responses (assessment_id, control_id, status)
+    VALUES (${assessmentId}, ${controlId}, 'unanswered')
+    ON CONFLICT (assessment_id, control_id) DO NOTHING
+    RETURNING id, assessment_id, control_id, status, narrative, officer_reviewed,
+              officer_reviewed_at, officer_reviewer_user_id, carry_forward_status,
+              updated_at
+  `) as ControlResponseRow[];
+  if (seeded[0]) return seeded[0];
+  // Lost the race; re-read.
+  const re = (await sql`
+    SELECT id, assessment_id, control_id, status, narrative, officer_reviewed,
+           officer_reviewed_at, officer_reviewer_user_id, carry_forward_status,
+           updated_at
+    FROM control_responses
+    WHERE assessment_id = ${assessmentId} AND control_id = ${controlId}
+    LIMIT 1
+  `) as ControlResponseRow[];
+  return re[0] ?? null;
 }
 
 /**
