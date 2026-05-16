@@ -108,7 +108,7 @@ export async function createAssessmentAction(formData: FormData) {
  * If the form posts an `assessmentId` and the save leaves the org with both a
  * UEI and at least one NAICS code (the bar for unlocking the practices step),
  * we forward the user straight to the assessment overview so they can start
- * working through the 17 safeguarding practices without an extra click.
+ * working through the 15 safeguarding requirements without an extra click.
  */
 export async function saveFederalRegistrationAction(formData: FormData) {
   const userId = await requireUserId();

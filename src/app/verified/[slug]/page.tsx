@@ -368,7 +368,7 @@ export default async function VerifiedPublicPage(
             <DefRow label="Framework" value="CMMC Level 1 · FAR 52.204-21" />
             <DefRow
               label="Practices met"
-              value={`${page.status_practices_met ?? 17} / ${page.status_practices_total ?? 17}`}
+              value={`${page.status_practices_met ?? 15} / ${page.status_practices_total ?? 15}`}
             />
             <DefRow
               label="Affirmation signed"
