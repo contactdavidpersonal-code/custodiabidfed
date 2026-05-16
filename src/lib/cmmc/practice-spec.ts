@@ -597,6 +597,343 @@ export function isIntakeComplete(
   return spec.intake.questions.every((q) => Boolean(answers[q.id]));
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// IA.L1-3.5.2 intake (Authentication)
+// ════════════════════════════════════════════════════════════════════════════
+// Mirrors the 3.5.1 pattern — every question maps to one of the 800-171A
+// determination statements ([a] user auth / [b] process auth / [c] device
+// auth). The "no automations" answer collapses objective [b]'s slot into
+// a signed attestation; every other answer simply re-routes the path
+// (connector vs upload vs generate-with-Charlie) without skipping anything.
+
+const IA352_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "mfa_method",
+    objectives: ["a"],
+    prompt:
+      "How do the humans who touch FCI prove who they are when they sign in?",
+    helpText:
+      "Pick what's enforced today, not what's on the roadmap. We'll match you to the right evidence path.",
+    regAnchor:
+      "NIST SP 800-171A §3.5.2 [a]; CMMC L1 SAG (v2.13) Further Discussion",
+    regQuote:
+      "Determine if: [a] the identity of each user is authenticated or verified as a prerequisite to system access. … Authentication is achieved through the use of any one or combination of passwords, tokens (something you possess), biometrics, or, in the case of multi-factor authentication, some combination thereof.",
+    options: [
+      {
+        value: "m365_ca",
+        label: "Microsoft 365 Conditional Access enforces MFA",
+        description:
+          "Entra Conditional Access policy requires MFA for every user touching FCI.",
+      },
+      {
+        value: "google_2sv",
+        label: "Google Workspace 2-Step Verification (enforced)",
+      },
+      {
+        value: "other_idp",
+        label: "Another IdP enforces MFA (Okta, JumpCloud, Duo…)",
+      },
+      {
+        value: "per_app",
+        label: "MFA at the app level (per-app, not centrally enforced)",
+        description:
+          "Each SaaS app has its own MFA toggle and we rely on those.",
+      },
+      {
+        value: "password_only",
+        label: "Password only — no MFA today",
+        description:
+          "We'll still need MFA evidence eventually; Charlie will help you get there.",
+      },
+    ],
+  },
+  {
+    id: "process_auth",
+    objectives: ["b"],
+    prompt:
+      "How do non-human accounts (service accounts, scripts, integrations) authenticate?",
+    helpText:
+      "If you said 'no non-human accounts' on IA.L1-3.5.1, pick the matching option here — we'll collapse this into an attestation.",
+    regAnchor:
+      "NIST SP 800-171A §3.5.2 [b]; NIST SP 800-171 Rev 2 §3.5.2 Discussion",
+    regQuote:
+      "Determine if: [b] the identity of each process acting on behalf of a user is authenticated or verified as a prerequisite to system access. … Authenticators include passwords, cryptographic devices, biometrics, certificates, one-time password devices, and ID badges.",
+    options: [
+      {
+        value: "managed_identity",
+        label: "Managed identities / workload identities in our IdP",
+        description:
+          "Entra managed identity, Google service account, IAM role — no static secret in code.",
+      },
+      {
+        value: "vaulted_secret",
+        label: "Client secrets or API keys stored in a secrets vault",
+        description:
+          "Azure Key Vault, AWS Secrets Manager, 1Password, Doppler, etc.",
+      },
+      {
+        value: "certificate",
+        label: "Certificate-based authentication",
+      },
+      {
+        value: "hardcoded",
+        label: "Secrets are in config files / env vars on the host",
+        description:
+          "We'll flag this as a finding and Charlie will walk you to a vaulted path.",
+      },
+      {
+        value: "none",
+        label: "No automations touch FCI",
+        description:
+          "Objective [b] is satisfied by a signed attestation — no roster needed.",
+      },
+    ],
+  },
+  {
+    id: "device_auth",
+    objectives: ["c"],
+    prompt:
+      "How does a laptop or phone prove it's allowed to connect before it reaches FCI?",
+    helpText:
+      "Device authentication is separate from user authentication — the assessor wants both. Pick the strongest mechanism in place.",
+    regAnchor:
+      "NIST SP 800-171A §3.5.2 [c]; CMMC L1 SAG (v2.13) Further Discussion",
+    regQuote:
+      "Determine if: [c] the identity of each device accessing or connecting to the system is authenticated or verified as a prerequisite to system access. … Devices may be identified by MAC, IP address, or device certificate.",
+    options: [
+      {
+        value: "intune_compliant",
+        label: "Intune / Entra device compliance gates access",
+        description:
+          "Conditional Access requires a compliant, Entra-joined device.",
+      },
+      {
+        value: "google_managed",
+        label: "Google endpoint management with context-aware access",
+      },
+      {
+        value: "domain_joined",
+        label: "On-prem domain-joined machines only",
+      },
+      {
+        value: "cert_based",
+        label: "Device certificates (Wi-Fi 802.1x, VPN cert, mTLS)",
+      },
+      {
+        value: "unmanaged",
+        label: "Personal / unmanaged devices can connect",
+        description:
+          "We'll require a written narrative explaining how access is constrained.",
+      },
+    ],
+  },
+  {
+    id: "password_policy",
+    objectives: ["a"],
+    prompt:
+      "Do you have a written password / authentication policy today?",
+    helpText:
+      "Even a one-page version counts. The assessor will look for minimum length, complexity, rotation, lockout, and MFA scope.",
+    regAnchor:
+      "NIST SP 800-171A §3.5.2 [a]; NIST SP 800-171 Rev 2 §3.5.2 Discussion",
+    regQuote:
+      "Authenticators include … passwords … Authentication of user identities is accomplished through the use of passwords, tokens, biometrics, or some combination thereof.",
+    options: [
+      {
+        value: "have_doc",
+        label: "Yes — I have a policy I can upload",
+      },
+      {
+        value: "informal",
+        label: "We follow rules but nothing is written down",
+        description: "Charlie will draft one based on what you tell him.",
+      },
+      {
+        value: "none",
+        label: "No policy yet",
+        description: "Charlie will draft one from scratch.",
+      },
+    ],
+  },
+];
+
+const MFA_LABEL: Record<string, string> = {
+  m365_ca: "Microsoft 365 Conditional Access (MFA enforced)",
+  google_2sv: "Google Workspace 2-Step Verification (enforced)",
+  other_idp: "a third-party IdP (Okta/JumpCloud/Duo/…)",
+  per_app: "per-app MFA toggles (no central enforcement)",
+  password_only: "passwords only — no MFA enforced yet",
+};
+
+const PROCESS_AUTH_LABEL: Record<string, string> = {
+  managed_identity: "managed / workload identities in the IdP",
+  vaulted_secret: "client secrets in a secrets vault",
+  certificate: "certificate-based authentication",
+  hardcoded: "secrets in config files (FINDING — needs remediation)",
+  none: "no automations touch FCI",
+};
+
+const DEVICE_AUTH_LABEL: Record<string, string> = {
+  intune_compliant: "Intune compliance gating via Conditional Access",
+  google_managed: "Google endpoint management + context-aware access",
+  domain_joined: "on-prem domain-joined machines",
+  cert_based: "device certificates (802.1x / VPN / mTLS)",
+  unmanaged: "unmanaged / personal devices (narrative compensating control)",
+};
+
+const ia352Intake: PracticeIntakeSpec = {
+  preamble:
+    "Four quick questions about how people, processes, and devices prove who they are. Every question maps to a specific NIST 800-171A determination statement for IA.L1-3.5.2. Your answers route the evidence path — none of the three objectives are skipped.",
+  questions: IA352_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // ─── Objective [a] · mfa_enforcement slot ───
+    const mfa = answers.mfa_method;
+    if (mfa === "m365_ca" || mfa === "google_2sv") {
+      slotAnnotations.mfa_enforcement = {
+        recommendedDestinationIdx: 0, // connect
+        contextNote:
+          mfa === "m365_ca"
+            ? "Connect Microsoft 365 — Charlie pulls your Conditional Access policy + MFA registration report and tags the artifact to objective [a]."
+            : "Connect Google Workspace — Charlie pulls the 2SV enforcement report and tags it to objective [a].",
+      };
+    } else if (mfa === "other_idp") {
+      slotAnnotations.mfa_enforcement = {
+        recommendedDestinationIdx: 1, // upload
+        contextNote:
+          "You're on a third-party IdP — export the MFA enforcement / user MFA-status report from Okta/JumpCloud/Duo and upload the PDF or PNG.",
+      };
+    } else if (mfa === "per_app") {
+      slotAnnotations.mfa_enforcement = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Per-app MFA: upload one screenshot from each material app (M365, Google, your file-share, your accounting system). Charlie will check that every app touching FCI has MFA shown ON.",
+      };
+    } else if (mfa === "password_only") {
+      slotAnnotations.mfa_enforcement = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "No MFA today — this is the #1 finding on CMMC L1 assessments. Charlie will walk you through enabling MFA in M365 or Google in ~10 minutes, then come back here to upload the screenshot.",
+      };
+    }
+
+    // ─── Objective [a] · password_policy slot ───
+    const pwPolicy = answers.password_policy;
+    if (pwPolicy === "have_doc") {
+      slotAnnotations.password_policy = {
+        recommendedDestinationIdx: 1, // upload
+        contextNote:
+          "You said you already have a written policy — upload it as-is. Charlie will check it covers minimum length, complexity, rotation, lockout, and MFA scope; if anything is missing, he'll patch the doc with you.",
+      };
+    } else if (pwPolicy === "informal" || pwPolicy === "none") {
+      slotAnnotations.password_policy = {
+        recommendedDestinationIdx: 0, // generate
+        contextNote:
+          pwPolicy === "informal"
+            ? "Have Charlie draft the policy — he'll ask you the 5 questions assessors check (length, complexity, rotation, lockout, MFA scope) and produce a one-page authentication policy ready to sign."
+            : "Charlie will draft an authentication policy from scratch matched to NIST SP 800-171 Rev 2 §3.5.x and your environment. Two minutes, signed evidence at the end.",
+      };
+    }
+
+    // ─── Objective [b] · process_auth_method slot ───
+    const procAuth = answers.process_auth;
+    if (procAuth === "none") {
+      slotAnnotations.process_auth_method = {
+        attestation: {
+          buttonLabel: "Attest: no non-human processes touch FCI",
+          autoNarrative:
+            "The organization attests that no automated processes, service accounts, scheduled tasks, or integrations authenticate to systems containing Federal Contract Information. Only authenticated human users perform actions on FCI. This attestation satisfies NIST SP 800-171A §3.5.2 determination statement [b] for this environment; if a non-human process is introduced in the future, the organization will document its authentication mechanism (managed identity, vaulted secret, or certificate) and re-open this objective.",
+          reason:
+            "You said no automations touch FCI — under NIST 800-171A this objective is satisfied by a signed attestation rather than a narrative. The attestation is stamped with your account and the date, and is included verbatim in the SSP.",
+        },
+      };
+    } else if (procAuth === "managed_identity") {
+      slotAnnotations.process_auth_method = {
+        recommendedDestinationIdx: 0, // generate
+        contextNote:
+          "Managed identities — strongest path. Charlie will draft a short narrative listing each workload identity (Entra managed identity / Google service account / IAM role), the resource it accesses, and the human owner. No secrets to rotate, no vault to document.",
+      };
+    } else if (procAuth === "vaulted_secret") {
+      slotAnnotations.process_auth_method = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Vaulted secrets — name your vault (Azure Key Vault / AWS Secrets Manager / 1Password / Doppler), the service accounts that pull from it, and the rotation cadence. Charlie will assemble the narrative; you'll add the vault name + rotation schedule.",
+      };
+    } else if (procAuth === "certificate") {
+      slotAnnotations.process_auth_method = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Cert-based auth — Charlie will draft a narrative describing where the certificates are issued (internal CA / public CA / device cert), the renewal cadence, and what authenticates with them.",
+      };
+    } else if (procAuth === "hardcoded") {
+      slotAnnotations.process_auth_method = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Secrets in config files is the most common L1 finding. Charlie will help you (1) inventory where the secrets live, (2) document a 30-day remediation plan to a vault, (3) produce both the current-state narrative and a Plan of Action & Milestones entry — both required artifacts.",
+      };
+    }
+
+    // ─── Objective [c] · device_auth_evidence slot ───
+    const devAuth = answers.device_auth;
+    if (devAuth === "intune_compliant") {
+      slotAnnotations.device_auth_evidence = {
+        recommendedDestinationIdx: 0, // connect
+        contextNote:
+          "Connect Microsoft 365 — Charlie pulls the Intune compliance policy + the Conditional Access rule that requires a compliant device, and tags both to objective [c].",
+      };
+    } else if (devAuth === "google_managed") {
+      slotAnnotations.device_auth_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Connect Google Workspace — Charlie pulls the endpoint management policy and any context-aware access rules tied to device posture.",
+      };
+    } else if (devAuth === "domain_joined") {
+      slotAnnotations.device_auth_evidence = {
+        recommendedDestinationIdx: 1, // upload
+        contextNote:
+          "Upload screenshots of (1) the domain-membership requirement in Group Policy, and (2) one client showing it's domain-joined (System Properties > Computer Name). Charlie will tag both.",
+      };
+    } else if (devAuth === "cert_based") {
+      slotAnnotations.device_auth_evidence = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Upload screenshots of the cert-issuance config (CA template, MDM cert profile, VPN/Wi-Fi 802.1x policy). One image per layer is enough — Charlie will check coverage.",
+      };
+    } else if (devAuth === "unmanaged") {
+      slotAnnotations.device_auth_evidence = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Unmanaged devices are allowed under L1 only if you have a written compensating-control narrative: how access is constrained (browser-only, no local FCI storage, app-level MFA on every login). Charlie will draft this narrative with you — upload it when ready.",
+      };
+    }
+
+    const situationSummary = [
+      `MFA: ${MFA_LABEL[mfa] ?? "(unspecified)"}.`,
+      `Process authentication: ${PROCESS_AUTH_LABEL[procAuth] ?? "(unspecified)"}.`,
+      `Device authentication: ${DEVICE_AUTH_LABEL[devAuth] ?? "(unspecified)"}.`,
+      pwPolicy === "have_doc"
+        ? "Authentication policy already documented."
+        : "Authentication policy will be drafted with Charlie.",
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's authentication setup",
+      `- MFA mechanism: ${MFA_LABEL[answers.mfa_method] ?? "(not specified)"}`,
+      `- Process / service-account auth: ${PROCESS_AUTH_LABEL[answers.process_auth] ?? "(not specified)"}`,
+      `- Device authentication: ${DEVICE_AUTH_LABEL[answers.device_auth] ?? "(not specified)"}`,
+      `- Written auth policy: ${answers.password_policy === "have_doc" ? "YES — uploaded" : "NO — drafting with Charlie"}`,
+      "",
+      "Do NOT re-ask these facts. Open by acknowledging the environment in one sentence, then drive toward the missing objective letter. If `process_auth = none`, objective [b] is satisfied by attestation — confirm the attestation is captured rather than chasing a narrative. If `mfa_method = password_only`, treat enabling MFA as the highest-priority next step.",
+    ].join("\n");
+  },
+};
+
 export const practiceSpecs: Record<string, PracticeSpec> = {
   "AC.L1-3.1.1": {
     controlId: "AC.L1-3.1.1",
@@ -1346,6 +1683,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       },
     ],
     keyReferences: ["FAR 52.204-21(b)(1)(vi)", "NIST SP 800-171 Rev 2 §3.5.2"],
+    intake: ia352Intake,
   },
 
   // ────────────────────────────────────────────────────────────────────────
