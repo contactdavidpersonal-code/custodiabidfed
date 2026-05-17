@@ -3928,6 +3928,657 @@ const pe3105Intake: PracticeIntakeSpec = {
   },
 };
 
+// ════════════════════════════════════════════════════════════════════════
+// SC domain intakes (System & Communications Protection)
+//
+// Two L1 practices: boundary protection (the firewall practice) and
+// public-access separation (the DMZ practice). For cloud-first primes
+// both reduce to vendor-managed boundary + a written attestation.
+// ════════════════════════════════════════════════════════════════════════
+
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — SC.L1-3.13.1 (Boundary Protection)
+//
+// Eight objectives [a]-[h]: external + internal boundaries × define +
+// monitor + control + protect. Cloud-only primes lean heavily on the
+// vendor's boundary; we attest that explicitly per objective.
+//
+// Anchored to:
+//   • NIST SP 800-171A Rev 2 §3.13.1 determination statements [a]-[h]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, SC.L1-b.1.xii
+//   • FAR 52.204-21(b)(1)(xii)
+// ────────────────────────────────────────────────────────────────────────
+const SC3131_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "fci_hosting",
+    objectives: ["a", "b"],
+    prompt:
+      "Where do the systems that touch Federal Contract Information actually live?",
+    helpText:
+      "Pick the option that best matches your real setup. The answer drives whether your boundary is vendor-managed (M365/Google) or something you operate yourself.",
+    regAnchor:
+      "NIST SP 800-171A §3.13.1 [a]/[b]; CMMC L1 SAG (v2.13) SC.L1-b.1.xii Further Discussion",
+    regQuote:
+      "Determine if: [a] the external system boundary is defined; [b] key internal system boundaries are defined. … Boundary protection devices (e.g., gateways, routers, firewalls, guards, encrypted tunnels) … delineate organizational systems from non-organizational systems.",
+    options: [
+      {
+        value: "cloud_only_m365_google",
+        label: "Cloud-only — Microsoft 365 and/or Google Workspace",
+        description:
+          "FCI lives in M365/Google. The vendor's tenant boundary IS your external boundary; we'll attest to that.",
+      },
+      {
+        value: "cloud_other_saas",
+        label: "Cloud — other SaaS apps (Salesforce, Box, etc.)",
+        description: "FCI lives in a third-party SaaS. The vendor's boundary is the external boundary.",
+      },
+      {
+        value: "on_prem_office",
+        label: "On-prem servers / NAS in an office",
+        description:
+          "We run our own file server, NAS, or on-prem app that stores FCI. The office firewall IS the external boundary.",
+      },
+      {
+        value: "hybrid_cloud_office",
+        label: "Hybrid — cloud apps + some on-prem storage",
+      },
+      {
+        value: "home_office_local",
+        label: "Solo home office — FCI lives on a single laptop",
+        description:
+          "The laptop is the system; the home router + the laptop's host firewall together are the boundary.",
+      },
+    ],
+  },
+  {
+    id: "external_firewall",
+    objectives: ["c", "e", "g"],
+    prompt:
+      "What sits between your FCI systems and the open internet today?",
+    helpText:
+      "Pick the device or service that actually filters inbound traffic. \"My ISP's router on its default settings\" is an honest answer we need to hear.",
+    regAnchor:
+      "NIST SP 800-171A §3.13.1 [c]/[e]/[g]; CMMC L1 SAG (v2.13) SC.L1-b.1.xii Further Discussion",
+    regQuote:
+      "Determine if: [c] communications are monitored at the external system boundary; [e] communications are controlled at the external system boundary; [g] communications are protected at the external system boundary. … Firewalls or gateway servers are the typical means.",
+    options: [
+      {
+        value: "cloud_firewall_isp",
+        label: "Cloud-managed firewall / SD-WAN device",
+        description:
+          "Meraki, Cisco Umbrella, Fortinet cloud-managed, etc. We can pull a config export.",
+      },
+      {
+        value: "dedicated_firewall_box",
+        label: "Dedicated firewall appliance (locally managed)",
+        description: "pfSense, SonicWall, WatchGuard, Cisco ASA, etc.",
+      },
+      {
+        value: "cloud_native_security_groups",
+        label: "Cloud-native security groups / WAF",
+        description: "AWS Security Groups + WAF, Azure NSG, GCP VPC firewall — for cloud-hosted FCI workloads.",
+      },
+      {
+        value: "saas_provider_only",
+        label: "The SaaS vendor's boundary — we don't run a firewall",
+        description:
+          "Cloud-only setup; the vendor (M365/Google/etc.) handles the external boundary. We'll attest to that with the vendor's SOC 2 / FedRAMP citation.",
+      },
+      {
+        value: "just_router_default",
+        label: "Just the ISP-supplied router on default settings",
+        description:
+          "This is a FINDING — we'll walk the smallest fix (enable the router's firewall, document the rule set, or move to a cloud firewall).",
+      },
+    ],
+  },
+  {
+    id: "internal_segmentation",
+    objectives: ["d", "f", "h"],
+    prompt:
+      "How is FCI traffic kept separate from guest, IoT, or personal devices on your network?",
+    helpText:
+      "If everyone's on the same WiFi, say so. A solo cloud-only setup has no \"internal\" network to segment — that's a valid answer too.",
+    regAnchor:
+      "NIST SP 800-171A §3.13.1 [d]/[f]/[h]; CMMC L1 SAG (v2.13) SC.L1-b.1.xii Further Discussion",
+    regQuote:
+      "Determine if: [d] communications are monitored at key internal boundaries; [f] communications are controlled at key internal boundaries; [h] communications are protected at key internal boundaries. … Key internal boundaries are where networks of different trust levels meet.",
+    options: [
+      {
+        value: "vlan_separated",
+        label: "VLANs or separate subnets per trust zone",
+        description:
+          "FCI devices live on their own VLAN/subnet, separate from guest/IoT. The firewall enforces the boundary.",
+      },
+      {
+        value: "guest_wifi_separate",
+        label: "Separate guest WiFi, trusted devices on the primary network",
+      },
+      {
+        value: "separate_office_network",
+        label: "Dedicated FCI office network — no guest / personal traffic on it",
+      },
+      {
+        value: "single_flat_network",
+        label: "Everything's on the same flat network",
+        description:
+          "This is a FINDING for [d]/[f]/[h] — Charlie will walk the smallest fix (enable a guest SSID + isolate it from the trusted LAN).",
+      },
+      {
+        value: "na_solo_cloud",
+        label: "Not applicable — cloud-only, no internal LAN to segment",
+        description:
+          "All FCI access goes over TLS to a cloud tenant. We'll attest that there's no internal boundary inside our org to protect.",
+      },
+    ],
+  },
+  {
+    id: "encryption_in_transit",
+    objectives: ["g", "h"],
+    prompt:
+      "How is FCI data encrypted while it's moving between systems?",
+    helpText:
+      "Pick the strongest control you can point to. \"Everything goes over HTTPS to cloud apps\" is the most common and totally valid answer.",
+    regAnchor:
+      "NIST SP 800-171A §3.13.1 [g]/[h]; CMMC L1 SAG (v2.13) SC.L1-b.1.xii Further Discussion",
+    regQuote:
+      "Determine if: [g] communications are protected at the external system boundary; [h] communications are protected at key internal boundaries. … Protection of communications generally involves encryption.",
+    options: [
+      {
+        value: "tls_everywhere_saas",
+        label: "TLS 1.2+ everywhere — all FCI access is HTTPS to SaaS",
+      },
+      {
+        value: "vpn_only_remote",
+        label: "VPN required for remote access to FCI",
+        description: "WireGuard, Tailscale, AnyConnect, OpenVPN, etc.",
+      },
+      {
+        value: "mixed_tls_vpn",
+        label: "Mix — TLS for SaaS, VPN for on-prem servers",
+      },
+      {
+        value: "http_internal_only",
+        label: "Some internal traffic is unencrypted (HTTP, SMB on the LAN)",
+        description:
+          "This is a FINDING for [h] — Charlie will name the smallest fix per protocol (force HTTPS, enable SMB signing, etc.).",
+      },
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Charlie will run a quick TLS check and walk you through it.",
+      },
+    ],
+  },
+];
+
+const SC3131_HOSTING_LABEL: Record<string, string> = {
+  cloud_only_m365_google: "cloud-only — M365 and/or Google Workspace tenant",
+  cloud_other_saas: "cloud — third-party SaaS (Salesforce/Box/etc.)",
+  on_prem_office: "on-prem office servers / NAS",
+  hybrid_cloud_office: "hybrid — cloud apps + some on-prem storage",
+  home_office_local: "solo home office — single laptop",
+};
+
+const SC3131_FIREWALL_LABEL: Record<string, string> = {
+  cloud_firewall_isp: "cloud-managed firewall / SD-WAN (Meraki/Fortinet/Umbrella)",
+  dedicated_firewall_box: "locally-managed firewall appliance (pfSense/SonicWall/WatchGuard)",
+  cloud_native_security_groups: "cloud-native security groups / WAF (AWS/Azure/GCP)",
+  saas_provider_only: "SaaS vendor's boundary — no self-run firewall",
+  just_router_default: "ISP router on default settings (FINDING)",
+};
+
+const SC3131_SEGMENTATION_LABEL: Record<string, string> = {
+  vlan_separated: "VLANs / subnets separating FCI from guest/IoT",
+  guest_wifi_separate: "separate guest WiFi from trusted network",
+  separate_office_network: "dedicated FCI network, no guest traffic",
+  single_flat_network: "single flat network (FINDING for [d]/[f]/[h])",
+  na_solo_cloud: "not applicable — cloud-only, no internal LAN",
+};
+
+const SC3131_ENCRYPTION_LABEL: Record<string, string> = {
+  tls_everywhere_saas: "TLS 1.2+ everywhere — HTTPS to SaaS",
+  vpn_only_remote: "VPN for remote access to FCI",
+  mixed_tls_vpn: "mix — TLS for SaaS + VPN for on-prem",
+  http_internal_only: "some internal traffic unencrypted (FINDING for [h])",
+  unknown: "unsure — Charlie will run a TLS check",
+};
+
+const sc3131Intake: PracticeIntakeSpec = {
+  preamble:
+    "Four quick questions about where FCI lives and what stands between it and the open internet. Every question maps to a NIST 800-171A determination statement for SC.L1-3.13.1. Cloud-only setups satisfy most objectives through the vendor's tenant boundary — we'll attest to that explicitly so every objective letter still gets covered.",
+  questions: SC3131_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    const cloudFirstHosting =
+      answers.fci_hosting === "cloud_only_m365_google" ||
+      answers.fci_hosting === "cloud_other_saas";
+    const vendorBoundaryOnly =
+      answers.external_firewall === "saas_provider_only";
+    const noInternalLan = answers.internal_segmentation === "na_solo_cloud";
+
+    // ─── Cloud-only + vendor-boundary special case ───
+    // FCI lives in M365/Google/other SaaS and there's no self-run firewall —
+    // [c]/[d]/[e]/[f]/[g]/[h] are satisfied by the vendor's boundary. The
+    // boundary inventory + firewall config slots collapse to attestation
+    // pointing at the vendor's FedRAMP / SOC 2 / boundary documentation.
+    if (cloudFirstHosting && vendorBoundaryOnly) {
+      const vendorName =
+        answers.fci_hosting === "cloud_only_m365_google"
+          ? "Microsoft 365 / Google Workspace"
+          : "the third-party SaaS vendor(s)";
+      slotAnnotations.network_boundary_inventory = {
+        attestation: {
+          buttonLabel: "Attest: vendor-managed boundary",
+          autoNarrative: `The organization attests that all Federal Contract Information is processed and stored exclusively in ${vendorName}. The external system boundary is the tenant boundary of those SaaS providers, which are independently assessed under FedRAMP Moderate (or higher) and SOC 2 Type II. No self-operated firewall, gateway, or boundary device sits between organizational endpoints and the SaaS tenants beyond standard TLS 1.2+ in transit. Key internal boundaries are the vendor's intra-tenant isolation controls plus the host firewalls on issued endpoints. This attestation, paired with the vendor authorization packages referenced in the SSP, satisfies NIST SP 800-171A §3.13.1 determination statements [a] (external boundary defined), [b] (key internal boundaries defined), [c] (monitored externally), [d] (monitored internally), [e] (controlled externally), [f] (controlled internally), [g] (protected externally), and [h] (protected internally) for this environment.`,
+          reason: `You said FCI lives only in ${vendorName} and you don't run your own firewall — under NIST 800-171A the eight objectives are satisfied by attesting to the vendor's boundary plus the endpoint host firewall + TLS in transit.`,
+        },
+      };
+      slotAnnotations.firewall_config = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "No self-run firewall — upload one screenshot of your endpoint host-firewall status (Windows Defender Firewall enabled / macOS Application Firewall enabled) plus a link to the vendor's SOC 2 / FedRAMP authorization page. That covers [c]-[f] in this environment.",
+      };
+      slotAnnotations.encryption_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "TLS-everywhere — upload one screenshot of an SSL Labs A/A+ rating for your primary domain OR a screenshot of the M365/Google tenant's TLS requirements page. That's the assessor's preferred [g]/[h] evidence for cloud-first orgs.",
+      };
+      slotAnnotations.network_diagram = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Cloud-only — a one-page diagram showing endpoint → TLS → vendor tenant is plenty. Charlie can draw the basic shape if you'd rather skip this slot entirely (it's optional).",
+      };
+      return {
+        slotAnnotations,
+        dynamicSlots,
+        hiddenSlotKeys,
+        situationSummary: `FCI in ${vendorName}; vendor-managed boundary covers [a]-[h] via attestation + TLS-everywhere + endpoint host firewall.`,
+      };
+    }
+
+    // ─── Boundary inventory routing ───
+    if (
+      answers.fci_hosting === "on_prem_office" ||
+      answers.fci_hosting === "hybrid_cloud_office"
+    ) {
+      slotAnnotations.network_boundary_inventory = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          answers.fci_hosting === "on_prem_office"
+            ? "On-prem FCI — Charlie will draft the inventory with two rows: external boundary (office router/firewall → internet) and internal boundary (trusted LAN ↔ guest/IoT). Each row names the device, vendor, and rule set."
+            : "Hybrid — the inventory will have three rows: external office boundary, external SaaS boundary (vendor-managed), and the internal split between FCI segment and guest/personal devices.",
+      };
+    } else if (answers.fci_hosting === "home_office_local") {
+      slotAnnotations.network_boundary_inventory = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Solo home office — Charlie will draft a 2-row inventory: external boundary = the home router's stateful firewall; internal boundary = the laptop's host firewall (Windows Defender / macOS Application Firewall) plus separation from household guest WiFi.",
+      };
+    } else if (cloudFirstHosting) {
+      // Cloud-first but they DO run their own firewall (e.g. cloud_native_security_groups).
+      slotAnnotations.network_boundary_inventory = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Cloud-first FCI with a self-run boundary device — Charlie's inventory will pair the vendor tenant (external) with your security groups / WAF rules (controlled external) and the internal split between FCI access devices and guest traffic.",
+      };
+    }
+
+    // ─── External firewall config slot ───
+    const ef = answers.external_firewall;
+    if (ef === "cloud_firewall_isp") {
+      slotAnnotations.firewall_config = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Cloud-managed firewall — export the rule set from the admin portal (Meraki: \"Security Appliance → Configure → Firewall\" → Print to PDF; Fortinet: \"Policy & Objects → IPv4 Policy\" → export). One PDF covers [c]/[e].",
+      };
+    } else if (ef === "dedicated_firewall_box") {
+      slotAnnotations.firewall_config = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Locally-managed firewall — capture screenshots of the rules tab + the WAN-side interface stats (showing active connections being filtered). That's [c]+[e] in one upload.",
+      };
+    } else if (ef === "cloud_native_security_groups") {
+      slotAnnotations.firewall_config = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Cloud-native — export the security-group/NSG rule set as JSON/CSV (AWS: `aws ec2 describe-security-groups`; Azure: `az network nsg rule list`). Pair with a WAF screenshot if you run one.",
+      };
+    } else if (ef === "just_router_default") {
+      slotAnnotations.firewall_config = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "FINDING: an ISP router on default settings is the weakest acceptable boundary at L1. Smallest fix: log into the router admin, confirm the firewall is on, screenshot the rules page, and document the rule set in the inventory. If you handle FCI regularly, plan a move to a cloud-managed firewall.",
+      };
+    }
+
+    // ─── Internal segmentation slot ───
+    const seg = answers.internal_segmentation;
+    if (seg === "single_flat_network") {
+      slotAnnotations.firewall_config = {
+        ...(slotAnnotations.firewall_config ?? {}),
+        contextNote:
+          (slotAnnotations.firewall_config?.contextNote ?? "") +
+          " FINDING for [d]/[f]/[h]: everything's on one flat network. Smallest fix: enable a guest SSID on the same access point and isolate it from the trusted LAN. Most consumer/SMB APs have a one-click \"AP isolation\" or \"guest network\" toggle.",
+      };
+    } else if (seg === "na_solo_cloud" && !vendorBoundaryOnly) {
+      // No internal LAN to segment, but they run their own external boundary
+      // (e.g. cloud security groups for their own workloads). Attest [d]/[f]/[h]
+      // via host firewalls on endpoints + vendor intra-tenant isolation.
+      slotAnnotations.network_boundary_inventory = {
+        ...(slotAnnotations.network_boundary_inventory ?? {}),
+        contextNote:
+          (slotAnnotations.network_boundary_inventory?.contextNote ?? "") +
+          " No internal LAN to segment — the inventory will note that internal boundaries are the endpoint host firewalls + the vendor's intra-tenant isolation, both attested in the SSP.",
+      };
+    }
+
+    // ─── Encryption slot ───
+    const enc = answers.encryption_in_transit;
+    if (enc === "tls_everywhere_saas") {
+      slotAnnotations.encryption_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "TLS-everywhere — an SSL Labs A/A+ screenshot for your primary domain plus a screenshot of M365/Google's TLS requirements page covers [g]/[h] for most cloud-first orgs.",
+      };
+    } else if (enc === "vpn_only_remote" || enc === "mixed_tls_vpn") {
+      slotAnnotations.encryption_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          enc === "vpn_only_remote"
+            ? "VPN-required remote access — upload a screenshot of your VPN admin page showing the tunnel configuration (cipher suite + key exchange) plus one connected-client view."
+            : "TLS + VPN mix — upload an SSL Labs result for your public domain AND a VPN tunnel configuration screenshot. Together they cover [g]+[h].",
+      };
+    } else if (enc === "http_internal_only") {
+      slotAnnotations.encryption_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "FINDING for [h]: unencrypted internal traffic. Smallest fix: force HTTPS on internal services (Caddy / nginx with self-signed CA + trusted internal cert), enable SMB signing on file shares, then re-screenshot. Charlie will walk the per-protocol fix.",
+      };
+    } else if (enc === "unknown") {
+      slotAnnotations.encryption_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Not sure yet — Charlie will ask 2-3 questions to pin down which protocols are in play and either point at SSL Labs or note a finding.",
+      };
+    }
+
+    // ─── Diagram is always optional but Charlie can offer to draft ───
+    slotAnnotations.network_diagram = {
+      ...(slotAnnotations.network_diagram ?? {}),
+      recommendedDestinationIdx: 0,
+      contextNote:
+        (slotAnnotations.network_diagram?.contextNote ?? "") +
+        " The diagram is optional but the strongest single piece of evidence for [a]/[b]. Charlie can draft a Mermaid/draw.io diagram from your other answers in 1 minute.",
+    };
+
+    const situationSummary = [
+      `FCI hosting: ${SC3131_HOSTING_LABEL[answers.fci_hosting] ?? "unspecified"}.`,
+      `External boundary: ${SC3131_FIREWALL_LABEL[answers.external_firewall] ?? "unspecified"}.`,
+      `Internal segmentation: ${SC3131_SEGMENTATION_LABEL[answers.internal_segmentation] ?? "unspecified"}.`,
+      `Encryption in transit: ${SC3131_ENCRYPTION_LABEL[answers.encryption_in_transit] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's boundary posture",
+      `- FCI hosting: ${SC3131_HOSTING_LABEL[answers.fci_hosting] ?? "(not specified)"}`,
+      `- External firewall: ${SC3131_FIREWALL_LABEL[answers.external_firewall] ?? "(not specified)"}`,
+      `- Internal segmentation: ${SC3131_SEGMENTATION_LABEL[answers.internal_segmentation] ?? "(not specified)"}`,
+      `- Encryption in transit: ${SC3131_ENCRYPTION_LABEL[answers.encryption_in_transit] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the hosting + boundary posture in one sentence, then drive toward the missing objective letter. If `fci_hosting` is cloud-first AND `external_firewall = saas_provider_only`, all eight objectives are satisfied by a single vendor-boundary attestation — confirm it's signed rather than chasing firewall exports. If `external_firewall = just_router_default`, `internal_segmentation = single_flat_network`, or `encryption_in_transit = http_internal_only`, name those as priority findings and walk the smallest remediation. If `encryption_in_transit = unknown`, run a quick TLS check before asking anything else.",
+    ].join("\n");
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — SC.L1-3.13.5 (Public-Access System Separation)
+//
+// Two objectives: [a] public components identified; [b] public components
+// separated from internal networks. Cloud-first primes typically satisfy
+// this trivially (WordPress on a SaaS host, FCI in M365 = different
+// universes) but it must be stated explicitly.
+//
+// Anchored to:
+//   • NIST SP 800-171A Rev 2 §3.13.5 determination statements [a], [b]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, SC.L1-b.1.xiii
+//   • FAR 52.204-21(b)(1)(xiii)
+// ────────────────────────────────────────────────────────────────────────
+const SC3135_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "public_components",
+    objectives: ["a"],
+    prompt:
+      "What publicly accessible systems do you operate today?",
+    helpText:
+      "Anything someone on the open internet can reach without logging in: marketing website, customer portal login page, public S3 bucket, public-facing API.",
+    regAnchor:
+      "NIST SP 800-171A §3.13.5 [a]; CMMC L1 SAG (v2.13) SC.L1-b.1.xiii Further Discussion",
+    regQuote:
+      "Determine if: [a] publicly accessible system components are identified. … Publicly accessible system components are those that can be accessed by the public, typically without authentication.",
+    options: [
+      {
+        value: "marketing_site_saas",
+        label: "Marketing website on a SaaS host",
+        description: "Webflow, Squarespace, WordPress.com, Framer, Ghost, etc.",
+      },
+      {
+        value: "marketing_site_selfhosted",
+        label: "Marketing website self-hosted (WordPress on our own server)",
+      },
+      {
+        value: "customer_portal_separate",
+        label: "Customer portal / login page on a separate domain or subdomain",
+      },
+      {
+        value: "public_bucket_or_repo",
+        label: "Public storage bucket or code repo (S3 / GitHub / etc.)",
+      },
+      {
+        value: "public_api_endpoint",
+        label: "Public API endpoint",
+      },
+      {
+        value: "multiple",
+        label: "More than one of the above",
+      },
+      {
+        value: "none_no_public",
+        label: "None — we have no public-facing systems",
+        description:
+          "Truly no internet-reachable systems (no marketing site, no portal). We'll attest to that — both objectives collapse to a signed statement.",
+      },
+    ],
+  },
+  {
+    id: "hosting_separation",
+    objectives: ["b"],
+    prompt:
+      "Where do those public systems live relative to the systems that handle FCI?",
+    helpText:
+      "Pick the option that matches your actual setup. If you said \"none\" above, pick the \"not applicable\" option here.",
+    regAnchor:
+      "NIST SP 800-171A §3.13.5 [b]; CMMC L1 SAG (v2.13) SC.L1-b.1.xiii Further Discussion",
+    regQuote:
+      "Determine if: [b] subnetworks for publicly accessible system components are physically or logically separated from internal networks. … This separation can be implemented physically … or logically through the use of subnetworks, virtual networks, or cloud-provider isolation.",
+    options: [
+      {
+        value: "separate_saas",
+        label: "Public site is on a completely separate SaaS — FCI is in M365/Google",
+        description:
+          "Webflow ↔ M365 are different universes. The separation is at the vendor-account level.",
+      },
+      {
+        value: "separate_cloud_account",
+        label: "Public components in a separate cloud account / project",
+        description:
+          "AWS: separate account; Azure: separate subscription; GCP: separate project.",
+      },
+      {
+        value: "same_account_separate_vpc",
+        label: "Same cloud account but a separate VPC / subnet",
+      },
+      {
+        value: "same_network",
+        label: "Same network as FCI systems",
+        description:
+          "This is a FINDING for [b] — Charlie will walk the smallest fix (move the public site to a SaaS host or a separate VPC).",
+      },
+      {
+        value: "na_no_public",
+        label: "Not applicable — no public systems",
+      },
+    ],
+  },
+];
+
+const SC3135_COMPONENTS_LABEL: Record<string, string> = {
+  marketing_site_saas: "marketing site on SaaS host (Webflow/Squarespace/WP.com)",
+  marketing_site_selfhosted: "self-hosted marketing site (WordPress on own server)",
+  customer_portal_separate: "customer portal on a separate domain/subdomain",
+  public_bucket_or_repo: "public storage bucket or code repo (S3/GitHub)",
+  public_api_endpoint: "public API endpoint",
+  multiple: "multiple public-facing systems",
+  none_no_public: "no public-facing systems",
+};
+
+const SC3135_SEPARATION_LABEL: Record<string, string> = {
+  separate_saas: "different SaaS vendors (Webflow ↔ M365 separation)",
+  separate_cloud_account: "separate cloud account / project",
+  same_account_separate_vpc: "same cloud account, separate VPC/subnet",
+  same_network: "same network as FCI (FINDING for [b])",
+  na_no_public: "not applicable — no public systems",
+};
+
+const sc3135Intake: PracticeIntakeSpec = {
+  preamble:
+    "Two quick questions about anything someone on the open internet can reach. Each maps to a NIST 800-171A determination statement for SC.L1-3.13.5. If you have no public systems, both objectives collapse to a signed attestation — every objective still gets covered.",
+  questions: SC3135_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // ─── No public components special case ───
+    if (
+      answers.public_components === "none_no_public" &&
+      answers.hosting_separation === "na_no_public"
+    ) {
+      slotAnnotations.public_components_list = {
+        attestation: {
+          buttonLabel: "Attest: no public-facing systems",
+          autoNarrative:
+            "The organization attests that it operates no publicly accessible system components. The organization has no marketing website, customer portal, public API, public storage bucket, or other internet-reachable system. All organizational services require authentication to a Microsoft 365 / Google Workspace / SaaS tenant. This attestation satisfies NIST SP 800-171A §3.13.5 determination statements [a] (no public components exist to identify) and [b] (no separation requirement applies in the absence of public components). If a publicly accessible system is introduced in the future, a public-components inventory and separation evidence will be added at that time.",
+          reason:
+            "You said you have no public-facing systems — under NIST 800-171A both objectives are satisfied by a signed attestation.",
+        },
+      };
+      slotAnnotations.separation_evidence = {
+        attestation: {
+          buttonLabel: "Attest: no separation needed",
+          autoNarrative:
+            "Per the public-components attestation above, no publicly accessible system components exist; therefore no subnetwork separation requirement applies. If a publicly accessible system is introduced in the future, it will be hosted in a SaaS or cloud-account boundary distinct from the FCI environment and this objective will be re-opened with appropriate separation evidence.",
+          reason:
+            "Same no-public-systems basis as the components attestation.",
+        },
+      };
+      return {
+        slotAnnotations,
+        dynamicSlots,
+        hiddenSlotKeys,
+        situationSummary:
+          "No public-facing systems — both SC.L1-3.13.5 objectives satisfied by attestation.",
+      };
+    }
+
+    // ─── Components list path ───
+    const pc = answers.public_components;
+    if (pc === "marketing_site_saas") {
+      slotAnnotations.public_components_list = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Marketing site on a SaaS host — Charlie's list will have one row: domain, SaaS vendor, what's there, and \"hosted by [vendor] — fully separate from FCI tenant.\" That's the assessor-friendly answer for [a].",
+      };
+    } else if (pc === "marketing_site_selfhosted") {
+      slotAnnotations.public_components_list = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Self-hosted marketing site — Charlie will list it with the hosting provider, server/VPC ID, and a note about which subnet/VPC it lives in. Pair with the separation evidence below to cover [b].",
+      };
+    } else if (
+      pc === "customer_portal_separate" ||
+      pc === "public_api_endpoint" ||
+      pc === "public_bucket_or_repo"
+    ) {
+      slotAnnotations.public_components_list = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          pc === "customer_portal_separate"
+            ? "Customer portal — Charlie will list the domain/subdomain, hosting provider, the authentication mechanism, and the trust-boundary edge between the portal and the FCI store."
+            : pc === "public_api_endpoint"
+            ? "Public API — Charlie will list the endpoint URL, hosting provider, what it exposes, and the auth model (API key / OAuth / unauthenticated). Pair with separation evidence."
+            : "Public storage/repo — Charlie will list each public bucket/repo, what's in it, and a sentence confirming no FCI is stored there.",
+      };
+    } else if (pc === "multiple") {
+      slotAnnotations.public_components_list = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Multiple public systems — Charlie will draft a one-row-per-system list with domain, hosting, what's exposed, and the separation boundary. Pair each row with separation evidence below.",
+      };
+    }
+
+    // ─── Separation evidence path ───
+    const sep = answers.hosting_separation;
+    if (sep === "separate_saas") {
+      slotAnnotations.separation_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Different SaaS vendors — Charlie will draft a one-paragraph attestation: \"Public marketing site is hosted by [vendor]; FCI is processed in M365/Google. The systems share no infrastructure, no credentials, and no network path beyond the public internet.\" That's the cleanest [b] evidence.",
+      };
+    } else if (sep === "separate_cloud_account") {
+      slotAnnotations.separation_evidence = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Separate cloud accounts — upload a screenshot of the cloud console showing both account/project IDs side-by-side, plus a screenshot of the public account's IAM trust policy proving no cross-account access. That covers [b] beyond doubt.",
+      };
+    } else if (sep === "same_account_separate_vpc") {
+      slotAnnotations.separation_evidence = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Same account, separate VPC — upload a screenshot of the VPC list showing both VPCs + a screenshot of the security groups / routing tables showing no peering between them. Charlie can also draft the attestation paragraph if you prefer.",
+      };
+    } else if (sep === "same_network") {
+      slotAnnotations.separation_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "FINDING for [b]: public components share a network with FCI systems. Smallest fix at L1: move the public site to a SaaS host (Webflow/Squarespace/WP.com) which creates instant separation; or stand up a separate VPC. Charlie will walk the migration path.",
+      };
+    }
+
+    const situationSummary = [
+      `Public systems: ${SC3135_COMPONENTS_LABEL[answers.public_components] ?? "unspecified"}.`,
+      `Separation: ${SC3135_SEPARATION_LABEL[answers.hosting_separation] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's public-system posture",
+      `- Public components: ${SC3135_COMPONENTS_LABEL[answers.public_components] ?? "(not specified)"}`,
+      `- Hosting separation: ${SC3135_SEPARATION_LABEL[answers.hosting_separation] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the public-system posture in one sentence, then drive toward the missing objective. If `public_components = none_no_public`, both objectives are satisfied by attestation — confirm it's signed rather than chasing an inventory. If `hosting_separation = same_network`, name that as a priority finding and walk the smallest fix (move marketing to a SaaS host).",
+    ].join("\n");
+  },
+};
+
 export const practiceSpecs: Record<string, PracticeSpec> = {
   "AC.L1-3.1.1": {
     controlId: "AC.L1-3.1.1",
@@ -5119,6 +5770,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
   "SC.L1-3.13.1": {
     controlId: "SC.L1-3.13.1",
     shortName: "Boundary Protection",
+    intake: sc3131Intake,
     oneLiner:
       "Draw a perimeter around your FCI systems and put a firewall on it — internal AND external.",
     statement:
@@ -5242,6 +5894,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
   "SC.L1-3.13.5": {
     controlId: "SC.L1-3.13.5",
     shortName: "Public-Access System Separation",
+    intake: sc3135Intake,
     oneLiner:
       "Your public website / customer portal lives on a separate network from your FCI systems.",
     statement:
