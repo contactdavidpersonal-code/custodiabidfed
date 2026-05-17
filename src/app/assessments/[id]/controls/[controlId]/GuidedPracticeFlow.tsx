@@ -780,6 +780,13 @@ function ArtifactRow({
 }) {
   const [isReviewing, startReviewTransition] = useTransition();
   const display = parseQ(a.filename).display;
+  // Treat Charlie-drafted procedures/narratives as markdown so the file
+  // opens as a styled deliverable (and offers a PDF export) rather than
+  // raw `.md` text. Filename suffix is the source of truth — `mime_type`
+  // isn't always set on legacy rows.
+  const isMarkdownArtifact =
+    a.mime_type === "text/markdown" ||
+    a.filename.toLowerCase().endsWith(".md");
   const verdictTone =
     a.ai_review_verdict === "sufficient"
       ? { pill: "bg-[#2f8f6d] text-white", label: "Sufficient" }
@@ -836,7 +843,11 @@ function ArtifactRow({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <a
-                href={`/api/evidence/${a.id}`}
+                href={
+                  isMarkdownArtifact
+                    ? `/api/evidence/${a.id}?format=html`
+                    : `/api/evidence/${a.id}`
+                }
                 target="_blank"
                 rel="noopener noreferrer"
                 className="truncate text-sm font-semibold text-[#10231d] hover:text-[#2f8f6d]"
@@ -848,6 +859,15 @@ function ArtifactRow({
               >
                 {verdictTone.label}
               </span>
+              {isMarkdownArtifact && (
+                <a
+                  href={`/api/evidence/${a.id}?format=pdf`}
+                  className="inline-flex items-center border border-[#b8924a] px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#7a5e1c] transition-colors hover:bg-[#b8924a] hover:text-[#faf7f2]"
+                  title="Download as styled PDF"
+                >
+                  PDF
+                </a>
+              )}
             </div>
             {a.ai_review_summary && (
               <p className="mt-1 line-clamp-2 text-xs leading-snug text-[#5a7d70]">

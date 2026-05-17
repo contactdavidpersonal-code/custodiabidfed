@@ -177,6 +177,93 @@ export async function GET(
   // disallows raw quotes/CR/LF and we already constrain on upload, but
   // belt-and-suspenders here.
   const safeFilename = artifact.filename.replace(/[\r\n"\\]+/g, "_");
+
+  // Markdown is our authoring format for Charlie-drafted procedures and
+  // narratives — Charlie writes it reliably, it stays small, and it
+  // diffs cleanly. But raw `.md` opens as plain text in the browser,
+  // which looks broken to a user (and to an assessor) clicking on the
+  // artifact. So we serve markdown bytes three ways from the same row:
+  //
+  //   default       — raw bytes (legacy behavior; lets curl/scripts work)
+  //   ?format=html  — markdown rendered to a styled, printable HTML page
+  //   ?format=pdf   — markdown piped through the rhetorich-themed PDF
+  //                   renderer so the assessor sees a polished deliverable
+  //
+  // The HTML output is locked down with a strict CSP (no scripts of any
+  // kind) because the body content was authored by an LLM and could in
+  // principle contain prompt-injected raw HTML. CSP makes that safe to
+  // render in the user's tab.
+  const isMarkdown =
+    artifact.mime_type === "text/markdown" ||
+    artifact.filename.toLowerCase().endsWith(".md");
+  const format = new URL(req.url).searchParams.get("format");
+
+  if (isMarkdown && format === "html") {
+    const { marked } = await import("marked");
+    const md = plainBytes.toString("utf8");
+    const bodyHtml = await marked.parse(md, { gfm: true, breaks: false });
+    const titleFromFilename = artifact.filename
+      .replace(/\.md$/i, "")
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    const pageHtml = renderDeliverableHtml({
+      title: titleFromFilename,
+      organizationName: ctx.organization.name,
+      controlId: artifact.control_id,
+      artifactId: artifact.id,
+      bodyHtml: String(bodyHtml),
+    });
+    const buf = Buffer.from(pageHtml, "utf8");
+    const h = new Headers();
+    h.set("Content-Type", "text/html; charset=utf-8");
+    h.set(
+      "Content-Disposition",
+      `inline; filename="${safeFilename.replace(/\.md$/i, ".html")}"`,
+    );
+    h.set("Cache-Control", "private, no-store");
+    h.set("X-Content-Type-Options", "nosniff");
+    h.set("Referrer-Policy", "no-referrer");
+    h.set("X-Frame-Options", "DENY");
+    // No scripts, no fetches, no embeds. Inline styles only.
+    h.set(
+      "Content-Security-Policy",
+      "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    );
+    h.set("Content-Length", String(buf.length));
+    return new NextResponse(new Uint8Array(buf), { status: 200, headers: h });
+  }
+
+  if (isMarkdown && format === "pdf") {
+    const { renderDeliverablePdf } = await import("@/lib/cmmc/pdf-deliverable");
+    const md = plainBytes.toString("utf8");
+    const titleFromFilename = artifact.filename
+      .replace(/\.md$/i, "")
+      .replace(/[-_]+/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    const pdfBuf = await renderDeliverablePdf({
+      meta: {
+        organizationName: ctx.organization.name,
+        title: titleFromFilename,
+        controlId: artifact.control_id,
+        effectiveDate: new Date(),
+        documentType: "Evidence deliverable",
+      },
+      body: md,
+    });
+    const h = new Headers();
+    h.set("Content-Type", "application/pdf");
+    h.set(
+      "Content-Disposition",
+      `attachment; filename="${safeFilename.replace(/\.md$/i, ".pdf")}"`,
+    );
+    h.set("Cache-Control", "private, no-store");
+    h.set("X-Content-Type-Options", "nosniff");
+    h.set("Referrer-Policy", "no-referrer");
+    h.set("X-Frame-Options", "DENY");
+    h.set("Content-Length", String(pdfBuf.length));
+    return new NextResponse(new Uint8Array(pdfBuf), { status: 200, headers: h });
+  }
+
   const headers = new Headers();
   headers.set(
     "Content-Type",
@@ -195,4 +282,102 @@ export async function GET(
   headers.set("Content-Length", String(plainBytes.length));
 
   return new NextResponse(new Uint8Array(plainBytes), { status: 200, headers });
+}
+
+/**
+ * Wrap marked() output in a printable, rhetorich-adjacent letterhead so
+ * a click on a Charlie-drafted `.md` opens as a real-looking document
+ * (cream paper, navy ink, gold rule) rather than raw markdown text.
+ *
+ * Inline styles only — the response is served with a strict CSP that
+ * blocks scripts and external resources, which is what makes it safe
+ * to render LLM-authored content directly.
+ */
+function renderDeliverableHtml(args: {
+  title: string;
+  organizationName: string;
+  controlId: string;
+  artifactId: string;
+  bodyHtml: string;
+}): string {
+  const esc = (s: string) =>
+    s
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  const today = new Date().toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(args.title)} — ${esc(args.controlId)}</title>
+<style>
+  @page { size: letter; margin: 0.75in; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: Georgia, 'Times New Roman', serif; color: #1e293b; background: #faf7f2; line-height: 1.6; font-size: 11.5pt; }
+  .sheet { max-width: 7in; margin: 0.5in auto; padding: 0 0.5in 1in; }
+  header.bar { border-bottom: 1px solid #c9bfa8; padding-bottom: 0.5rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 9pt; letter-spacing: 0.14em; text-transform: uppercase; color: #0b1f3a; }
+  .actions a { color: #0b1f3a; text-decoration: none; border: 1px solid #0b1f3a; padding: 5px 12px; font-weight: 700; letter-spacing: 0.1em; }
+  .actions a:hover { background: #0b1f3a; color: #faf7f2; }
+  h1.doc-title { font-size: 24pt; font-weight: 700; margin: 0 0 0.25rem; color: #0b1f3a; line-height: 1.2; }
+  .doc-sub { font-style: italic; color: #5e5246; margin: 0 0 1.25rem; }
+  dl.meta { background: #f3ede2; border-left: 3px solid #b8924a; padding: 0.75rem 1rem; margin: 0 0 1.5rem; font-family: 'Helvetica Neue', Arial, sans-serif; display: grid; grid-template-columns: max-content 1fr; column-gap: 1rem; row-gap: 0.35rem; font-size: 10pt; }
+  dl.meta dt { font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #5e5246; font-size: 9pt; align-self: center; }
+  dl.meta dd { margin: 0; color: #0b1f3a; }
+  .body h1, .body h2, .body h3, .body h4 { color: #0b1f3a; font-weight: 700; margin: 1.5rem 0 0.5rem; line-height: 1.3; }
+  .body h1 { font-size: 17pt; border-bottom: 1px solid #c9bfa8; padding-bottom: 0.25rem; }
+  .body h2 { font-size: 14pt; }
+  .body h3 { font-size: 11pt; text-transform: uppercase; letter-spacing: 0.06em; color: #3e5b7e; }
+  .body h4 { font-size: 11pt; font-style: italic; color: #3e5b7e; }
+  .body p { margin: 0 0 0.85rem; }
+  .body ul, .body ol { margin: 0 0 0.85rem; padding-left: 1.5rem; }
+  .body li { margin-bottom: 0.3rem; }
+  .body strong { color: #0b1f3a; }
+  .body em { color: #3e5b7e; }
+  .body a { color: #0b1f3a; text-decoration: underline; }
+  .body blockquote { margin: 0 0 0.85rem; padding: 0.5rem 1rem; border-left: 3px solid #c9bfa8; background: #f3ede2; color: #3e5b7e; font-style: italic; }
+  .body code { background: #f3ede2; padding: 1px 5px; font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 10pt; }
+  .body pre { background: #f3ede2; padding: 0.75rem 1rem; overflow-x: auto; font-size: 10pt; border-left: 3px solid #c9bfa8; }
+  .body pre code { background: transparent; padding: 0; }
+  .body table { border-collapse: collapse; margin: 0 0 1rem; width: 100%; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 10pt; }
+  .body th, .body td { border: 1px solid #c9bfa8; padding: 0.4rem 0.7rem; text-align: left; }
+  .body th { background: #f3ede2; font-weight: 700; color: #0b1f3a; letter-spacing: 0.04em; }
+  .body hr { border: none; border-top: 1px solid #c9bfa8; margin: 1.5rem 0; }
+  footer.bar { margin-top: 2.5rem; padding-top: 0.75rem; border-top: 1px solid #c9bfa8; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 8pt; color: #5e5246; letter-spacing: 0.08em; text-transform: uppercase; display: flex; justify-content: space-between; }
+  @media print {
+    .actions { display: none; }
+    body { background: #fff; }
+    .sheet { margin: 0; padding: 0; max-width: none; }
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header class="bar">
+    <div>${esc(args.organizationName)} · Custodia BidFedCMMC</div>
+    <div class="actions"><a href="/api/evidence/${esc(args.artifactId)}?format=pdf">Download PDF</a></div>
+  </header>
+  <h1 class="doc-title">${esc(args.title)}</h1>
+  <p class="doc-sub">Evidence deliverable — ${esc(args.controlId)}</p>
+  <dl class="meta">
+    <dt>Control</dt><dd>${esc(args.controlId)}</dd>
+    <dt>Organization</dt><dd>${esc(args.organizationName)}</dd>
+    <dt>Effective</dt><dd>${esc(today)}</dd>
+  </dl>
+  <div class="body">
+${args.bodyHtml}
+  </div>
+  <footer class="bar">
+    <div>Custodia · BidFedCMMC</div>
+    <div>Generated ${esc(today)}</div>
+  </footer>
+</div>
+</body>
+</html>`;
 }
