@@ -382,7 +382,7 @@ const PROCESSES_LABEL: Record<string, string> = {
 
 const ia351Intake: PracticeIntakeSpec = {
   preamble:
-    "Four quick questions about your environment — every question maps to a specific NIST 800-171A determination statement for IA.L1-3.5.1. Your answers personalize the evidence list so you only get asked for what an assessor would actually check for *your* setup. None of the three objectives will be skipped — only the path to satisfying them changes.",
+    "Four quick questions about how people, devices, and automated tasks sign in today. Your answers personalize the evidence list so we only ask for what an assessor would actually check in *your* setup. All three requirements still get covered.",
   questions: IA351_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -825,7 +825,7 @@ const DEVICE_AUTH_LABEL: Record<string, string> = {
 
 const ia352Intake: PracticeIntakeSpec = {
   preamble:
-    "Four quick questions about how people, processes, and devices prove who they are. Every question maps to a specific NIST 800-171A determination statement for IA.L1-3.5.2. Your answers route the evidence path — none of the three objectives are skipped.",
+    "Four quick questions about how people, devices, and automated tasks prove who they are. Your answers route the evidence path — all three requirements still get covered.",
   questions: IA352_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -1207,7 +1207,7 @@ const EXTERNAL_ACTORS_LABEL: Record<string, string> = {
 
 const ac311Intake: PracticeIntakeSpec = {
   preamble:
-    "Four quick questions about how access actually works in your environment. Each one is anchored to a specific NIST 800-171A determination statement for AC.L1-3.1.1 — your answers route which evidence Charlie pulls or drafts, but none of the six objectives are ever skipped.",
+    "Four quick questions about how people get access to your work systems today. Your answers help us pull or draft the right evidence — no matter how you answer, all six requirements still get covered.",
   questions: AC311_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -1612,7 +1612,7 @@ const AC312_QUESTIONS: IntakeQuestion[] = [
 
 const ac312Intake: PracticeIntakeSpec = {
   preamble:
-    "Four quick questions about how privileges actually work in your environment. Each one is anchored to a specific NIST 800-171A determination statement for AC.L1-3.1.2 — your answers route which evidence Charlie pulls or drafts, but neither objective [a] nor [b] is ever skipped.",
+    "Four quick questions about who has admin-level access in your company and how that's decided. Your answers route which evidence we pull or draft — both requirements still get covered no matter how you answer.",
   questions: AC312_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -1974,7 +1974,7 @@ const AC3120_QUESTIONS: IntakeQuestion[] = [
 
 const ac3120Intake: PracticeIntakeSpec = {
   preamble:
-    "Four quick questions about every system outside your authorization boundary that can touch federal-contract information. Each one is anchored to a specific NIST 800-171A determination statement for AC.L1-3.1.20 — your answers route which evidence Charlie pulls, drafts, or asks you to upload, but no objective [a]–[f] is ever skipped.",
+    "Four quick questions about every outside system that can reach your government contract data. Your answers tell us which evidence to pull, draft, or ask you to upload — all six requirements still get covered.",
   questions: AC3120_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -2319,7 +2319,7 @@ const AC3122_QUESTIONS: IntakeQuestion[] = [
 
 const ac3122Intake: PracticeIntakeSpec = {
   preamble:
-    "Four quick questions about what's already public and who can post. Each one maps to a specific NIST 800-171A determination statement for AC.L1-3.1.22 — Charlie uses the answers to draft the posters roster, the review procedure, and (when needed) a content-audit log. No objective [a]–[e] is skipped.",
+    "Four quick questions about what's already public and who's allowed to post. Charlie uses your answers to draft the list of posters, the review steps, and (when needed) a content audit log. All five requirements still get covered.",
   questions: AC3122_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -2666,7 +2666,7 @@ const MP_LOG_STATE_LABEL: Record<string, string> = {
 
 const mp383Intake: PracticeIntakeSpec = {
   preamble:
-    "Four quick questions about how you handle drives, USBs, phones, and paper that touch Federal Contract Information. Every question maps to a specific NIST 800-171A determination statement for MP.L1-3.8.3. Your answers personalize the evidence list — both objectives are always satisfied, only the path changes (a full log, a signed attestation, or a mix).",
+    "Four quick questions about how you handle drives, USB sticks, phones, and printed paper that touch your government contract data. Your answers tailor the evidence list — both requirements always get covered (full log, signed statement, or a mix).",
   questions: MP383_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -3077,7 +3077,7 @@ const PE3101_SHARED_SPACE_LABEL: Record<string, string> = {
 
 const pe3101Intake: PracticeIntakeSpec = {
   preamble:
-    "Four quick questions about the physical space where Federal Contract Information actually lives. Every question maps to a NIST 800-171A determination statement for PE.L1-3.10.1. Your answers personalize the roster, enforcement evidence, and procedure — every objective letter still gets covered, only the evidence path changes.",
+    "Four quick questions about the physical spaces where your government contract data actually lives. Your answers tailor the list of who's allowed in, the proof of how you keep others out, and the procedure. All four requirements still get covered.",
   questions: PE3101_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -3375,7 +3375,7 @@ const PE3103_MONITORING_LABEL: Record<string, string> = {
 
 const pe3103Intake: PracticeIntakeSpec = {
   preamble:
-    "Three quick questions about how visitors are handled in the FCI workspace. Each maps to a NIST 800-171A determination statement for PE.L1-3.10.3. If visitors essentially never enter, both objectives collapse into a single signed attestation — every objective still gets covered.",
+    "Three quick questions about how visitors are handled in your work area. If visitors basically never come in, both requirements can be covered by a single signed statement — either way, you're covered.",
   questions: PE3103_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -3577,7 +3577,7 @@ const PE3104_RETENTION_LABEL: Record<string, string> = {
 
 const pe3104Intake: PracticeIntakeSpec = {
   preamble:
-    "Two quick questions about how physical-entry events are recorded and how long the records survive. Both questions map to NIST 800-171A §3.10.4 [a]. Whichever format you actually use is fine — we just need the evidence path to match it.",
+    "Two quick questions about how you record who came in and when, and how long you keep those records. Whatever you actually do today is fine — we just match the evidence path to it.",
   questions: PE3104_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -3811,7 +3811,7 @@ const PE3105_REVOKE_LABEL: Record<string, string> = {
 
 const pe3105Intake: PracticeIntakeSpec = {
   preamble:
-    "Three quick questions about the keys, fobs, badges, and codes that control physical access. Every question maps to a NIST 800-171A determination statement for PE.L1-3.10.5. The register, the issue/revoke procedure, or both will be drafted or pulled based on your answers.",
+    "Three quick questions about the keys, fobs, badges, and door codes you hand out. Based on your answers we'll draft the list, the procedure for issuing and getting them back, or both.",
   questions: PE3105_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -4146,7 +4146,7 @@ const SC3131_ENCRYPTION_LABEL: Record<string, string> = {
 
 const sc3131Intake: PracticeIntakeSpec = {
   preamble:
-    "Four quick questions about where FCI lives and what stands between it and the open internet. Every question maps to a NIST 800-171A determination statement for SC.L1-3.13.1. Cloud-only setups satisfy most objectives through the vendor's tenant boundary — we'll attest to that explicitly so every objective letter still gets covered.",
+    "Four quick questions about where your government contract data lives and what stands between it and the open internet. Cloud-only setups (Microsoft 365, Google Workspace) cover most of this through the vendor's built-in protection — we just need to say so explicitly. Every requirement still gets covered.",
   questions: SC3131_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -4458,7 +4458,7 @@ const SC3135_SEPARATION_LABEL: Record<string, string> = {
 
 const sc3135Intake: PracticeIntakeSpec = {
   preamble:
-    "Two quick questions about anything someone on the open internet can reach. Each maps to a NIST 800-171A determination statement for SC.L1-3.13.5. If you have no public systems, both objectives collapse to a signed attestation — every objective still gets covered.",
+    "Two quick questions about anything someone on the open internet can reach. If you have no public systems at all, both requirements can be covered by a single signed statement — either way, you're covered.",
   questions: SC3135_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -4731,7 +4731,7 @@ const SI3141_LOG_LABEL: Record<string, string> = {
 
 const si3141Intake: PracticeIntakeSpec = {
   preamble:
-    "Three quick questions about how you patch and whether the cadence is documented. Each maps to a NIST 800-171A determination statement for SI.L1-3.14.1. The trick is the word \"specified\" — even one paragraph naming timeframes per severity satisfies [a]/[c]/[e]; Charlie can draft it in 30 seconds.",
+    "Three quick questions about how you patch your computers and whether the timing is written down. The key word is 'specified' — even one paragraph naming timelines by severity satisfies the documentation requirement; Charlie can draft it in 30 seconds.",
   questions: SI3141_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -4974,7 +4974,7 @@ const SI3142_POLICY_LABEL: Record<string, string> = {
 
 const si3142Intake: PracticeIntakeSpec = {
   preamble:
-    "Three quick questions about endpoint malicious-code protection. Each maps to a NIST 800-171A determination statement for SI.L1-3.14.2. Modern Windows ships with Defender for free — for most small primes this practice is trivially satisfied; we just need the inventory, a screenshot, and a one-page policy.",
+    "Three quick questions about the antivirus on your computers. Modern Windows comes with Microsoft Defender free — for most small contractors this is easy; we just need the list, a screenshot, and a one-page policy.",
   questions: SI3142_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -5379,7 +5379,7 @@ const SI3145_POLICY_LABEL: Record<string, string> = {
 
 const si3145Intake: PracticeIntakeSpec = {
   preamble:
-    "Three quick questions about scan cadence + real-time protection. Each maps to a NIST 800-171A determination statement for SI.L1-3.14.5. Defender's defaults (weekly scan + always-on real-time protection) satisfy this practice cleanly — we just need two screenshots and one policy line.",
+    "Three quick questions about how often you scan and whether real-time protection is on. Microsoft Defender's defaults (weekly scan + always-on real-time protection) handle this cleanly — we just need two screenshots and one line in your policy.",
   questions: SI3145_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -5470,7 +5470,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     controlId: "AC.L1-3.1.1",
     shortName: "Authorized Access Control",
     oneLiner:
-      "Only people, processes, and devices you've approved can sign in to systems that touch Federal Contract Information.",
+      "Only people, devices, and automated tasks you've approved can sign in to systems that hold your government contract data.",
     statement:
       "Limit information system access to authorized users, processes acting on behalf of authorized users, or devices (including other information systems).",
     objectives: [
@@ -5482,7 +5482,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "f", text: "system access is limited to authorized devices (including other systems)" },
     ],
     furtherDiscussion:
-      "Identify users, processes, and devices that are allowed to use company computers and can log on to the company network. Automated updates and other automatic processes should be associated with the user who initiated (authorized) the process. Limit the devices (e.g., printers) that can be accessed by company computers. Set up your system so that only authorized users, processes, and devices can access the company network. This practice (AC.L1-3.1.1) controls system access based on user, process, or device identity, and leverages IA.L1-3.5.1 which provides a vetted and trusted identity for access control.",
+      "Make a clear list of every person, device, and automated task allowed to use your company computers and sign in to your network. Automated jobs (like Windows updates) should be tied back to the person who turned them on. Put limits on which devices can connect — including office printers. Then set up your systems so only those approved people, devices, and tasks can get in.",
     evidenceSlots: [
       {
         key: "authorized_users_roster",
@@ -5644,7 +5644,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     controlId: "AC.L1-3.1.2",
     shortName: "Transaction & Function Control",
     oneLiner:
-      "Even authorized users shouldn't have more access than their job requires — least privilege, written down and enforced.",
+      "Even people you've approved shouldn't have more access than their job needs — write down who can do what, and make sure the systems enforce it.",
     statement:
       "Limit information system access to the types of transactions and functions that authorized users are permitted to execute.",
     objectives: [
@@ -5658,7 +5658,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       },
     ],
     furtherDiscussion:
-      "Limit users to only the information systems, roles, or applications they are permitted to use and that are needed for their job. Role-based access control is the typical mechanism: each role has a defined set of transactions/functions, and users are granted only the role(s) their job requires. Admin/privileged roles are the highest-risk findings — assessors expect to see them assigned by name, scoped tightly, and reviewed periodically. This practice (AC.L1-3.1.2) controls authorized uses of the system, while AC.L1-3.1.1 limits access to authorized users, processes, and devices.",
+      "Give each person only the access their job actually needs. The easiest way is to put people into groups (often called 'roles') — like admin, standard user, or read-only — and write down what each role can do. Admin-level accounts get the most scrutiny from assessors, so keep that list short, named by person, and reviewed every few months.",
     evidenceSlots: [
       {
         key: "role_matrix",
@@ -5756,7 +5756,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     controlId: "AC.L1-3.1.20",
     shortName: "External Connections",
     oneLiner:
-      "Know every outside system that touches your FCI — and prove the connection is intentional and controlled.",
+      "Know every outside system that touches your government contract data — and show that each connection is on purpose and controlled.",
     statement:
       "Verify and control/limit connections to and use of external information systems.",
     objectives: [
@@ -5768,7 +5768,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "f", text: "the use of external systems are controlled/limited" },
     ],
     furtherDiscussion:
-      "External information systems are systems outside your authorization boundary — cloud apps you subscribe to, contractor-owned laptops, shared kiosks, an employee's home computer. You don't have to ban them, but you do need to (a) know they exist and what they're used for, (b) verify the connection is appropriate (the SaaS vendor's terms, the contractor's MSA), and (c) limit what they can do (e.g. SSO with conditional access, restricted shared-link permissions). The most common evidence package is a written external-systems inventory + screenshots of how access is gated (SSO config, share permissions, conditional access).",
+      "Outside systems are anything beyond your own network — cloud apps you subscribe to, a contractor's laptop, an employee's home computer, a shared kiosk. You don't have to ban them, but you do need to (1) know they exist and what they're used for, (2) make sure the connection makes sense (the vendor's terms of service, the contractor's signed agreement), and (3) limit what they can do (one shared login across apps, restricted file-sharing, two-step sign-in). The usual evidence is a written list of those systems plus screenshots showing how access is controlled.",
     evidenceSlots: [
       {
         key: "external_systems_inventory",
@@ -5865,7 +5865,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     controlId: "AC.L1-3.1.22",
     shortName: "Control Public Information",
     oneLiner:
-      "Don't accidentally post FCI on your website or social — name who's authorized to post and review every post first.",
+      "Don't accidentally post government contract details on your website or social media — name who's allowed to post, and review every post before it goes live.",
     statement:
       "Control information posted or processed on publicly accessible information systems.",
     objectives: [
@@ -5891,7 +5891,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       },
     ],
     furtherDiscussion:
-      "Publicly accessible systems are your company website, blog, LinkedIn page, GitHub org, customer portal, etc. The risk is benign-looking content (case studies, project photos, marketing copy) that names a federal customer or quotes contract details. The expected evidence is small but specific: (1) a short list of named posters with a signed acknowledgement, (2) a written review procedure, and (3) one or two examples of posts that went through review.",
+      "'Public' here means anything anyone on the internet can see — your company website, blog, LinkedIn page, GitHub, customer portal. The risk is harmless-looking posts (case studies, project photos, marketing copy) that accidentally name a federal customer or quote contract details. The assessor wants three small things: (1) a short list of people allowed to post plus their signed acknowledgement, (2) a one-paragraph review procedure, and (3) one or two examples of posts that actually got reviewed.",
     evidenceSlots: [
       {
         key: "authorized_posters_ack",
@@ -5980,7 +5980,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     controlId: "IA.L1-3.5.1",
     shortName: "Identification",
     oneLiner:
-      "Every user, automated process, and device that touches FCI has a unique ID — no shared accounts.",
+      "Every person, device, and automated task that touches your government contract data has its own unique login — no shared accounts.",
     statement:
       "Identify information system users, processes acting on behalf of users, or devices.",
     objectives: [
@@ -5989,7 +5989,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "c", text: "devices accessing the system are identified" },
     ],
     furtherDiscussion:
-      "This is the foundation control for accountability — if you can't identify the actor, you can't audit them. The bar is unique IDs: each human gets one named account, each automation runs as a named service principal, each device has a unique hostname/serial. Shared accounts (info@, admin@, the receptionist's PC that everyone uses) are the most common finding. Evidence is a roster + screenshots showing the identifiers in the IdP / device manager.",
+      "This is the foundation of accountability — if you can't tell who did what, you can't prove anything to an assessor. The rule is one login per person, one login per automated task, and one unique name or serial per device. Shared logins (info@, admin@, the front-desk PC everyone uses) are the most common problem. Evidence is a list plus screenshots from your sign-in system or device manager showing those unique IDs.",
     evidenceSlots: [
       {
         key: "user_identifiers_list",
@@ -6103,7 +6103,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     controlId: "IA.L1-3.5.2",
     shortName: "Authentication",
     oneLiner:
-      "Make every user, process, and device prove who they are before they get in — MFA where it matters.",
+      "Every person, device, and automated task has to prove who it is before getting in — two-step sign-in (sometimes called MFA) where it matters.",
     statement:
       "Authenticate (or verify) the identities of those users, processes, or devices, as a prerequisite to allowing access to organizational information systems.",
     objectives: [
@@ -6112,7 +6112,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "c", text: "the identity of each device accessing or connecting to the system is authenticated or verified as a prerequisite to system access" },
     ],
     furtherDiscussion:
-      "Authentication is the proof step (vs. identification, which is the claim step). A password is acceptable in principle, but with FCI in cloud apps the assessor will look hard for MFA on every internet-facing account, a documented password policy, and proof devices are authenticated (cert-based / domain-joined / Intune-compliant). Service accounts authenticate via secrets/keys vaulted somewhere — you must say where.",
+      "Where 'identification' is the claim ('I'm Sara'), 'authentication' is the proof. A password works in principle, but with your government contract data sitting in cloud apps, the assessor will look hard for two-step sign-in (also called MFA) on every account that can be reached from the internet. They'll also want a written password policy and proof that devices are confirmed before connecting (managed by your sign-in system, joined to your office network, or showing a valid certificate). Automated tasks sign in with stored keys — you have to say where those keys live.",
     evidenceSlots: [
       {
         key: "mfa_enforcement",
@@ -6232,7 +6232,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     controlId: "MP.L1-3.8.3",
     shortName: "Media Disposal",
     oneLiner:
-      "Wipe or shred any drive, USB, or printout that holds FCI before it leaves your control.",
+      "Wipe or shred any drive, USB stick, phone, or printout that holds your government contract data before it leaves your control.",
     statement:
       "Sanitize or destroy information system media containing Federal Contract Information before disposal or release for reuse.",
     objectives: [
@@ -6240,7 +6240,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "b", text: "system media containing FCI is sanitized before it is released for reuse" },
     ],
     furtherDiscussion:
-      "Media is anything that stores FCI: laptop SSDs, server drives, USB sticks, printed docs, even iPhones. The assessor expects a written sanitization procedure (NIST SP 800-88 cite), a log of every disposal/reuse event, and certificates of destruction for vendor-handled media. A small org that throws drives in a shredder once a year only needs a one-page log and a procedure — keep it simple, keep it dated.",
+      "'Media' here means anything that stores data: laptop drives, server drives, USB sticks, printed documents, even old phones. The assessor expects a written wipe-or-destroy procedure, a log of every disposal or reuse event, and certificates from any vendor that destroys things for you (like Iron Mountain or Shred-it). A small company that shreds drives once a year just needs a simple one-page log and a short procedure — keep it dated and signed.",
     evidenceSlots: [
       {
         key: "media_disposal_log",
@@ -6329,7 +6329,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     shortName: "Limit Physical Access",
     intake: pe3101Intake,
     oneLiner:
-      "Only people you've named can walk into rooms where FCI lives — write the list and lock the door.",
+      "Only people you've named can walk into rooms where your government contract data lives — write the list and lock the door.",
     statement:
       "Limit physical access to organizational information systems, equipment, and the respective operating environments to authorized individuals.",
     objectives: [
@@ -6339,7 +6339,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "d", text: "physical access to operating environments is limited to authorized individuals" },
     ],
     furtherDiscussion:
-      "Operating environments mean any room or space where FCI is processed, stored, or printed: your office server closet, your home office, even a hotel room you work from. The assessor expects a roster of who's authorized to physically enter, evidence of how you enforce it (locks, badge readers, alarm system), and a procedure for adding/removing access.",
+      "A 'work area' here means any room or space where your government contract data is opened, printed, stored, or worked on — your office, the server closet, your home office, even a hotel room you take a meeting in. The assessor expects a list of who's allowed in, evidence of how you keep others out (locks, badges, alarm system), and a short procedure for adding or removing access.",
     evidenceSlots: [
       {
         key: "physical_access_roster",
@@ -6431,14 +6431,14 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     shortName: "Escort Visitors",
     intake: pe3103Intake,
     oneLiner:
-      "Anyone who isn't on your roster gets escorted and watched while they're in FCI areas.",
+      "Anyone not on your approved list gets walked in and watched while they're in your work areas.",
     statement: "Escort visitors and monitor visitor activity.",
     objectives: [
       { letter: "a", text: "visitors are escorted" },
       { letter: "b", text: "visitor activity is monitored" },
     ],
     furtherDiscussion:
-      "Anyone not on the authorized list is a visitor — including the IT contractor, the cleaning crew, and family who stop by your home office. The assessor wants a visitor sign-in log + a one-paragraph procedure that says who escorts and how visitor activity is observed (escort, camera, badge with limited access).",
+      "Anyone not on your approved list is a visitor — including the IT contractor, the cleaning crew, even family who stop by your home office. The assessor wants a sign-in log plus a one-paragraph rule that says who walks visitors around and how you keep an eye on them (in person, security camera, or a badge that only opens certain doors).",
     evidenceSlots: [
       {
         key: "visitor_log",
@@ -6511,7 +6511,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "a", text: "audit logs of physical access are maintained" },
     ],
     furtherDiscussion:
-      "The assessor wants to see logs that survive — a sign-in book that's filed, or an export of badge-system events. For a home office, a simple log of any non-resident who enters works. Retention: at least one year is the common bar.",
+      "The assessor wants logs that stick around — a sign-in book you keep, or a record of badge swipes from your security system. For a home office, a simple notebook noting any non-household-member who came in is enough. Keep them for at least one year.",
     evidenceSlots: [
       {
         key: "physical_access_log",
@@ -6586,7 +6586,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "c", text: "physical access devices are managed" },
     ],
     furtherDiscussion:
-      "Physical access devices = keys, fobs, prox cards, gate remotes, alarm codes. The assessor wants a register: device serial → assigned to whom → date issued → date returned/disabled. The control side is a procedure: how new devices are issued, how lost ones are reported, how leavers' devices are reclaimed.",
+      "Physical access devices = keys, fobs, prox cards, gate remotes, alarm codes. The assessor wants a list: which device → who has it → when they got it → when they returned it. Plus a short procedure for how new keys are issued, how lost ones are reported, and how you get them back when someone leaves.",
     evidenceSlots: [
       {
         key: "access_device_register",
@@ -6658,7 +6658,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     shortName: "Boundary Protection",
     intake: sc3131Intake,
     oneLiner:
-      "Draw a perimeter around your FCI systems and put a firewall on it — internal AND external.",
+      "Draw a clear line around the systems that hold your government contract data and put a firewall on it — between you and the internet, and between work and guest WiFi.",
     statement:
       "Monitor, control, and protect organizational communications (i.e., information transmitted or received by organizational information systems) at the external boundaries and key internal boundaries of the information systems.",
     objectives: [
@@ -6672,7 +6672,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "h", text: "communications are protected at key internal boundaries" },
     ],
     furtherDiscussion:
-      "Boundary protection answers \"where does your FCI live, and what's between it and the open internet?\" For most small primes the answer is: a cloud-firewall on the office router (or a SaaS WAF), TLS everywhere, and segmentation between the guest WiFi and the trusted LAN. The assessor wants a network-boundary inventory + firewall configuration export + diagram. A simple network diagram drawn in Draw.io is fine.",
+      "This control answers \"where does your work data live, and what's between it and the open internet?\" For most small contractors the answer is: a firewall on the office router (or a cloud firewall like Cloudflare), HTTPS encryption everywhere, and a separate guest WiFi network. The assessor wants a list of those boundaries, an export or screenshot of your firewall rules, and a simple diagram. A one-pager drawn in Draw.io is fine.",
     evidenceSlots: [
       {
         key: "network_boundary_inventory",
@@ -6782,7 +6782,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     shortName: "Public-Access System Separation",
     intake: sc3135Intake,
     oneLiner:
-      "Your public website / customer portal lives on a separate network from your FCI systems.",
+      "Your public website or customer portal lives on a separate network from the systems that hold your government contract data.",
     statement:
       "Implement subnetworks for publicly accessible system components that are physically or logically separated from internal networks.",
     objectives: [
@@ -6790,7 +6790,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "b", text: "subnetworks for publicly accessible system components are physically or logically separated from internal networks" },
     ],
     furtherDiscussion:
-      "Publicly accessible = anything someone on the open internet can reach: marketing website, customer portal, a public S3 bucket. The assessor wants the inventory + proof those systems live in a different segment from FCI (different subnet, different cloud account, different VPC). For most primes this is trivial — your WordPress site is on a SaaS host and your FCI data is in M365 — but you must say it explicitly.",
+      "'Public' means anything someone on the open internet can reach: your marketing website, customer portal, public download page. The assessor wants a short list of those public systems plus proof they're separated from where your work data lives (different account, different network, different host). For most small contractors this is easy — your WordPress site is on its own host and your work data is in Microsoft 365 — you just have to say it explicitly.",
     evidenceSlots: [
       {
         key: "public_components_list",
@@ -6869,7 +6869,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "f", text: "system flaws are corrected within the specified time frame" },
     ],
     furtherDiscussion:
-      "The trick with this practice is the word \"specified\" — you must commit to a written timeframe per severity (e.g. critical patches within 7 days). The default cadence most primes use: critical = 7 days, high = 30 days, medium = 90 days. Then you log every patch run + show the system patches actually went out within that window. Auto-update screenshots from Windows Update or Intune satisfy most of it.",
+      "The key word here is 'specified' — you have to commit to a written timeline by severity (for example, critical fixes within 7 days). A common starting point: critical = 7 days, high = 30 days, medium = 90 days. Then you log every patch and show the assessor that the updates actually went out on time. A screenshot of Windows Update or Microsoft Intune set to update automatically covers most of this.",
     evidenceSlots: [
       {
         key: "patch_policy",
@@ -6971,7 +6971,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     shortName: "Malicious Code Protection",
     intake: si3142Intake,
     oneLiner:
-      "Run AV on every device that touches FCI — Defender, CrowdStrike, whatever, just have it.",
+      "Run antivirus on every computer that touches your government contract data — Microsoft Defender, CrowdStrike, whatever you use, just have it on.",
     statement:
       "Provide protection from malicious code at appropriate locations within organizational information systems.",
     objectives: [
@@ -6979,7 +6979,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "b", text: "protection from malicious code at designated locations is provided" },
     ],
     furtherDiscussion:
-      "Designated locations = every endpoint where FCI lives or transits. Modern Windows ships with Defender; macOS has XProtect. The assessor wants an inventory of endpoints + the AV product on each, plus a screenshot showing real-time protection is on. A short policy stating \"AV is required on every endpoint, no exceptions\" closes objective (a).",
+      "Every computer or device that handles your government contract data needs antivirus. Modern Windows comes with Microsoft Defender built in; macOS has XProtect. The assessor wants a list of computers, the antivirus on each one, and a screenshot showing real-time protection is on. A one-paragraph policy that says \"antivirus is required on every computer, no exceptions\" wraps it up.",
     evidenceSlots: [
       {
         key: "endpoint_av_inventory",
@@ -7160,7 +7160,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       { letter: "c", text: "real-time malicious code scans of files from external sources are performed as files are downloaded, opened, or executed" },
     ],
     furtherDiscussion:
-      "Defender / modern AV does this automatically: weekly full scan + always-on real-time protection. The assessor wants two screenshots: the scheduled-scan settings page and the real-time protection page. Your AV policy should state the frequency (e.g. weekly) so objective (a) is documented.",
+      "Microsoft Defender and other modern antivirus products already do both of these by default: a weekly full scan plus always-on real-time protection. The assessor wants two screenshots — one of the scheduled-scan settings, one showing real-time protection is on — and one line in your antivirus policy naming the frequency (for example, 'weekly').",
     evidenceSlots: [
       {
         key: "scan_schedule_screenshot",
