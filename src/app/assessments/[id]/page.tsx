@@ -16,6 +16,8 @@ import {
   requirementMeta,
   requirementToLegacy,
 } from "@/lib/playbook";
+import { listPracticeProgressForAssessment } from "@/lib/cmmc/practice-progress-server";
+import type { PracticeProgress } from "@/lib/cmmc/practice-progress";
 
 const statusLabels: Record<ControlResponseRow["status"], string> = {
   unanswered: "Not started",
@@ -42,10 +44,12 @@ const statusPillStyles: Record<ControlResponseRow["status"], string> = {
 };
 
 // Per-practice progress for the small bar at the bottom of each card.
-// `met` and `not_applicable` are 100% — the practice is resolved either way.
-// `partial` is 50% — user has some evidence but not all six objectives.
-// `no` is 25% — user has acknowledged the practice but hasn't fixed it.
-// `unanswered` is 0%.
+// The number comes from `listPracticeProgressForAssessment` — the SAME
+// computation the practice page itself runs. We only fall back to this
+// status-bucket map when the user has never touched the practice at all
+// (no chat conversation row, no evidence) — for everything else we render
+// the fine-grained percent so the overview and the practice page never
+// disagree.
 const statusPercent: Record<ControlResponseRow["status"], number> = {
   unanswered: 0,
   yes: 100,
@@ -53,6 +57,29 @@ const statusPercent: Record<ControlResponseRow["status"], number> = {
   no: 25,
   not_applicable: 100,
 };
+
+/**
+ * Roll up the per-legacy-control percents into a single percent for the
+ * parent L1 requirement. Most requirements are 1:1; PE.L1-b.1.ix bundles
+ * three. For multi-legacy bundles we average — every sub-control must
+ * advance for the parent to hit 100%, which matches the user's mental
+ * model ("all three pieces of physical security must be done").
+ */
+function rollupRequirementPercent(
+  progressByControl: Map<string, PracticeProgress>,
+  legacyIds: string[],
+  fallbackPercent: number,
+): number {
+  const percents = legacyIds.map(
+    (id) => progressByControl.get(id)?.percent,
+  );
+  const known = percents.filter((p): p is number => typeof p === "number");
+  if (known.length === 0) return fallbackPercent;
+  // If only some sub-controls have progress data, treat the rest as 0 so
+  // the parent can't read higher than reality.
+  const sum = known.reduce((acc, p) => acc + p, 0);
+  return Math.round(sum / legacyIds.length);
+}
 
 const statusBarColor: Record<ControlResponseRow["status"], string> = {
   unanswered: "bg-[#cfe3d9]",
@@ -118,9 +145,10 @@ export default async function AssessmentOverviewPage(
   if (!ctx) notFound();
   await enforceStepOrder(ctx, "practices");
 
-  const [responses, carryForward] = await Promise.all([
+  const [responses, carryForward, practiceProgress] = await Promise.all([
     listResponsesForAssessment(id),
     listCarryForwardPending(id),
+    listPracticeProgressForAssessment(id),
   ]);
   const responseByControl = new Map(responses.map((r) => [r.control_id, r]));
   const progress = computeProgress(responses);
@@ -242,7 +270,15 @@ export default async function AssessmentOverviewPage(
                     const meta = requirementMeta[reqId];
                     const legacyIds = requirementToLegacy[reqId];
                     const firstLegacy = legacyIds[0];
-                    const percent = statusPercent[status];
+                    // Same number the practice page shows in its "THIS
+                    // PRACTICE — N%" header. Falls back to the coarse
+                    // status bucket only when the user has never opened
+                    // the practice (no conversation row + no evidence).
+                    const percent = rollupRequirementPercent(
+                      practiceProgress,
+                      legacyIds,
+                      statusPercent[status],
+                    );
                     // Build a short [FCI Data] tag like the SAG TOC ("[FCI Data]"
                     // appears after every L1 practice — CMMC L1 is FCI scope only).
                     return (

@@ -16,6 +16,7 @@ import type {
 import { inferSlotKey } from "@/lib/cmmc/practice-spec";
 import type { ConnectorProvider } from "@/lib/connectors/types";
 import type { ObjectiveVerdict } from "@/lib/cmmc/practice-chat";
+import { computePracticePercent } from "@/lib/cmmc/practice-progress";
 import {
   hardResetPracticeAction,
   lockPracticeAction,
@@ -294,32 +295,19 @@ export function PracticeChat(props: Props) {
   //   1. Objectives covered (Charlie's grading verdict per 800-171A letter)
   //   2. Required evidence slots filled (any artifact tagged to the slot
   //      with a 'sufficient' AI-review verdict)
-  // Both are weighted 50/50 so the bar advances on conversation AND on
-  // file collection — the user sees motion either way.
-  const totalObjectives = props.spec.objectives.length;
-  const coveredObjectives = props.spec.objectives.filter(
-    (o) => verdicts[o.letter]?.status === "covered",
-  ).length;
-  const partialObjectives = props.spec.objectives.filter(
-    (o) => verdicts[o.letter]?.status === "partial",
-  ).length;
+  // The math lives in computePracticePercent so the assessment overview
+  // page renders the exact same number for this control — single source
+  // of truth, two surfaces can never disagree.
+  const progress = computePracticePercent({
+    spec: activeSpec,
+    verdicts,
+    evidence,
+  });
+  const totalObjectives = progress.totalObjectives;
+  const coveredObjectives = progress.coveredObjectives;
   const requiredSlots = activeSpec.evidenceSlots.filter((s) => s.required);
-  const filledSlots = requiredSlots.filter((s) => {
-    const slotKey = s.key;
-    return evidence.some((ev) => {
-      if (ev.ai_review_verdict !== "sufficient") return false;
-      return inferSlotKey(ev.filename, activeSpec) === slotKey;
-    });
-  }).length;
-  const objectiveScore =
-    totalObjectives === 0
-      ? 1
-      : (coveredObjectives + 0.5 * partialObjectives) / totalObjectives;
-  const evidenceScore =
-    requiredSlots.length === 0 ? 1 : filledSlots / requiredSlots.length;
-  const overallPercent = Math.round(
-    (objectiveScore * 0.5 + evidenceScore * 0.5) * 100,
-  );
+  const filledSlots = progress.filledRequiredSlots;
+  const overallPercent = progress.percent;
 
   const onReverify = async () => {
     if (reverifying) return;
