@@ -1431,6 +1431,332 @@ const ac311Intake: PracticeIntakeSpec = {
   },
 };
 
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — AC.L1-3.1.2 (Transaction & Function Control · least privilege)
+//
+// Only two objectives — [a] define the transactions/functions each role is
+// permitted, and [b] limit access to those definitions. The four questions
+// below tease apart the two findings an L1 assessor cares most about:
+// (1) is there a written role model at all, and (2) is privilege actually
+// scoped (admin sprawl, shared admin accounts, and stale privilege are the
+// canonical L1 fails). Answers route which slot is generated vs. connected
+// vs. uploaded, and inject a dynamic shared-credential register when one
+// is needed.
+//
+// Every regAnchor + regQuote is sourced from NIST SP 800-171A Rev 2 §3.1.2
+// determination statements [a]/[b] and the CMMC L1 Self-Assessment Guide
+// v2.13 AC.L1-b.1.ii Further Discussion + Potential Assessment
+// Considerations.
+// ────────────────────────────────────────────────────────────────────────
+
+const ROLE_MODEL_LABEL: Record<string, string> = {
+  solo_only_me: "no role model needed — you are the only user",
+  off_the_shelf: "off-the-shelf roles from Microsoft 365 / Google / SaaS admin consoles",
+  custom_per_system: "custom roles defined per system",
+  everyone_admin: "no role separation — everyone effectively has admin",
+  unsure: "an undocumented role model still to be inferred",
+};
+
+const ADMIN_COUNT_LABEL: Record<string, string> = {
+  solo_admin: "only the owner holds an admin role",
+  small_named: "two or three named admins",
+  several_admins: "four or more named admins",
+  most_users_admin: "most users hold an admin role",
+  unsure: "an unknown count of admin accounts",
+};
+
+const PRIV_REVIEW_LABEL: Record<string, string> = {
+  never: "no periodic privilege review has been run",
+  on_offboard_only: "privilege is only re-checked when someone leaves",
+  annual: "privilege is reviewed annually",
+  quarterly: "privilege is reviewed quarterly or more frequently",
+  automated: "privilege review is automated on every role change",
+};
+
+const SHARED_ACCOUNT_LABEL: Record<string, string> = {
+  none: "no shared / generic accounts are in use",
+  one_admin: "one shared admin or service account is in use",
+  multiple: "multiple shared / generic accounts are in use",
+  unsure: "shared-account usage is unknown",
+};
+
+const AC312_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "role_model",
+    objectives: ["a"],
+    prompt:
+      "How do you decide who in your company gets admin vs. standard access today?",
+    helpText:
+      "Objective [a] is satisfied when the transactions and functions a role can perform are written down. We're matching you to the right evidence path — Charlie composes a role matrix that fits whatever model you actually use.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.2 [a]; CMMC L1 SAG (v2.13) AC.L1-b.1.ii Further Discussion",
+    regQuote:
+      "Determine if: [a] the types of transactions and functions that authorized users are permitted to execute are defined. … Limit users to only the information systems, roles, or applications they are permitted to use and that are needed for their job.",
+    options: [
+      {
+        value: "solo_only_me",
+        label: "It's just me — no other users",
+        description:
+          "You're the only person who signs in. Charlie writes a one-row matrix with you as the sole privileged user and the business justification.",
+      },
+      {
+        value: "off_the_shelf",
+        label: "Off-the-shelf roles in our work account",
+        description:
+          "Microsoft 365, Google Workspace, or SaaS admin consoles ship with named roles (Global Admin, User Admin, Editor, etc.) — you use those.",
+      },
+      {
+        value: "custom_per_system",
+        label: "Custom roles defined per system",
+        description:
+          "Each system has its own role set with custom permission bundles you maintain.",
+      },
+      {
+        value: "everyone_admin",
+        label: "Everyone has full / admin access",
+        description:
+          "There's no real separation today — most users can do anything. This is a top-of-list L1 finding; Charlie helps fix it.",
+      },
+      {
+        value: "unsure",
+        label: "Not sure — Charlie will help me figure it out",
+      },
+    ],
+  },
+  {
+    id: "admin_count",
+    objectives: ["b"],
+    prompt:
+      "How many people currently hold an admin / privileged role across the systems that touch federal-contract work?",
+    helpText:
+      "Privileged-role sprawl is the #1 L1 finding under AC.L1-3.1.2. Whatever the number is today is what Charlie documents — we're not grading.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.2 [b]; CMMC L1 SAG (v2.13) AC.L1-b.1.ii Potential Assessment Considerations",
+    regQuote:
+      "Determine if: [b] system access is limited to the defined types of transactions and functions for authorized users. … Admin/privileged roles are the highest-risk findings — assessors expect to see them assigned by name, scoped tightly, and reviewed periodically.",
+    options: [
+      { value: "solo_admin", label: "Just me — sole admin" },
+      { value: "small_named", label: "2 or 3 named admins" },
+      { value: "several_admins", label: "4 or more named admins" },
+      {
+        value: "most_users_admin",
+        label: "Most users have an admin role",
+        description:
+          "Critical finding for an L1 assessor — Charlie will prioritize the procedure draft and walk you through tightening the role assignments.",
+      },
+      { value: "unsure", label: "Not sure / haven't counted" },
+    ],
+  },
+  {
+    id: "priv_review",
+    objectives: ["a", "b"],
+    prompt:
+      "How often is admin / privileged access reviewed and pruned?",
+    helpText:
+      "Stale privilege is the second most common L1 fail. Same-day off-boarding doesn't replace a periodic admin review — assessors want both.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.2 [a],[b]; CMMC L1 SAG (v2.13) AC.L1-b.1.ii Further Discussion",
+    regQuote:
+      "… each role has a defined set of transactions/functions, and users are granted only the role(s) their job requires. Admin/privileged roles … assigned by name, scoped tightly, and reviewed periodically.",
+    options: [
+      {
+        value: "never",
+        label: "Never — once it's granted it stays",
+      },
+      {
+        value: "on_offboard_only",
+        label: "Only when someone leaves",
+      },
+      { value: "annual", label: "Annually" },
+      { value: "quarterly", label: "Quarterly or more often" },
+      {
+        value: "automated",
+        label: "Automated on every role change",
+        description:
+          "Lifecycle workflows (Entra ID, Okta) or HRIS-driven role recalc.",
+      },
+    ],
+  },
+  {
+    id: "shared_accounts",
+    objectives: ["b"],
+    prompt:
+      "Are there any shared / generic admin accounts (one login multiple people use) in any of the systems that touch federal-contract work?",
+    helpText:
+      "Shared admin logins are an L1 finding because they break the “limited to authorized users” chain. If any exist, we'll add a one-row exception register so the assessor sees the compensating control instead of a finding.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.2 [b]; CMMC L1 SAG (v2.13) AC.L1-b.1.ii Further Discussion",
+    regQuote:
+      "Determine if: [b] system access is limited to the defined types of transactions and functions for authorized users. … Role-based access control is the typical mechanism … users are granted only the role(s) their job requires.",
+    options: [
+      {
+        value: "none",
+        label: "No — every login is tied to one named person",
+      },
+      {
+        value: "one_admin",
+        label: "Yes — one shared admin / service account",
+        description:
+          "Charlie will add a shared-credential exception register listing the account, who can sign in, why it exists, and the rotation cadence.",
+      },
+      {
+        value: "multiple",
+        label: "Yes — multiple shared accounts in use",
+        description:
+          "Charlie will add the same register and prioritize a remediation note for each account.",
+      },
+      { value: "unsure", label: "Not sure — Charlie will probe" },
+    ],
+  },
+];
+
+const ac312Intake: PracticeIntakeSpec = {
+  preamble:
+    "Four quick questions about how privileges actually work in your environment. Each one is anchored to a specific NIST 800-171A determination statement for AC.L1-3.1.2 — your answers route which evidence Charlie pulls or drafts, but neither objective [a] nor [b] is ever skipped.",
+  questions: AC312_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    const model = answers.role_model;
+    const adminCount = answers.admin_count;
+    const review = answers.priv_review;
+    const shared = answers.shared_accounts;
+
+    // ─── Objective [a]/[b] · role_matrix ───
+    if (model === "solo_only_me" || adminCount === "solo_admin") {
+      slotAnnotations.role_matrix = {
+        recommendedDestinationIdx: 0, // generate w/ Charlie
+        contextNote:
+          "Solo operator — Charlie drafts a one-row matrix (you, sole admin, every in-scope system, business justification = sole owner). That single row is the complete artifact for both objective [a] and [b].",
+      };
+    } else if (model === "off_the_shelf") {
+      slotAnnotations.role_matrix = {
+        recommendedDestinationIdx: 0, // generate (then assessor pairs with admin connect screenshot)
+        contextNote:
+          "You use built-in roles — Charlie composes a matrix that names every user, the off-the-shelf role they hold (Global Admin, User Admin, Editor, etc.), and the business justification. Then the admin-role connect button pulls the live assignments as the matching enforcement evidence for [b].",
+      };
+    } else if (model === "custom_per_system") {
+      slotAnnotations.role_matrix = {
+        recommendedDestinationIdx: 0, // generate
+        contextNote:
+          "Custom per-system roles — Charlie walks system-by-system to compose the matrix (each system × role × permitted functions × users in that role). Upload an existing matrix if you already maintain one.",
+      };
+    } else if (model === "everyone_admin") {
+      slotAnnotations.role_matrix = {
+        recommendedDestinationIdx: 0, // generate
+        contextNote:
+          "Top-of-list L1 finding — Charlie drafts the target-state matrix first (what each role SHOULD be allowed to do), then a remediation list of which existing users need to be demoted. Both land as evidence: the matrix satisfies [a], the remediation note documents the path to [b].",
+      };
+    } else {
+      slotAnnotations.role_matrix = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Charlie will compose the matrix with you starting from the assessor's expectation: one row per user × system × permission level, with the business justification. The template is also available if you'd rather fill it offline.",
+      };
+    }
+
+    // ─── Objective [b] · admin_users_screenshot ───
+    if (adminCount === "solo_admin") {
+      slotAnnotations.admin_users_screenshot = {
+        recommendedDestinationIdx: 1, // upload (or connect — both fine)
+        contextNote:
+          "Sole admin — one screenshot of your admin console showing only your account holds the privileged role is enough. The connect button auto-pulls it if your tenant is linked.",
+      };
+    } else if (adminCount === "small_named") {
+      slotAnnotations.admin_users_screenshot = {
+        recommendedDestinationIdx: 0, // connect
+        contextNote:
+          "2–3 named admins — the cleanest evidence is the live admin-role list straight from your IdP. Click the connect button and Charlie tags the export to objective [b].",
+      };
+    } else if (adminCount === "several_admins" || adminCount === "most_users_admin") {
+      slotAnnotations.admin_users_screenshot = {
+        recommendedDestinationIdx: 0, // connect
+        contextNote:
+          adminCount === "most_users_admin"
+            ? "Most users have admin — the connect button pulls the full list so the assessor sees the same number you see. Charlie will then walk a tightening pass: which accounts can be safely demoted to standard."
+            : "Several named admins — connect to pull the live list (Global Admin, User Admin, Billing Admin in Entra; Super Admin and role admins in Workspace). Upload a screenshot if you'd rather not link the tenant.",
+      };
+    } else {
+      slotAnnotations.admin_users_screenshot = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Connect your tenant and the admin-role list comes back in seconds — that's also the answer to your own “how many admins do we have?” question. Upload a screenshot if connecting isn't available.",
+      };
+    }
+
+    // ─── Objective [a] · least_privilege_procedure ───
+    if (review === "never" || review === "on_offboard_only") {
+      slotAnnotations.least_privilege_procedure = {
+        recommendedDestinationIdx: 0, // generate
+        contextNote:
+          review === "never"
+            ? "No periodic review today — Charlie drafts a one-paragraph procedure that names the approver, the cadence (we recommend quarterly), and the prune step. The draft is signed evidence the moment you lock the practice."
+            : "Off-boarding-only review — Charlie drafts a procedure that ADDS a quarterly admin-role review on top of the off-boarding step, since assessors want both.",
+      };
+    } else if (review === "automated") {
+      slotAnnotations.least_privilege_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Automated role recalc — Charlie drafts a procedure that names the lifecycle workflow / HRIS trigger, the approver of role changes, and the audit cadence on the automation itself. This is the strongest L1 path.",
+      };
+    } else {
+      slotAnnotations.least_privilege_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote: `Privilege reviewed ${PRIV_REVIEW_LABEL[review] ?? "manually"} — Charlie drafts a matching procedure with the named approver, cadence, and the action taken on findings.`,
+      };
+    }
+
+    // ─── Objective [b] · dynamic shared-credential register ───
+    if (shared === "one_admin" || shared === "multiple") {
+      dynamicSlots.push({
+        key: "shared_credential_register",
+        label: "Shared / generic account exception register",
+        hint: "One row per shared login: account name, the named humans who can use it, what it's for, the rotation/password-change cadence, and the named owner accountable for it.",
+        kind: "roster_csv",
+        satisfies: ["b"],
+        required: true,
+        destinations: [
+          {
+            type: "generate",
+            label: "Draft my shared-credential register with Charlie",
+            filename: "shared-credential-register.csv",
+            format: "csv",
+          },
+          {
+            type: "upload",
+            label: "Upload an existing register",
+            describes:
+              "CSV or PDF listing each shared account, the named humans who use it, purpose, rotation cadence, and the named owner.",
+            accept: ["text/csv", "application/pdf"],
+          },
+        ],
+      });
+    }
+
+    const situationSummary = [
+      `Role model: ${ROLE_MODEL_LABEL[model] ?? "unspecified"}.`,
+      `Admin/privileged headcount: ${ADMIN_COUNT_LABEL[adminCount] ?? "unspecified"}.`,
+      `Privilege-review cadence: ${PRIV_REVIEW_LABEL[review] ?? "unspecified"}.`,
+      `Shared-account posture: ${SHARED_ACCOUNT_LABEL[shared] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's least-privilege posture",
+      `- Role model: ${ROLE_MODEL_LABEL[answers.role_model] ?? "(not specified)"}`,
+      `- Admin headcount: ${ADMIN_COUNT_LABEL[answers.admin_count] ?? "(not specified)"}`,
+      `- Privilege review cadence: ${PRIV_REVIEW_LABEL[answers.priv_review] ?? "(not specified)"}`,
+      `- Shared accounts: ${SHARED_ACCOUNT_LABEL[answers.shared_accounts] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the role model in one sentence, then drive toward the next missing objective letter. If `role_model = everyone_admin` OR `admin_count = most_users_admin`, treat tightening admin roles as the priority finding — Charlie names which accounts could be demoted and proposes the role matrix first. If `shared_accounts = one_admin` or `multiple`, the shared-credential exception register is a required artifact for [b] — propose drafting it alongside the matrix. If `priv_review = never`, the least-privilege procedure is the second priority after the matrix.",
+    ].join("\n");
+  },
+};
+
 export const practiceSpecs: Record<string, PracticeSpec> = {
   "AC.L1-3.1.1": {
     controlId: "AC.L1-3.1.1",
@@ -1707,6 +2033,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       },
     ],
     keyReferences: ["FAR 52.204-21(b)(1)(ii)", "NIST SP 800-171 Rev 2 §3.1.2"],
+    intake: ac312Intake,
   },
 
   // ────────────────────────────────────────────────────────────────────────
