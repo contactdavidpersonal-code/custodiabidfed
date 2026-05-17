@@ -305,8 +305,8 @@ export function PracticeChat(props: Props) {
   });
   const totalObjectives = progress.totalObjectives;
   const coveredObjectives = progress.coveredObjectives;
-  const requiredSlots = activeSpec.evidenceSlots.filter((s) => s.required);
-  const filledSlots = progress.filledRequiredSlots;
+  const filledSlots = progress.filledSlots;
+  const totalSlots = progress.totalSlots;
   const overallPercent = progress.percent;
 
   const onReverify = async () => {
@@ -415,11 +415,9 @@ export function PracticeChat(props: Props) {
         partialObjectives={progress.partialObjectives}
         totalObjectives={totalObjectives}
         filledSlots={filledSlots}
-        totalSlots={requiredSlots.length}
+        totalSlots={totalSlots}
         locked={locked}
       />
-
-      <CharliePrompt locked={locked} controlId={props.controlId} />
 
       {/* Guided quiz: render the unified "quiz IS the practice" flow when
           the practice has an intake spec and the user hasn't completed it
@@ -639,41 +637,6 @@ function PracticeProgressBar({
           </span>
         )}
       </div>
-    </div>
-  );
-}
-
-function CharliePrompt({ locked, controlId }: { locked: boolean; controlId: string }) {
-  if (locked) {
-    return (
-      <div className="border-l-4 border-[#08201a] bg-[#f4faf6] px-6 py-5">
-        <div className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
-          Practice locked · MET
-        </div>
-        <p className="mt-2 text-[15px] leading-relaxed text-[#10231d]">
-          The conversation transcript and the signed narrative are a frozen
-          snapshot the assessor can read end-to-end. Evidence below stays
-          editable so your packet keeps up with the business year-round.
-        </p>
-      </div>
-    );
-  }
-  return (
-    <div className="border-l-4 border-[#2f8f6d] bg-[#f7fcf9] px-6 py-5">
-      <div className="flex items-center gap-2">
-        <span className="inline-flex items-center justify-center bg-[#08201a] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf]">
-          vCO
-        </span>
-        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]">
-          Talk to Charlie on the right →
-        </span>
-      </div>
-      <p className="mt-3 text-[15px] leading-relaxed text-[#10231d]">
-        Charlie is loaded with the official CMMC requirement for{" "}
-        <strong className="font-semibold">{controlId}</strong>. As you chat,
-        the assessment objectives below light up green. When all six are
-        covered and your evidence is attached, the lock button unlocks.
-      </p>
     </div>
   );
 }

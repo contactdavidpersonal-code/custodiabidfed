@@ -32,6 +32,10 @@ export type PracticeProgress = {
   filledRequiredSlots: number;
   /** Total required slots in this practice (spec-driven). */
   totalRequiredSlots: number;
+  /** All slots (required + optional) with a `sufficient` artifact attached. */
+  filledSlots: number;
+  /** Total slots in this practice (required + optional). */
+  totalSlots: number;
   /**
    * True when the user has done *real* work on the practice beyond just
    * opening the page — answered at least one intake question, produced an
@@ -74,15 +78,20 @@ export function computePracticePercent(args: {
   const partialObjectives = spec.objectives.filter(
     (o) => verdicts[o.letter]?.status === "partial",
   ).length;
-  const requiredSlots = spec.evidenceSlots.filter((s) => s.required);
-  const totalRequiredSlots = requiredSlots.length;
-  const filledRequiredSlots = requiredSlots.filter((s) => {
-    const slotKey = s.key;
-    return evidence.some((ev) => {
+  const slotIsFilled = (slotKey: string) =>
+    evidence.some((ev) => {
       if (ev.ai_review_verdict !== "sufficient") return false;
       return inferSlotKey(ev.filename, spec) === slotKey;
     });
-  }).length;
+  const requiredSlots = spec.evidenceSlots.filter((s) => s.required);
+  const totalRequiredSlots = requiredSlots.length;
+  const filledRequiredSlots = requiredSlots.filter((s) =>
+    slotIsFilled(s.key),
+  ).length;
+  const totalSlots = spec.evidenceSlots.length;
+  const filledSlots = spec.evidenceSlots.filter((s) =>
+    slotIsFilled(s.key),
+  ).length;
 
   const objectiveScore =
     totalObjectives === 0
@@ -101,5 +110,7 @@ export function computePracticePercent(args: {
     totalObjectives,
     filledRequiredSlots,
     totalRequiredSlots,
+    filledSlots,
+    totalSlots,
   };
 }
