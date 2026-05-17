@@ -165,6 +165,7 @@ function extractText(content: unknown): string {
 type ForcedToolChoice =
   | { type: "any" }
   | { type: "tool"; name: string }
+  | { type: "none" }
   | undefined;
 
 /**
@@ -211,6 +212,17 @@ function decideForcedToolChoiceForFirstTurn(
     /\bslot_key\s*[:=]/i.test(lastText)
   ) {
     return { type: "tool", name: "generate_evidence_artifact" };
+  }
+
+  // Slot-draft button shortcut: the in-page "Draft with Charlie" buttons
+  // dispatch a message starting with `**SLOT-DRAFT REQUEST`. On turn 1 we
+  // want Charlie to ask a plain-English question — NOT call any tool.
+  // Without this, Claude sometimes auto-fires `interview_for_control_narrative`
+  // (the SSP narrative interview) on slot-draft buttons, producing zero
+  // visible text and stalling the user. Pin tool_choice to "none" to force
+  // a text-only first reply; subsequent turns revert to auto.
+  if (activeControlId && /\*\*SLOT-DRAFT REQUEST/i.test(lastText)) {
+    return { type: "none" };
   }
 
   if (priorMessages.length < 2) return undefined;
@@ -331,6 +343,7 @@ export function runOfficerAgentStream(
         let forceToolChoice:
           | { type: "any" }
           | { type: "tool"; name: string }
+          | { type: "none" }
           | undefined = undefined;
 
         for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
@@ -705,7 +718,8 @@ export function runOfficerAgentStream(
     toolChoice?:
       | { type: "auto" }
       | { type: "any" }
-      | { type: "tool"; name: string };
+      | { type: "tool"; name: string }
+      | { type: "none" };
   }): Promise<{
     assistantBlocks: AssistantBlock[];
     stopReason: string | null;
