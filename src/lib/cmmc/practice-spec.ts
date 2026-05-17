@@ -382,7 +382,7 @@ const PROCESSES_LABEL: Record<string, string> = {
 
 const ia351Intake: PracticeIntakeSpec = {
   preamble:
-    "Three quick questions about your environment — every question maps to a specific NIST 800-171A determination statement for IA.L1-3.5.1. Your answers personalize the evidence list so you only get asked for what an assessor would actually check for *your* setup. None of the three objectives will be skipped — only the path to satisfying them changes.",
+    "Four quick questions about your environment — every question maps to a specific NIST 800-171A determination statement for IA.L1-3.5.1. Your answers personalize the evidence list so you only get asked for what an assessor would actually check for *your* setup. None of the three objectives will be skipped — only the path to satisfying them changes.",
   questions: IA351_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
