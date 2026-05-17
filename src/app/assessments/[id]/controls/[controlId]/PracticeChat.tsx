@@ -21,6 +21,7 @@ import {
   lockPracticeAction,
   resetIntakeAction,
   saveIntakeStepAction,
+  draftSlotArtifactAction,
 } from "./practice-chat-actions";
 import { GuidedPracticeQuiz } from "./GuidedPracticeQuiz";
 
@@ -1562,14 +1563,13 @@ function DestinationButton({
 
   if (dest.type === "generate") {
     return (
-      <button
-        type="button"
-        title={dest.label}
-        onClick={() => askCharlieToGenerate(slot, dest.filename, dest.format)}
-        className={baseClasses}
-      >
-        {dest.label}
-      </button>
+      <InlineDraftButton
+        slot={slot}
+        label={dest.label}
+        assessmentId={assessmentId}
+        controlId={controlId}
+        recommended={recommended}
+      />
     );
   }
 
@@ -1665,22 +1665,102 @@ function SlotUploadButton({
 }
 
 /**
- * Asks Charlie (in the right rail) to generate the artifact for this slot.
- * Drops a focused user message into the rail's input and submits, so the
- * tool call happens via the normal /api/chat flow — same path as if the
- * user had typed the request themselves.
+ * Inline one-click draft for a slot's "generate" destination. Calls the
+ * `draftSlotArtifactAction` server action directly — no chat detour, no
+ * back-and-forth questions. While pending: animated "Charlie is drafting…"
+ * shimmer in the same chip slot. On success: the page revalidates so the
+ * new artifact card appears in this slot and the slot status flips to
+ * filled. On error: inline red message, button re-enables for retry.
+ *
+ * After success, fires a `custodia:slot-drafted` window event with the
+ * slot key so the host page can auto-scroll to the next empty slot.
  */
-function askCharlieToGenerate(
-  slot: EvidenceSlot,
-  filename: string,
-  format: "csv" | "markdown" | "text",
-) {
-  const message =
-    `Please generate the **${slot.label}** for me now using everything I've told you so far. ` +
-    `Call \`generate_evidence_artifact\` with slot_key="${slot.key}", filename="${filename}", format="${format}". ` +
-    `Use only facts I've actually confirmed in this conversation — don't invent names, emails, or systems.`;
-  window.dispatchEvent(
-    new CustomEvent("charlie-send-message", { detail: { message } }),
+function InlineDraftButton({
+  slot,
+  label,
+  assessmentId,
+  controlId,
+  recommended,
+}: {
+  slot: EvidenceSlot;
+  label: string;
+  assessmentId: string;
+  controlId: string;
+  recommended: boolean;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const baseClasses = recommended
+    ? "bg-[#08201a] px-4 py-2 text-[12px] font-semibold text-[#bdf2cf] hover:bg-[#0c2a22]"
+    : "border border-[#cfe3d9] bg-white px-4 py-2 text-[12px] font-semibold text-[#10231d] hover:border-[#2f8f6d]";
+
+  const draftingClasses = recommended
+    ? "relative overflow-hidden bg-[#08201a] px-4 py-2 text-[12px] font-semibold text-[#bdf2cf]"
+    : "relative overflow-hidden border border-[#2f8f6d] bg-[#eaf3ee] px-4 py-2 text-[12px] font-semibold text-[#10231d]";
+
+  const onClick = () => {
+    setError(null);
+    startTransition(async () => {
+      const result = await draftSlotArtifactAction({
+        assessmentId,
+        controlId,
+        slotKey: slot.key,
+      });
+      if (!result.ok) {
+        setError(result.reason ?? "Drafting failed.");
+        return;
+      }
+      // Refresh the route so the new artifact card appears in the slot.
+      router.refresh();
+      // Tell the page to scroll to the next empty slot.
+      window.dispatchEvent(
+        new CustomEvent("custodia:slot-drafted", {
+          detail: { slotKey: slot.key },
+        }),
+      );
+      // Also let the grader/objective panel re-read.
+      window.dispatchEvent(new CustomEvent("evidence-changed"));
+    });
+  };
+
+  if (pending) {
+    return (
+      <span
+        className={draftingClasses}
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <span className="relative z-10 inline-flex items-center gap-2">
+          <span
+            className="inline-block h-3 w-3 animate-spin border-2 border-current border-r-transparent rounded-full"
+            aria-hidden="true"
+          />
+          Charlie is drafting…
+        </span>
+        <span
+          className="absolute inset-0 -z-0 animate-pulse bg-gradient-to-r from-transparent via-white/20 to-transparent"
+          aria-hidden="true"
+        />
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex flex-col items-start gap-1">
+      <button
+        type="button"
+        title={label}
+        onClick={onClick}
+        className={baseClasses}
+      >
+        {label}
+      </button>
+      {error && (
+        <span className="text-[11px] text-red-700">{error}</span>
+      )}
+    </span>
   );
 }
 

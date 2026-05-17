@@ -1825,30 +1825,66 @@ async function handleGenerateEvidenceArtifact(
     return { ok: false, error: "Active assessment not accessible." };
   }
 
-  // Normalize filename + ensure correct extension.
-  const ext = ARTIFACT_FORMAT_EXT[format];
-  const baseName = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
-  // If the model handed us a `.md`/`.txt` filename but asked for pdf,
-  // strip the old ext so we don't end up with `roster.md.pdf`.
+  const stored = await storeCharlieArtifact({
+    assessmentId: ctx.activeAssessmentId,
+    controlId: ctx.activeControlId,
+    userId: ctx.userId,
+    organizationName: assessmentCtx.organization.name,
+    spec,
+    slotKey,
+    slotSatisfies: slot.satisfies,
+    filename,
+    format,
+    content,
+    summary,
+  });
+
+  return {
+    ok: true,
+    data: {
+      artifact_id: stored.artifactId,
+      filename: stored.filename,
+      slot_key: slotKey,
+      satisfies_objectives: slot.satisfies,
+      message: `Created '${stored.filename}' in the evidence vault and tagged it to objectives [${slot.satisfies.join(", ")}].`,
+    },
+  };
+}
+
+/**
+ * Shared evidence-artifact storage pipeline. Used by both the
+ * `generate_evidence_artifact` tool (Charlie composing in-chat) and the
+ * `draftSlotArtifactAction` server action (one-click inline draft). Handles
+ * filename normalization, optional PDF rendering, blob upload, DB insert,
+ * and objective tagging. Returns the stored filename + artifact id.
+ */
+export async function storeCharlieArtifact(args: {
+  assessmentId: string;
+  controlId: string;
+  userId: string;
+  organizationName: string;
+  spec: { controlId: string; shortName: string };
+  slotKey: string;
+  slotSatisfies: string[];
+  filename: string;
+  format: string;
+  content: string;
+  summary: string;
+}): Promise<{ artifactId: string; filename: string }> {
+  const ext = ARTIFACT_FORMAT_EXT[args.format];
+  const baseName = args.filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
   const baseNoExt = baseName.replace(/\.(md|markdown|txt|csv|pdf)$/i, "");
   const withExt = `${baseNoExt}${ext}`;
-  // Prefix with `[slot:KEY]__` so the practice page can bucket this
-  // artifact into the correct slot card. Mirrors `uploadEvidenceAction`.
-  const finalName = `[slot:${slotKey}]__${withExt}`;
-  const mime = ARTIFACT_FORMAT_MIME[format];
+  const finalName = `[slot:${args.slotKey}]__${withExt}`;
+  const mime = ARTIFACT_FORMAT_MIME[args.format];
 
-  // For pdf format we render a themed deliverable (serif type, cream/navy
-  // palette, branded letterhead + footer) — `content` is treated as
-  // lightweight Markdown and laid out by `renderDeliverablePdf`. For every
-  // other format we upload `content` verbatim.
   let body: Buffer | string;
   let sizeBytes: number;
-  if (format === "pdf") {
+  if (args.format === "pdf") {
     const { renderDeliverablePdf } = await import(
       "@/lib/cmmc/pdf-deliverable"
     );
-    // Derive a polished title: first H1 in body if present, else filename.
-    const h1 = /^\s*#\s+(.+)$/m.exec(content);
+    const h1 = /^\s*#\s+(.+)$/m.exec(args.content);
     const derivedTitle = h1
       ? h1[1].trim()
       : baseNoExt
@@ -1856,25 +1892,23 @@ async function handleGenerateEvidenceArtifact(
           .replace(/\b\w/g, (c) => c.toUpperCase());
     body = await renderDeliverablePdf({
       meta: {
-        organizationName: assessmentCtx.organization.name,
+        organizationName: args.organizationName,
         title: derivedTitle,
-        subtitle: summary,
-        controlId: spec.controlId,
-        controlTitle: spec.shortName,
+        subtitle: args.summary,
+        controlId: args.spec.controlId,
+        controlTitle: args.spec.shortName,
         effectiveDate: new Date(),
         documentType: "EVIDENCE DELIVERABLE",
       },
-      // Strip the H1 we already promoted to the cover title to avoid a
-      // duplicate "Title / Title" stack on page 1.
-      body: h1 ? content.replace(h1[0], "").trimStart() : content,
+      body: h1 ? args.content.replace(h1[0], "").trimStart() : args.content,
     });
     sizeBytes = body.length;
   } else {
-    body = content;
-    sizeBytes = Buffer.byteLength(content, "utf8");
+    body = args.content;
+    sizeBytes = Buffer.byteLength(args.content, "utf8");
   }
 
-  const pathname = `evidence/${ctx.activeAssessmentId}/${ctx.activeControlId}/${Date.now()}-charlie-${finalName}`;
+  const pathname = `evidence/${args.assessmentId}/${args.controlId}/${Date.now()}-charlie-${finalName}`;
   const blob = await put(pathname, body, {
     access: "private",
     addRandomSuffix: true,
@@ -1889,36 +1923,25 @@ async function handleGenerateEvidenceArtifact(
        ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
        ai_reviewed_at, ai_review_model)
     VALUES
-      (${ctx.activeAssessmentId}, ${ctx.activeControlId}, ${finalName},
+      (${args.assessmentId}, ${args.controlId}, ${finalName},
        ${blob.url}, ${mime}, ${sizeBytes},
-       ${ctx.userId},
-       'sufficient', ${summary},
-       ${[ctx.activeControlId]},
+       ${args.userId},
+       'sufficient', ${args.summary},
+       ${[args.controlId]},
        NOW(), 'charlie-generated')
     RETURNING id
   `) as Array<{ id: string }>;
   const artifactId = inserted[0].id;
 
-  // Tag the artifact onto the practice with the objective letters this
-  // slot satisfies — that's how the grader credits it.
   await tagArtifactPractice({
     artifactId,
-    assessmentId: ctx.activeAssessmentId,
-    controlId: ctx.activeControlId,
-    objectives: slot.satisfies,
-    userId: ctx.userId,
+    assessmentId: args.assessmentId,
+    controlId: args.controlId,
+    objectives: args.slotSatisfies,
+    userId: args.userId,
   });
 
-  return {
-    ok: true,
-    data: {
-      artifact_id: artifactId,
-      filename: finalName,
-      slot_key: slotKey,
-      satisfies_objectives: slot.satisfies,
-      message: `Created '${finalName}' in the evidence vault and tagged it to objectives [${slot.satisfies.join(", ")}].`,
-    },
-  };
+  return { artifactId, filename: finalName };
 }
 
 async function handleEscalateToOfficer(

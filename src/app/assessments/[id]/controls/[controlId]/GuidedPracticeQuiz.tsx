@@ -118,6 +118,35 @@ export function GuidedPracticeQuiz(props: {
     return () =>
       window.removeEventListener("custodia:intake-changed", handler);
   }, [router]);
+
+  // After a one-click inline draft fills a slot, scroll the user down to
+  // the next empty slot card so they can keep working without hunting.
+  // The InlineDraftButton fires `custodia:slot-drafted` with the slot key
+  // it just filled; we find the next sibling `[data-slot-key]` and scroll
+  // it into view. router.refresh() in the button takes a moment to swap
+  // server props, so we wait a frame before scrolling.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ slotKey: string }>).detail;
+      if (!detail?.slotKey) return;
+      requestAnimationFrame(() => {
+        const current = document.querySelector(
+          `[data-slot-key="${detail.slotKey}"]`,
+        );
+        if (!current) return;
+        // Find the next slot li in document order.
+        let next = current.nextElementSibling;
+        while (next && !(next instanceof HTMLElement && next.dataset.slotKey)) {
+          next = next.nextElementSibling;
+        }
+        const target = next ?? current;
+        target.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    };
+    window.addEventListener("custodia:slot-drafted", handler);
+    return () =>
+      window.removeEventListener("custodia:slot-drafted", handler);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [savingStep, startSaveStep] = useTransition();
   const [finishing, startFinish] = useTransition();
@@ -496,7 +525,7 @@ export function GuidedPracticeQuiz(props: {
           </p>
           <ol className="mt-5 space-y-4">
             {currentSlots.map((slot, idx) => (
-              <li key={slot.key}>
+              <li key={slot.key} data-slot-key={slot.key}>
                 <SlotRow
                   index={idx + 1}
                   slot={slot}
@@ -513,11 +542,6 @@ export function GuidedPracticeQuiz(props: {
                   reReviewEvidenceAction={props.reReviewEvidenceAction}
                   deleteEvidenceAction={props.deleteEvidenceAction}
                   disabled={false}
-                />
-                <CharlieDraftButton
-                  slotLabel={slot.label}
-                  slotKey={slot.key}
-                  satisfies={slot.satisfies}
                 />
               </li>
             ))}
@@ -650,35 +674,8 @@ export function GuidedPracticeQuiz(props: {
 
 /**
  * One-tap button to hand off an evidence slot to Charlie for drafting.
- * Dispatches a `charlie-send-message` event with a slot-specific directive
- * so Charlie picks up exactly which artifact to generate next without the
- * user having to retype the slot label.
+ * Replaced by the inline `InlineDraftButton` rendered inside `SlotActions`
+ * in `PracticeChat.tsx` — that button calls `draftSlotArtifactAction`
+ * directly and pops the artifact into the slot without a chat detour.
+ * Removed.
  */
-function CharlieDraftButton({
-  slotLabel,
-  slotKey,
-  satisfies,
-}: {
-  slotLabel: string;
-  slotKey: string;
-  satisfies: string[];
-}) {
-  const onClick = () => {
-    const letters = satisfies.join(", ");
-    const message = `Help me draft the "${slotLabel}" artifact for slot \`${slotKey}\` (objective ${letters}). Ask me whatever you need, then generate it for me with generate_evidence_artifact using slot_key="${slotKey}".`;
-    window.dispatchEvent(
-      new CustomEvent("charlie-send-message", { detail: { message } }),
-    );
-  };
-  return (
-    <div className="mt-2 flex justify-end">
-      <button
-        type="button"
-        onClick={onClick}
-        className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d] underline-offset-4 hover:text-[#10231d] hover:underline"
-      >
-        ↗ Have Charlie draft this with me
-      </button>
-    </div>
-  );
-}

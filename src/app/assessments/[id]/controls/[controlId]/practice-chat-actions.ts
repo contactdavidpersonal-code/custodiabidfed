@@ -18,8 +18,11 @@ import {
 import {
   getPracticeSpec,
   isIntakeComplete,
+  personalizeSpec,
   type IntakeAnswers,
 } from "@/lib/cmmc/practice-spec";
+import { storeCharlieArtifact } from "@/lib/ai/tools";
+import { CHAT_MODEL, getAnthropic } from "@/lib/anthropic";
 
 /**
  * Lock the practice as MET. Re-verifies the objectives server-side (don't
@@ -192,6 +195,165 @@ export async function saveIntakeStepAction(args: {
 
   await saveIntakeStep(args.assessmentId, args.controlId, args.questionId, args.value);
   return { ok: true };
+}
+
+/**
+ * One-click inline draft for a single evidence slot. Composes the artifact
+ * content via a focused single-turn Anthropic call (no tool loop, no chat
+ * detour), then stores it through the same blob+DB pipeline the
+ * `generate_evidence_artifact` tool uses. The page revalidates so the slot
+ * re-renders as filled. UX: button shows a spinner while pending; the
+ * artifact pops into the slot card without taking the user to chat.
+ */
+export async function draftSlotArtifactAction(args: {
+  assessmentId: string;
+  controlId: string;
+  slotKey: string;
+}): Promise<{
+  ok: boolean;
+  reason?: string;
+  artifactId?: string;
+  filename?: string;
+}> {
+  const { userId } = await auth();
+  if (!userId) return { ok: false, reason: "Unauthorized" };
+
+  const spec = getPracticeSpec(args.controlId);
+  if (!spec) return { ok: false, reason: "Practice not in hybrid flow" };
+
+  const ctx = await getAssessmentForUser(args.assessmentId, userId);
+  if (!ctx) return { ok: false, reason: "Assessment not found" };
+
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT intake_answers
+    FROM practice_conversations
+    WHERE assessment_id = ${args.assessmentId}
+      AND control_id = ${args.controlId}
+    LIMIT 1
+  `) as Array<{ intake_answers: IntakeAnswers | null }>;
+  const intake = rows[0]?.intake_answers ?? null;
+  const personalized = personalizeSpec(spec, intake);
+  const effectiveSpec = personalized ?? spec;
+
+  const slot = effectiveSpec.evidenceSlots.find((s) => s.key === args.slotKey);
+  if (!slot) {
+    return { ok: false, reason: `Unknown slot '${args.slotKey}'.` };
+  }
+  const generateDest = slot.destinations.find((d) => d.type === "generate");
+  if (!generateDest || generateDest.type !== "generate") {
+    return { ok: false, reason: "This slot can't be auto-drafted." };
+  }
+
+  // Build the intake answers as plain-English Q→A so the model has the
+  // user's facts to compose from. Skip questions with no answer.
+  const intakeBlock = intake
+    ? (effectiveSpec.intake?.questions ?? [])
+        .map((q) => {
+          const v = intake[q.id];
+          if (!v) return null;
+          const opt = q.options.find((o) => o.value === v);
+          return `- ${q.prompt}\n  Answer: ${opt?.label ?? v}${opt?.description ? ` (${opt.description})` : ""}`;
+        })
+        .filter(Boolean)
+        .join("\n")
+    : "(no intake answers)";
+
+  const situationSummary = personalized?.situationSummary ?? "";
+  const slotAnnotation = personalized?.slotAnnotations?.[slot.key] ?? "";
+
+  const system = `You are Charlie, a CMMC Level 1 compliance officer drafting a single evidence artifact on behalf of a small federal contractor (the user is non-technical — a gardener, HVAC tech, or handyman with a ~$25K federal contract).
+
+You are NOT chatting. You are NOT asking questions. Output ONLY the raw artifact content in the specified format. No preamble like "Here is your...". No commentary. No code fences. Just the content.
+
+Use ONLY the facts the user has provided in their intake answers and the organization name. If a field would require information you don't have, fill it with a clearly-marked placeholder like \`[FILL IN: owner email]\` so the user can edit it later — do NOT invent specific people, emails, or systems.
+
+Keep the language plain. Avoid jargon like FCI, CMMC objective letters, NIST, M365, attestation, provisioning, baseline. Write like a small-business owner would write it for their files.`;
+
+  const user = `# Artifact to draft
+**Slot:** ${slot.label}
+**Purpose:** ${slot.hint}
+**Output format:** ${generateDest.format}
+**Filename target:** ${generateDest.filename}
+
+# Control context (do not quote in the artifact — for your understanding only)
+${effectiveSpec.controlId} — ${effectiveSpec.shortName}
+${effectiveSpec.statement}
+
+# Organization
+${ctx.organization.name}
+
+# Situation summary (from the user's intake)
+${situationSummary || "(none)"}
+
+# Slot-specific note for this user
+${slotAnnotation || "(none)"}
+
+# User's intake answers
+${intakeBlock}
+
+# Now draft the artifact
+Output ONLY the ${generateDest.format} content for "${slot.label}". No preamble, no closing remarks, no code fences. Start with the first line of the artifact.`;
+
+  let content = "";
+  try {
+    const client = getAnthropic();
+    const completion = await client.messages.create({
+      model: CHAT_MODEL,
+      max_tokens: 2000,
+      system,
+      messages: [{ role: "user", content: user }],
+    });
+    const block = completion.content.find((c) => c.type === "text");
+    content = block && block.type === "text" ? block.text.trim() : "";
+  } catch (err) {
+    console.error("[draftSlotArtifactAction] anthropic failed", err);
+    return { ok: false, reason: "Couldn't reach the drafting service. Try again in a moment." };
+  }
+
+  // Strip accidental code fences if the model added them despite the
+  // instruction. We only strip a leading ```<lang>\n ... \n``` wrapper.
+  const fenceMatch = /^```[a-zA-Z]*\n([\s\S]*?)\n```\s*$/.exec(content);
+  if (fenceMatch) content = fenceMatch[1].trim();
+
+  if (!content || content.length < 10) {
+    return { ok: false, reason: "Draft came back empty. Try again." };
+  }
+  if (content.length > 200_000) {
+    return { ok: false, reason: "Draft was too large." };
+  }
+
+  const summary = `Charlie-drafted ${slot.label} from your intake answers.`;
+
+  try {
+    const stored = await storeCharlieArtifact({
+      assessmentId: args.assessmentId,
+      controlId: args.controlId,
+      userId,
+      organizationName: ctx.organization.name,
+      spec: { controlId: effectiveSpec.controlId, shortName: effectiveSpec.shortName },
+      slotKey: slot.key,
+      slotSatisfies: slot.satisfies,
+      filename: generateDest.filename,
+      format: generateDest.format,
+      content,
+      summary,
+    });
+    // Re-grade objectives so the new artifact counts toward coverage.
+    try {
+      await verifyPracticeObjectives({
+        assessmentId: args.assessmentId,
+        controlId: args.controlId,
+      });
+    } catch {
+      // grading is best-effort
+    }
+    revalidatePath(`/assessments/${args.assessmentId}/controls/${args.controlId}`);
+    return { ok: true, artifactId: stored.artifactId, filename: stored.filename };
+  } catch (err) {
+    console.error("[draftSlotArtifactAction] storage failed", err);
+    return { ok: false, reason: "Couldn't save the draft. Try again." };
+  }
 }
 
 /**
