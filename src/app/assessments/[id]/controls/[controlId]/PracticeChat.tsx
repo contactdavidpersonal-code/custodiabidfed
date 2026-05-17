@@ -1586,38 +1586,46 @@ function DestinationButton({
   }
 
   if (dest.type === "connect") {
-    const liveProviders = dest.providers.filter((p) =>
-      connectedProviders.includes(p),
-    );
-    const isConnected = liveProviders.length > 0;
-    if (isConnected) {
-      return (
-        <span
-          title={dest.describes}
-          className="border border-[#2f8f6d] bg-[#f4faf6] px-4 py-2 text-[12px] font-semibold text-[#2f8f6d]"
-        >
-          Connected — auto-collect coming online
-        </span>
-      );
-    }
-    // Prefer the first declared provider for the launch URL. The OAuth
-    // start route redirects to the provider's sign-in (login.microsoftonline.com
-    // or accounts.google.com) which is what the user expects when they click
-    // "Pull from Microsoft 365" / "Pull from Google Workspace".
-    const launchProvider = dest.providers[0];
-    const providerSlug =
-      launchProvider === "google_workspace" ? "google" : launchProvider;
-    const startHref = providerSlug
-      ? `/api/connectors/${providerSlug}/start`
-      : "/assessments/connections";
+    // Render one button per provider the slot can be satisfied from. A slot
+    // that lists both ["m365", "google_workspace"] gets a "Pull from
+    // Microsoft 365" button AND a "Pull from Google Workspace" button — each
+    // kicks the right OAuth flow. A "Connected" pill takes the place of any
+    // provider the org has already linked.
+    const providerMeta: Record<
+      ConnectorProvider,
+      { label: string; slug: string }
+    > = {
+      m365: { label: "Microsoft 365", slug: "m365" },
+      google_workspace: { label: "Google Workspace", slug: "google" },
+    };
     return (
-      <a
-        href={startHref}
-        title={dest.describes}
-        className={baseClasses}
-      >
-        {dest.label} →
-      </a>
+      <>
+        {dest.providers.map((p) => {
+          const meta = providerMeta[p];
+          if (!meta) return null;
+          if (connectedProviders.includes(p)) {
+            return (
+              <span
+                key={`${slot.key}-connect-${p}`}
+                title={dest.describes}
+                className="border border-[#2f8f6d] bg-[#f4faf6] px-4 py-2 text-[12px] font-semibold text-[#2f8f6d]"
+              >
+                {meta.label} connected — auto-collect coming online
+              </span>
+            );
+          }
+          return (
+            <a
+              key={`${slot.key}-connect-${p}`}
+              href={`/api/connectors/${meta.slug}/start`}
+              title={dest.describes}
+              className={baseClasses}
+            >
+              Pull from {meta.label} →
+            </a>
+          );
+        })}
+      </>
     );
   }
 
