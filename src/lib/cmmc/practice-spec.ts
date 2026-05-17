@@ -1757,6 +1757,388 @@ const ac312Intake: PracticeIntakeSpec = {
   },
 };
 
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — AC.L1-3.1.20 (External Connections · scope-shaping)
+//
+// Six objectives that pair off cleanly:
+//   [a]/[b] — identify external connections / use      → inventory artifact
+//   [c]/[d] — verify the connection / use is appropriate → contracts + SSO
+//             linkage (proves the external relationship is intentional)
+//   [e]/[f] — control/limit the connection / use         → SSO,
+//             Conditional Access, share-link permissions, vendor MFA
+//
+// Four questions: scope (how many externals), gating (how access is
+// enforced), verification basis (contracts vs. click-through), and
+// BYOD/contractor exposure. Answers route Charlie to the right
+// generate-vs-connect-vs-upload destination on each slot and inject a
+// contractor-attestation register when non-corporate devices touch FCI.
+//
+// Every regAnchor + regQuote is sourced from NIST SP 800-171A Rev 2
+// §3.1.20 determination statements [a]–[f] and the CMMC L1
+// Self-Assessment Guide v2.13 AC.L1-b.1.iii Further Discussion +
+// Potential Assessment Considerations.
+// ────────────────────────────────────────────────────────────────────────
+
+const EXTERNALS_SCOPE_LABEL: Record<string, string> = {
+  solo_minimal: "a single owner using just Microsoft 365 / Google Workspace + a couple SaaS apps",
+  small_named: "a small, named list (≤10) of approved external SaaS / services",
+  many_saas: "many SaaS apps in regular use (10+), most known but not formally catalogued",
+  sprawling_unknown: "sprawl — no one has a current list of every external system that can touch FCI",
+};
+
+const ACCESS_GATING_LABEL: Record<string, string> = {
+  central_sso: "centralized SSO / IdP with Conditional Access (Entra ID, Google, Okta)",
+  vendor_mfa: "per-vendor MFA configured on each external system, no central SSO",
+  passwords_only: "vendor passwords only — no MFA on most externals",
+  share_links: "external collaboration via share links (Drive, OneDrive, Box) with permission controls",
+  nothing_formal: "no formal access gating today",
+};
+
+const VERIFICATION_BASIS_LABEL: Record<string, string> = {
+  signed_contracts: "signed MSA / DPA on file for every external system that touches FCI",
+  vendor_diligence: "vendor security review (SOC 2 / questionnaire) before onboarding",
+  click_through: "click-through Terms of Service — no negotiated contract",
+  mixed: "mixed — contracts for some, click-through for others",
+  none_documented: "nothing documented today",
+};
+
+const BYOD_CONTRACTORS_LABEL: Record<string, string> = {
+  none: "no — only corporate-owned devices touch FCI",
+  one_or_two: "one or two contractor / personal devices in scope",
+  team_wide: "team-wide — contractors and BYOD devices regularly touch FCI",
+  unsure: "unsure — Charlie will help confirm",
+};
+
+const AC3120_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "externals_scope",
+    objectives: ["a", "b"],
+    prompt:
+      "How many outside systems (SaaS apps, vendor portals, shared services, contractor-owned tools) can touch federal-contract information today?",
+    helpText:
+      "Objectives [a] and [b] are satisfied when every external connection and its business use is named on a list. We're sizing the inventory, not grading — even sprawl gets an artifact.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.20 [a],[b]; CMMC L1 SAG (v2.13) AC.L1-b.1.iii Further Discussion",
+    regQuote:
+      "Determine if: [a] connections to external systems are identified; [b] the use of external systems is identified. … External information systems are systems or components of systems for which organizations typically have no direct supervision and authority.",
+    options: [
+      {
+        value: "solo_minimal",
+        label: "It's just me on M365/Google + a few SaaS tools",
+        description:
+          "Charlie writes a one-page inventory naming each external (M365, Google, a couple SaaS apps) with the business use and how access is gated.",
+      },
+      {
+        value: "small_named",
+        label: "Small named list — fewer than ten external systems",
+        description:
+          "You already roughly know what's in scope. Charlie builds the inventory row-by-row from your list (or imports it).",
+      },
+      {
+        value: "many_saas",
+        label: "Many SaaS apps in use (10+), most known but not catalogued",
+        description:
+          "Charlie pulls the SSO app catalog if you connect M365/Google — that becomes the seed list, and you confirm which actually touch FCI.",
+      },
+      {
+        value: "sprawling_unknown",
+        label: "Sprawl — no one has a current list",
+        description:
+          "Most common L1 finding. Charlie walks a discovery pass (connect tenant → pull SSO app catalog → pull recent share-link audit) before drafting the inventory.",
+      },
+    ],
+  },
+  {
+    id: "access_gating",
+    objectives: ["e", "f"],
+    prompt:
+      "How is access to those external systems actually enforced today?",
+    helpText:
+      "Objectives [e] and [f] are satisfied when you can show external use is controlled / limited. Centralized SSO is the strongest evidence; vendor-side MFA also works; passwords-only is a finding.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.20 [e],[f]; CMMC L1 SAG (v2.13) AC.L1-b.1.iii Potential Assessment Considerations",
+    regQuote:
+      "Determine if: [e] connections to external systems are controlled/limited; [f] the use of external systems is controlled/limited. … Methods include identification of users, authentication mechanisms, … and limits on the type and amount of data that can be transferred.",
+    options: [
+      {
+        value: "central_sso",
+        label: "Centralized SSO + Conditional Access",
+        description:
+          "Entra ID, Google Workspace, or Okta brokers sign-in to most externals. Strongest evidence — the connect button pulls the live Conditional Access policy as proof.",
+      },
+      {
+        value: "vendor_mfa",
+        label: "Per-vendor MFA, no central SSO",
+        description:
+          "Each external has its own MFA configured. Charlie captures one screenshot per system into the access-controls slot.",
+      },
+      {
+        value: "passwords_only",
+        label: "Mostly vendor passwords — no MFA on most",
+        description:
+          "Top-priority finding. Charlie drafts a remediation plan and identifies the two or three highest-risk externals to MFA first.",
+      },
+      {
+        value: "share_links",
+        label: "External collaboration mostly via share links",
+        description:
+          "Charlie pulls Drive/OneDrive share-link permission settings and audits anyone-with-link exposure.",
+      },
+      {
+        value: "nothing_formal",
+        label: "No formal access gating today",
+        description:
+          "Highest-priority L1 fail. Charlie drafts the procedure and starts a remediation roadmap.",
+      },
+    ],
+  },
+  {
+    id: "verification_basis",
+    objectives: ["c", "d"],
+    prompt:
+      "How is each external relationship verified before it's allowed to touch federal-contract information?",
+    helpText:
+      "Objectives [c] and [d] are about whether the connection is intentional and appropriate — signed contracts, security reviews, or at minimum a documented decision.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.20 [c],[d]; CMMC L1 SAG (v2.13) AC.L1-b.1.iii Further Discussion",
+    regQuote:
+      "Determine if: [c] connections to external systems are verified; [d] the use of external systems is verified. … Verification can be accomplished by interconnection security agreements, contracts, MOUs, or other agreements.",
+    options: [
+      {
+        value: "signed_contracts",
+        label: "Signed MSA / DPA on file for every external",
+        description:
+          "Cleanest evidence. Upload the contract bundle (one PDF or a folder) and Charlie tags each one to its row in the inventory.",
+      },
+      {
+        value: "vendor_diligence",
+        label: "Vendor security review (SOC 2, questionnaire) before onboarding",
+        description:
+          "Charlie captures the diligence artifacts (SOC 2 letter, completed questionnaire) and links them in the inventory's verification column.",
+      },
+      {
+        value: "click_through",
+        label: "Click-through ToS — no negotiated contract",
+        description:
+          "Acceptable for low-risk externals at L1. Charlie documents the decision rationale per system and flags any that should be upgraded to a signed agreement.",
+      },
+      {
+        value: "mixed",
+        label: "Mixed — contracts for some, ToS for others",
+        description:
+          "Charlie distinguishes them in the inventory and adds a remediation list of which click-throughs should be upgraded next.",
+      },
+      {
+        value: "none_documented",
+        label: "Nothing documented today",
+        description:
+          "L1 finding. Charlie drafts the verification procedure and identifies the top three vendors to formalize first.",
+      },
+    ],
+  },
+  {
+    id: "byod_contractors",
+    objectives: ["b", "d", "f"],
+    prompt:
+      "Are any contractor-owned laptops, personal devices, or shared/kiosk machines used to touch federal-contract information?",
+    helpText:
+      "Non-corporate devices are an external system under §3.1.20. If any exist, we add a one-row attestation register so the assessor sees the compensating control instead of a finding.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.20 [b],[d],[f]; CMMC L1 SAG (v2.13) AC.L1-b.1.iii Potential Assessment Considerations",
+    regQuote:
+      "External information systems include … personally owned systems, components, or devices and privately owned computing and communications devices resident in commercial or public facilities. … Limits on the use of organization-controlled portable storage devices in external information systems are typically enforced.",
+    options: [
+      {
+        value: "none",
+        label: "No — only corporate-owned devices touch FCI",
+      },
+      {
+        value: "one_or_two",
+        label: "One or two contractor / personal devices",
+        description:
+          "Charlie adds a contractor attestation register naming each person, the device, and the signed-attestation-on-file status.",
+      },
+      {
+        value: "team_wide",
+        label: "Team-wide — contractors and BYOD regularly touch FCI",
+        description:
+          "Common in small primes with subcontractors. Charlie drafts the full attestation register and the matching external-use procedure clauses.",
+      },
+      {
+        value: "unsure",
+        label: "Not sure — Charlie will help confirm",
+      },
+    ],
+  },
+];
+
+const ac3120Intake: PracticeIntakeSpec = {
+  preamble:
+    "Four quick questions about every system outside your authorization boundary that can touch federal-contract information. Each one is anchored to a specific NIST 800-171A determination statement for AC.L1-3.1.20 — your answers route which evidence Charlie pulls, drafts, or asks you to upload, but no objective [a]–[f] is ever skipped.",
+  questions: AC3120_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    const scope = answers.externals_scope;
+    const gating = answers.access_gating;
+    const verify = answers.verification_basis;
+    const byod = answers.byod_contractors;
+
+    // ─── Objective [a]/[b]/[c]/[d] · external_systems_inventory ───
+    if (scope === "solo_minimal") {
+      slotAnnotations.external_systems_inventory = {
+        recommendedDestinationIdx: 0, // generate w/ Charlie
+        contextNote:
+          "Solo operator on M365/Google + a couple SaaS — Charlie drafts a compact inventory (5–8 rows max) naming each external, the business use, the gating method, and the verification basis. That single artifact covers [a], [b], [c], and [d].",
+      };
+    } else if (scope === "small_named") {
+      slotAnnotations.external_systems_inventory = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Small named list — Charlie composes the inventory row-by-row from the names you give. If you already maintain one in a spreadsheet, the upload path imports it and Charlie validates each row against the six objectives.",
+      };
+    } else if (scope === "many_saas") {
+      slotAnnotations.external_systems_inventory = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Many SaaS apps known but not catalogued — recommended path is to connect your M365 / Google tenant first; the SSO app catalog seeds the inventory, then Charlie walks you row-by-row to mark which apps actually touch FCI.",
+      };
+    } else if (scope === "sprawling_unknown") {
+      slotAnnotations.external_systems_inventory = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "No current list — top-of-list L1 finding. Charlie runs a discovery pass: pull SSO app catalog + share-link audit + recent OAuth grants, then drafts the inventory in priority order so the assessor sees the highest-risk externals first.",
+      };
+    } else {
+      slotAnnotations.external_systems_inventory = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Charlie composes the inventory with you, one row per outside system that can touch FCI: vendor, business use, access method, verification basis, and how use is limited.",
+      };
+    }
+
+    // ─── Objective [e]/[f] · external_access_controls ───
+    if (gating === "central_sso") {
+      slotAnnotations.external_access_controls = {
+        recommendedDestinationIdx: 0, // connect
+        contextNote:
+          "Centralized SSO — the strongest evidence for [e]/[f]. The connect button pulls the live Conditional Access (Entra) / Context-Aware Access (Google) policy plus the SSO app assignments as a single artifact.",
+      };
+    } else if (gating === "vendor_mfa") {
+      slotAnnotations.external_access_controls = {
+        recommendedDestinationIdx: 1, // upload
+        contextNote:
+          "Per-vendor MFA — Charlie collects one screenshot per external (vendor admin console showing MFA required). Bundle them in a single PDF or upload individually; Charlie tags each to the inventory row.",
+      };
+    } else if (gating === "passwords_only") {
+      slotAnnotations.external_access_controls = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Passwords-only — top finding. Charlie names the two or three highest-risk externals to MFA first and drafts a remediation note. Upload whatever access-control evidence does exist (vendor security pages, password-policy screenshots) and Charlie marks the gap.",
+      };
+    } else if (gating === "share_links") {
+      slotAnnotations.external_access_controls = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "External collaboration via share links — the connect button pulls Drive/OneDrive share-link permission settings, lists every anyone-with-link exposure, and flags the highest-risk ones. That's assessor-grade [e]/[f] evidence when combined with the inventory.",
+      };
+    } else if (gating === "nothing_formal") {
+      slotAnnotations.external_access_controls = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "No formal gating today — highest-priority L1 fail. Charlie drafts the access-control procedure first (covered in the external-use slot), then guides the smallest set of changes (turn on MFA on the top 3 externals) to get to a passable [e]/[f] posture.",
+      };
+    } else {
+      slotAnnotations.external_access_controls = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Charlie pulls SSO + Conditional Access (or share-link permissions) directly from your tenant. Upload screenshots if connecting isn't available.",
+      };
+    }
+
+    // ─── Objective [b]/[f] · external_use_policy ───
+    if (verify === "signed_contracts") {
+      slotAnnotations.external_use_policy = {
+        recommendedDestinationIdx: 0, // generate
+        contextNote:
+          "Signed MSA/DPA on file — Charlie drafts a tight one-page procedure that names the approver, the diligence step (contract review), and the prohibited tools (personal Dropbox, free file-share, etc.).",
+      };
+    } else if (verify === "vendor_diligence") {
+      slotAnnotations.external_use_policy = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Vendor security review process exists — Charlie drafts the procedure naming the diligence checklist (SOC 2, questionnaire), the approver, and the cadence for re-reviewing existing vendors.",
+      };
+    } else if (verify === "click_through" || verify === "mixed") {
+      slotAnnotations.external_use_policy = {
+        recommendedDestinationIdx: 0,
+        contextNote: `${verify === "mixed" ? "Mixed verification" : "Click-through ToS today"} — Charlie drafts a procedure that explicitly classifies externals by risk and names which ones must be upgraded to a signed agreement. Documenting the decision IS the verification at L1.`,
+      };
+    } else if (verify === "none_documented") {
+      slotAnnotations.external_use_policy = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "No verification documented — Charlie drafts the procedure first (defining how new externals will be approved going forward) and a short remediation list of the top three existing vendors to formalize.",
+      };
+    } else {
+      slotAnnotations.external_use_policy = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Charlie drafts the external-use procedure naming the approver, the approved/banned external systems, and the review cadence.",
+      };
+    }
+
+    // ─── Objective [b]/[d]/[f] · dynamic contractor / BYOD attestation register ───
+    if (byod === "one_or_two" || byod === "team_wide") {
+      dynamicSlots.push({
+        key: "contractor_byod_register",
+        label: "Contractor / BYOD attestation register",
+        hint: "One row per non-corporate device that can touch FCI: person, device, owning party, signed attestation on file (Y/N + date), expiry, and the named owner accountable for it.",
+        kind: "roster_csv",
+        satisfies: ["b", "d", "f"],
+        required: true,
+        destinations: [
+          {
+            type: "generate",
+            label: "Draft my contractor/BYOD register with Charlie",
+            filename: "contractor-byod-register.csv",
+            format: "csv",
+          },
+          {
+            type: "upload",
+            label: "Upload an existing register",
+            describes:
+              "CSV or PDF listing each contractor / BYOD device, the user, attestation status, and expiry.",
+            accept: ["text/csv", "application/pdf"],
+          },
+        ],
+      });
+    }
+
+    const situationSummary = [
+      `External-systems scope: ${EXTERNALS_SCOPE_LABEL[scope] ?? "unspecified"}.`,
+      `Access gating posture: ${ACCESS_GATING_LABEL[gating] ?? "unspecified"}.`,
+      `Verification basis: ${VERIFICATION_BASIS_LABEL[verify] ?? "unspecified"}.`,
+      `BYOD/contractor exposure: ${BYOD_CONTRACTORS_LABEL[byod] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's external-systems posture",
+      `- Scope: ${EXTERNALS_SCOPE_LABEL[answers.externals_scope] ?? "(not specified)"}`,
+      `- Access gating: ${ACCESS_GATING_LABEL[answers.access_gating] ?? "(not specified)"}`,
+      `- Verification basis: ${VERIFICATION_BASIS_LABEL[answers.verification_basis] ?? "(not specified)"}`,
+      `- BYOD / contractor devices: ${BYOD_CONTRACTORS_LABEL[answers.byod_contractors] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the scope posture in one sentence, then drive toward the next missing objective letter. If `externals_scope = sprawling_unknown` OR `access_gating = nothing_formal` OR `verification_basis = none_documented`, treat the inventory + procedure as the priority L1 findings — Charlie names them as findings, then walks the smallest remediation path. If `access_gating = central_sso` or `share_links`, propose the connect path first ([e]/[f] evidence is one click away). If `byod_contractors = one_or_two` or `team_wide`, the contractor/BYOD attestation register is a required artifact for [b],[d],[f] — propose drafting it alongside the inventory.",
+    ].join("\n");
+  },
+};
+
 export const practiceSpecs: Record<string, PracticeSpec> = {
   "AC.L1-3.1.1": {
     controlId: "AC.L1-3.1.1",
@@ -2143,6 +2525,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       },
     ],
     keyReferences: ["FAR 52.204-21(b)(1)(iii)", "NIST SP 800-171 Rev 2 §3.1.20"],
+    intake: ac3120Intake,
   },
 
   // ────────────────────────────────────────────────────────────────────────
