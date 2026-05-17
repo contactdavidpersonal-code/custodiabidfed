@@ -589,10 +589,16 @@ export function ComplianceOfficerRail({
   }, [draft, streaming, pathname, router]);
 
   // Wire the ref so the queue-flush effect (declared earlier) calls the
-  // latest `send` closure.
-  useEffect(() => {
-    sendRef.current = send;
-  }, [send]);
+  // latest `send` closure. We assign during render (not in an effect)
+  // because the drain effect ALSO depends on `streaming` and is declared
+  // before this wiring code — if we wired the ref inside a `useEffect`,
+  // React would run the drain effect FIRST with the stale closure (where
+  // `streaming` was still `true` from the previous turn). The stale
+  // closure's first check is `if (streaming) push-to-queue`, so the
+  // message would be re-queued forever and the "1 message queued" chip
+  // would never clear. Assigning during render keeps the ref current
+  // before any effect runs.
+  sendRef.current = send;
 
   // Auto-clear the error banner after 12s so a transient hiccup doesn't
   // linger on screen forever (the old behavior). User can also dismiss
