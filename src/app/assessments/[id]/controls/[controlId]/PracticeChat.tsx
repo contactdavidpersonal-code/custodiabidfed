@@ -412,6 +412,7 @@ export function PracticeChat(props: Props) {
       <PracticeProgressBar
         percent={locked ? 100 : overallPercent}
         coveredObjectives={coveredObjectives}
+        partialObjectives={progress.partialObjectives}
         totalObjectives={totalObjectives}
         filledSlots={filledSlots}
         totalSlots={requiredSlots.length}
@@ -571,6 +572,7 @@ export function PracticeChat(props: Props) {
 function PracticeProgressBar({
   percent,
   coveredObjectives,
+  partialObjectives,
   totalObjectives,
   filledSlots,
   totalSlots,
@@ -578,6 +580,7 @@ function PracticeProgressBar({
 }: {
   percent: number;
   coveredObjectives: number;
+  partialObjectives: number;
   totalObjectives: number;
   filledSlots: number;
   totalSlots: number;
@@ -612,6 +615,16 @@ function PracticeProgressBar({
             {coveredObjectives} of {totalObjectives}
           </strong>{" "}
           objectives covered
+          {partialObjectives > 0 && (
+            <span className="text-[#5a7d70]">
+              {" "}
+              ·{" "}
+              <strong className="font-semibold text-[#3a544a]">
+                {partialObjectives}
+              </strong>{" "}
+              partial
+            </span>
+          )}
         </span>
         <span className="text-[#cfe3d9]" aria-hidden>·</span>
         <span>
