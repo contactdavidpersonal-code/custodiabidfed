@@ -625,7 +625,15 @@ export function ComplianceOfficerRail({
       setMessages([]);
       setRecap(null);
       setErrorMsg(null);
-      lastKickoffControlRef.current = null;
+      // Pin lastKickoffControlRef to THIS control (don't null it). The
+      // auto-kickoff effect runs whenever `streaming` toggles back to
+      // false — and it will toggle right after our reset opener finishes.
+      // If we nulled the ref, that effect would re-fire and send a second
+      // "I just jumped back to AC.L1-3.1.1, briefly recap…" opener right
+      // on top of the reset opener. Pinning the ref makes the auto-kickoff
+      // guard (`if (lastKickoffControlRef.current === ctx.controlId) return;`)
+      // short-circuit — only the reset opener gets sent.
+      lastKickoffControlRef.current = controlId;
       try {
         const ss = window.sessionStorage;
         for (let i = ss.length - 1; i >= 0; i -= 1) {
