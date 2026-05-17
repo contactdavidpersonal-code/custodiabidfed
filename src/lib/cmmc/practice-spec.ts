@@ -2470,6 +2470,401 @@ const ac3122Intake: PracticeIntakeSpec = {
   },
 };
 
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — MP.L1-3.8.3 (Media Disposal)
+//
+// Two objectives:
+//   • [a] media containing FCI is sanitized or destroyed BEFORE DISPOSAL
+//   • [b] media containing FCI is sanitized BEFORE REUSE
+//
+// Anchored to:
+//   • NIST SP 800-171A Rev 2 §3.8.3 determination statements [a], [b]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, MP.L1-b.1.vii
+//     ("Further Discussion" + "Potential Assessment Considerations")
+//   • FAR 52.204-21(b)(1)(vii)
+//   • NIST SP 800-88 Rev 1 (Clear / Purge / Destroy categories)
+//
+// The cloud-only and never-reuse paths are explicitly attestable — the
+// objective is still satisfied, just by signed attestation rather than
+// a multi-row log. NEVER drop an objective.
+// ────────────────────────────────────────────────────────────────────────
+const MP383_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "media_types",
+    objectives: ["a", "b"],
+    prompt:
+      "What kinds of media does Federal Contract Information actually live on today?",
+    helpText:
+      "Pick the option that best matches your real setup. If FCI only lives in M365 or Google Drive and nothing is ever printed or saved to a drive, choose cloud-only.",
+    regAnchor:
+      "NIST SP 800-171A §3.8.3 [a]/[b]; CMMC L1 SAG (v2.13) MP.L1-b.1.vii Further Discussion",
+    regQuote:
+      "Determine if: [a] system media containing CUI is sanitized or destroyed before disposal; [b] system media containing CUI is sanitized before it is released for reuse. … Media is the physical and electronic items that store information including hard drives, CDs, USB devices, and paper.",
+    options: [
+      {
+        value: "laptops_and_usb",
+        label: "Laptops / desktops, plus the occasional USB or external drive",
+      },
+      {
+        value: "laptops_only",
+        label: "Laptop or desktop SSDs only — no removable drives",
+      },
+      {
+        value: "mobile_too",
+        label: "Laptops + phones / tablets",
+        description: "iOS, Android, or company-issued mobile devices touch FCI.",
+      },
+      {
+        value: "paper_too",
+        label: "All of the above + we sometimes print FCI",
+      },
+      {
+        value: "cloud_only",
+        label: "Cloud-only — nothing physical stores FCI",
+        description:
+          "FCI lives in M365 / Google Drive / a SaaS app, nothing is ever printed or saved locally. We'll convert the disposal log into a signed attestation.",
+      },
+    ],
+  },
+  {
+    id: "disposal_method",
+    objectives: ["a"],
+    prompt:
+      "When a device or drive that touched FCI is retired or replaced, what happens to it today?",
+    helpText:
+      "An assessor wants to see one consistent method. \"It depends\" is fine — pick whichever method you'd use most often.",
+    regAnchor:
+      "NIST SP 800-171A §3.8.3 [a]; CMMC L1 SAG (v2.13) MP.L1-b.1.vii Further Discussion",
+    regQuote:
+      "Determine if: [a] system media containing CUI is sanitized or destroyed before disposal. … Sanitization is the process by which data is irreversibly removed from media or the media is permanently destroyed. … Methods include … overwriting, degaussing, and physical destruction.",
+    options: [
+      {
+        value: "vendor_certified",
+        label: "Vendor with a certificate of destruction",
+        description:
+          "Iron Mountain, Shred-it, or a similar service. We'll require their certificates as evidence.",
+      },
+      {
+        value: "self_destroy",
+        label: "We physically destroy it ourselves",
+        description:
+          "Hammer, drill, shredder, degausser — the drive is unrecoverable when we're done.",
+      },
+      {
+        value: "self_wipe",
+        label: "We wipe it with software (DBAN, factory reset, manufacturer tool)",
+      },
+      {
+        value: "leased_return",
+        label: "It goes back to the leasing company / OEM",
+        description:
+          "We need a clause or MOU showing they sanitize the device on return.",
+      },
+      {
+        value: "none_yet",
+        label: "No retirements have happened yet",
+        description:
+          "We'll attest to that with a one-row log and lean on the written procedure for now.",
+      },
+    ],
+  },
+  {
+    id: "reuse_method",
+    objectives: ["b"],
+    prompt:
+      "When you hand an old laptop, phone, or USB to a different employee, what do you do first?",
+    helpText:
+      "\"Reuse\" means the device is going from one person to another, not retired. If you've never reassigned a device, say so.",
+    regAnchor:
+      "NIST SP 800-171A §3.8.3 [b]; NIST SP 800-88 Rev 1 §4 (Clear / Purge / Destroy)",
+    regQuote:
+      "Determine if: [b] system media containing CUI is sanitized before it is released for reuse. … Sanitization techniques (e.g., clearing, purging, cryptographic erase, and destruction) prevent the disclosure of information to unauthorized individuals when such media is reused or released for disposal.",
+    options: [
+      {
+        value: "full_wipe",
+        label: "Full wipe / factory reset before handoff",
+        description:
+          "The device is reset to factory state, then re-imaged or set up fresh for the new user.",
+      },
+      {
+        value: "delete_files",
+        label: "Just delete the previous user's files and reassign",
+        description:
+          "This is NOT sufficient under 800-88 — we'll bring this up in the procedure.",
+      },
+      {
+        value: "never_reuse",
+        label: "We never reuse devices — each retired device is destroyed",
+        description:
+          "Objective [b] is satisfied by a signed attestation: \"no media is released for reuse.\"",
+      },
+      {
+        value: "unsure",
+        label: "Not sure / no policy yet",
+        description: "Charlie will walk you through the right method.",
+      },
+    ],
+  },
+  {
+    id: "disposal_log_state",
+    objectives: ["a", "b"],
+    prompt:
+      "Do you have any kind of list — spreadsheet, paper sheet, anything — of devices or drives you've disposed of or reassigned?",
+    helpText:
+      "Even a one-line note in OneNote counts. The assessor just needs proof you track these events.",
+    regAnchor:
+      "NIST SP 800-171A §3.8.3 [a]/[b]; CMMC L1 SAG (v2.13) MP.L1-b.1.vii Potential Assessment Considerations",
+    regQuote:
+      "Examine: media protection records; system audit logs and records; … Are the actions of sanitizing media documented somewhere (e.g., log of activities, certificate of destruction)?",
+    options: [
+      {
+        value: "yes_csv",
+        label: "Yes — a spreadsheet I can export",
+      },
+      {
+        value: "yes_paper",
+        label: "Yes — but it's on paper or in a doc",
+        description: "We'll have you upload a scan or transcribe it into the template.",
+      },
+      {
+        value: "none",
+        label: "No — nothing tracked yet",
+        description: "Charlie will draft one from your real disposal history.",
+      },
+    ],
+  },
+];
+
+const MP_MEDIA_TYPES_LABEL: Record<string, string> = {
+  laptops_and_usb: "laptops/desktops + occasional removable drives",
+  laptops_only: "laptop or desktop SSDs only",
+  mobile_too: "laptops + phones/tablets",
+  paper_too: "laptops, drives, phones, and printed paper",
+  cloud_only: "cloud-only — no physical media stores FCI",
+};
+
+const MP_DISPOSAL_METHOD_LABEL: Record<string, string> = {
+  vendor_certified: "certified-destruction vendor (Iron Mountain / Shred-it / similar)",
+  self_destroy: "self-performed physical destruction (drill / shred / hammer)",
+  self_wipe: "self-performed software wipe (DBAN / factory reset / vendor tool)",
+  leased_return: "returned to leasing company or OEM under their sanitization clause",
+  none_yet: "no disposal events have occurred yet",
+};
+
+const MP_REUSE_METHOD_LABEL: Record<string, string> = {
+  full_wipe: "full factory wipe before handoff",
+  delete_files: "only files are deleted before handoff — NOT 800-88 compliant",
+  never_reuse: "media is never reused — every retired device is destroyed",
+  unsure: "no reuse policy yet",
+};
+
+const MP_LOG_STATE_LABEL: Record<string, string> = {
+  yes_csv: "existing spreadsheet log",
+  yes_paper: "paper or doc log (will be uploaded as scan)",
+  none: "no log yet — will be drafted with Charlie",
+};
+
+const mp383Intake: PracticeIntakeSpec = {
+  preamble:
+    "Four quick questions about how you handle drives, USBs, phones, and paper that touch Federal Contract Information. Every question maps to a specific NIST 800-171A determination statement for MP.L1-3.8.3. Your answers personalize the evidence list — both objectives are always satisfied, only the path changes (a full log, a signed attestation, or a mix).",
+  questions: MP383_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // ─── Cloud-only special case: log collapses to an attestation ───
+    // No physical media ever stores FCI → objective [a]/[b] for the log
+    // is satisfied by a signed attestation. The procedure still applies
+    // (for the day they print a single sheet, things change), but it
+    // becomes a one-page "what we'll do if media is ever introduced".
+    if (answers.media_types === "cloud_only") {
+      slotAnnotations.media_disposal_log = {
+        attestation: {
+          buttonLabel: "Attest: no physical media touches FCI",
+          autoNarrative:
+            "The organization attests that Federal Contract Information is stored exclusively in cloud services (Microsoft 365 / Google Workspace / approved SaaS) and is never printed, downloaded, or saved to laptop drives, USB drives, mobile devices, or any other physical media. Because no media containing FCI exists, no disposal or reuse events occur. This attestation satisfies NIST SP 800-171A §3.8.3 determination statements [a] and [b] for this environment. If physical media is introduced in the future, the organization will create a disposal log entry and apply the documented sanitization procedure.",
+          reason:
+            "You said FCI lives only in cloud apps and never touches physical media — under NIST 800-171A this objective is satisfied by a signed attestation rather than a log. The attestation is stamped with your account, the date, and is included verbatim in the SSP.",
+        },
+      };
+      slotAnnotations.sanitization_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Cloud-only setup — Charlie will draft a one-page procedure that covers the unlikely future case (someone prints FCI, someone saves to USB) and points at the cloud-app data-deletion workflow as the primary control.",
+      };
+      hiddenSlotKeys.push("destruction_certificates");
+    } else {
+      // ─── Disposal method drives the log + certificate paths ───
+      const dm = answers.disposal_method;
+      // Certificates of destruction are only required when the user uses
+      // a certified-destruction vendor. Hide the slot otherwise — objective
+      // [a] is still doubly covered by media_disposal_log + sanitization_procedure.
+      if (dm !== "vendor_certified") {
+        hiddenSlotKeys.push("destruction_certificates");
+      }
+      if (dm === "vendor_certified") {
+        slotAnnotations.media_disposal_log = {
+          recommendedDestinationIdx:
+            answers.disposal_log_state === "yes_csv" ? 1 : 0,
+          contextNote:
+            "Vendor-handled destruction — Charlie will draft the log with placeholder columns for vendor name, certificate number, and pickup date. Pair every row with the corresponding certificate of destruction.",
+        };
+        slotAnnotations.destruction_certificates = {
+          recommendedDestinationIdx: 0,
+          contextNote:
+            "Upload every certificate of destruction your vendor has issued — even one is enough to satisfy [a]. The cert is the assessor's proof that drives left your control sanitized.",
+        };
+      } else if (dm === "self_destroy") {
+        slotAnnotations.media_disposal_log = {
+          recommendedDestinationIdx:
+            answers.disposal_log_state === "yes_csv" ? 1 : 0,
+          contextNote:
+            "Self-performed physical destruction — log each event with date, asset/serial, who destroyed it, and the method (drill / shred / hammer). A photo of the destroyed drive next to the asset tag is the strongest evidence.",
+        };
+        slotAnnotations.sanitization_procedure = {
+          recommendedDestinationIdx: 0,
+          contextNote:
+            "Charlie will write a procedure citing NIST SP 800-88 Rev 1 §4 (Destroy category) — naming who's authorized to perform destruction, what tool is used, and how each event is logged.",
+        };
+      } else if (dm === "self_wipe") {
+        slotAnnotations.media_disposal_log = {
+          recommendedDestinationIdx:
+            answers.disposal_log_state === "yes_csv" ? 1 : 0,
+          contextNote:
+            "Software wipe — log each event with date, asset/serial, tool used (DBAN / manufacturer reset / vendor utility), and verification step. NIST SP 800-88 §4 considers most modern SSD factory resets adequate \"Purge\" for non-classified data.",
+        };
+        slotAnnotations.sanitization_procedure = {
+          recommendedDestinationIdx: 0,
+          contextNote:
+            "Charlie will write a procedure citing NIST SP 800-88 Rev 1 §4 (Clear / Purge) — name the tool you use, the verification step, and who's authorized to run it.",
+        };
+      } else if (dm === "leased_return") {
+        slotAnnotations.media_disposal_log = {
+          recommendedDestinationIdx:
+            answers.disposal_log_state === "yes_csv" ? 1 : 0,
+          contextNote:
+            "Leased devices — log every return event with date, asset/serial, leasing-company contact, and the contractual sanitization clause. The MOU/clause below is what an assessor checks for [a].",
+        };
+        // Add a dynamic slot for the lease/return sanitization clause.
+        dynamicSlots.push({
+          key: "leased_return_clause",
+          label: "Leased-device sanitization clause / MOU",
+          hint: "Snippet of the lease, MSA, or MOU stating the leasing company sanitizes the device on return — or a separate signed MOU committing them to do so.",
+          kind: "procedure_doc",
+          satisfies: ["a"],
+          required: true,
+          destinations: [
+            {
+              type: "upload",
+              label: "Upload the lease clause or MOU",
+              describes:
+                "PDF/screenshot of the contract clause or signed MOU that puts sanitization on the leasing company.",
+              accept: [
+                "application/pdf",
+                "image/png",
+                "image/jpeg",
+                "image/webp",
+              ],
+            },
+            {
+              type: "generate",
+              label: "Draft a sanitization MOU with Charlie",
+              filename: "leased-return-sanitization-mou.md",
+              format: "markdown",
+            },
+          ],
+        });
+      } else if (dm === "none_yet") {
+        slotAnnotations.media_disposal_log = {
+          attestation: {
+            buttonLabel: "Attest: no disposal events yet",
+            autoNarrative:
+              "The organization attests that as of the assessment date, no media containing Federal Contract Information has been disposed of or released for reuse. The documented sanitization procedure (attached) governs every future disposal and reuse event; the first such event will be logged with date, asset identifier, sanitization method, and operator. This attestation satisfies NIST SP 800-171A §3.8.3 determination statements [a] and [b] until the first disposal event occurs.",
+            reason:
+              "You said no media has been retired or reassigned yet — under NIST 800-171A the historical log is satisfied by a signed attestation, while the written procedure carries the weight going forward.",
+          },
+        };
+        slotAnnotations.sanitization_procedure = {
+          recommendedDestinationIdx: 0,
+          contextNote:
+            "No history yet — the procedure is now the primary evidence. Charlie will write one that picks one consistent method per media type and names who'll execute it.",
+        };
+      }
+    }
+
+    // ─── Reuse method ───
+    // never_reuse → [b] is covered by the disposal log's destruction
+    // rows (each retired-and-destroyed device); the procedure just needs
+    // to state "no reuse" explicitly. No separate slot needed.
+    if (
+      answers.reuse_method === "never_reuse" &&
+      answers.media_types !== "cloud_only"
+    ) {
+      slotAnnotations.sanitization_procedure = {
+        ...(slotAnnotations.sanitization_procedure ?? {}),
+        recommendedDestinationIdx: 0,
+        contextNote:
+          (slotAnnotations.sanitization_procedure?.contextNote ?? "") +
+          " You said media is never reused — Charlie will state that explicitly in the procedure (\"all retired media is destroyed; nothing is released for reuse\") so an assessor can see how objective [b] is satisfied without a reuse log.",
+      };
+    } else if (answers.reuse_method === "delete_files") {
+      // Highest-priority finding: deleting files is not sanitization.
+      slotAnnotations.sanitization_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "You mentioned just deleting files before reassigning a device — NIST SP 800-88 explicitly does NOT consider that sanitization. Charlie's procedure will replace that with a factory reset / Clear-level wipe step before any reuse.",
+      };
+    } else if (answers.reuse_method === "full_wipe") {
+      slotAnnotations.media_disposal_log = {
+        contextNote:
+          "Good — full wipe before handoff matches NIST 800-88 §4 Clear/Purge for SSDs. The disposal log should include a row per reuse event (date, asset, old/new user, tool used).",
+      };
+    }
+
+    // ─── Log state ───
+    // If they already have a spreadsheet, recommend the upload destination
+    // on the disposal log; if paper, point at the template + scan path.
+    if (answers.disposal_log_state === "yes_csv") {
+      slotAnnotations.media_disposal_log = {
+        ...(slotAnnotations.media_disposal_log ?? {}),
+        recommendedDestinationIdx: 1,
+        contextNote:
+          (slotAnnotations.media_disposal_log?.contextNote ?? "") +
+          " You already have a spreadsheet — upload it and Charlie will check that it includes date, asset/serial, method, and operator.",
+      };
+    } else if (answers.disposal_log_state === "yes_paper") {
+      slotAnnotations.media_disposal_log = {
+        ...(slotAnnotations.media_disposal_log ?? {}),
+        recommendedDestinationIdx: 1,
+        contextNote:
+          (slotAnnotations.media_disposal_log?.contextNote ?? "") +
+          " Your log is on paper — scan it as one PDF and upload, or transcribe the rows into the template if you'd rather keep it digital.",
+      };
+    }
+
+    const situationSummary = [
+      `FCI lives on: ${MP_MEDIA_TYPES_LABEL[answers.media_types] ?? "unspecified"}.`,
+      `Disposal method: ${MP_DISPOSAL_METHOD_LABEL[answers.disposal_method] ?? "unspecified"}.`,
+      `Reuse method: ${MP_REUSE_METHOD_LABEL[answers.reuse_method] ?? "unspecified"}.`,
+      `Existing log: ${MP_LOG_STATE_LABEL[answers.disposal_log_state] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's media-disposal posture",
+      `- Media types in scope: ${MP_MEDIA_TYPES_LABEL[answers.media_types] ?? "(not specified)"}`,
+      `- Disposal method: ${MP_DISPOSAL_METHOD_LABEL[answers.disposal_method] ?? "(not specified)"}`,
+      `- Reuse method: ${MP_REUSE_METHOD_LABEL[answers.reuse_method] ?? "(not specified)"}`,
+      `- Existing log state: ${MP_LOG_STATE_LABEL[answers.disposal_log_state] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the disposal posture in one sentence, then drive toward the missing objective. If `media_types = cloud_only`, both objectives are satisfied by a single attestation — confirm it's signed rather than chasing a log. If `disposal_method = none_yet`, the procedure is the primary evidence — focus the conversation on which sanitization method they'll commit to per media type. If `reuse_method = delete_files`, name that as a finding and walk the smallest fix (factory reset before any handoff). If `disposal_method = vendor_certified`, the certificates of destruction are required, not optional.",
+    ].join("\n");
+  },
+};
+
 export const practiceSpecs: Record<string, PracticeSpec> = {
   "AC.L1-3.1.1": {
     controlId: "AC.L1-3.1.1",
@@ -3304,10 +3699,10 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       {
         key: "destruction_certificates",
         label: "Certificates of destruction",
-        hint: "If you use a vendor (Iron Mountain, Shred-it, etc.) for any disposal, attach the certificates. Optional if you self-destruct everything and the log is fully detailed.",
+        hint: "If you use a vendor (Iron Mountain, Shred-it, etc.) for any disposal, attach the certificates. Hidden by intake if you self-destruct everything in-house.",
         kind: "screenshot",
         satisfies: ["a"],
-        required: false,
+        required: true,
         destinations: [
           {
             type: "upload",
@@ -3320,6 +3715,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       },
     ],
     keyReferences: ["FAR 52.204-21(b)(1)(vii)", "NIST SP 800-171 Rev 2 §3.8.3"],
+    intake: mp383Intake,
   },
 
   // ────────────────────────────────────────────────────────────────────────
