@@ -21,7 +21,6 @@ import {
   lockPracticeAction,
   resetIntakeAction,
   saveIntakeStepAction,
-  draftSlotArtifactAction,
 } from "./practice-chat-actions";
 import { GuidedPracticeQuiz } from "./GuidedPracticeQuiz";
 
@@ -1566,8 +1565,8 @@ function DestinationButton({
       <InlineDraftButton
         slot={slot}
         label={dest.label}
-        assessmentId={assessmentId}
-        controlId={controlId}
+        filename={dest.filename}
+        format={dest.format}
         recommended={recommended}
       />
     );
@@ -1665,70 +1664,97 @@ function SlotUploadButton({
 }
 
 /**
- * Inline one-click draft for a slot's "generate" destination. Calls the
- * `draftSlotArtifactAction` server action directly — no chat detour, no
- * back-and-forth questions. While pending: animated "Charlie is drafting…"
- * shimmer in the same chip slot. On success: the page revalidates so the
- * new artifact card appears in this slot and the slot status flips to
- * filled. On error: inline red message, button re-enables for retry.
+ * One-tap "have Charlie draft this for me" entry-point for a slot's
+ * `generate` destination. The auto-draft path (compose entirely from intake)
+ * tended to fill the artifact with `[FILL IN: ...]` placeholders because
+ * intake doesn't know slot-specific facts (antivirus account name, printer
+ * model, etc). So this button takes the hybrid route:
  *
- * After success, fires a `custodia:slot-drafted` window event with the
- * slot key so the host page can auto-scroll to the next empty slot.
+ *   1. Click → fires a slot-focused directive into the chat rail telling
+ *      Charlie to ask the user 1-3 short, plain-English questions to get
+ *      the facts needed for THIS slot, then call generate_evidence_artifact
+ *      to drop the finished artifact into the slot.
+ *   2. Button enters a "Charlie is gathering details…" waiting state with
+ *      an arrow pointing the user toward the chat rail.
+ *   3. When the artifact actually lands in the vault (the
+ *      `evidence-changed` window event fires), the button exits waiting,
+ *      refreshes the route, and fires `custodia:slot-drafted` so the host
+ *      page can scroll the user to the next empty slot.
+ *
+ * If the user clicks the button but then ignores Charlie's question, the
+ * button stays in waiting mode until they reload or another evidence
+ * upload fires the event — that's intentional, it nudges them back into
+ * the chat.
  */
 function InlineDraftButton({
   slot,
   label,
-  assessmentId,
-  controlId,
+  filename,
+  format,
   recommended,
 }: {
   slot: EvidenceSlot;
   label: string;
-  assessmentId: string;
-  controlId: string;
+  filename: string;
+  format: "csv" | "markdown" | "text";
   recommended: boolean;
 }) {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const [waiting, setWaiting] = useState(false);
   const router = useRouter();
 
   const baseClasses = recommended
     ? "bg-[#08201a] px-4 py-2 text-[12px] font-semibold text-[#bdf2cf] hover:bg-[#0c2a22]"
     : "border border-[#cfe3d9] bg-white px-4 py-2 text-[12px] font-semibold text-[#10231d] hover:border-[#2f8f6d]";
 
-  const draftingClasses = recommended
+  const waitingClasses = recommended
     ? "relative overflow-hidden bg-[#08201a] px-4 py-2 text-[12px] font-semibold text-[#bdf2cf]"
     : "relative overflow-hidden border border-[#2f8f6d] bg-[#eaf3ee] px-4 py-2 text-[12px] font-semibold text-[#10231d]";
 
-  const onClick = () => {
-    setError(null);
-    startTransition(async () => {
-      const result = await draftSlotArtifactAction({
-        assessmentId,
-        controlId,
-        slotKey: slot.key,
-      });
-      if (!result.ok) {
-        setError(result.reason ?? "Drafting failed.");
-        return;
-      }
-      // Refresh the route so the new artifact card appears in the slot.
+  // While we're waiting on Charlie to finish drafting via chat, listen
+  // for the evidence-changed event the practice page already fires on
+  // every artifact insert. When it fires we assume Charlie just dropped
+  // the artifact into this slot — exit waiting, refresh server props so
+  // the slot card re-renders with the new artifact, and tell the host
+  // page to scroll to the next empty slot.
+  useEffect(() => {
+    if (!waiting) return;
+    const handler = () => {
+      setWaiting(false);
       router.refresh();
-      // Tell the page to scroll to the next empty slot.
       window.dispatchEvent(
         new CustomEvent("custodia:slot-drafted", {
           detail: { slotKey: slot.key },
         }),
       );
-      // Also let the grader/objective panel re-read.
-      window.dispatchEvent(new CustomEvent("evidence-changed"));
-    });
+    };
+    window.addEventListener("evidence-changed", handler);
+    return () => window.removeEventListener("evidence-changed", handler);
+  }, [waiting, slot.key, router]);
+
+  const onClick = () => {
+    setWaiting(true);
+    // Slot-focused directive. Plain-English required, ban jargon, ONE
+    // question at a time, then call generate_evidence_artifact when
+    // there's enough info. The slot_key + filename + format are passed
+    // verbatim so Charlie can't fumble the arguments.
+    const message =
+      `I want you to draft the **${slot.label}** for me. ` +
+      `What it's for: ${slot.hint} ` +
+      `Ask me ONE short plain-English question at a time to get the facts you need — no jargon (no FCI, NIST, baseline, attestation, etc.). ` +
+      `Three or four quick questions, max. ` +
+      `Once you have enough, call \`generate_evidence_artifact\` with ` +
+      `slot_key="${slot.key}", filename="${filename}", format="${format}". ` +
+      `Use only my real answers — do NOT insert "[FILL IN]" placeholders. ` +
+      `If a field genuinely doesn't apply to my setup, leave it out entirely instead.`;
+    window.dispatchEvent(
+      new CustomEvent("charlie-send-message", { detail: { message } }),
+    );
   };
 
-  if (pending) {
+  if (waiting) {
     return (
       <span
-        className={draftingClasses}
+        className={waitingClasses}
         aria-live="polite"
         aria-busy="true"
       >
@@ -1737,7 +1763,7 @@ function InlineDraftButton({
             className="inline-block h-3 w-3 animate-spin border-2 border-current border-r-transparent rounded-full"
             aria-hidden="true"
           />
-          Charlie is drafting…
+          Answer Charlie in the chat →
         </span>
         <span
           className="absolute inset-0 -z-0 animate-pulse bg-gradient-to-r from-transparent via-white/20 to-transparent"
@@ -1748,19 +1774,14 @@ function InlineDraftButton({
   }
 
   return (
-    <span className="inline-flex flex-col items-start gap-1">
-      <button
-        type="button"
-        title={label}
-        onClick={onClick}
-        className={baseClasses}
-      >
-        {label}
-      </button>
-      {error && (
-        <span className="text-[11px] text-red-700">{error}</span>
-      )}
-    </span>
+    <button
+      type="button"
+      title={label}
+      onClick={onClick}
+      className={baseClasses}
+    >
+      {label}
+    </button>
   );
 }
 
