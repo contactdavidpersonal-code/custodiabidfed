@@ -2954,17 +2954,17 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       },
       {
         key: "review_evidence",
-        label: "Sample reviewed post",
-        hint: "Evidence the review actually happens: an email thread or screenshot showing a recent post being reviewed before going live, or a redlined draft.",
+        label: "Proof someone reviewed a recent post before it went public",
+        hint: "Pick any one thing your company posted publicly in the last few months — a LinkedIn update, a website page, a press release, a GitHub README. Show the assessor that someone checked it before it went live. The easiest proof is a screenshot of an email or Slack thread where a teammate says \"looks good, ship it.\" A Word/Google doc with tracked-changes or comments works just as well. You only need one example — not every post.",
         kind: "screenshot",
         satisfies: ["d"],
         required: true,
         destinations: [
           {
             type: "upload",
-            label: "Upload a review email or screenshot",
+            label: "Upload one approval email, Slack screenshot, or redlined draft",
             describes:
-              "Email thread, redlined Word/Google doc, or PR screenshot showing a recent post being reviewed and approved before publication.",
+              "Drag in a screenshot of an email/Slack thread approving a post, or a Word/Google doc with review comments. One recent example is enough — the assessor just wants to see the review actually happened.",
             accept: ["image/png", "image/jpeg", "image/webp", "application/pdf"],
           },
         ],
