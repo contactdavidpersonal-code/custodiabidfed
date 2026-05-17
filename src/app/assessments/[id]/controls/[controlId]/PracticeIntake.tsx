@@ -153,81 +153,90 @@ export function PracticeIntake(props: {
         {currentQ.objectives.map((o) => o.toUpperCase()).join(", ")}
       </div>
 
-      <h3 className="font-serif text-2xl font-bold leading-tight tracking-tight text-[#10231d]">
-        {currentQ.prompt}
-      </h3>
+      {/*
+       * Stable-height container. The Back / Next / Submit footer must never
+       * move between questions — even if Q3 has 5 chips with no descriptions
+       * and Q4 has chips with two-line descriptions. min-h is sized to the
+       * tallest expected question on the L1 set; shorter questions just have
+       * dead space at the bottom of this block instead of yanking the page.
+       */}
+      <div className="flex min-h-[34rem] flex-col">
+        <h3 className="font-serif text-2xl font-bold leading-tight tracking-tight text-[#10231d]">
+          {currentQ.prompt}
+        </h3>
 
-      {currentQ.helpText && (
-        <p className="mt-3 text-[14px] leading-relaxed text-[#5a7d70]">
-          {currentQ.helpText}
-        </p>
-      )}
+        {currentQ.helpText && (
+          <p className="mt-3 text-[14px] leading-relaxed text-[#5a7d70]">
+            {currentQ.helpText}
+          </p>
+        )}
 
-      <button
-        type="button"
-        onClick={() => setShowWhy((s) => !s)}
-        className="mt-4 inline-flex items-center gap-1 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d] hover:text-[#10231d]"
-        aria-expanded={showWhy}
-      >
-        {showWhy ? "Hide" : "Why we ask"} ·{" "}
-        <span className="font-mono normal-case tracking-normal text-[11px] font-medium text-[#5a7d70]">
-          {currentQ.regAnchor}
-        </span>
-      </button>
-      {showWhy && (
-        <blockquote className="mt-3 border-l-2 border-[#2f8f6d] bg-[#f7fcf9] px-4 py-3 font-serif text-[14px] italic leading-relaxed text-[#10231d]">
-          “{currentQ.regQuote}”
-          <div className="mt-2 font-mono text-[10px] font-bold uppercase not-italic tracking-[0.22em] text-[#5a7d70]">
-            — {currentQ.regAnchor}
-          </div>
-        </blockquote>
-      )}
+        <button
+          type="button"
+          onClick={() => setShowWhy((s) => !s)}
+          className="mt-4 inline-flex items-center gap-1 self-start font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d] hover:text-[#10231d]"
+          aria-expanded={showWhy}
+        >
+          {showWhy ? "Hide" : "Why we ask"} ·{" "}
+          <span className="font-mono normal-case tracking-normal text-[11px] font-medium text-[#5a7d70]">
+            {currentQ.regAnchor}
+          </span>
+        </button>
+        {showWhy && (
+          <blockquote className="mt-3 border-l-2 border-[#2f8f6d] bg-[#f7fcf9] px-4 py-3 font-serif text-[14px] italic leading-relaxed text-[#10231d]">
+            “{currentQ.regQuote}”
+            <div className="mt-2 font-mono text-[10px] font-bold uppercase not-italic tracking-[0.22em] text-[#5a7d70]">
+              — {currentQ.regAnchor}
+            </div>
+          </blockquote>
+        )}
 
-      <div className="mt-6 space-y-2">
-        {currentQ.options.map((opt) => {
-          const selected = currentValue === opt.value;
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => select(opt.value)}
-              disabled={pending}
-              className={`block w-full border bg-white px-5 py-4 text-left transition-colors ${
-                selected
-                  ? "border-[#2f8f6d] bg-[#f4faf6] ring-1 ring-[#2f8f6d]"
-                  : "border-[#cfe3d9] hover:border-[#2f8f6d]"
-              } disabled:opacity-50`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-serif text-[16px] font-semibold text-[#10231d]">
-                    {opt.label}
-                  </div>
-                  {opt.description && (
-                    <div className="mt-1 text-[13px] leading-relaxed text-[#5a7d70]">
-                      {opt.description}
+        <div className="mt-6 space-y-2">
+          {currentQ.options.map((opt) => {
+            const selected = currentValue === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => select(opt.value)}
+                disabled={pending}
+                className={`block w-full border bg-white px-5 py-4 text-left transition-colors ${
+                  selected
+                    ? "border-[#2f8f6d] bg-[#f4faf6] ring-1 ring-[#2f8f6d]"
+                    : "border-[#cfe3d9] hover:border-[#2f8f6d]"
+                } disabled:opacity-50`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-serif text-[16px] font-semibold text-[#10231d]">
+                      {opt.label}
                     </div>
+                    {opt.description && (
+                      <div className="mt-1 text-[13px] leading-relaxed text-[#5a7d70]">
+                        {opt.description}
+                      </div>
+                    )}
+                  </div>
+                  {selected && (
+                    <span
+                      className="mt-0.5 shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]"
+                      aria-hidden
+                    >
+                      ✓
+                    </span>
                   )}
                 </div>
-                {selected && (
-                  <span
-                    className="mt-0.5 shrink-0 font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-[#2f8f6d]"
-                    aria-hidden
-                  >
-                    ✓
-                  </span>
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>
-
-      {error && (
-        <div className="mt-4 border border-rose-300 bg-rose-50 px-4 py-3 text-[14px] text-rose-800">
-          {error}
+              </button>
+            );
+          })}
         </div>
-      )}
+
+        {error && (
+          <div className="mt-4 border border-rose-300 bg-rose-50 px-4 py-3 text-[14px] text-rose-800">
+            {error}
+          </div>
+        )}
+      </div>
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-t border-[#cfe3d9] pt-5">
         <button
