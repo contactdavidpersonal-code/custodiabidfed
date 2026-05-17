@@ -43,13 +43,9 @@ export function PracticeIntake(props: {
   const select = (value: string) => {
     setError(null);
     setAnswers((prev) => ({ ...prev, [currentQ.id]: value }));
-    // Auto-advance after a short pause so the user sees the chip light up.
-    if (stepIdx < totalSteps - 1) {
-      setTimeout(() => {
-        setStepIdx((s) => Math.min(s + 1, totalSteps - 1));
-        setShowWhy(false);
-      }, 220);
-    }
+    // No auto-advance. The user moves between questions ONLY via the Next /
+    // Back buttons or the progress dots. Auto-advance was disorienting on a
+    // page that's already deliberately one-question-at-a-time.
   };
 
   const onSubmit = () => {
