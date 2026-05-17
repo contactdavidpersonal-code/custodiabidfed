@@ -2232,7 +2232,6 @@ export default function Home() {
                 <ul className="space-y-2">
                   <li><Link href="/sign-up" className="transition-colors hover:text-[#0f2f26]">Start free trial</Link></li>
                   <li><Link href="/sign-in" className="transition-colors hover:text-[#0f2f26]">Sign in</Link></li>
-                  <li><Link href="/dashboard" className="transition-colors hover:text-[#0f2f26]">Dashboard</Link></li>
                 </ul>
               </div>
               <div>

@@ -780,7 +780,7 @@ export const officerTools = [
   {
     name: "navigate_user_to",
     description:
-      "Ask the client to navigate the user to a specific in-app page (e.g. the page for a specific practice, the scope page, the boundary page, an opportunity, attestation). The path MUST start with '/' and MUST be one of: /onboard, /assessments, /assessments/{id}, /assessments/{id}/controls/{controlId}, /assessments/{id}/boundary, /assessments/{id}/scope, /opportunities, /opportunities/{id}, /dashboard, /profile, /admin/sam. Use ONLY when the next step is clearly on a different page than the user is currently viewing.",
+      "Ask the client to navigate the user to a specific in-app page (e.g. the page for a specific practice, the scope page, the boundary page, an opportunity, attestation). The path MUST start with '/' and MUST be one of: /onboard, /assessments, /assessments/{id}, /assessments/{id}/controls/{controlId}, /assessments/{id}/boundary, /assessments/{id}/scope, /assessments/connections, /opportunities, /opportunities/{id}, /profile, /admin/sam. Use ONLY when the next step is clearly on a different page than the user is currently viewing.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -3189,7 +3189,6 @@ const NAVIGATE_ALLOWED_PREFIXES = [
   "/onboard",
   "/assessments",
   "/opportunities",
-  "/dashboard",
   "/profile",
   "/admin/sam",
 ];

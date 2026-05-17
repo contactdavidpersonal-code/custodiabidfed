@@ -88,7 +88,6 @@ function matchPack(route: string, input: PageContextInput): Pack {
   if (route.match(/^\/assessments\/[^/]+$/)) return PACK_ASSESSMENT_HOME;
 
   // --- Outside the wizard ------------------------------------------------
-  if (route === "/dashboard" || route.startsWith("/dashboard")) return PACK_DASHBOARD;
   if (route === "/onboard" || route.startsWith("/onboard")) return PACK_ONBOARD;
   if (route.match(/^\/regulations\/[^/]+/)) return buildRegulationsDocPack(route);
   if (route === "/regulations") return PACK_REGULATIONS_HUB;
@@ -327,7 +326,7 @@ ${slots}
 - The interview tool drives the objective coverage — you do not need to ask objective-by-objective questions yourself unless the interview is finished and an objective is still uncovered.
 - The middle pane has an Evidence section listing every slot above. As the user gives you facts, FILL THE SLOTS by calling \`generate_evidence_artifact\` — do NOT paste roster tables, procedures, or service-account lists into chat. Pass the slot's \`key\` exactly as listed above.
 - After a \`generate_evidence_artifact\` succeeds, give a 1-2 sentence chat summary like: "I dropped an Authorized Users Roster into your evidence — listed you as the sole user on Windows 11 + Pixel 9a. Replace it if anything's wrong."
-- For evidence that requires a screenshot or live system export (e.g. enforcement_proof), do NOT generate — instead ask the user to either upload one OR connect Microsoft 365 / Google Workspace from /dashboard so Custodia can auto-collect it.
+- For evidence that requires a screenshot or live system export (e.g. enforcement_proof), do NOT generate — instead ask the user to either upload one OR connect Microsoft 365 / Google Workspace from /assessments/connections so Custodia can auto-collect it.
 - NEVER mark the practice MET on your own — the platform handles that. You gather facts, produce artifacts, save narratives.
 - Keep replies short — 2-5 sentences. The middle pane is doing the visual tracking.
 
@@ -416,14 +415,6 @@ const PACK_ASSESSMENT_HOME: Pack = {
 // =========================================================================
 // Outside-wizard packs
 // =========================================================================
-
-const PACK_DASHBOARD: Pack = {
-  label: "Dashboard",
-  goal: "Give the user a status snapshot across all their assessments + connections.",
-  preferredTools: ["read_assessment_state", "check_readiness"],
-  avoidTools: [],
-  body: "If the user wants to dive into compliance work, point them at the active assessment. If they want to set up Microsoft 365 / Google Workspace connectors, those live on /dashboard.",
-};
 
 const PACK_ONBOARD: Pack = {
   label: "Onboarding",

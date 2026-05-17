@@ -101,7 +101,7 @@ async function buildSummary(organizationId: string): Promise<PulseSummary> {
     status,
     headline,
     bullets,
-    cta: { label: "Open the dashboard", href: "/dashboard" },
+    cta: { label: "Open my assessment", href: "/assessments" },
     metrics: {
       openAlerts,
       controlsCovered,

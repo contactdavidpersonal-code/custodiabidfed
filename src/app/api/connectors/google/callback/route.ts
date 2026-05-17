@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   if (!userId) return NextResponse.redirect(new URL("/sign-in", req.url));
 
   if (errorParam) {
-    const dest = new URL("/dashboard", req.url);
+    const dest = new URL("/assessments/connections", req.url);
     dest.searchParams.set("connector_error", "google");
     dest.searchParams.set("reason", errorParam);
     return NextResponse.redirect(dest);
@@ -88,7 +88,7 @@ export async function GET(req: Request) {
     ...auditContextFromRequest(req),
   });
 
-  const dest = new URL("/dashboard", req.url);
+  const dest = new URL("/assessments/connections", req.url);
   dest.searchParams.set("connector_connected", "google");
   const res = NextResponse.redirect(dest);
   res.cookies.delete("custodia_oauth_state_google");

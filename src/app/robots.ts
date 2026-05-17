@@ -48,7 +48,6 @@ const PUBLIC_ALLOW = [
 
 const PRIVATE_DISALLOW = [
   "/assessments",
-  "/dashboard",
   "/profile",
   "/onboard",
   "/sign-in",

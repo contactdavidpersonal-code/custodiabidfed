@@ -1600,14 +1600,24 @@ function DestinationButton({
         </span>
       );
     }
+    // Prefer the first declared provider for the launch URL. The OAuth
+    // start route redirects to the provider's sign-in (login.microsoftonline.com
+    // or accounts.google.com) which is what the user expects when they click
+    // "Pull from Microsoft 365" / "Pull from Google Workspace".
+    const launchProvider = dest.providers[0];
+    const providerSlug =
+      launchProvider === "google_workspace" ? "google" : launchProvider;
+    const startHref = providerSlug
+      ? `/api/connectors/${providerSlug}/start`
+      : "/assessments/connections";
     return (
-      <Link
-        href="/dashboard"
+      <a
+        href={startHref}
         title={dest.describes}
         className={baseClasses}
       >
         {dest.label} →
-      </Link>
+      </a>
     );
   }
 
