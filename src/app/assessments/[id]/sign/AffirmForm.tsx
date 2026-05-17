@@ -290,7 +290,9 @@ export function AffirmForm({
               <span>
                 My PIEE account has the{" "}
                 <strong>SPRS Cyber Vendor User</strong> role (or I&rsquo;ve
-                submitted the request and my CAM has activated it).
+                submitted the request and my company&rsquo;s{" "}
+                <strong>Contractor Account Manager (CAM)</strong> has
+                activated it).
               </span>
             </label>
             <label className="flex gap-3">
@@ -335,6 +337,37 @@ export function AffirmForm({
               behalf of <strong>{organizationName}</strong>.
             </span>
           </label>
+        </div>
+
+        <div className="border border-emerald-200 bg-emerald-50/60 p-5">
+          <h3 className="text-sm font-semibold text-emerald-900">
+            What happens after you click Sign
+          </h3>
+          <ol className="mt-2 list-decimal space-y-1.5 pl-5 text-sm leading-relaxed text-emerald-900">
+            <li>
+              Custodia seals your affirmation memo and System Security Plan
+              into a tamper-evident attestation packet (HMAC-signed,
+              SHA-256-fingerprinted, KMS-encrypted at rest).
+            </li>
+            <li>
+              <strong>Custodia does not submit to SPRS for you.</strong>{" "}
+              Under the CMMC Final Rule (32 CFR § 170), only the Affirming
+              Official can post the affirmation, and they must do it
+              themselves inside PIEE/SPRS. There is no API for vendors to
+              auto-submit.
+            </li>
+            <li>
+              On the next page we give you a white-glove{" "}
+              <em>&ldquo;Copy these into SPRS&rdquo;</em> card — every
+              field the SPRS form asks for, in order, with a one-click copy
+              button. The whole posting takes about 10 minutes.
+            </li>
+            <li>
+              Paste back the CMMC Status Date SPRS shows you and we&rsquo;ll
+              email you a Statement of Compliance and put you on the annual
+              renewal calendar.
+            </li>
+          </ol>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-6">

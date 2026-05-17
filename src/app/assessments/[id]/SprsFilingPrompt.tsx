@@ -423,7 +423,10 @@ export function SprsFilingPromptCard({
               role on your CAGE (the{" "}
               <code className="bg-slate-100 px-1 py-0.5 text-[12px]">Contractor/Vendor (Support Role)</code>{" "}
               is view-only and cannot file). New role requests are activated
-              by your company&rsquo;s CAM — this can take 1–5 business days.
+              by your company&rsquo;s{" "}
+              <strong>Contractor Account Manager (CAM)</strong> — the person
+              who approves PIEE roles for your CAGE. Activation can take 1–5
+              business days.
             </li>
             <li>
               Open{" "}
@@ -439,9 +442,12 @@ export function SprsFilingPromptCard({
               <strong>Cyber Reports</strong>.
             </li>
             <li>
-              Pick your HLO from the hierarchy dropdown (SAM imports this
-              automatically — your CAGE should appear with an asterisk if
-              your Cyber Vendor User role is active).
+              Pick your{" "}
+              <strong>HLO (Highest Level Owner)</strong> from the hierarchy
+              dropdown — the top of your CAGE family tree as SAM imported it.
+              For most small businesses this is just your own company. Your
+              CAGE should appear with an asterisk if your Cyber Vendor User
+              role is active.
             </li>
             <li>
               Open the <strong>CMMC Assessments</strong> tab → click{" "}
