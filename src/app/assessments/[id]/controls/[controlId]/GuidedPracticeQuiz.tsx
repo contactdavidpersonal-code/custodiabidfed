@@ -106,16 +106,12 @@ export function GuidedPracticeQuiz(props: {
       setAnswers({});
       setStepIdx(0);
     } else {
+      // Merge fresh answers in (e.g. Charlie wrote one via set_intake_answer
+      // or the user reloaded mid-walk), but DO NOT auto-advance the step.
+      // The user explicitly asked to drive navigation themselves with the
+      // Next / Back buttons — silently jumping the question on every save
+      // feels like the page is yanking the floor out from under them.
       setAnswers((prev) => ({ ...prev, ...incoming }));
-      const cur = props.intake.questions[stepIdx];
-      if (cur && incoming[cur.id]) {
-        const nextUnansweredIdx = props.intake.questions.findIndex(
-          (q) => !incoming[q.id],
-        );
-        if (nextUnansweredIdx !== -1 && nextUnansweredIdx !== stepIdx) {
-          setStepIdx(nextUnansweredIdx);
-        }
-      }
     }
   }
 
