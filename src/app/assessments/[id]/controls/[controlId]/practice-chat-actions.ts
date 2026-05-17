@@ -22,6 +22,7 @@ import {
   type IntakeAnswers,
 } from "@/lib/cmmc/practice-spec";
 import { storeCharlieArtifact } from "@/lib/ai/tools";
+import { archiveWorkspaceConversation } from "@/lib/ai/conversations";
 import { CHAT_MODEL, getAnthropic } from "@/lib/anthropic";
 
 /**
@@ -544,6 +545,14 @@ export async function hardResetPracticeAction(args: {
       AND control_id = ${controlId}
       AND superseded_at IS NULL
   `;
+  // 7. Archive the workspace rail conversation. Otherwise Charlie's prior
+  //    turns ("I dropped a roster into your evidence", "4 of 5 slots are
+  //    filled", "want to continue the interview") persist in chat history
+  //    and bias his next response — even after the practice DB is wiped.
+  //    A fresh workspace conversation is created lazily on the next chat
+  //    POST. The old one is kept (archived) for audit, just hidden from
+  //    the live rail.
+  await archiveWorkspaceConversation(ctx.organization.id);
 
   revalidatePath(`/assessments/${assessmentId}`);
   revalidatePath(`/assessments/${assessmentId}/controls/${controlId}`);

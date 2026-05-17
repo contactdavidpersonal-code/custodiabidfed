@@ -1779,15 +1779,22 @@ function InlineDraftButton({
     // control page. Pin Charlie to this practice until the artifact is
     // generated.
     const message =
-      `I want you to draft the **${slot.label}** for me on this same page — DO NOT navigate me anywhere, do NOT call \`navigate_user_to\`. ` +
+      `**SLOT-DRAFT REQUEST — override any prior context.** ` +
+      `I just clicked the "${label}" button on the EMPTY \`${slot.key}\` slot card for this practice. ` +
+      `The slot is currently empty — ignore anything the prior chat history says about this slot being filled, drafted, or done. The reset button wiped it. ` +
+      `Your job RIGHT NOW: draft the **${slot.label}** as a fresh artifact. ` +
       `What it's for: ${slot.hint} ` +
-      `Ask me ONE short plain-English question at a time to get the facts you need — no jargon (no FCI, NIST, baseline, attestation, etc.). ` +
-      `Three or four quick questions, max. ` +
-      `Once you have enough, call \`generate_evidence_artifact\` with ` +
-      `slot_key="${slot.key}", filename="${filename}", format="${format}". ` +
-      `Use only my real answers — do NOT insert "[FILL IN]" placeholders. ` +
-      `If a field genuinely doesn't apply to my setup, leave it out entirely instead. ` +
-      `Stay on the current practice until the artifact lands in the slot — no jumping to the next control, no recap of other slots, no "want to continue the interview" prompts.`;
+      `\n\n**Behavior rules (these override the general system prompt for this turn):**\n` +
+      `1. DO NOT call \`navigate_user_to\` — I am staying on this page.\n` +
+      `2. DO NOT call \`interview_for_control_narrative\` — this is a slot-draft, not the SSP narrative interview.\n` +
+      `3. DO NOT recap "what's left", "outstanding objectives", "want to continue the interview", "tackle the enforcement proof", or any other slot. Pretend you have never seen this practice before.\n` +
+      `4. DO NOT ask a multiple-choice question or offer menus ("a/b/c", "option 1/2/3"). Just ask one short plain-English question at a time.\n` +
+      `5. Ban these words from your replies: FCI, NIST, baseline, attestation, objective, satisfies, AC.L1, 800-171.\n` +
+      `\n**What to do:**\n` +
+      `Ask me ONE short plain-English question to learn the facts you need for the ${slot.label}. After my answer, ask the next one. Three or four short questions total, max. ` +
+      `Then call \`generate_evidence_artifact\` with slot_key="${slot.key}", filename="${filename}", format="${format}", using ONLY my real answers (no "[FILL IN]" placeholders — if a field doesn't apply to my setup, leave it out entirely). ` +
+      `After the tool returns, give me a one-sentence "I dropped it in your evidence" summary and stop. ` +
+      `\n\n**Start now with your first question.**`;
     window.dispatchEvent(
       new CustomEvent("charlie-send-message", { detail: { message } }),
     );
