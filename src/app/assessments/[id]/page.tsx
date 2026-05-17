@@ -18,6 +18,8 @@ import {
 } from "@/lib/playbook";
 import { listPracticeProgressForAssessment } from "@/lib/cmmc/practice-progress-server";
 import type { PracticeProgress } from "@/lib/cmmc/practice-progress";
+import { getConnectorTokenStatus } from "@/lib/connectors/storage";
+import type { ConnectorTokenRow } from "@/lib/connectors/storage";
 
 // CMMC L1 v2.13 has three terminal states per the Assessment Guide: MET,
 // NOT MET, NOT APPLICABLE. In the guided 4-layer working model the user
@@ -168,6 +170,7 @@ export default async function AssessmentOverviewPage(
     listCarryForwardPending(id),
     listPracticeProgressForAssessment(id),
   ]);
+  const connectorTokens = await getConnectorTokenStatus(ctx.organization.id);
   const responseByControl = new Map(responses.map((r) => [r.control_id, r]));
   const progress = computeProgress(responses);
   // Count requirements that are still legacy-unanswered but where the user
@@ -220,6 +223,13 @@ export default async function AssessmentOverviewPage(
           </div>
         </section>
 
+      {ctx.assessment.material_change_required_reassessment && !attested && (
+        <MaterialChangeReassessBanner
+          assessmentId={ctx.assessment.id}
+          reviewedAt={ctx.assessment.material_change_reviewed_at}
+        />
+      )}
+
       {(carryForward.responses.length > 0 ||
         carryForward.artifacts.length > 0) && (
         <CarryForwardReviewBanner
@@ -262,6 +272,8 @@ export default async function AssessmentOverviewPage(
           tone="slate"
         />
       </section>
+
+      <ConnectorHealthCard tokens={connectorTokens} />
 
       <section>
         <div className="mb-8 flex items-end justify-between gap-4">
@@ -419,6 +431,52 @@ export default async function AssessmentOverviewPage(
   );
 }
 
+function MaterialChangeReassessBanner({
+  assessmentId,
+  reviewedAt,
+}: {
+  assessmentId: string;
+  reviewedAt: string | null;
+}) {
+  const when = reviewedAt
+    ? new Date(reviewedAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
+  return (
+    <div className="mb-6 border-l-4 border-[#a06b1a] bg-[#fff7e8] p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#a06b1a]">
+            Material change &mdash; re-affirmation required
+          </div>
+          <h2 className="mt-1 text-lg font-bold tracking-tight text-[#0e2a23]">
+            Your scope changed. You must re-walk every practice and sign a
+            fresh affirmation.
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-[#0c4a3a]">
+            {when ? <>On {when} you </> : <>You </>}
+            confirmed an architectural, boundary, or scope change since the
+            last affirmation. Under 32 CFR &sect; 170.22(a)(2), a material
+            change to the in-scope FCI environment voids the prior annual
+            affirmation. The previous answers were cleared &mdash; please
+            verify each practice and have your senior official sign again
+            before relying on this status with primes or DoD.
+          </p>
+        </div>
+        <Link
+          href={`/assessments/${assessmentId}/material-change`}
+          className="border border-[#a06b1a] bg-white px-4 py-2.5 text-sm font-bold text-[#7a2e1c] transition-colors hover:bg-[#fff7e8]"
+        >
+          Review change details
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 function CarryForwardReviewBanner({
   assessmentId,
   pendingResponseCount,
@@ -432,42 +490,162 @@ function CarryForwardReviewBanner({
 }) {
   const total = pendingResponseCount + pendingArtifactCount;
   return (
-    <div className="mb-6  border border-sky-300 bg-sky-50 p-5">
+    <div className="mb-6 border border-[#cfe3d9] bg-[#f1f6f3] p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-800">
-            Last year&apos;s answers imported
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f8f6d]">
+            Carry-forward review required
           </div>
-          <h2 className="mt-1 text-lg font-bold tracking-tight text-slate-900">
+          <h2 className="mt-1 text-lg font-bold tracking-tight text-[#0e2a23]">
             {total} item{total === 1 ? "" : "s"} need a quick currency check.
           </h2>
-          <p className="mt-1 text-sm text-sky-900">
+          <p className="mt-1 text-sm text-[#0c4a3a]">
             {pendingResponseCount > 0 && (
               <>
                 {pendingResponseCount} answer
-                {pendingResponseCount === 1 ? "" : "s"} carried over.{" "}
+                {pendingResponseCount === 1 ? "" : "s"} carried over from last
+                cycle.{" "}
               </>
             )}
             {pendingArtifactCount > 0 && (
               <>
                 {pendingArtifactCount} evidence file
-                {pendingArtifactCount === 1 ? "" : "s"} need re-confirmation.
+                {pendingArtifactCount === 1 ? "" : "s"} need re-confirmation.{" "}
               </>
-            )}{" "}
-            Walk each practice to confirm or replace — one step at a time
-            importing last year&apos;s return.
+            )}
+            Nothing rolls forward silently &mdash; the rule under{" "}
+            32 CFR &sect; 170.22(a) is that you must affirmatively review each
+            practice every annual cycle. Walk them, confirm or replace, then
+            sign.
           </p>
         </div>
         {firstControlId && (
           <Link
             href={`/assessments/${assessmentId}/controls/${firstControlId}`}
-            className=" bg-sky-700 px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-sky-600"
+            className="bg-[#0e2a23] px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#10342a]"
           >
             Start reviewing &rarr;
           </Link>
         )}
       </div>
     </div>
+  );
+}
+
+const PROVIDER_LABEL: Record<ConnectorTokenRow["provider"], string> = {
+  m365: "Microsoft 365",
+  google_workspace: "Google Workspace",
+};
+
+function formatRelative(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (Number.isNaN(ms)) return "unknown";
+  const hours = Math.round(ms / 3_600_000);
+  if (hours < 1) return "just now";
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  if (days < 14) return `${days}d ago`;
+  const weeks = Math.round(days / 7);
+  if (weeks < 8) return `${weeks}w ago`;
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function ConnectorHealthCard({
+  tokens,
+}: {
+  tokens: ReadonlyArray<ConnectorTokenRow>;
+}) {
+  // Show all known providers — a missing one is itself a useful signal.
+  const providers: Array<ConnectorTokenRow["provider"]> = [
+    "m365",
+    "google_workspace",
+  ];
+  const rows = providers.map((p) => {
+    const row = tokens.find((t) => t.provider === p);
+    return { provider: p, row };
+  });
+  const anyConnected = rows.some(
+    (r) => r.row && !r.row.revoked_at,
+  );
+  return (
+    <section className="mb-12 border border-[#cfe3d9] bg-white p-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#2f8f6d]">
+            Connector health
+          </div>
+          <h2 className="mt-1 font-serif text-2xl font-normal tracking-tight text-[#063f2e]">
+            Evidence freshness at a glance.
+          </h2>
+          <p className="mt-1 max-w-xl text-sm leading-relaxed text-[#5a7d70]">
+            Stale connectors mean stale evidence. If a prime asks for proof
+            that your MFA enforcement is still on, the answer should come
+            from data pulled this week &mdash; not last quarter.
+          </p>
+        </div>
+        <Link
+          href="/connectors"
+          className="border border-[#0e2a23] bg-white px-4 py-2 text-sm font-bold text-[#0e2a23] transition-colors hover:bg-[#f1f6f3]"
+        >
+          {anyConnected ? "Manage connectors" : "Connect a tenant"}
+        </Link>
+      </div>
+      <ul className="mt-5 grid gap-3 md:grid-cols-2">
+        {rows.map(({ provider, row }) => {
+          let dot = "#cfe3d9";
+          let status = "Not connected";
+          let detail = "Connect to keep evidence fresh.";
+          if (row?.revoked_at) {
+            dot = "#7a2e1c";
+            status = "Revoked";
+            detail = `Re-authorize to resume syncs (revoked ${formatRelative(row.revoked_at)}).`;
+          } else if (row) {
+            const lastUse = row.last_used_at ?? row.connected_at;
+            const hours = (Date.now() - new Date(lastUse).getTime()) / 3_600_000;
+            if (hours <= 24) {
+              dot = "#2f8f6d";
+              status = "Fresh";
+            } else if (hours <= 72) {
+              dot = "#a06b1a";
+              status = "Stale";
+            } else {
+              dot = "#7a2e1c";
+              status = "Action needed";
+            }
+            detail = `Last sync ${formatRelative(lastUse)}${row.account_label ? ` · ${row.account_label}` : ""}`;
+          }
+          return (
+            <li
+              key={provider}
+              className="flex items-start gap-3 border border-[#e5efe9] bg-[#f8fbf9] p-4"
+            >
+              <span
+                className="mt-1 inline-block h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: dot }}
+                aria-hidden
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="text-sm font-bold text-[#0e2a23]">
+                    {PROVIDER_LABEL[provider]}
+                  </span>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-[#5a7d70]">
+                    {status}
+                  </span>
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-[#5a7d70]">
+                  {detail}
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

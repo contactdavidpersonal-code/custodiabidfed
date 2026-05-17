@@ -308,6 +308,48 @@ export function AffirmForm({
               </span>
             </label>
           </div>
+          <details className="mt-4 border-t border-slate-200 pt-3 text-sm text-slate-700">
+            <summary className="cursor-pointer font-semibold text-slate-900 hover:text-slate-700">
+              Can&rsquo;t check one of these? &mdash; 30-second fixes
+            </summary>
+            <ul className="mt-2 space-y-2 pl-4 text-[13px] leading-relaxed">
+              <li>
+                <strong>No PIEE account?</strong> Go to{" "}
+                <a
+                  href="https://piee.eb.mil"
+                  target="_blank"
+                  rel="noopener"
+                  className="font-medium underline decoration-amber-400 underline-offset-2"
+                >
+                  piee.eb.mil
+                </a>{" "}
+                &rarr; <em>Register</em> &rarr; <em>Vendor</em>. CAGE is
+                required at signup, takes ~10 min.
+              </li>
+              <li>
+                <strong>No SPRS Cyber Vendor User role?</strong> In PIEE, hit{" "}
+                <em>My Account</em> &rarr; <em>Add Roles</em> &rarr; SPRS
+                &rarr; <strong>Cyber Vendor User</strong>. Your company&rsquo;s
+                Contractor Account Manager (CAM) approves it. No CAM yet? The
+                first user to register a CAGE becomes the CAM automatically.
+              </li>
+              <li>
+                <strong>CAGE missing from SPRS hierarchy dropdown?</strong>{" "}
+                Usually means CAM hasn&rsquo;t approved your role yet, or
+                you&rsquo;re logged in under a different CAGE. Recheck the
+                CAM status, then refresh SPRS.
+              </li>
+              <li>
+                Need the full walkthrough?{" "}
+                <Link
+                  href="/sprs-guide"
+                  className="font-medium underline decoration-amber-400 underline-offset-2"
+                >
+                  Open the SPRS guide &rarr;
+                </Link>
+              </li>
+            </ul>
+          </details>
         </div>
 
         <div className="border border-slate-200 bg-slate-50 p-5">

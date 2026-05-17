@@ -51,7 +51,8 @@ export type AuditAction =
   | "evidence.marked_final"
   | "narrative.drafted"
   | "narrative.saved"
-  | "narrative.critiqued";
+  | "narrative.critiqued"
+  | "renewal_reminder.sent";
 
 export type AuditEvent = {
   action: AuditAction;

@@ -2,6 +2,26 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { enforceStepOrder, getAssessmentForUser } from "@/lib/assessment";
+import { getSql } from "@/lib/db";
+
+async function fetchPublicVerifiedSlug(
+  organizationId: string,
+): Promise<string | null> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT verification_slug, slug, is_public
+    FROM trust_pages
+    WHERE organization_id = ${organizationId}::uuid
+    ORDER BY updated_at DESC NULLS LAST
+    LIMIT 1
+  `) as Array<{
+    verification_slug: string | null;
+    slug: string | null;
+    is_public: boolean | null;
+  }>;
+  if (rows.length === 0) return null;
+  return rows[0].verification_slug ?? rows[0].slug ?? null;
+}
 
 export default async function DeliverablesPage(
   props: PageProps<"/assessments/[id]/deliverables">,
@@ -15,6 +35,10 @@ export default async function DeliverablesPage(
   await enforceStepOrder(ctx, "attested");
 
   const attested = ctx.assessment.status === "attested";
+  const verificationId = ctx.assessment.custodia_verification_id;
+  const verifiedSlug = verificationId
+    ? await fetchPublicVerifiedSlug(ctx.organization.id)
+    : null;
 
   if (!attested) {
     return (
@@ -83,7 +107,88 @@ export default async function DeliverablesPage(
         />
       </div>
 
-      <section className="mt-10  border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+      {/* Custodia Verification ID — public, prime-shareable proof. Only
+          materializes once the user records their SPRS Status Date, so we
+          show a "what this becomes" teaser before that and a live card
+          (with copy-paste + public URL) after. */}
+      <section className="mt-10 border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
+              Share with primes
+            </p>
+            <h2 className="mt-2 font-serif text-lg font-bold text-[#10231d]">
+              Your Custodia Verification ID
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-[#5a7d70]">
+              A unique, public identifier a prime can paste into{" "}
+              <code className="rounded bg-[#f1f6f3] px-1 py-0.5 text-[12px] text-[#0c2219]">
+                bidfedcmmc.com/verified/&hellip;
+              </code>{" "}
+              to confirm your CMMC L1 self-assessment is on file, current,
+              and tamper-evident. Decoupled from CAGE / UEI on purpose &mdash;
+              it&apos;s safe to email, drop in a proposal, or embed as a badge.
+            </p>
+          </div>
+          {verificationId ? (
+            <div className="flex-none border border-[#0e2a23] bg-[#0e2a23] p-4 text-[#bdf2cf]">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#bdf2cf]/80">
+                Verification ID
+              </div>
+              <div className="mt-1 font-mono text-base font-bold tracking-wider text-white">
+                {verificationId}
+              </div>
+            </div>
+          ) : (
+            <div className="flex-none border border-dashed border-[#cfe3d9] bg-[#f1f6f3] p-4 text-[#5a7d70]">
+              <div className="text-[10px] font-bold uppercase tracking-[0.2em]">
+                Verification ID
+              </div>
+              <div className="mt-1 font-mono text-base font-bold tracking-wider">
+                CUST-V-&middot;&middot;&middot;&middot;&middot;&middot;
+              </div>
+              <div className="mt-1 text-[11px]">
+                Issued after you record your SPRS Status Date
+              </div>
+            </div>
+          )}
+        </div>
+
+        {verificationId && verifiedSlug ? (
+          <div className="mt-5 border-t border-[#cfe3d9] pt-5">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#5a7d70]">
+              Public verification URL
+            </p>
+            <div className="mt-2 break-all border border-[#cfe3d9] bg-[#f1f6f3] p-3 font-mono text-xs text-[#0c2219]">
+              https://bidfedcmmc.com/verified/{verifiedSlug}
+            </div>
+            <p className="mt-3 text-xs text-[#5a7d70]">
+              Anyone can hit this URL &mdash; no Custodia account required. It
+              shows your org, CMMC L1 Self status, affirmation date, evidence
+              freshness, and the tamper-evident attestation hash. The same page
+              backs the SVG / HTML badge you can embed on your site.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a
+                href={`/verified/${verifiedSlug}`}
+                target="_blank"
+                rel="noopener"
+                className="border border-[#cfe3d9] bg-white px-3 py-2 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
+              >
+                Open my public page &rarr;
+              </a>
+              <Link
+                href={`/assessments/${id}/verified`}
+                className="border border-[#cfe3d9] bg-white px-3 py-2 text-xs font-bold text-[#0e2a23] transition-colors hover:border-[#2f8f6d] hover:bg-[#f1f6f3]"
+              >
+                Badge settings
+              </Link>
+            </div>
+          </div>
+        ) : null}
+      </section>
+
+      <section className="mt-6  border border-[#cfe3d9] bg-white p-6 shadow-[0_2px_0_rgba(14,48,37,0.04)]">
         <h2 className="font-serif text-lg font-bold text-[#10231d]">
           What to do with these
         </h2>
@@ -138,6 +243,17 @@ export default async function DeliverablesPage(
             </p>
           </li>
         </ol>
+        <div className="mt-5 border-t border-[#cfe3d9] pt-4 text-xs text-[#5a7d70]">
+          Need to show a prime <em>when</em> something happened?{" "}
+          <Link
+            href={`/assessments/${id}/activity`}
+            className="font-bold text-[#0c4a3a] underline decoration-[#bdf2cf] decoration-2 underline-offset-2 hover:text-[#0e2a23]"
+          >
+            Open the activity log &rarr;
+          </Link>{" "}
+          &mdash; every signature, evidence upload, SPRS filing, and scope
+          change with timestamps. Same data sealed in the ZIP above.
+        </div>
       </section>
 
       {/* Final hand-off to step 7 — the whole point of this platform. */}
