@@ -2139,6 +2139,337 @@ const ac3120Intake: PracticeIntakeSpec = {
   },
 };
 
+// ────────────────────────────────────────────────────────────────────────
+// AC.L1-3.1.22 — Public Information Posting · intake quiz
+// ────────────────────────────────────────────────────────────────────────
+
+const PUBLIC_SURFACES_LABEL: Record<string, string> = {
+  website_only: "company website only",
+  website_social: "company website + social (LinkedIn, X, etc.)",
+  many_channels: "website + social + a GitHub org / blog / customer portal / press releases",
+  none_active: "no active public-facing channels right now",
+};
+
+const POSTERS_SCOPE_LABEL: Record<string, string> = {
+  solo_owner: "solo — only the owner posts",
+  small_named_team: "a small named team (2–5 people) can post",
+  many_can_post: "many people can post — no formal restriction",
+  contractor_partner: "a contractor / marketing partner does the posting",
+};
+
+const POSTING_REVIEW_STATE_LABEL: Record<string, string> = {
+  formal_signoff: "every public post gets a formal review/sign-off before publishing",
+  informal_review: "informal — usually a quick read-over by another person",
+  publish_freely: "posters publish freely, no review step",
+  unclear: "unclear / inconsistent across channels",
+};
+
+const FCI_EXPOSURE_RISK_LABEL: Record<string, string> = {
+  never_named: "no — federal customers and contract details have never appeared publicly",
+  customers_named: "yes — federal customers or projects have been named on public channels",
+  unsure_legacy: "unsure — legacy content has never been audited",
+};
+
+const AC3122_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "public_surfaces",
+    objectives: ["a", "d"],
+    prompt:
+      "Which public-facing channels does your company actually publish to today?",
+    helpText:
+      "We're scoping which surfaces the assessor will look at. Anything the public can read counts — website, LinkedIn page, GitHub org, customer-facing portal, press releases.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.22 [a],[d]; CMMC L1 SAG (v2.13) AC.L1-b.1.iv Further Discussion",
+    regQuote:
+      "Determine if: [a] individuals authorized to post information on publicly accessible systems are identified; [d] content on publicly accessible information systems is reviewed to ensure that it does not include FCI. … Publicly accessible information systems include … public websites, blogs, and social media.",
+    options: [
+      {
+        value: "website_only",
+        label: "Just the company website",
+        description: "Smallest surface — one posters list, one procedure, one sample review.",
+      },
+      {
+        value: "website_social",
+        label: "Website + social (LinkedIn, X, Facebook)",
+        description:
+          "Most common setup. Charlie writes the procedure to cover all channels with one review workflow.",
+      },
+      {
+        value: "many_channels",
+        label: "Website + social + GitHub org / blog / customer portal / press",
+        description:
+          "Bigger public surface. Charlie names each channel in the procedure and assigns a reviewer per channel.",
+      },
+      {
+        value: "none_active",
+        label: "No active public-facing channels right now",
+        description:
+          "Still required at L1 — the procedure must exist before the first post. Charlie drafts a 'before we launch any public channel' procedure plus a stub posters list (owner only).",
+      },
+    ],
+  },
+  {
+    id: "posters_scope",
+    objectives: ["a"],
+    prompt:
+      "Who in your company is actually allowed to post to those public channels today?",
+    helpText:
+      "Objective [a] is satisfied when there's a named list of authorized posters with a signed acknowledgement that FCI cannot appear in public content.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.22 [a]; CMMC L1 SAG (v2.13) AC.L1-b.1.iv Further Discussion",
+    regQuote:
+      "Determine if: [a] individuals authorized to post information on publicly accessible systems are identified. … Organizations should ensure that the content on publicly accessible information systems is approved by authorized individuals.",
+    options: [
+      {
+        value: "solo_owner",
+        label: "Just me / the owner",
+        description: "Single-row roster + signed acknowledgement. Charlie drafts both.",
+      },
+      {
+        value: "small_named_team",
+        label: "A small named team (2–5 people)",
+        description:
+          "Charlie composes the roster from the names you give and generates the acknowledgement form for each person to sign.",
+      },
+      {
+        value: "many_can_post",
+        label: "Many people can post — no formal restriction",
+        description:
+          "L1 finding. Charlie names this as the priority gap and drafts a tightened poster list (the smallest reasonable team) plus the acknowledgement.",
+      },
+      {
+        value: "contractor_partner",
+        label: "A contractor or marketing partner posts on our behalf",
+        description:
+          "Common for small companies. Charlie names the contractor on the roster and adds an external-attestation row (acknowledgement signed by the contractor).",
+      },
+    ],
+  },
+  {
+    id: "posting_review_state",
+    objectives: ["b", "c", "e"],
+    prompt:
+      "What's the current pre-publish review state for public content?",
+    helpText:
+      "Objectives [b]/[c]/[e] are satisfied by a written procedure: how content is reviewed before posting, and how a problematic post is taken down. We're sizing how much Charlie needs to write vs. document.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.22 [b],[c],[e]; CMMC L1 SAG (v2.13) AC.L1-b.1.iv Potential Assessment Considerations",
+    regQuote:
+      "Determine if: [b] procedures to ensure FCI is not posted on publicly accessible information systems are identified; [c] a review process is in place prior to posting of any content to publicly accessible information systems; [e] mechanisms are in place to remove and address improper posting of FCI.",
+    options: [
+      {
+        value: "formal_signoff",
+        label: "Every public post gets a formal review/sign-off before publishing",
+        description:
+          "Strongest evidence. Charlie documents the existing workflow into a one-page procedure and pairs it with a real recent example.",
+      },
+      {
+        value: "informal_review",
+        label: "Informal — usually a quick read-over by another person",
+        description:
+          "Charlie writes the procedure to formalize what already happens (named approver, FCI check, removal step) — minimal change to actual behavior.",
+      },
+      {
+        value: "publish_freely",
+        label: "Posters publish freely — no review step today",
+        description:
+          "L1 finding. Charlie drafts the procedure that introduces the smallest possible review step (named approver, async approval channel) so the workflow is documented and adoptable.",
+      },
+      {
+        value: "unclear",
+        label: "Unclear — inconsistent across channels",
+        description:
+          "Charlie writes one procedure that applies uniformly to every channel from the first question.",
+      },
+    ],
+  },
+  {
+    id: "fci_exposure_risk",
+    objectives: ["d", "e"],
+    prompt:
+      "Have federal customers, project names, or contract details ever appeared on any of your public channels?",
+    helpText:
+      "Objectives [d]/[e] require a content review for FCI exposure and a removal mechanism. If anything sensitive may have been posted, we add a one-pass content-audit log so the assessor sees the cleanup was done.",
+    regAnchor:
+      "NIST SP 800-171A §3.1.22 [d],[e]; CMMC L1 SAG (v2.13) AC.L1-b.1.iv Further Discussion",
+    regQuote:
+      "Determine if: [d] content on publicly accessible information systems is reviewed to ensure that it does not include FCI; [e] mechanisms are in place to remove and address improper posting of FCI. … Even seemingly innocuous information can, when combined, become sensitive.",
+    options: [
+      {
+        value: "never_named",
+        label: "No — federal customers / contract details have never appeared publicly",
+        description:
+          "Cleanest path. Charlie documents the sample review (one recent reviewed post) and the procedure covers ongoing checks.",
+      },
+      {
+        value: "customers_named",
+        label: "Yes — federal customers or projects have been named publicly",
+        description:
+          "Required: a content-audit log showing each public surface was reviewed for FCI and any exposures resolved. Charlie drafts the audit log and adds it as an artifact.",
+      },
+      {
+        value: "unsure_legacy",
+        label: "Unsure — legacy content has never been audited",
+        description:
+          "Same path — Charlie drafts the content-audit log so the assessor sees a first pass was completed even if nothing was found.",
+      },
+    ],
+  },
+];
+
+const ac3122Intake: PracticeIntakeSpec = {
+  preamble:
+    "Four quick questions about what's already public and who can post. Each one maps to a specific NIST 800-171A determination statement for AC.L1-3.1.22 — Charlie uses the answers to draft the posters roster, the review procedure, and (when needed) a content-audit log. No objective [a]–[e] is skipped.",
+  questions: AC3122_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    const surfaces = answers.public_surfaces;
+    const posters = answers.posters_scope;
+    const reviewState = answers.posting_review_state;
+    const exposure = answers.fci_exposure_risk;
+
+    // ─── Objective [a] · authorized_posters_ack ───
+    if (posters === "solo_owner") {
+      slotAnnotations.authorized_posters_ack = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Solo poster — Charlie drafts a one-row roster (owner only) plus the matching one-page signed acknowledgement. Sign, scan, upload — that's all [a] needs.",
+      };
+    } else if (posters === "small_named_team") {
+      slotAnnotations.authorized_posters_ack = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Small named team — give Charlie the names and he composes the roster + acknowledgement form. Each named person signs once; the bundle covers [a] in full.",
+      };
+    } else if (posters === "many_can_post") {
+      slotAnnotations.authorized_posters_ack = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Top L1 finding — too many posters and no acknowledgements. Charlie drafts a tightened roster (the smallest reasonable team that can still do marketing) plus the acknowledgement, then names this as the remediation priority.",
+      };
+    } else if (posters === "contractor_partner") {
+      slotAnnotations.authorized_posters_ack = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Contractor / marketing partner posts on your behalf — Charlie adds the contractor name to the roster with an external-attestation column and drafts the acknowledgement they should sign.",
+      };
+    } else {
+      slotAnnotations.authorized_posters_ack = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Charlie drafts the authorized-posters roster and the matching FCI acknowledgement form.",
+      };
+    }
+
+    // ─── Objective [b]/[c]/[e] · public_posting_procedure ───
+    if (reviewState === "formal_signoff") {
+      slotAnnotations.public_posting_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "You already have a formal review workflow — Charlie writes a one-page procedure that documents what already happens (named approver, FCI check, removal step). Minimal behavior change, full [b]/[c]/[e] coverage.",
+      };
+    } else if (reviewState === "informal_review") {
+      slotAnnotations.public_posting_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Informal review today — Charlie formalizes it into a written procedure that mirrors current practice and adds the one missing piece (a documented removal step) so [e] is covered.",
+      };
+    } else if (reviewState === "publish_freely") {
+      slotAnnotations.public_posting_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "No review step today — L1 finding. Charlie drafts the smallest viable procedure: a named approver, an async approval channel (Slack/email), the FCI check, and the removal mechanism. Adoptable in a week.",
+      };
+    } else if (reviewState === "unclear") {
+      slotAnnotations.public_posting_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote: `Inconsistent across channels — Charlie writes one procedure that applies to every surface (${PUBLIC_SURFACES_LABEL[surfaces] ?? "your public surfaces"}) so the assessor sees uniform coverage.`,
+      };
+    } else {
+      slotAnnotations.public_posting_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Charlie drafts the posting-review procedure: who drafts, who reviews for FCI, who approves, and how a problematic post is removed.",
+      };
+    }
+
+    // ─── Objective [d] · review_evidence ───
+    if (surfaces === "none_active") {
+      slotAnnotations.review_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "No active public channels yet — the sample review will be a stub: the procedure pre-approved by leadership, ready for the first real post. Charlie captures the sign-off email as the evidence.",
+      };
+    } else if (reviewState === "formal_signoff") {
+      slotAnnotations.review_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Forward a recent approval email or screenshot of the review thread — Charlie tags it to the procedure and the right objective.",
+      };
+    } else {
+      slotAnnotations.review_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "The simplest sample: the next time you publish anything, take a screenshot of the approval message (or run one through Charlie's review prompt) and upload it here.",
+      };
+    }
+
+    // ─── Objective [d]/[e] · dynamic content-audit log ───
+    if (exposure === "customers_named" || exposure === "unsure_legacy") {
+      dynamicSlots.push({
+        key: "public_content_audit_log",
+        label: "Public content audit log",
+        hint: "One pass across each public surface noting what was reviewed, what was found, and what was removed or kept. Two columns is enough: surface + finding/action. Required when legacy content may include FCI.",
+        kind: "procedure_doc",
+        satisfies: ["d", "e"],
+        required: true,
+        destinations: [
+          {
+            type: "generate",
+            label: "Have Charlie draft the audit log",
+            filename: "public-content-audit-log.md",
+            format: "markdown",
+          },
+          {
+            type: "upload",
+            label: "Upload an existing audit log",
+            describes:
+              "PDF, Markdown, or DOCX listing each public surface, what was reviewed, and what action was taken.",
+            accept: [
+              "application/pdf",
+              "text/markdown",
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ],
+          },
+        ],
+      });
+    }
+
+    const situationSummary = [
+      `Public surfaces: ${PUBLIC_SURFACES_LABEL[surfaces] ?? "unspecified"}.`,
+      `Posters scope: ${POSTERS_SCOPE_LABEL[posters] ?? "unspecified"}.`,
+      `Review state: ${POSTING_REVIEW_STATE_LABEL[reviewState] ?? "unspecified"}.`,
+      `FCI-exposure risk: ${FCI_EXPOSURE_RISK_LABEL[exposure] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's public-posting posture",
+      `- Public surfaces: ${PUBLIC_SURFACES_LABEL[answers.public_surfaces] ?? "(not specified)"}`,
+      `- Authorized posters: ${POSTERS_SCOPE_LABEL[answers.posters_scope] ?? "(not specified)"}`,
+      `- Current review state: ${POSTING_REVIEW_STATE_LABEL[answers.posting_review_state] ?? "(not specified)"}`,
+      `- FCI-exposure risk: ${FCI_EXPOSURE_RISK_LABEL[answers.fci_exposure_risk] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the surface scope in one sentence, then drive toward the next missing objective letter. If `posters_scope = many_can_post` OR `posting_review_state = publish_freely`, name those as the priority L1 findings and walk the smallest remediation path (tightened roster + minimal review workflow). If `fci_exposure_risk = customers_named` or `unsure_legacy`, the content-audit log is required for [d]/[e] — propose drafting it alongside the procedure. If `public_surfaces = none_active`, the procedure must still exist before the first post; treat the leadership pre-approval email as the sample review.",
+    ].join("\n");
+  },
+};
+
 export const practiceSpecs: Record<string, PracticeSpec> = {
   "AC.L1-3.1.1": {
     controlId: "AC.L1-3.1.1",
@@ -2640,6 +2971,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
       },
     ],
     keyReferences: ["FAR 52.204-21(b)(1)(iv)", "NIST SP 800-171 Rev 2 §3.1.22"],
+    intake: ac3122Intake,
   },
 
   // ────────────────────────────────────────────────────────────────────────
