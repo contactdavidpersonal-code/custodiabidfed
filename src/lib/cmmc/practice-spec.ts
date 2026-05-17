@@ -4579,6 +4579,889 @@ const sc3135Intake: PracticeIntakeSpec = {
   },
 };
 
+// ════════════════════════════════════════════════════════════════════════
+// SI domain intakes (System & Information Integrity)
+//
+// Four L1 practices: flaw remediation (3.14.1), malicious code protection
+// (3.14.2), AV updates (3.14.4), periodic & real-time scans (3.14.5).
+// Heavy overlap — patch management + AV product drive everything. We
+// gather the shared facts in 3.14.1 and 3.14.2 and reference them via
+// charlieBrief in 3.14.4 / 3.14.5.
+// ════════════════════════════════════════════════════════════════════════
+
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — SI.L1-3.14.1 (Flaw Remediation)
+//
+// Six objectives [a]-[f] paired as time-defined / time-met for identify,
+// report, correct. Patch policy + log + auto-update screenshot is the
+// standard package.
+//
+// Anchored to:
+//   • NIST SP 800-171A Rev 2 §3.14.1 determination statements [a]-[f]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, SI.L1-b.1.xiv
+//   • FAR 52.204-21(b)(1)(xiv)
+// ────────────────────────────────────────────────────────────────────────
+const SI3141_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "patch_management_approach",
+    objectives: ["b", "d", "f"],
+    prompt: "How do you actually push patches to endpoints today?",
+    helpText:
+      "Pick whatever matches reality. \"Auto-updates on, no central manager\" is a real and valid answer for solo / small primes.",
+    regAnchor:
+      "NIST SP 800-171A §3.14.1 [b]/[d]/[f]; CMMC L1 SAG (v2.13) SI.L1-b.1.xiv Further Discussion",
+    regQuote:
+      "Determine if: [b] system flaws are identified within the specified time frame; [d] system flaws are reported within the specified time frame; [f] system flaws are corrected within the specified time frame.",
+    options: [
+      {
+        value: "intune_or_mdm",
+        label: "Microsoft Intune / MDM-managed update rings",
+        description:
+          "Intune, Jamf, Kandji, Google Endpoint Manager push patches centrally with reporting.",
+      },
+      {
+        value: "auto_updates_on",
+        label: "OS auto-updates on, no central manager",
+        description:
+          "Windows Update / macOS Software Update is enabled on each device; no MDM in between.",
+      },
+      {
+        value: "manual_with_log",
+        label: "Manual patch runs, logged",
+        description:
+          "Someone (you / an MSP) installs updates on a cadence and writes them down.",
+      },
+      {
+        value: "ad_hoc_no_log",
+        label: "Ad-hoc — patches happen but aren't tracked",
+        description:
+          "This is a FINDING for [b]/[d]/[f] — Charlie will walk the smallest fix (turn on auto-updates + start a 1-row-per-month patch log).",
+      },
+    ],
+  },
+  {
+    id: "patch_cadence_state",
+    objectives: ["a", "c", "e"],
+    prompt: "Is your patching cadence written down anywhere with timeframes per severity?",
+    helpText:
+      "The word \"specified\" in NIST 3.14.1 is doing the work — you must commit to a written timeframe (e.g. critical = 7 days). It can be one paragraph.",
+    regAnchor:
+      "NIST SP 800-171A §3.14.1 [a]/[c]/[e]; CMMC L1 SAG (v2.13) SI.L1-b.1.xiv Further Discussion",
+    regQuote:
+      "Determine if: [a] the time within which to identify system flaws is specified; [c] the time within which to report system flaws is specified; [e] the time within which to correct system flaws is specified.",
+    options: [
+      {
+        value: "documented_with_timeframes",
+        label: "Yes — policy specifies timeframes per severity",
+        description: "Critical = 7d, high = 30d, medium = 90d (or similar).",
+      },
+      {
+        value: "informal_known",
+        label: "Informal — we patch promptly but it isn't written down",
+        description:
+          "Charlie will draft the one-paragraph policy from the default 7/30/90 rubric.",
+      },
+      {
+        value: "none",
+        label: "No written cadence at all",
+        description:
+          "Same fix — Charlie drafts the policy. Takes 30 seconds.",
+      },
+    ],
+  },
+  {
+    id: "patch_log_state",
+    objectives: ["b", "d", "f"],
+    prompt: "Do you have any record of recent patch runs?",
+    helpText:
+      "Last 90 days of patch activity is plenty. MDM compliance reports count. \"Nothing written down\" is fine — Charlie will draft from what you remember.",
+    regAnchor:
+      "NIST SP 800-171A §3.14.1 [b]/[d]/[f]; CMMC L1 SAG (v2.13) SI.L1-b.1.xiv Further Discussion",
+    regQuote:
+      "Determine if: [b] system flaws are identified within the specified time frame; [d] reported; [f] corrected. … Evidence may include patch logs, ticket records, automated update compliance reports.",
+    options: [
+      {
+        value: "mdm_report",
+        label: "MDM / Intune compliance report",
+      },
+      {
+        value: "ticket_history",
+        label: "Ticket / change-record history",
+      },
+      {
+        value: "spreadsheet_log",
+        label: "Spreadsheet log we keep ourselves",
+      },
+      {
+        value: "memory_only",
+        label: "Nothing written — but I remember recent runs",
+        description:
+          "Charlie will draft a 90-day log from your memory + Windows Update history screenshots.",
+      },
+      {
+        value: "none",
+        label: "Nothing at all — and no memory of recent patching",
+        description:
+          "FINDING — Charlie will help you start a log this week + verify auto-updates are on.",
+      },
+    ],
+  },
+];
+
+const SI3141_APPROACH_LABEL: Record<string, string> = {
+  intune_or_mdm: "MDM-managed update rings (Intune/Jamf/Kandji/Google)",
+  auto_updates_on: "OS auto-updates on, no central manager",
+  manual_with_log: "manual patch runs, logged",
+  ad_hoc_no_log: "ad-hoc patching, not tracked (FINDING)",
+};
+
+const SI3141_CADENCE_LABEL: Record<string, string> = {
+  documented_with_timeframes: "documented policy with per-severity timeframes",
+  informal_known: "informal cadence, not written down",
+  none: "no written cadence",
+};
+
+const SI3141_LOG_LABEL: Record<string, string> = {
+  mdm_report: "MDM / Intune compliance reports",
+  ticket_history: "ticket / change-record history",
+  spreadsheet_log: "self-maintained spreadsheet log",
+  memory_only: "no written log — relying on memory + Windows Update history",
+  none: "no log and no recent memory (FINDING)",
+};
+
+const si3141Intake: PracticeIntakeSpec = {
+  preamble:
+    "Three quick questions about how you patch and whether the cadence is documented. Each maps to a NIST 800-171A determination statement for SI.L1-3.14.1. The trick is the word \"specified\" — even one paragraph naming timeframes per severity satisfies [a]/[c]/[e]; Charlie can draft it in 30 seconds.",
+  questions: SI3141_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // Patch policy slot
+    if (answers.patch_cadence_state === "documented_with_timeframes") {
+      slotAnnotations.patch_policy = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "You already have a documented policy — just upload it. Charlie will verify it covers identify/report/correct timeframes per severity.",
+      };
+    } else {
+      slotAnnotations.patch_policy = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Charlie will draft a one-page patch policy from the default 7/30/90 rubric (critical/high/medium) plus your patching approach above. Covers [a]/[c]/[e] in one shot.",
+      };
+    }
+
+    // Patch log slot
+    const log = answers.patch_log_state;
+    if (log === "mdm_report") {
+      slotAnnotations.patch_log = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "MDM compliance report — connect Microsoft 365 or Google to pull Intune update-compliance / endpoint-update reports directly. Assessor-grade evidence for [b]/[d]/[f].",
+      };
+    } else if (log === "ticket_history" || log === "spreadsheet_log") {
+      slotAnnotations.patch_log = {
+        recommendedDestinationIdx: 2,
+        contextNote:
+          log === "ticket_history"
+            ? "Upload the ticket export for the last 90 days of patch-related changes. PDF or CSV from your helpdesk works."
+            : "Upload your existing spreadsheet — Charlie will verify it captures date / system / severity / time-to-deploy and patch any gaps.",
+      };
+    } else if (log === "memory_only") {
+      slotAnnotations.patch_log = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Charlie will walk you through reconstructing a 90-day log from Windows Update history (Settings → Update history) plus macOS Software Update history. Takes 5 minutes.",
+      };
+    } else if (log === "none") {
+      slotAnnotations.patch_log = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "FINDING for [b]/[d]/[f]. Smallest fix: turn on auto-updates everywhere TODAY, then Charlie will draft a 1-row patch log entry for this week to start the record.",
+      };
+    }
+
+    // Auto-update evidence slot
+    const ap = answers.patch_management_approach;
+    if (ap === "intune_or_mdm") {
+      slotAnnotations.auto_update_evidence = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "MDM-managed — connect Microsoft 365 / Google to pull update-ring policies + per-device compliance in one shot. Charlie maps that to [b]/[f].",
+      };
+    } else if (ap === "auto_updates_on") {
+      slotAnnotations.auto_update_evidence = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "OS auto-updates — upload one screenshot per OS family: Windows (Settings → Windows Update → \"You're up to date\"), macOS (Settings → General → Software Update → \"Automatically install updates\" toggle on).",
+      };
+    } else if (ap === "manual_with_log") {
+      slotAnnotations.auto_update_evidence = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Manual patching — upload a screenshot of the last patch run's success state (Windows Update history showing recent installs, or your patching tool's report).",
+      };
+    } else if (ap === "ad_hoc_no_log") {
+      slotAnnotations.auto_update_evidence = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "FINDING — smallest fix: enable Windows Update auto-install + macOS auto-install on every endpoint, then screenshot the settings page. That converts the finding to compliance in one afternoon.",
+      };
+    }
+
+    const situationSummary = [
+      `Patch approach: ${SI3141_APPROACH_LABEL[answers.patch_management_approach] ?? "unspecified"}.`,
+      `Cadence policy: ${SI3141_CADENCE_LABEL[answers.patch_cadence_state] ?? "unspecified"}.`,
+      `Patch log: ${SI3141_LOG_LABEL[answers.patch_log_state] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's patching posture",
+      `- Patch approach: ${SI3141_APPROACH_LABEL[answers.patch_management_approach] ?? "(not specified)"}`,
+      `- Cadence policy: ${SI3141_CADENCE_LABEL[answers.patch_cadence_state] ?? "(not specified)"}`,
+      `- Patch log: ${SI3141_LOG_LABEL[answers.patch_log_state] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the patching posture in one sentence, then drive toward the missing objective. If `patch_cadence_state` is informal or none, the single biggest unlock is letting Charlie draft the one-page policy with the 7/30/90 rubric — that satisfies [a]/[c]/[e] in 30 seconds. If `patch_management_approach = ad_hoc_no_log` OR `patch_log_state = none`, name the finding and walk the smallest fix (turn on auto-updates + start a log this week).",
+    ].join("\n");
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — SI.L1-3.14.2 (Malicious Code Protection)
+//
+// Two objectives: [a] designated locations identified; [b] protection
+// provided at those locations. AV inventory + screenshot + policy is the
+// standard package. Modern Windows ships with Defender for free.
+//
+// Anchored to:
+//   • NIST SP 800-171A Rev 2 §3.14.2 determination statements [a], [b]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, SI.L1-b.1.xv
+//   • FAR 52.204-21(b)(1)(xv)
+// ────────────────────────────────────────────────────────────────────────
+const SI3142_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "av_product",
+    objectives: ["b"],
+    prompt: "What antivirus / endpoint protection is actually running on devices that touch FCI?",
+    helpText:
+      "Pick the strongest answer that's true. Windows Defender is fine — it's free, built-in, and meets L1 expectations.",
+    regAnchor:
+      "NIST SP 800-171A §3.14.2 [b]; CMMC L1 SAG (v2.13) SI.L1-b.1.xv Further Discussion",
+    regQuote:
+      "Determine if: [b] protection from malicious code at designated locations is provided. … Anti-virus and anti-malware solutions provide protection from malicious code.",
+    options: [
+      {
+        value: "defender_built_in",
+        label: "Microsoft Defender (built into Windows)",
+        description: "Free, on by default. Fully acceptable at L1.",
+      },
+      {
+        value: "edr_commercial",
+        label: "Commercial EDR (CrowdStrike, SentinelOne, Sophos, etc.)",
+      },
+      {
+        value: "av_commercial",
+        label: "Commercial AV (Bitdefender, Malwarebytes, Norton, etc.)",
+      },
+      {
+        value: "mac_xprotect_only",
+        label: "Macs only — XProtect + Gatekeeper (built-in)",
+        description:
+          "Apple's built-in protections are acceptable at L1 if the fleet is all macOS.",
+      },
+      {
+        value: "mixed",
+        label: "Mix — different products on different devices",
+      },
+      {
+        value: "none",
+        label: "Nothing is running",
+        description:
+          "FINDING for [b] — smallest fix: turn on Windows Defender (it's already there, just not enabled) or install free Defender on macOS via Intune.",
+      },
+    ],
+  },
+  {
+    id: "av_coverage",
+    objectives: ["a", "b"],
+    prompt: "Is AV running on EVERY device that touches FCI?",
+    helpText:
+      "Including BYOD laptops, contractor machines, anything that opens a contract email or downloads an SF-330. The answer determines whether the inventory has gaps.",
+    regAnchor:
+      "NIST SP 800-171A §3.14.2 [a]/[b]; CMMC L1 SAG (v2.13) SI.L1-b.1.xv Further Discussion",
+    regQuote:
+      "Determine if: [a] designated locations for malicious code protection are identified; [b] protection from malicious code at designated locations is provided.",
+    options: [
+      {
+        value: "every_endpoint",
+        label: "Yes — every endpoint, no exceptions",
+      },
+      {
+        value: "company_owned_only",
+        label: "Company-owned only — no BYOD touches FCI",
+        description:
+          "Pair with a written BYOD-prohibited statement to close [a]/[b].",
+      },
+      {
+        value: "byod_uncovered",
+        label: "BYOD devices touch FCI without managed AV",
+        description:
+          "FINDING — smallest fix: either enroll BYOD into MDM with Defender, or formally prohibit BYOD for FCI work.",
+      },
+      {
+        value: "unknown",
+        label: "Not sure — there are probably gaps",
+        description:
+          "Charlie will walk you through identifying every endpoint that touches FCI.",
+      },
+    ],
+  },
+  {
+    id: "av_policy_state",
+    objectives: ["a"],
+    prompt: "Is there a written policy that requires AV on every endpoint?",
+    helpText:
+      "A two-paragraph policy is enough. Charlie can draft one from your answers above.",
+    regAnchor:
+      "NIST SP 800-171A §3.14.2 [a]; CMMC L1 SAG (v2.13) SI.L1-b.1.xv Further Discussion",
+    regQuote:
+      "Determine if: [a] designated locations for malicious code protection are identified. … Policy may specify which systems require protection.",
+    options: [
+      {
+        value: "documented",
+        label: "Yes — we have an AV / endpoint protection policy",
+      },
+      {
+        value: "informal",
+        label: "Informal — everyone knows but it isn't written",
+        description: "Charlie will draft the two-paragraph policy.",
+      },
+      {
+        value: "none",
+        label: "No policy at all",
+        description: "Same fix — Charlie drafts it.",
+      },
+    ],
+  },
+];
+
+const SI3142_PRODUCT_LABEL: Record<string, string> = {
+  defender_built_in: "Microsoft Defender (built-in)",
+  edr_commercial: "commercial EDR (CrowdStrike/SentinelOne/Sophos)",
+  av_commercial: "commercial AV (Bitdefender/Malwarebytes/Norton)",
+  mac_xprotect_only: "macOS XProtect + Gatekeeper",
+  mixed: "mix of products across devices",
+  none: "no AV running (FINDING)",
+};
+
+const SI3142_COVERAGE_LABEL: Record<string, string> = {
+  every_endpoint: "every endpoint covered",
+  company_owned_only: "company-owned only, BYOD prohibited for FCI",
+  byod_uncovered: "BYOD touches FCI without managed AV (FINDING)",
+  unknown: "coverage unknown — probable gaps",
+};
+
+const SI3142_POLICY_LABEL: Record<string, string> = {
+  documented: "AV policy documented",
+  informal: "informal AV expectation, not written",
+  none: "no AV policy",
+};
+
+const si3142Intake: PracticeIntakeSpec = {
+  preamble:
+    "Three quick questions about endpoint malicious-code protection. Each maps to a NIST 800-171A determination statement for SI.L1-3.14.2. Modern Windows ships with Defender for free — for most small primes this practice is trivially satisfied; we just need the inventory, a screenshot, and a one-page policy.",
+  questions: SI3142_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // Endpoint AV inventory
+    if (answers.av_product === "defender_built_in" || answers.av_product === "mac_xprotect_only") {
+      slotAnnotations.endpoint_av_inventory = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          answers.av_product === "defender_built_in"
+            ? "Defender built-in — connect Microsoft 365 to pull endpoint AV state per device directly. One-click assessor-grade evidence for [a]/[b]."
+            : "macOS XProtect — Charlie will draft a per-device inventory noting XProtect + Gatekeeper enabled, with last update timestamps from System Settings.",
+      };
+    } else if (answers.av_product === "edr_commercial" || answers.av_product === "av_commercial") {
+      slotAnnotations.endpoint_av_inventory = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Commercial AV/EDR — Charlie will draft the inventory; you'll fill product + real-time state from the vendor console. Most vendor portals have a one-click \"device list\" export that drops in cleanly.",
+      };
+    } else if (answers.av_product === "mixed") {
+      slotAnnotations.endpoint_av_inventory = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Mixed products — Charlie's inventory will have one row per endpoint with the specific AV in use. Pair with one screenshot per product family for [b].",
+      };
+    } else if (answers.av_product === "none") {
+      slotAnnotations.endpoint_av_inventory = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "FINDING for [b]: no AV running. Smallest fix: enable Windows Defender on every Windows endpoint (Settings → Privacy & Security → Windows Security → \"Turn on\"). That's free, immediate, and converts the finding to compliance.",
+      };
+    }
+
+    // BYOD coverage handling
+    if (answers.av_coverage === "company_owned_only") {
+      slotAnnotations.av_policy = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Add a one-line BYOD prohibition to the policy: \"Personal devices may not access FCI; FCI work is performed only on company-issued endpoints with managed AV.\" Charlie includes this automatically.",
+      };
+    } else if (answers.av_coverage === "byod_uncovered") {
+      slotAnnotations.endpoint_av_inventory = {
+        ...(slotAnnotations.endpoint_av_inventory ?? {}),
+        contextNote:
+          (slotAnnotations.endpoint_av_inventory?.contextNote ?? "") +
+          " ALSO: BYOD-uncovered finding for [a]. Smallest fix is the BYOD prohibition statement; otherwise enroll personal devices into MDM with Defender.",
+      };
+    }
+
+    // AV screenshot slot — keep simple guidance
+    if (answers.av_product === "defender_built_in") {
+      slotAnnotations.av_protection_screenshot = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Windows Defender screenshot path: Start → Windows Security → Virus & threat protection → screenshot showing all four toggles green (Real-time, Cloud-delivered, Automatic sample submission, Tamper Protection).",
+      };
+    } else if (answers.av_product === "mac_xprotect_only") {
+      slotAnnotations.av_protection_screenshot = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "macOS path: System Settings → Privacy & Security → Security → screenshot of Gatekeeper set to App Store + identified developers, plus System Settings → General → Software Update showing recent XProtect background updates.",
+      };
+    } else if (answers.av_product === "none") {
+      slotAnnotations.av_protection_screenshot = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Take the screenshot AFTER enabling Defender — it'll show real-time protection toggled on. That's the fix evidence.",
+      };
+    }
+
+    // Policy slot routing
+    if (answers.av_policy_state === "documented") {
+      slotAnnotations.av_policy = {
+        ...(slotAnnotations.av_policy ?? {}),
+        recommendedDestinationIdx: 1,
+        contextNote:
+          (slotAnnotations.av_policy?.contextNote ?? "") +
+          " You already have a policy — upload it. Charlie will verify it names designated locations + requires real-time protection.",
+      };
+    } else {
+      slotAnnotations.av_policy = {
+        ...(slotAnnotations.av_policy ?? {}),
+        recommendedDestinationIdx: 0,
+        contextNote:
+          (slotAnnotations.av_policy?.contextNote ?? "") +
+          " Charlie will draft a two-paragraph AV policy from your answers — naming designated locations, requiring real-time protection, and (if applicable) the BYOD posture.",
+      };
+    }
+
+    const situationSummary = [
+      `AV product: ${SI3142_PRODUCT_LABEL[answers.av_product] ?? "unspecified"}.`,
+      `Coverage: ${SI3142_COVERAGE_LABEL[answers.av_coverage] ?? "unspecified"}.`,
+      `Policy: ${SI3142_POLICY_LABEL[answers.av_policy_state] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's AV posture",
+      `- AV product: ${SI3142_PRODUCT_LABEL[answers.av_product] ?? "(not specified)"}`,
+      `- Coverage: ${SI3142_COVERAGE_LABEL[answers.av_coverage] ?? "(not specified)"}`,
+      `- Policy state: ${SI3142_POLICY_LABEL[answers.av_policy_state] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the AV posture in one sentence. If `av_product = none`, name that as the priority finding and walk the smallest fix (enable Defender — already on every Windows endpoint, just not turned on). If `av_coverage = byod_uncovered`, the smallest fix is the BYOD-prohibited statement, not enrolling devices. If `av_policy_state` is informal or none, offer the two-paragraph draft immediately. These same facts also drive SI.L1-3.14.4 and 3.14.5 — if those practices haven't been answered yet, Charlie can carry over the AV product fact instead of re-asking.",
+    ].join("\n");
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — SI.L1-3.14.4 (Update Malicious Code Protection)
+//
+// One objective [a]: AV mechanisms updated when new releases available.
+// Defender / modern AV auto-updates by default — assessor just wants
+// confirmation it isn't disabled.
+//
+// Anchored to:
+//   • NIST SP 800-171A Rev 2 §3.14.4 determination statement [a]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, SI.L1-b.1.xvi
+//   • FAR 52.204-21(b)(1)(xvi)
+// ────────────────────────────────────────────────────────────────────────
+const SI3144_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "av_update_mode",
+    objectives: ["a"],
+    prompt: "How do AV definitions get updated on your endpoints?",
+    helpText:
+      "Modern AV products auto-update by default. Pick whatever's actually true.",
+    regAnchor:
+      "NIST SP 800-171A §3.14.4 [a]; CMMC L1 SAG (v2.13) SI.L1-b.1.xvi Further Discussion",
+    regQuote:
+      "Determine if: [a] malicious code protection mechanisms are updated when new releases are available. … Updates may be automatic via the product or pushed through a management system.",
+    options: [
+      {
+        value: "auto_default",
+        label: "Auto-updates are on (Defender / vendor default)",
+        description: "The factory default for almost every AV product.",
+      },
+      {
+        value: "mdm_pushed",
+        label: "Pushed via MDM / Intune / endpoint manager",
+      },
+      {
+        value: "manual_user_runs",
+        label: "Users run updates manually",
+        description:
+          "Risky — if a user forgets, definitions go stale. Charlie will recommend turning on auto-updates.",
+      },
+      {
+        value: "unknown",
+        label: "Not sure",
+        description: "Charlie will walk you through verifying it.",
+      },
+    ],
+  },
+  {
+    id: "av_update_verification",
+    objectives: ["a"],
+    prompt: "How do you confirm definitions are actually current?",
+    helpText:
+      "An MDM compliance report, a quick screenshot, or \"I checked last week\" — any verification mechanism counts.",
+    regAnchor:
+      "NIST SP 800-171A §3.14.4 [a]; CMMC L1 SAG (v2.13) SI.L1-b.1.xvi Further Discussion",
+    regQuote:
+      "Determine if: [a] malicious code protection mechanisms are updated when new releases are available.",
+    options: [
+      {
+        value: "mdm_compliance_report",
+        label: "MDM compliance report shows update timestamps",
+      },
+      {
+        value: "vendor_console",
+        label: "Vendor console / dashboard with last-update times",
+      },
+      {
+        value: "manual_spot_check",
+        label: "Manual spot check (we look every so often)",
+      },
+      {
+        value: "never_verified",
+        label: "Never verified — we assume it's working",
+        description:
+          "Smallest fix: take ONE screenshot today of Defender's About page showing the definition timestamp. That's the [a] evidence.",
+      },
+    ],
+  },
+];
+
+const SI3144_MODE_LABEL: Record<string, string> = {
+  auto_default: "auto-updates on (vendor default)",
+  mdm_pushed: "MDM-pushed updates",
+  manual_user_runs: "manual user-driven updates (risky)",
+  unknown: "update mode unknown",
+};
+
+const SI3144_VERIFY_LABEL: Record<string, string> = {
+  mdm_compliance_report: "MDM compliance report verifies update timestamps",
+  vendor_console: "vendor console / dashboard",
+  manual_spot_check: "manual spot check",
+  never_verified: "never verified (FINDING-adjacent)",
+};
+
+const si3144Intake: PracticeIntakeSpec = {
+  preamble:
+    "Two quick questions about AV definition updates. Both map to NIST 800-171A §3.14.4 [a]. Modern Defender / vendor AV auto-updates by default — the assessor just wants one screenshot confirming definitions are current.",
+  questions: SI3144_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // Update screenshot slot
+    if (answers.av_update_mode === "mdm_pushed" || answers.av_update_verification === "mdm_compliance_report") {
+      slotAnnotations.av_update_screenshot = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "MDM-managed — connect Microsoft 365 / Google to pull definition update timestamps across all managed endpoints. Single click closes [a] for the whole fleet.",
+      };
+    } else if (answers.av_update_mode === "auto_default") {
+      slotAnnotations.av_update_screenshot = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Defender path: Start → Windows Security → Virus & threat protection → Virus & threat protection updates → screenshot showing definition version + \"Last update: [recent timestamp]\". One screenshot covers [a].",
+      };
+    } else if (answers.av_update_mode === "manual_user_runs") {
+      slotAnnotations.av_update_screenshot = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Manual updates — smallest fix: turn on auto-updates in Defender today (Group Policy or Intune), then screenshot. Risk of going stale is too high to leave on manual.",
+      };
+    } else if (answers.av_update_mode === "unknown") {
+      slotAnnotations.av_update_screenshot = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Take a Defender screenshot today: Start → Windows Security → Virus & threat protection updates. The page shows mode (auto/manual) + last update timestamp in one view.",
+      };
+    }
+
+    // Policy note slot (optional)
+    slotAnnotations.av_update_policy_note = {
+      recommendedDestinationIdx: 0,
+      contextNote:
+        "If your SI.L1-3.14.2 AV policy already states auto-updates are required, just point to it (write \"see av-policy.md §[section]\"). Charlie can add the one-line note in 5 seconds.",
+    };
+
+    const situationSummary = [
+      `AV update mode: ${SI3144_MODE_LABEL[answers.av_update_mode] ?? "unspecified"}.`,
+      `Update verification: ${SI3144_VERIFY_LABEL[answers.av_update_verification] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's AV update posture",
+      `- Update mode: ${SI3144_MODE_LABEL[answers.av_update_mode] ?? "(not specified)"}`,
+      `- Verification: ${SI3144_VERIFY_LABEL[answers.av_update_verification] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the update posture in one sentence. If `av_update_mode = manual_user_runs` OR `av_update_verification = never_verified`, name the small risk and walk the 60-second fix (turn on auto-updates + one screenshot). If the SI.L1-3.14.2 AV policy already exists, point to it for the policy note rather than drafting a new file.",
+    ].join("\n");
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — SI.L1-3.14.5 (Periodic & Real-Time Scans)
+//
+// Three objectives: [a] scan frequency defined; [b] scans performed at
+// that frequency; [c] real-time scans on download/open/execute.
+// Defender's scheduled scan + real-time protection screenshots are the
+// canonical evidence.
+//
+// Anchored to:
+//   • NIST SP 800-171A Rev 2 §3.14.5 determination statements [a], [b], [c]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, SI.L1-b.1.xvii
+//   • FAR 52.204-21(b)(1)(xvii)
+// ────────────────────────────────────────────────────────────────────────
+const SI3145_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "scheduled_scan_state",
+    objectives: ["a", "b"],
+    prompt: "How often does a full system scan run on FCI-touching endpoints?",
+    helpText:
+      "Defender runs a weekly Quick Scan by default. Most AV products schedule something — pick what's actually configured.",
+    regAnchor:
+      "NIST SP 800-171A §3.14.5 [a]/[b]; CMMC L1 SAG (v2.13) SI.L1-b.1.xvii Further Discussion",
+    regQuote:
+      "Determine if: [a] the frequency for malicious code scans is defined; [b] malicious code scans are performed with the defined frequency.",
+    options: [
+      {
+        value: "daily_quick",
+        label: "Daily — quick scans daily, full weekly",
+      },
+      {
+        value: "weekly_full",
+        label: "Weekly — full system scan",
+        description: "Defender's default cadence. Most common at L1.",
+      },
+      {
+        value: "monthly_full",
+        label: "Monthly full scan",
+      },
+      {
+        value: "ad_hoc",
+        label: "Ad-hoc — no schedule, scans only on demand",
+        description:
+          "FINDING for [a]/[b] — smallest fix: open Defender → set weekly scheduled Quick Scan.",
+      },
+      {
+        value: "unknown",
+        label: "Not sure — let's check together",
+      },
+    ],
+  },
+  {
+    id: "realtime_protection_state",
+    objectives: ["c"],
+    prompt: "Is real-time / on-access scanning enabled on every endpoint?",
+    helpText:
+      "Real-time protection scans files as they're downloaded, opened, or executed. Defender has this on by default.",
+    regAnchor:
+      "NIST SP 800-171A §3.14.5 [c]; CMMC L1 SAG (v2.13) SI.L1-b.1.xvii Further Discussion",
+    regQuote:
+      "Determine if: [c] real-time malicious code scans of files from external sources are performed as files are downloaded, opened, or executed.",
+    options: [
+      {
+        value: "enabled_everywhere",
+        label: "Yes — real-time protection on across the fleet",
+      },
+      {
+        value: "mostly_enabled",
+        label: "Mostly — a few endpoints may have it off",
+        description:
+          "Finding-adjacent — Charlie will help you identify and re-enable the gaps.",
+      },
+      {
+        value: "disabled_known",
+        label: "Off — we disabled it for performance / dev reasons",
+        description:
+          "FINDING for [c] — smallest fix: turn it back on. The performance hit on modern hardware is negligible.",
+      },
+      {
+        value: "unknown",
+        label: "Not sure",
+      },
+    ],
+  },
+  {
+    id: "scan_policy_state",
+    objectives: ["a"],
+    prompt: "Does your AV policy state the scan frequency in writing?",
+    helpText:
+      "One sentence like \"Full scans run weekly; real-time protection is enabled on every endpoint\" is enough.",
+    regAnchor:
+      "NIST SP 800-171A §3.14.5 [a]; CMMC L1 SAG (v2.13) SI.L1-b.1.xvii Further Discussion",
+    regQuote:
+      "Determine if: [a] the frequency for malicious code scans is defined.",
+    options: [
+      {
+        value: "documented",
+        label: "Yes — frequency is documented in the AV policy",
+      },
+      {
+        value: "implied",
+        label: "Implied — policy says \"keep AV running\" but no frequency",
+        description: "Charlie will add the one-line specific frequency.",
+      },
+      {
+        value: "none",
+        label: "No policy or no frequency stated",
+        description:
+          "Same fix — Charlie adds it (or drafts a fresh two-paragraph policy if 3.14.2 has none).",
+      },
+    ],
+  },
+];
+
+const SI3145_SCHEDULE_LABEL: Record<string, string> = {
+  daily_quick: "daily quick scans + weekly full",
+  weekly_full: "weekly full scan (Defender default)",
+  monthly_full: "monthly full scan",
+  ad_hoc: "ad-hoc / on-demand only (FINDING)",
+  unknown: "scan cadence unknown",
+};
+
+const SI3145_REALTIME_LABEL: Record<string, string> = {
+  enabled_everywhere: "real-time protection enabled fleet-wide",
+  mostly_enabled: "real-time protection mostly enabled (some gaps)",
+  disabled_known: "real-time protection disabled (FINDING)",
+  unknown: "real-time protection state unknown",
+};
+
+const SI3145_POLICY_LABEL: Record<string, string> = {
+  documented: "scan frequency documented in AV policy",
+  implied: "policy mentions AV but no specific frequency",
+  none: "no policy or no frequency stated",
+};
+
+const si3145Intake: PracticeIntakeSpec = {
+  preamble:
+    "Three quick questions about scan cadence + real-time protection. Each maps to a NIST 800-171A determination statement for SI.L1-3.14.5. Defender's defaults (weekly scan + always-on real-time protection) satisfy this practice cleanly — we just need two screenshots and one policy line.",
+  questions: SI3145_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // Scheduled scan slot
+    const sch = answers.scheduled_scan_state;
+    if (sch === "weekly_full" || sch === "daily_quick" || sch === "monthly_full") {
+      slotAnnotations.scan_schedule_screenshot = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Defender path: Task Scheduler → Microsoft → Windows → Windows Defender → \"Windows Defender Scheduled Scan\" → screenshot the Triggers tab showing the schedule. Alternatively, MDM scan-policy screenshot also covers [a]/[b].",
+      };
+    } else if (sch === "ad_hoc") {
+      slotAnnotations.scan_schedule_screenshot = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "FINDING for [a]/[b]: no schedule. Smallest fix: open Defender → Virus & threat protection → Manage settings → set Quick Scan to weekly. Then screenshot. 60-second fix.",
+      };
+    } else if (sch === "unknown") {
+      slotAnnotations.scan_schedule_screenshot = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Open Defender → Protection history. If you see recent scheduled scan entries you're golden — screenshot that view. If nothing's scheduled, set weekly and screenshot.",
+      };
+    }
+
+    // Real-time scan slot
+    const rt = answers.realtime_protection_state;
+    if (rt === "enabled_everywhere" || rt === "mostly_enabled") {
+      slotAnnotations.realtime_scan_screenshot = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Defender path: Start → Windows Security → Virus & threat protection → Manage settings → screenshot showing Real-time protection toggle ON. That's the [c] evidence.",
+      };
+    } else if (rt === "disabled_known") {
+      slotAnnotations.realtime_scan_screenshot = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "FINDING for [c]: real-time protection is off. Turn it back on (Settings → Windows Security → Virus & threat protection → Manage settings → Real-time protection ON), then screenshot. Modern Defender has negligible performance impact.",
+      };
+    } else if (rt === "unknown") {
+      slotAnnotations.realtime_scan_screenshot = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Check now: Start → Windows Security → Virus & threat protection. The first card shows real-time protection state. Screenshot it.",
+      };
+    }
+
+    // Policy slot
+    if (answers.scan_policy_state === "documented") {
+      slotAnnotations.scan_frequency_policy = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Upload your existing AV policy — Charlie will verify the frequency statement covers [a].",
+      };
+    } else {
+      slotAnnotations.scan_frequency_policy = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Charlie will add a one-line frequency statement. If your SI.L1-3.14.2 AV policy already exists, the line gets appended there rather than starting a new file.",
+      };
+    }
+
+    const situationSummary = [
+      `Scan cadence: ${SI3145_SCHEDULE_LABEL[answers.scheduled_scan_state] ?? "unspecified"}.`,
+      `Real-time protection: ${SI3145_REALTIME_LABEL[answers.realtime_protection_state] ?? "unspecified"}.`,
+      `Policy: ${SI3145_POLICY_LABEL[answers.scan_policy_state] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's scan posture",
+      `- Scheduled scans: ${SI3145_SCHEDULE_LABEL[answers.scheduled_scan_state] ?? "(not specified)"}`,
+      `- Real-time protection: ${SI3145_REALTIME_LABEL[answers.realtime_protection_state] ?? "(not specified)"}`,
+      `- Policy: ${SI3145_POLICY_LABEL[answers.scan_policy_state] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the scan posture in one sentence. If `scheduled_scan_state = ad_hoc` OR `realtime_protection_state = disabled_known`, those are priority findings — walk the 60-second Defender fix. If `scan_policy_state` is implied or none, offer to append the one-line frequency statement to the existing SI.L1-3.14.2 AV policy rather than starting a new file.",
+    ].join("\n");
+  },
+};
+
 export const practiceSpecs: Record<string, PracticeSpec> = {
   "AC.L1-3.1.1": {
     controlId: "AC.L1-3.1.1",
@@ -5970,6 +6853,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
   "SI.L1-3.14.1": {
     controlId: "SI.L1-3.14.1",
     shortName: "Flaw Remediation",
+    intake: si3141Intake,
     oneLiner:
       "Patch your systems on a clock — define the cadence, log the runs, fix critical issues fast.",
     statement: "Identify, report, and correct information and information system flaws in a timely manner.",
@@ -6082,6 +6966,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
   "SI.L1-3.14.2": {
     controlId: "SI.L1-3.14.2",
     shortName: "Malicious Code Protection",
+    intake: si3142Intake,
     oneLiner:
       "Run AV on every device that touches FCI — Defender, CrowdStrike, whatever, just have it.",
     statement:
@@ -6185,6 +7070,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
   "SI.L1-3.14.4": {
     controlId: "SI.L1-3.14.4",
     shortName: "Update Malicious Code Protection",
+    intake: si3144Intake,
     oneLiner:
       "Keep your AV definitions auto-updating — outdated AV is the same as no AV.",
     statement:
@@ -6260,6 +7146,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
   "SI.L1-3.14.5": {
     controlId: "SI.L1-3.14.5",
     shortName: "Periodic & Real-Time Scans",
+    intake: si3145Intake,
     oneLiner:
       "Run a full system scan on a schedule, and scan every download / opened file in real time.",
     statement:
