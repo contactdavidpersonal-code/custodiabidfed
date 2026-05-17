@@ -9,6 +9,7 @@
  * The route still owns auth + audit; this module owns rendering.
  */
 
+import { createHash } from "crypto";
 import JSZip from "jszip";
 import {
   getAssessmentForUser,
@@ -22,6 +23,7 @@ import {
   type OrganizationRow,
   type RemediationPlanRow,
 } from "@/lib/assessment";
+import { getSql } from "@/lib/db";
 import { controlDomains, playbook } from "@/lib/playbook";
 import {
   computeExceptionCoverage,
@@ -29,12 +31,81 @@ import {
   type ObjectiveResponseRow,
 } from "@/lib/cmmc/objectives";
 import {
+  listAuditEventsForAssessment,
+  type AuditLogRow,
+} from "@/lib/security/audit-log";
+import {
   displayUrl,
   resolveOrgBranding,
   type OrgBranding,
 } from "@/lib/org-branding";
 
 export type CoverageSummary = { eeCount: number; tdCount: number };
+
+/**
+ * Tamper-evident signature metadata pulled directly from the `assessments`
+ * row. Only present once the assessment has been signed. The canonical
+ * payload itself stays encrypted at rest — we only surface the SHA-256
+ * fingerprint, HMAC signature, and key version so the customer (or a DCMA
+ * auditor years later) can verify the bundle was not altered after signing.
+ */
+export type AttestationSignatureMeta = {
+  payloadSha256Hex: string;
+  signatureHex: string;
+  signatureKeyVersion: number;
+  affirmedAt: string | null;
+  affirmedByName: string | null;
+  affirmedByTitle: string | null;
+  affirmingOfficialEmail: string | null;
+  selfAssessmentCompletedAt: string | null;
+};
+
+async function fetchAttestationSignatureMeta(
+  assessmentId: string,
+): Promise<AttestationSignatureMeta | null> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT attestation_payload_sha256,
+           attestation_signature,
+           attestation_signature_key_version,
+           affirmed_at,
+           affirmed_by_name,
+           affirmed_by_title,
+           affirming_official_email,
+           self_assessment_completed_at
+    FROM assessments
+    WHERE id = ${assessmentId}
+    LIMIT 1
+  `) as Array<{
+    attestation_payload_sha256: string | null;
+    attestation_signature: string | null;
+    attestation_signature_key_version: number | null;
+    affirmed_at: string | null;
+    affirmed_by_name: string | null;
+    affirmed_by_title: string | null;
+    affirming_official_email: string | null;
+    self_assessment_completed_at: string | null;
+  }>;
+  if (rows.length === 0) return null;
+  const r = rows[0];
+  if (
+    !r.attestation_payload_sha256 ||
+    !r.attestation_signature ||
+    r.attestation_signature_key_version == null
+  ) {
+    return null;
+  }
+  return {
+    payloadSha256Hex: r.attestation_payload_sha256,
+    signatureHex: r.attestation_signature,
+    signatureKeyVersion: r.attestation_signature_key_version,
+    affirmedAt: r.affirmed_at,
+    affirmedByName: r.affirmed_by_name,
+    affirmedByTitle: r.affirmed_by_title,
+    affirmingOfficialEmail: r.affirming_official_email,
+    selfAssessmentCompletedAt: r.self_assessment_completed_at,
+  };
+}
 
 // ──────────────────────────────────────────────────────────────────────
 // High-level "load assessment data + render" orchestrators.
@@ -52,6 +123,8 @@ export type LoadedAssessment = {
   profileData: Record<string, unknown>;
   branding: OrgBranding;
   coverageSummary: CoverageSummary;
+  auditEvents: AuditLogRow[];
+  signatureMeta: AttestationSignatureMeta | null;
 };
 
 /**
@@ -64,15 +137,25 @@ export async function loadAssessmentForDeliverables(
 ): Promise<LoadedAssessment | null> {
   const ctx = await getAssessmentForUser(assessmentId, userId);
   if (!ctx) return null;
-  const [responses, evidence, remediationPlans, profile, objectives, coverage] =
-    await Promise.all([
-      listResponsesForAssessment(assessmentId),
-      listEvidenceForAssessment(assessmentId),
-      listRemediationPlansForAssessment(assessmentId),
-      getBusinessProfile(ctx.organization.id),
-      listObjectivesForAssessment(assessmentId),
-      computeExceptionCoverage(assessmentId),
-    ]);
+  const [
+    responses,
+    evidence,
+    remediationPlans,
+    profile,
+    objectives,
+    coverage,
+    auditEvents,
+    signatureMeta,
+  ] = await Promise.all([
+    listResponsesForAssessment(assessmentId),
+    listEvidenceForAssessment(assessmentId),
+    listRemediationPlansForAssessment(assessmentId),
+    getBusinessProfile(ctx.organization.id),
+    listObjectivesForAssessment(assessmentId),
+    computeExceptionCoverage(assessmentId),
+    listAuditEventsForAssessment(assessmentId, ctx.organization.id),
+    fetchAttestationSignatureMeta(assessmentId),
+  ]);
   let eeCount = 0;
   let tdCount = 0;
   for (const [, c] of coverage) {
@@ -91,6 +174,8 @@ export async function loadAssessmentForDeliverables(
     profileData,
     branding,
     coverageSummary: { eeCount, tdCount },
+    auditEvents,
+    signatureMeta,
   };
 }
 
@@ -163,6 +248,8 @@ export async function renderBidPackageForAssessment(
     generatedAt,
     draft: opts.draft ?? false,
     includeEvidenceBinaries: opts.includeEvidenceBinaries ?? true,
+    auditEvents: data.auditEvents,
+    signatureMeta: data.signatureMeta,
   });
   const cycleSlug = data.assessment.cycle_label
     .replace(/[^a-zA-Z0-9]+/g, "-")
@@ -222,6 +309,10 @@ export type BidPackageInput = {
   /** When false, the ZIP omits the evidence/ folder (faster regeneration
    *  for "draft preview" flows that don't need binary attachments). */
   includeEvidenceBinaries?: boolean;
+  /** Full audit-log history scoped to this assessment + parent org. */
+  auditEvents: AuditLogRow[];
+  /** Tamper-evident signature metadata. Null when assessment is unsigned. */
+  signatureMeta: AttestationSignatureMeta | null;
 };
 
 /** Top-level: build the full bid-ready package ZIP buffer. */
@@ -239,13 +330,41 @@ export async function buildBidPackageZip(input: BidPackageInput): Promise<Buffer
     generatedAt,
     draft,
     includeEvidenceBinaries = true,
+    auditEvents,
+    signatureMeta,
   } = input;
   const zip = new JSZip();
-  zip.file(
+
+  // Track every file we add so we can emit a tamper-evident MANIFEST.json
+  // at the end. SHA-256 per file + a bundle hash gives the customer a way
+  // to prove, six years later, that the sealed record was not altered.
+  const manifestEntries: Array<{
+    path: string;
+    sizeBytes: number;
+    sha256: string;
+    purpose: string;
+  }> = [];
+  const addFile = (
+    path: string,
+    body: string | Buffer,
+    purpose: string,
+  ): void => {
+    const buf = Buffer.isBuffer(body) ? body : Buffer.from(body, "utf8");
+    zip.file(path, buf);
+    manifestEntries.push({
+      path,
+      sizeBytes: buf.length,
+      sha256: createHash("sha256").update(buf).digest("hex"),
+      purpose,
+    });
+  };
+
+  addFile(
     "00-README.md",
     buildReadme({ org, assessment, generatedAt, draft, coverageSummary }),
+    "Operator guide — what each file is and how to use it.",
   );
-  zip.file(
+  addFile(
     "01-SSP.html",
     buildSspHtml({
       org,
@@ -258,14 +377,75 @@ export async function buildBidPackageZip(input: BidPackageInput): Promise<Buffer
       generatedAt,
       branding,
     }),
+    "System Security Plan (NIST SP 800-171 §3.12.4; CMMC Scoping Guide L1).",
   );
-  zip.file(
+  addFile(
     "02-Affirmation.html",
     buildAffirmationHtml({ org, assessment, generatedAt, branding }),
+    "Senior Official Annual Affirmation memo (32 CFR §170.22; DFARS 252.204-7021).",
   );
-  zip.file("03-controls.csv", buildControlsCsv(responses, evidence));
-  zip.file("04-evidence-inventory.csv", buildEvidenceCsv(evidence));
-  zip.file("05-remediation-plans.csv", buildRemediationCsv(remediationPlans));
+  addFile(
+    "03-controls.csv",
+    buildControlsCsv(responses, evidence),
+    "Per-practice status + narrative; prime questionnaire input.",
+  );
+  addFile(
+    "04-evidence-inventory.csv",
+    buildEvidenceCsv(evidence),
+    "Artifact register with platform review verdicts.",
+  );
+  addFile(
+    "05-remediation-plans.csv",
+    buildRemediationCsv(remediationPlans),
+    "Operational remediation tracker (not a CMMC L1 POA&M).",
+  );
+  addFile(
+    "06-exceptions-register.csv",
+    buildExceptionsCsv(objectives),
+    "Enduring Exceptions + Temporary Deficiencies per CMMC v2.13.",
+  );
+  addFile(
+    "07-audit-log.csv",
+    buildAuditLogCsv(auditEvents),
+    "Append-only state-change history; FAR 4.703 retention evidence.",
+  );
+  if (signatureMeta) {
+    addFile(
+      "08-attestation-signature.json",
+      JSON.stringify(
+        {
+          assessmentId: assessment.id,
+          organizationId: org.id,
+          organizationName: org.name,
+          cageCode: org.cage_code,
+          samUei: org.sam_uei,
+          cycleLabel: assessment.cycle_label,
+          fiscalYear: assessment.fiscal_year,
+          custodiaVerificationId: assessment.custodia_verification_id,
+          affirmingOfficial: {
+            name: signatureMeta.affirmedByName,
+            title: signatureMeta.affirmedByTitle,
+            email: signatureMeta.affirmingOfficialEmail,
+          },
+          affirmedAt: signatureMeta.affirmedAt,
+          selfAssessmentCompletedAt: signatureMeta.selfAssessmentCompletedAt,
+          payloadSha256Hex: signatureMeta.payloadSha256Hex,
+          signatureHex: signatureMeta.signatureHex,
+          signatureAlgorithm: "HMAC-SHA256",
+          signatureKeyVersion: signatureMeta.signatureKeyVersion,
+          generatedAt,
+          notice:
+            "This file is the tamper-evident witness for the canonical attestation payload stored encrypted at rest by Custodia. The payloadSha256Hex value is the SHA-256 fingerprint of the plaintext canonical payload the Affirming Official signed; the signatureHex value is the HMAC-SHA256 computed under Custodia signing key version " +
+            String(signatureMeta.signatureKeyVersion) +
+            ". Verify by recomputing the SHA-256 over the canonical payload (request via Custodia support) and matching this value.",
+        },
+        null,
+        2,
+      ),
+      "Tamper-evident signature witness (HMAC-SHA256 + payload fingerprint).",
+    );
+  }
+
   if (includeEvidenceBinaries) {
     for (const artifact of evidence) {
       try {
@@ -278,7 +458,11 @@ export async function buildBidPackageZip(input: BidPackageInput): Promise<Buffer
         }
         const buf = Buffer.from(await res.arrayBuffer());
         const safeName = artifact.filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
-        zip.file(`evidence/${artifact.control_id}/${safeName}`, buf);
+        addFile(
+          `evidence/${artifact.control_id}/${safeName}`,
+          buf,
+          `Evidence artifact for ${artifact.control_id}.`,
+        );
       } catch (err) {
         console.warn(
           `[deliverables] fetch failed for ${artifact.filename}:`,
@@ -287,6 +471,41 @@ export async function buildBidPackageZip(input: BidPackageInput): Promise<Buffer
       }
     }
   }
+
+  // Bundle integrity manifest. The bundle hash is SHA-256 over a sorted,
+  // newline-delimited list of "<sha256>  <path>" entries — the same
+  // convention `sha256sum` produces — so a customer can re-verify the
+  // archive years later with off-the-shelf tools. We add MANIFEST.json
+  // LAST so it captures every other file's fingerprint, then we compute
+  // the bundle hash over the manifest entries themselves.
+  manifestEntries.sort((a, b) => a.path.localeCompare(b.path));
+  const bundleHashInput = manifestEntries
+    .map((e) => `${e.sha256}  ${e.path}`)
+    .join("\n");
+  const bundleHashHex = createHash("sha256")
+    .update(bundleHashInput)
+    .digest("hex");
+  const manifest = {
+    bundle: {
+      assessmentId: assessment.id,
+      organizationId: org.id,
+      organizationName: org.name,
+      cycleLabel: assessment.cycle_label,
+      fiscalYear: assessment.fiscal_year,
+      generatedAt,
+      draft,
+      retentionGuidance:
+        "Retain this archive for six (6) years after final contract payment per FAR 4.703 and the CMMC record-keeping expectations in 32 CFR §170. The bundleHashHex below is SHA-256 over a sorted '<sha256>  <path>' manifest of every file in this ZIP. Recompute via 'sha256sum *' on the extracted bundle to verify integrity at any time.",
+      bundleHashAlgorithm: "SHA-256",
+      bundleHashHex,
+      bundleHashInputFormat:
+        "sorted lines of '<sha256>  <path>' joined by \\n (matches `sha256sum` output ordering)",
+      fileCount: manifestEntries.length,
+    },
+    files: manifestEntries,
+  };
+  zip.file("MANIFEST.json", JSON.stringify(manifest, null, 2));
+
   return zip.generateAsync({ type: "nodebuffer" });
 }
 
@@ -331,6 +550,10 @@ ${outcomeLine}
 | 03-controls.csv | Per-practice status + narrative (17 rows). Handy for a prime's compliance questionnaire. |
 | 04-evidence-inventory.csv | Every artifact on file with its Platform review verdict + summary. |
 | 05-remediation-plans.csv | Operational notes on any remediation work the user tracked. Informational only — see note below. |
+| 06-exceptions-register.csv | Enduring Exceptions + Temporary Deficiencies per CMMC Assessment Guide L1 v2.13. Empty when none apply. |
+| 07-audit-log.csv | Append-only state-change history for this assessment + organization. Six-year retention evidence. |
+| 08-attestation-signature.json | Tamper-evident witness for the AO's signature: SHA-256 of the canonical payload + HMAC-SHA256 signature + key version. Only present once signed. |
+| MANIFEST.json | SHA-256 of every file in this archive + a bundle hash for integrity verification. See "Integrity & retention" below. |
 | evidence/ | All the uploaded evidence files, organized by control ID. |
 
 > **About \`05-remediation-plans.csv\` — important nuance for L1.** CMMC Level 1 affirmation is binary (MET / NOT MET) and **has no POA&M**. Per CMMC Assessment Guide L1 v2.13 (SEP 2024) p. 4, an "operational plan of action" is **not** the same as a POA&M associated with an assessment — and Level 1 has no open items at sign time. This CSV is included for primes whose intake questionnaires still ask for "any remediation plans"; if you have none, an empty file is the correct answer.
@@ -366,6 +589,22 @@ Your affirmation is valid for **one year** from the CMMC Status Date (32 CFR § 
 ## Legal notice
 
 This package documents a **self-attestation** to FAR 52.204-21 as required by 32 CFR § 170.15. The Affirming Official's signature is a material representation of fact. False, fictitious, or fraudulent statements are subject to criminal penalties under 18 U.S.C. § 1001 and civil liability under the False Claims Act (31 U.S.C. §§ 3729–3733).
+
+## Integrity & retention (read this before you archive)
+
+This bundle is designed to be the **sealed, six-year-retention record** of your CMMC Level 1 self-assessment for cycle **${assessment.cycle_label}**. Retention guidance:
+
+- **FAR 4.703** requires contract records be retained **six (6) years after final payment** on the underlying contract.
+- **32 CFR § 170** (the CMMC Final Rule, Dec 16 2024) requires the contractor be able to produce the affirmation and the assessment record on demand during the affirmation's one-year validity period — and prudently for the life of any contract that relied on it.
+
+How to verify this archive years from now, with no Custodia account required:
+
+1. Extract the ZIP and open \`MANIFEST.json\`. It lists every file with its SHA-256 hash.
+2. From the extracted directory, run: \`sha256sum -c <(jq -r '.files[] | "\\(.sha256)  \\(.path)"' MANIFEST.json)\` (or the Windows / PowerShell \`Get-FileHash\` equivalent). Every file should report **OK**.
+3. The \`bundle.bundleHashHex\` value in \`MANIFEST.json\` is the SHA-256 of every line of \`<sha256>  <path>\` (sorted by path, joined by \\\\n). Recompute and match.
+4. The Affirming Official's signature itself lives in \`08-attestation-signature.json\` — \`payloadSha256Hex\` is the SHA-256 of the canonical attestation payload, \`signatureHex\` is the HMAC-SHA256 over that payload under Custodia signing key version \`signatureKeyVersion\`. The plaintext canonical payload is stored encrypted at rest by Custodia and can be released to you on request.
+
+If any hash fails to match, the bundle has been altered after generation. Do **not** rely on it as a defensive record — re-export from Custodia (or, if the cycle is closed, request a re-generation from officers@custodia.us; we re-derive deterministically from the immutable assessment row).
 
 ---
 
@@ -686,6 +925,83 @@ export function buildEvidenceCsv(evidence: EvidenceArtifactRow[]): string {
       e.is_final_policy ? "true" : "false",
       e.final_adopted_at ?? "",
       e.final_adopted_by ?? "",
+    ]);
+  }
+  return rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
+}
+
+/**
+ * Enduring Exception + Temporary Deficiency register. One row per
+ * objective that has a documented exception. Per CMMC Assessment Guide
+ * L1 v2.13, both roll up to MET for the requirement, but the contractor
+ * must retain the SSP-documented rationale + (for TDs) the operational
+ * plan of action with milestones. This CSV is the durable, six-year
+ * record of which objectives carried which exception during which cycle.
+ */
+export function buildExceptionsCsv(
+  objectives: ObjectiveResponseRow[],
+): string {
+  const rows = [
+    [
+      "control_id",
+      "requirement_id",
+      "objective_letter",
+      "exception_type",
+      "exception_notes",
+      "esp_inherited_from",
+      "status_at_export",
+      "updated_at",
+    ],
+  ];
+  const withExceptions = objectives.filter(
+    (o) => o.exception_type === "enduring" || o.exception_type === "temporary",
+  );
+  for (const o of withExceptions) {
+    rows.push([
+      o.control_id,
+      o.requirement_id,
+      o.objective_letter,
+      o.exception_type ?? "",
+      o.exception_notes ?? "",
+      o.esp_inherited_from ?? "",
+      o.status,
+      o.updated_at,
+    ]);
+  }
+  return rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
+}
+
+/**
+ * Full audit-log export for the sealed L1 record bundle. Every recorded
+ * state change tied to this assessment or its parent organization, in
+ * append order. Required for FAR 4.703 six-year retention defensibility
+ * and 32 CFR §170 record-keeping during a DCMA / DoD-IG inquiry.
+ */
+export function buildAuditLogCsv(events: AuditLogRow[]): string {
+  const rows = [
+    [
+      "created_at",
+      "action",
+      "user_id",
+      "organization_id",
+      "resource_type",
+      "resource_id",
+      "ip",
+      "user_agent",
+      "metadata_json",
+    ],
+  ];
+  for (const e of events) {
+    rows.push([
+      e.created_at,
+      e.action,
+      e.user_id ?? "",
+      e.organization_id ?? "",
+      e.resource_type ?? "",
+      e.resource_id ?? "",
+      e.ip ?? "",
+      e.user_agent ?? "",
+      JSON.stringify(e.metadata ?? {}),
     ]);
   }
   return rows.map((r) => r.map(csvCell).join(",")).join("\r\n");

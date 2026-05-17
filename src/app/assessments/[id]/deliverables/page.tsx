@@ -28,8 +28,9 @@ export default async function DeliverablesPage(
         <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-[#5a7d70]">
           Once your senior official signs the affirmation, this page hands you
           three things: the System Security Plan (SSP), the SPRS affirmation
-          memo, and a single bid-ready zip with every piece of evidence
-          attached.
+          memo, and a single sealed bid-ready zip with every piece of evidence,
+          your full audit log, and a tamper-evident integrity manifest — your
+          six-year retention record.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
@@ -65,8 +66,8 @@ export default async function DeliverablesPage(
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card
-          title="Bid-ready package"
-          subtitle="SSP + affirmation + every evidence file, zipped"
+          title="Sealed L1 record (.zip)"
+          subtitle="SSP + affirmation + evidence + audit log + signature manifest. Custom-built for your CAGE. Retain 6 years (FAR 4.703)."
           href={`/api/assessments/${id}/bid-package`}
           primary
         />
@@ -109,13 +110,27 @@ export default async function DeliverablesPage(
               2
             </span>
             <p>
-              When a prime asks for proof, send them the Bid-ready package zip.
-              It contains everything they need to satisfy FAR 52.204-21.
+              When a prime asks for proof, send them the Sealed L1 record zip.
+              It contains everything they need to satisfy FAR 52.204-21 — plus
+              the audit log and SHA-256 integrity manifest a sharper prime
+              (or a DCMA auditor years later) will ask for.
             </p>
           </li>
           <li className="flex gap-3">
             <span className="flex h-6 w-6 flex-none items-center justify-center  bg-[#0e2a23] text-xs font-bold text-[#bdf2cf]">
               3
+            </span>
+            <p>
+              Archive a copy of this zip for at least six years after final
+              payment on any contract that relied on this affirmation (FAR 4.703).
+              <code className="ml-1 rounded bg-[#f1f6f3] px-1 py-0.5 text-[11px] text-[#0c2219]">MANIFEST.json</code>{" "}
+              lets anyone verify the archive hasn&apos;t been altered — no
+              Custodia account required.
+            </p>
+          </li>
+          <li className="flex gap-3">
+            <span className="flex h-6 w-6 flex-none items-center justify-center  bg-[#0e2a23] text-xs font-bold text-[#bdf2cf]">
+              4
             </span>
             <p>
               Re-affirm annually. Custodia auto-imports last year&apos;s
