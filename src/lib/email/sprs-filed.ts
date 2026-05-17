@@ -155,7 +155,7 @@ function renderHtml(input: SprsFiledEmailInput & { greeting: string }): string {
           </ol>
         </td></tr>
         <tr><td align="center" style="padding:20px 32px;">
-          <a href="${escapeHtml(statementUrl)}" style="display:inline-block;background:#facc15;color:#10231d;font-weight:700;font-size:14px;text-decoration:none;padding:12px 22px;border-radius:8px;">Download your Statement of Compliance</a>
+          <a href="${escapeHtml(statementUrl)}" style="display:inline-block;background:#a06b1a;color:#10231d;font-weight:700;font-size:14px;text-decoration:none;padding:12px 22px;border-radius:0;">Download your Statement of Compliance</a>
         </td></tr>
         <tr><td style="padding:8px 32px 24px 32px;font-size:13px;line-height:1.55;color:#2c3e36;">
           <p style="margin:0 0 6px 0;font-weight:600;">Between now and ${fmtDate(input.nextReaffirmDueDate)}:</p>

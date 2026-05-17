@@ -95,15 +95,15 @@ function renderWelcomeHtml(input: {
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Welcome to Custodia</title>
 </head>
-<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;line-height:1.55;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f8fafc;padding:32px 16px;">
+<body style="margin:0;padding:0;background:#e9efea;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0e2a23;line-height:1.55;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#e9efea;padding:32px 16px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #cfe3d9;border-radius:0;overflow:hidden;">
           <tr>
-            <td style="background:#0f172a;padding:24px 32px;color:#fbbf24;">
+            <td style="background:#0e2a23;padding:24px 32px;color:#bdf2cf;">
               <div style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;">Custodia</div>
-              <div style="margin-top:4px;font-size:13px;color:#cbd5e1;">CMMC Level 1, made simple.</div>
+              <div style="margin-top:4px;font-size:13px;color:#bdf2cf;">CMMC Level 1, made simple.</div>
             </td>
           </tr>
           <tr>
@@ -114,7 +114,7 @@ function renderWelcomeHtml(input: {
                 working with the federal government get &mdash; and stay &mdash; secure.
               </p>
 
-              <h2 style="margin:24px 0 8px 0;font-size:15px;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;font-weight:700;">Who we are</h2>
+              <h2 style="margin:24px 0 8px 0;font-size:15px;text-transform:uppercase;letter-spacing:0.1em;color:#5a7d70;font-weight:700;">Who we are</h2>
               <p style="margin:0 0 16px 0;font-size:15px;">
                 Custodia is a Pittsburgh, PA cybersecurity firm. <strong>Veteran-owned and operated</strong>,
                 founded by <strong>Carnegie Mellon graduates</strong>. We started this project to support
@@ -123,7 +123,7 @@ function renderWelcomeHtml(input: {
                 (and performing under) federal contracts.
               </p>
 
-              <h2 style="margin:24px 0 8px 0;font-size:15px;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;font-weight:700;">What's inside</h2>
+              <h2 style="margin:24px 0 8px 0;font-size:15px;text-transform:uppercase;letter-spacing:0.1em;color:#5a7d70;font-weight:700;">What's inside</h2>
               <ul style="margin:0 0 16px 0;padding-left:20px;font-size:15px;">
                 <li style="margin:6px 0;">A plain-English walkthrough of all <strong>15 CMMC L1 safeguarding requirements</strong> (FAR 52.204-21(b)(1)).</li>
                 <li style="margin:6px 0;"><strong>The Platform</strong> drafts narratives, reviews your evidence, and flags anything that won't pass a prime's questionnaire.</li>
@@ -131,7 +131,7 @@ function renderWelcomeHtml(input: {
                 <li style="margin:6px 0;">A <strong>bid-ready ZIP package</strong>: SSP, signed affirmation memo, every artifact your prime might ask for &mdash; all in one file.</li>
               </ul>
 
-              <h2 style="margin:24px 0 8px 0;font-size:15px;text-transform:uppercase;letter-spacing:0.1em;color:#64748b;font-weight:700;">Your next step</h2>
+              <h2 style="margin:24px 0 8px 0;font-size:15px;text-transform:uppercase;letter-spacing:0.1em;color:#5a7d70;font-weight:700;">Your next step</h2>
               <p style="margin:0 0 24px 0;font-size:15px;">
                 Hop into the onboarding chat &mdash; a 5-minute conversation about your business so we can
                 tailor the rest of the platform to your stack and your contracts.
@@ -139,22 +139,22 @@ function renderWelcomeHtml(input: {
 
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;">
                 <tr>
-                  <td style="background:#fbbf24;border-radius:8px;">
-                    <a href="${escapeAttr(input.workspaceUrl)}" style="display:inline-block;padding:12px 20px;font-size:14px;font-weight:700;color:#0f172a;text-decoration:none;">
+                  <td style="background:#bdf2cf;border-radius:0;">
+                    <a href="${escapeAttr(input.workspaceUrl)}" style="display:inline-block;padding:12px 20px;font-size:14px;font-weight:700;color:#0e2a23;text-decoration:none;">
                       Open my workspace &rarr;
                     </a>
                   </td>
                 </tr>
               </table>
 
-              <p style="margin:0 0 8px 0;font-size:13px;color:#475569;">
+              <p style="margin:0 0 8px 0;font-size:13px;color:#0c4a3a;">
                 Reply to this email any time &mdash; a real human reads every message
-                (<a href="mailto:officers@custodia.us" style="color:#0f172a;">officers@custodia.us</a>).
+                (<a href="mailto:officers@custodia.us" style="color:#0e2a23;">officers@custodia.us</a>).
               </p>
             </td>
           </tr>
           <tr>
-            <td style="background:#f1f5f9;padding:18px 32px;font-size:11px;color:#64748b;border-top:1px solid #e2e8f0;">
+            <td style="background:#f1f6f3;padding:18px 32px;font-size:11px;color:#5a7d70;border-top:1px solid #cfe3d9;">
               <div>The Custodia team</div>
               <div style="margin-top:2px;">Pittsburgh, PA &middot; Veteran-owned &middot; CMU built</div>
             </td>

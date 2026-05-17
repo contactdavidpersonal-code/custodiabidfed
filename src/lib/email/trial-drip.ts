@@ -511,7 +511,7 @@ function renderShell(opts: {
   const bullets = opts.bullets
     .map(
       (b) =>
-        `<li style="margin:6px 0;font-size:15px;line-height:1.55;color:#0f172a;">${b}</li>`,
+        `<li style="margin:6px 0;font-size:15px;line-height:1.55;color:#0e2a23;">${b}</li>`,
     )
     .join("");
   return `<!DOCTYPE html>
@@ -521,38 +521,38 @@ function renderShell(opts: {
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>${escapeAttr(opts.title)}</title>
 </head>
-<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#0f172a;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f5f9;padding:24px 0;">
+<body style="margin:0;padding:0;background:#f1f6f3;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#0e2a23;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f1f6f3;padding:24px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;border:1px solid #cfe3d9;border-radius:0;overflow:hidden;">
           <tr>
-            <td style="background:#0f172a;padding:24px 32px;color:#fbbf24;">
+            <td style="background:#0e2a23;padding:24px 32px;color:#bdf2cf;">
               <div style="font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;">Custodia · ${escapeAttr(opts.kicker)}</div>
-              <div style="margin-top:4px;font-size:13px;color:#cbd5e1;">CMMC Level 1, made simple.</div>
+              <div style="margin-top:4px;font-size:13px;color:#bdf2cf;">CMMC Level 1, made simple.</div>
             </td>
           </tr>
           <tr>
             <td style="padding:32px;">
               <p style="margin:0 0 16px 0;font-size:16px;">${escapeAttr(opts.greeting)}</p>
-              <h1 style="margin:0 0 16px 0;font-size:22px;line-height:1.3;color:#0f172a;font-weight:700;">${escapeAttr(opts.title)}</h1>
-              <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#0f172a;">${opts.intro}</p>
+              <h1 style="margin:0 0 16px 0;font-size:22px;line-height:1.3;color:#0e2a23;font-weight:700;">${escapeAttr(opts.title)}</h1>
+              <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#0e2a23;">${opts.intro}</p>
               <ul style="margin:16px 0;padding-left:20px;">${bullets}</ul>
               <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0 16px 0;">
                 <tr>
-                  <td style="background:#fbbf24;border-radius:8px;">
-                    <a href="${escapeAttr(opts.ctaUrl)}" style="display:inline-block;padding:12px 20px;font-size:14px;font-weight:700;color:#0f172a;text-decoration:none;">${escapeAttr(opts.ctaLabel)}</a>
+                  <td style="background:#bdf2cf;border-radius:0;">
+                    <a href="${escapeAttr(opts.ctaUrl)}" style="display:inline-block;padding:12px 20px;font-size:14px;font-weight:700;color:#0e2a23;text-decoration:none;">${escapeAttr(opts.ctaLabel)}</a>
                   </td>
                 </tr>
               </table>
-              <p style="margin:24px 0 0 0;font-size:13px;color:#475569;line-height:1.55;">${opts.footer}</p>
+              <p style="margin:24px 0 0 0;font-size:13px;color:#0c4a3a;line-height:1.55;">${opts.footer}</p>
             </td>
           </tr>
           <tr>
-            <td style="background:#f1f5f9;padding:18px 32px;font-size:11px;color:#64748b;border-top:1px solid #e2e8f0;">
+            <td style="background:#f1f6f3;padding:18px 32px;font-size:11px;color:#5a7d70;border-top:1px solid #cfe3d9;">
               <div>The Custodia team</div>
               <div style="margin-top:2px;">Pittsburgh, PA · Veteran-owned · CMU built</div>
-              <div style="margin-top:8px;color:#94a3b8;">You are receiving this because you started a Custodia trial. The drip stops automatically on day 14, and your assigned officer can disable it any time on request.</div>
+              <div style="margin-top:8px;color:#5a7d70;">You are receiving this because you started a Custodia trial. The drip stops automatically on day 14, and your assigned officer can disable it any time on request.</div>
             </td>
           </tr>
         </table>
@@ -564,7 +564,7 @@ function renderShell(opts: {
 }
 
 function officerFooter(c: DripContext): string {
-  return `Reply to this email any time — a real human reads every message (<a href="mailto:officers@custodia.us" style="color:#0f172a;">officers@custodia.us</a>). For anything that needs a credentialed officer's judgment, open an in-platform ticket: <a href="${escapeAttr(c.ticketUrl)}" style="color:#0f172a;">${escapeAttr(c.ticketUrl)}</a>.`;
+  return `Reply to this email any time — a real human reads every message (<a href="mailto:officers@custodia.us" style="color:#0e2a23;">officers@custodia.us</a>). For anything that needs a credentialed officer's judgment, open an in-platform ticket: <a href="${escapeAttr(c.ticketUrl)}" style="color:#0e2a23;">${escapeAttr(c.ticketUrl)}</a>.`;
 }
 
 function escapeAttr(s: string): string {

@@ -139,17 +139,17 @@ ${ticketUrl}
 `;
 
   const html = `<!doctype html>
-<html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;line-height:1.55;margin:0;padding:24px;background:#f8fafc;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;">
+<html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0e2a23;line-height:1.55;margin:0;padding:24px;background:#e9efea;">
+  <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #cfe3d9;border-radius:0;padding:24px;">
     <p style="margin:0 0 12px 0;font-size:12px;font-weight:700;letter-spacing:0.18em;color:#2f8f6d;text-transform:uppercase;">Officer reply</p>
     <h1 style="margin:0 0 12px 0;font-size:18px;color:#0e2a23;">${escapeHtml(args.escalation.topic)}</h1>
-    <p style="margin:0 0 16px 0;color:#334155;">${escapeHtml(greeting)}</p>
-    <p style="margin:0 0 12px 0;color:#334155;">A Custodia compliance officer replied to your ticket:</p>
+    <p style="margin:0 0 16px 0;color:#0e2a23;">${escapeHtml(greeting)}</p>
+    <p style="margin:0 0 12px 0;color:#0e2a23;">A Custodia compliance officer replied to your ticket:</p>
     <blockquote style="margin:16px 0;padding:12px 16px;border-left:4px solid #2f8f6d;background:#f1f6f3;color:#10231d;white-space:pre-wrap;">${escapeHtml(args.body)}</blockquote>
     <p style="margin:24px 0;">
-      <a href="${escapeAttr(ticketUrl)}" style="display:inline-block;padding:10px 18px;background:#0e2a23;color:#bdf2cf;text-decoration:none;border-radius:6px;font-weight:700;">Open the thread</a>
+      <a href="${escapeAttr(ticketUrl)}" style="display:inline-block;padding:10px 18px;background:#0e2a23;color:#bdf2cf;text-decoration:none;border-radius:0;font-weight:700;">Open the thread</a>
     </p>
-    <p style="margin:0;color:#64748b;font-size:13px;">Reply in the platform to keep the thread together. — The Custodia team</p>
+    <p style="margin:0;color:#5a7d70;font-size:13px;">Reply in the platform to keep the thread together. — The Custodia team</p>
   </div>
 </body></html>`;
 
@@ -194,18 +194,18 @@ function renderOfficerHtml(input: {
 }): string {
   const banner = input.isOpening ? "New ticket" : "User reply";
   return `<!doctype html>
-<html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;line-height:1.55;margin:0;padding:24px;background:#f8fafc;">
-  <div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:24px;">
+<html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0e2a23;line-height:1.55;margin:0;padding:24px;background:#e9efea;">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #cfe3d9;border-radius:0;padding:24px;">
     <p style="margin:0 0 8px 0;font-size:11px;font-weight:700;letter-spacing:0.2em;color:#b03a2e;text-transform:uppercase;">${banner}</p>
     <h1 style="margin:0 0 12px 0;font-size:20px;color:#0e2a23;">${escapeHtml(input.escalation.topic)}</h1>
     <table style="width:100%;border-collapse:collapse;margin:0 0 16px 0;font-size:13px;">
-      <tr><td style="padding:4px 8px 4px 0;color:#64748b;width:80px;">Org</td><td style="padding:4px 0;color:#0f172a;">${escapeHtml(input.orgName)}</td></tr>
-      <tr><td style="padding:4px 8px 4px 0;color:#64748b;">From</td><td style="padding:4px 0;color:#0f172a;">${escapeHtml(input.fromUserLine)}</td></tr>
-      <tr><td style="padding:4px 8px 4px 0;color:#64748b;">Urgency</td><td style="padding:4px 0;color:#0f172a;">${escapeHtml(input.urgency)}</td></tr>
-      <tr><td style="padding:4px 8px 4px 0;color:#64748b;">Ticket</td><td style="padding:4px 0;color:#64748b;font-family:ui-monospace,Menlo,monospace;font-size:12px;">${escapeHtml(input.escalation.id)}</td></tr>
+      <tr><td style="padding:4px 8px 4px 0;color:#5a7d70;width:80px;">Org</td><td style="padding:4px 0;color:#0e2a23;">${escapeHtml(input.orgName)}</td></tr>
+      <tr><td style="padding:4px 8px 4px 0;color:#5a7d70;">From</td><td style="padding:4px 0;color:#0e2a23;">${escapeHtml(input.fromUserLine)}</td></tr>
+      <tr><td style="padding:4px 8px 4px 0;color:#5a7d70;">Urgency</td><td style="padding:4px 0;color:#0e2a23;">${escapeHtml(input.urgency)}</td></tr>
+      <tr><td style="padding:4px 8px 4px 0;color:#5a7d70;">Ticket</td><td style="padding:4px 0;color:#5a7d70;font-family:ui-monospace,Menlo,monospace;font-size:12px;">${escapeHtml(input.escalation.id)}</td></tr>
     </table>
-    <div style="padding:16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;white-space:pre-wrap;color:#0f172a;">${escapeHtml(input.body)}</div>
-    <p style="margin:24px 0 0 0;color:#64748b;font-size:13px;">
+    <div style="padding:16px;background:#e9efea;border:1px solid #cfe3d9;border-radius:0;white-space:pre-wrap;color:#0e2a23;">${escapeHtml(input.body)}</div>
+    <p style="margin:24px 0 0 0;color:#5a7d70;font-size:13px;">
       Reply directly to this email — your reply posts into the customer's Custodia workspace as a thread message. Do not edit the To: address.
     </p>
   </div>

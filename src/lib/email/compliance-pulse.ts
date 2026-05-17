@@ -114,32 +114,32 @@ async function buildSummary(organizationId: string): Promise<PulseSummary> {
 function renderHtml(summary: PulseSummary, organizationName: string): string {
   const dot =
     summary.status === "green"
-      ? "#10b981"
+      ? "#2f8f6d"
       : summary.status === "yellow"
-        ? "#f59e0b"
-        : "#ef4444";
+        ? "#a06b1a"
+        : "#b03a2e";
   const items = summary.bullets
     .map(
       (b) =>
-        `<li style="margin:6px 0;color:#334155;font-size:14px;line-height:1.5;">${b}</li>`,
+        `<li style="margin:6px 0;color:#0e2a23;font-size:14px;line-height:1.5;">${b}</li>`,
     )
     .join("");
   return `<!doctype html>
-<html><body style="margin:0;padding:24px;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;">
+<html><body style="margin:0;padding:24px;background:#e9efea;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #cfe3d9;border-radius:0;">
   <tr><td style="padding:32px 32px 16px;">
-    <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#475569;">Custodia &middot; Weekly Compliance Pulse</div>
+    <div style="font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#0c4a3a;">Custodia &middot; Weekly Compliance Pulse</div>
     <div style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${dot};margin-top:18px;margin-right:8px;vertical-align:middle;"></div>
-    <span style="font-size:22px;font-weight:700;color:#0f172a;vertical-align:middle;">${summary.headline}</span>
-    <div style="margin-top:6px;color:#64748b;font-size:13px;">${organizationName}</div>
+    <span style="font-size:22px;font-weight:700;color:#0e2a23;vertical-align:middle;">${summary.headline}</span>
+    <div style="margin-top:6px;color:#5a7d70;font-size:13px;">${organizationName}</div>
   </td></tr>
   <tr><td style="padding:8px 32px 24px;">
     <ul style="margin:0;padding:0 0 0 18px;">${items}</ul>
   </td></tr>
   <tr><td style="padding:8px 32px 32px;">
-    <a href="${summary.cta.href}" style="display:inline-block;background:#0f172a;color:#ffffff;padding:10px 18px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;">${summary.cta.label}</a>
+    <a href="${summary.cta.href}" style="display:inline-block;background:#0e2a23;color:#ffffff;padding:10px 18px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;">${summary.cta.label}</a>
   </td></tr>
-  <tr><td style="padding:0 32px 24px;color:#94a3b8;font-size:11px;line-height:1.6;">
+  <tr><td style="padding:0 32px 24px;color:#5a7d70;font-size:11px;line-height:1.6;">
     You are receiving this weekly digest as part of your Custodia subscription. CMMC L1 compliance
     is a yearly cycle anchored to the federal fiscal year (Oct 1 &ndash; Sep 30); this email keeps
     you on the rhythm.
