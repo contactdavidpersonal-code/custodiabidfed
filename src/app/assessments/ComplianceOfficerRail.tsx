@@ -495,7 +495,24 @@ export function ComplianceOfficerRail({
           toolMetaByIdRef.current.delete(id);
         } else if (event === "navigate") {
           const path = typeof data.path === "string" ? data.path : "";
-          if (path.startsWith("/") && !path.includes("://")) {
+          // If an inline slot-draft is in flight, the user explicitly
+          // wants to STAY on this page until Charlie drops the artifact
+          // into the slot. The model occasionally calls
+          // `navigate_user_to` mid-draft (especially when the current
+          // practice is almost done) — honoring it bounces the user to
+          // the next control and orphans the draft. Skip navigation
+          // entirely while the flag is set; the model still gets the
+          // tool result, just the client ignores the side-effect.
+          let drafting = "";
+          try {
+            drafting =
+              window.sessionStorage.getItem("custodia.slot-drafting") ?? "";
+          } catch {
+            /* non-fatal */
+          }
+          if (drafting) {
+            // swallow the navigate event
+          } else if (path.startsWith("/") && !path.includes("://")) {
             router.push(path);
           }
         } else if (event === "error") {

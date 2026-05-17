@@ -1730,8 +1730,23 @@ function InlineDraftButton({
   // page to scroll to the next empty slot.
   useEffect(() => {
     if (!waiting) return;
+    // Belt-and-suspenders against the model calling `navigate_user_to`
+    // mid-draft (the SSE handler in the rail does `router.push(path)` on
+    // every `navigate` event — that was bouncing the user to the next
+    // control page when they clicked here). Setting this flag tells the
+    // rail to ignore navigate events for the duration of the draft.
+    try {
+      window.sessionStorage.setItem("custodia.slot-drafting", slot.key);
+    } catch {
+      /* non-fatal */
+    }
     const handler = () => {
       setWaiting(false);
+      try {
+        window.sessionStorage.removeItem("custodia.slot-drafting");
+      } catch {
+        /* non-fatal */
+      }
       router.refresh();
       window.dispatchEvent(
         new CustomEvent("custodia:slot-drafted", {
@@ -1740,7 +1755,14 @@ function InlineDraftButton({
       );
     };
     window.addEventListener("evidence-changed", handler);
-    return () => window.removeEventListener("evidence-changed", handler);
+    return () => {
+      window.removeEventListener("evidence-changed", handler);
+      try {
+        window.sessionStorage.removeItem("custodia.slot-drafting");
+      } catch {
+        /* non-fatal */
+      }
+    };
   }, [waiting, slot.key, router]);
 
   const onClick = () => {
@@ -1749,15 +1771,23 @@ function InlineDraftButton({
     // question at a time, then call generate_evidence_artifact when
     // there's enough info. The slot_key + filename + format are passed
     // verbatim so Charlie can't fumble the arguments.
+    //
+    // Critical: explicitly forbid `navigate_user_to`. The chat tool loop
+    // will happily call it (especially when this practice already looks
+    // "mostly done") and the rail's SSE handler does `router.push(path)`
+    // — that's how a click here was bouncing the user to the next
+    // control page. Pin Charlie to this practice until the artifact is
+    // generated.
     const message =
-      `I want you to draft the **${slot.label}** for me. ` +
+      `I want you to draft the **${slot.label}** for me on this same page — DO NOT navigate me anywhere, do NOT call \`navigate_user_to\`. ` +
       `What it's for: ${slot.hint} ` +
       `Ask me ONE short plain-English question at a time to get the facts you need — no jargon (no FCI, NIST, baseline, attestation, etc.). ` +
       `Three or four quick questions, max. ` +
       `Once you have enough, call \`generate_evidence_artifact\` with ` +
       `slot_key="${slot.key}", filename="${filename}", format="${format}". ` +
       `Use only my real answers — do NOT insert "[FILL IN]" placeholders. ` +
-      `If a field genuinely doesn't apply to my setup, leave it out entirely instead.`;
+      `If a field genuinely doesn't apply to my setup, leave it out entirely instead. ` +
+      `Stay on the current practice until the artifact lands in the slot — no jumping to the next control, no recap of other slots, no "want to continue the interview" prompts.`;
     window.dispatchEvent(
       new CustomEvent("charlie-send-message", { detail: { message } }),
     );
