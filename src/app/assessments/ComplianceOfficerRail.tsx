@@ -591,6 +591,52 @@ export function ComplianceOfficerRail({
       window.removeEventListener("charlie-send-message", handler as EventListener);
   }, [send]);
 
+  // The "Reset this practice" button on the control page wipes server
+  // state (intake, chat, evidence, verdicts, lock) and then fires this
+  // event so the rail can wipe its own local transcript and kick off a
+  // fresh greeting. Without this the chat stays full of the old
+  // conversation and Charlie has no signal that the practice was reset.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{
+        assessmentId?: string;
+        controlId?: string;
+      }>).detail;
+      const controlId = detail?.controlId;
+      if (!controlId) return;
+      // Wipe local transcript + dedupe so auto-kickoff re-fires.
+      setMessages([]);
+      setRecap(null);
+      setErrorMsg(null);
+      lastKickoffControlRef.current = null;
+      try {
+        const ss = window.sessionStorage;
+        for (let i = ss.length - 1; i >= 0; i -= 1) {
+          const k = ss.key(i);
+          if (k && k.startsWith("custodia.practice-kickoff.")) {
+            ss.removeItem(k);
+          }
+        }
+      } catch {
+        // sessionStorage unavailable — non-fatal.
+      }
+      kickoffFiredRef.current.clear();
+      // Open the rail and send the fresh-start opener directly. We don't
+      // rely on the auto-kickoff effect re-running because its deps
+      // (pathname/hydrated/streaming) haven't changed — the user is still
+      // on the same control page.
+      setOpen(true);
+      window.localStorage.setItem(STORAGE_OPEN_KEY, "1");
+      const fn = sendRef.current ?? send;
+      void fn(
+        `I just hit "Reset this practice" for ${controlId} — fresh slate. Greet me as if I'm starting from zero and walk me through it.`,
+      );
+    };
+    window.addEventListener("custodia:practice-reset", handler);
+    return () =>
+      window.removeEventListener("custodia:practice-reset", handler);
+  }, [send]);
+
   // Auto-kickoff: when the user lands on a /controls/:controlId page that is  // part of the hybrid CMMC flow, have Charlie start (or resume) the
   // walkthrough automatically. Without this the user opens the page and
   // stares at MISSING objectives wondering what to do — Charlie should

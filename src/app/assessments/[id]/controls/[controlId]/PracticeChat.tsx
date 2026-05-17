@@ -145,6 +145,18 @@ export function PracticeChat(props: Props) {
       setEvidence([]);
       setLocked(false);
       setLockError(null);
+      // Tell Charlie + the chat rail that this practice was just wiped:
+      // clear the transcript, drop kickoff dedupe, and re-greet so the
+      // user sees the "Let's start <controlId>" opener as if they just
+      // landed for the first time.
+      window.dispatchEvent(
+        new CustomEvent("custodia:practice-reset", {
+          detail: {
+            assessmentId: props.assessmentId,
+            controlId: props.controlId,
+          },
+        }),
+      );
       router.refresh();
     });
   };

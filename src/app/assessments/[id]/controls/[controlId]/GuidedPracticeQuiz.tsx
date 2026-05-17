@@ -97,7 +97,15 @@ export function GuidedPracticeQuiz(props: {
   if (lastSyncedKey !== initialAnswersKey) {
     setLastSyncedKey(initialAnswersKey);
     const incoming = props.initialAnswers;
-    if (incoming) {
+    // Hard reset path: server wiped intake_answers (the "Reset this
+    // practice" button does this). The incoming prop is null/undefined or
+    // an empty object — snap local state back to Q1 with no answers,
+    // otherwise the user clicks Reset and sees their old answers + last
+    // step still showing.
+    if (!incoming || Object.keys(incoming).length === 0) {
+      setAnswers({});
+      setStepIdx(0);
+    } else {
       setAnswers((prev) => ({ ...prev, ...incoming }));
       const cur = props.intake.questions[stepIdx];
       if (cur && incoming[cur.id]) {
