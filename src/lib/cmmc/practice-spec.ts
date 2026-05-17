@@ -2865,6 +2865,1069 @@ const mp383Intake: PracticeIntakeSpec = {
   },
 };
 
+// ════════════════════════════════════════════════════════════════════════
+// PE domain intakes (Physical Protection)
+//
+// All four L1 PE practices share a common environment model — where FCI
+// is physically worked on, how doors are controlled, who can come and
+// go. Each practice has its own focused intake so the answers feed the
+// right per-practice slots, but the questions are designed so a user
+// who runs through all four sees consistent vocabulary.
+// ════════════════════════════════════════════════════════════════════════
+
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — PE.L1-3.10.1 (Limit Physical Access)
+//
+// Four objectives [a]-[d]: identify authorized people, then limit
+// physical access to systems / equipment / operating environments.
+//
+// Anchored to:
+//   • NIST SP 800-171A Rev 2 §3.10.1 determination statements [a]-[d]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, PE.L1-b.1.viii
+//   • FAR 52.204-21(b)(1)(viii)
+// ────────────────────────────────────────────────────────────────────────
+const PE3101_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "work_environment",
+    objectives: ["b", "c", "d"],
+    prompt:
+      "Where does Federal Contract Information actually get worked on day-to-day?",
+    helpText:
+      "Pick the physical space where someone might open an FCI email, look at a contract, or print a deliverable. \"Work\" includes a kitchen table laptop session.",
+    regAnchor:
+      "NIST SP 800-171A §3.10.1 [b]/[c]/[d]; CMMC L1 SAG (v2.13) PE.L1-b.1.viii Further Discussion",
+    regQuote:
+      "Determine if: [b] physical access to organizational systems is limited to authorized individuals; [c] physical access to equipment is limited to authorized individuals; [d] physical access to operating environments is limited to authorized individuals. … Operating environments include any location where an organization's systems are used by employees, including telework sites.",
+    options: [
+      {
+        value: "home_office",
+        label: "A home office",
+        description:
+          "Solo or small team working from residences. The home itself is the operating environment.",
+      },
+      {
+        value: "leased_office",
+        label: "A leased office or suite",
+        description:
+          "A space my company controls — we own the keys and decide who enters.",
+      },
+      {
+        value: "shared_coworking",
+        label: "A coworking space (WeWork / Industrious / Regus)",
+        description:
+          "Building entry is shared with other tenants; we control only our suite/desk.",
+      },
+      {
+        value: "multiple_sites",
+        label: "More than one physical location",
+        description:
+          "We work across multiple offices, home offices, or sites — the roster will cover all of them.",
+      },
+      {
+        value: "cloud_only_no_physical",
+        label: "Cloud-only — FCI never lives on a local device",
+        description:
+          "All FCI stays in M365 / Google / SaaS apps. No printing, no local download, no physical handling.",
+      },
+    ],
+  },
+  {
+    id: "access_control_method",
+    objectives: ["b", "c", "d"],
+    prompt:
+      "How do you actually keep people out of the room where FCI gets worked on?",
+    helpText:
+      "Pick the strongest control you can point to. \"My apartment door has a deadbolt\" is a valid answer for a one-person home office.",
+    regAnchor:
+      "NIST SP 800-171A §3.10.1 [b]/[c]/[d]; CMMC L1 SAG (v2.13) PE.L1-b.1.viii Further Discussion",
+    regQuote:
+      "Limit physical access to … the respective operating environments to authorized individuals. … Physical access devices include keys, locks, combinations, and card readers.",
+    options: [
+      {
+        value: "cloud_badge",
+        label: "Cloud-managed badge system",
+        description: "Verkada, Kisi, Brivo, Openpath, etc. We can pull an access list.",
+      },
+      {
+        value: "physical_keys",
+        label: "Physical keys we issue and collect",
+      },
+      {
+        value: "smart_lock_app",
+        label: "Smart lock with an app (August, Yale, Schlage Encode)",
+        description: "Access codes or app-paired phones; we can see who unlocked when.",
+      },
+      {
+        value: "alarm_armed",
+        label: "Armed alarm system with individual codes",
+        description: "ADT, SimpliSafe, Vivint. Each authorized person has their own code.",
+      },
+      {
+        value: "locked_room_inside",
+        label: "Locked room or server closet inside a larger space",
+        description: "The outer building is shared; the FCI room is keyed separately.",
+      },
+      {
+        value: "residential_lock_only",
+        label: "Just the regular front-door lock on a residence",
+        description:
+          "Solo home office. The household membership IS the access roster — we'll write that down.",
+      },
+    ],
+  },
+  {
+    id: "roster_state",
+    objectives: ["a"],
+    prompt:
+      "Do you already have a list of who's allowed to physically enter the FCI workspace?",
+    helpText:
+      "Anything that names every person works — a Notion doc, a printed sheet, a row in a spreadsheet.",
+    regAnchor:
+      "NIST SP 800-171A §3.10.1 [a]; CMMC L1 SAG (v2.13) PE.L1-b.1.viii Potential Assessment Considerations",
+    regQuote:
+      "Determine if: [a] authorized individuals allowed physical access are identified. … List of personnel with authorized access … may be limited to the people that work in the area, but should also include those that visit on a regular basis (e.g., cleaning staff, contractors).",
+    options: [
+      {
+        value: "yes_csv",
+        label: "Yes — a spreadsheet or doc I can export",
+      },
+      {
+        value: "paper_only",
+        label: "Yes — but it's on paper",
+        description: "We'll have you upload a scan or transcribe into the template.",
+      },
+      {
+        value: "in_my_head",
+        label: "Not written down — I know who has access",
+        description: "Charlie will draft a roster from a quick interview.",
+      },
+      {
+        value: "none",
+        label: "No list exists yet",
+        description: "Charlie will draft one with you.",
+      },
+    ],
+  },
+  {
+    id: "shared_space",
+    objectives: ["b", "d"],
+    prompt:
+      "Does anyone outside the FCI team share the physical space?",
+    helpText:
+      "Includes household members in a home office, building staff in a leased office, other tenants in a coworking suite.",
+    regAnchor:
+      "NIST SP 800-171A §3.10.1 [b]/[d]; CMMC L1 SAG (v2.13) PE.L1-b.1.viii Further Discussion",
+    regQuote:
+      "Limit physical access … to authorized individuals. … Adjacent rooms or workstations are sometimes shared and may have other tenants or unauthorized people that should be controlled.",
+    options: [
+      {
+        value: "no_dedicated",
+        label: "No — the space is dedicated to FCI work",
+      },
+      {
+        value: "yes_household",
+        label: "Yes — household members (home office)",
+        description:
+          "We'll add a household awareness statement and recommend a locked drawer/room for printed FCI.",
+      },
+      {
+        value: "yes_coworking",
+        label: "Yes — coworking neighbors / building staff",
+        description:
+          "We'll require a privacy screen + lock-screen-on-AFK note in the procedure.",
+      },
+      {
+        value: "yes_office_tenants",
+        label: "Yes — co-tenants in a shared office building",
+      },
+    ],
+  },
+];
+
+const PE3101_WORK_ENV_LABEL: Record<string, string> = {
+  home_office: "home office",
+  leased_office: "leased office / suite the company controls",
+  shared_coworking: "coworking space (suite/desk controlled, building shared)",
+  multiple_sites: "multiple physical locations",
+  cloud_only_no_physical: "cloud-only — no physical FCI handling",
+};
+
+const PE3101_ACCESS_METHOD_LABEL: Record<string, string> = {
+  cloud_badge: "cloud-managed badge system (Verkada/Kisi/Brivo)",
+  physical_keys: "physical keys issued and collected",
+  smart_lock_app: "smart lock with app-paired codes/phones",
+  alarm_armed: "armed alarm system with individual user codes",
+  locked_room_inside: "locked inner room/closet inside a larger space",
+  residential_lock_only: "residential front-door lock (solo home office)",
+};
+
+const PE3101_ROSTER_STATE_LABEL: Record<string, string> = {
+  yes_csv: "existing spreadsheet/doc",
+  paper_only: "paper roster (will be uploaded as scan)",
+  in_my_head: "not written down — Charlie will draft from interview",
+  none: "no roster yet — will be drafted with Charlie",
+};
+
+const PE3101_SHARED_SPACE_LABEL: Record<string, string> = {
+  no_dedicated: "no — space is dedicated to FCI work",
+  yes_household: "yes — household members share the space",
+  yes_coworking: "yes — coworking neighbors / building staff",
+  yes_office_tenants: "yes — co-tenants in a shared office building",
+};
+
+const pe3101Intake: PracticeIntakeSpec = {
+  preamble:
+    "Four quick questions about the physical space where Federal Contract Information actually lives. Every question maps to a NIST 800-171A determination statement for PE.L1-3.10.1. Your answers personalize the roster, enforcement evidence, and procedure — every objective letter still gets covered, only the evidence path changes.",
+  questions: PE3101_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // ─── Cloud-only special case ───
+    // No physical FCI handling → all four objectives satisfied by attestation.
+    if (answers.work_environment === "cloud_only_no_physical") {
+      slotAnnotations.physical_access_roster = {
+        attestation: {
+          buttonLabel: "Attest: no physical FCI workspace exists",
+          autoNarrative:
+            "The organization attests that Federal Contract Information is processed exclusively in cloud services (Microsoft 365 / Google Workspace / approved SaaS) accessed from devices that store no local FCI copies. No physical workspace, server, printer, or storage location contains FCI; physical access controls therefore cannot be circumvented to reach FCI. This attestation satisfies NIST SP 800-171A §3.10.1 determination statements [a], [b], [c], and [d] for this environment. If a physical FCI workspace is introduced in the future, the organization will create a physical-access roster and enforcement evidence at that time.",
+          reason:
+            "You said FCI never touches a physical workspace — under NIST 800-171A this practice's four objectives are satisfied by a single signed attestation. The attestation is stamped with your account and the date.",
+        },
+      };
+      slotAnnotations.physical_access_enforcement = {
+        attestation: {
+          buttonLabel: "Attest: no physical workspace to enforce",
+          autoNarrative:
+            "Per the cloud-only attestation above, no physical workspace exists where FCI is processed or stored. Logical access controls (MFA, conditional access, device-trust policies under IA.L1-3.5.2) carry the full burden of access limitation.",
+          reason: "Same cloud-only basis as the roster attestation.",
+        },
+      };
+      slotAnnotations.physical_access_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Cloud-only setup — Charlie will draft a one-page procedure stating no physical workspace exists and naming the trigger (first printed FCI sheet, first local download) that re-opens this practice.",
+      };
+      return {
+        slotAnnotations,
+        dynamicSlots,
+        hiddenSlotKeys,
+        situationSummary:
+          "Cloud-only operating environment — no physical FCI workspace; all four PE.L1-3.10.1 objectives satisfied by attestation.",
+      };
+    }
+
+    // ─── Roster path ───
+    const rs = answers.roster_state;
+    if (rs === "yes_csv") {
+      slotAnnotations.physical_access_roster = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "You already have a spreadsheet — upload it and Charlie will check that every row has a name, role, what they can access, and the issue/revoke dates.",
+      };
+    } else if (rs === "paper_only") {
+      slotAnnotations.physical_access_roster = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Paper roster — scan as one PDF and upload, or have Charlie transcribe the names into the template if you'd rather keep it digital.",
+      };
+    } else {
+      slotAnnotations.physical_access_roster = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          rs === "in_my_head"
+            ? "Not written down yet — Charlie will draft the roster from a 2-minute interview (who lives here / works here / has a key)."
+            : "No roster yet — Charlie will draft one from a 2-minute interview.",
+      };
+    }
+
+    // ─── Enforcement evidence path ───
+    const am = answers.access_control_method;
+    if (am === "cloud_badge") {
+      slotAnnotations.physical_access_enforcement = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Cloud badge system — upload one screenshot of the access-list panel (names + which doors). That's the assessor's preferred enforcement evidence for [b]/[c]/[d].",
+      };
+    } else if (am === "physical_keys") {
+      slotAnnotations.physical_access_enforcement = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Physical keys — a photo of the locked door + the key cabinet (or a photo of the issued keys) is the simplest enforcement evidence. PE.L1-3.10.5 will collect the full register; here, just prove the door locks.",
+      };
+    } else if (am === "smart_lock_app") {
+      slotAnnotations.physical_access_enforcement = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Smart lock — screenshot of the app's access-codes / authorized-phones list. Bonus: the activity log showing recent unlocks.",
+      };
+    } else if (am === "alarm_armed") {
+      slotAnnotations.physical_access_enforcement = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Armed alarm — screenshot of the user-codes list in your alarm portal. Each row should map a code to a named person.",
+      };
+    } else if (am === "locked_room_inside") {
+      slotAnnotations.physical_access_enforcement = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Inner locked room — photo of the locked door (with your asset tag or some identifying detail) + a note in the procedure naming who has the key.",
+      };
+    } else if (am === "residential_lock_only") {
+      slotAnnotations.physical_access_enforcement = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Solo home office, residential lock — a photo of the front door deadbolt is sufficient. The procedure will state the home address is the operating environment and household membership is the roster.",
+      };
+    }
+
+    // ─── Shared space → adds compensating-control language ───
+    if (answers.shared_space === "yes_household") {
+      slotAnnotations.physical_access_procedure = {
+        ...(slotAnnotations.physical_access_procedure ?? {}),
+        recommendedDestinationIdx: 0,
+        contextNote:
+          (slotAnnotations.physical_access_procedure?.contextNote ?? "") +
+          " Household members share the space — Charlie will add a household awareness statement and a locked-drawer/locked-screen requirement to the procedure.",
+      };
+    } else if (answers.shared_space === "yes_coworking") {
+      slotAnnotations.physical_access_procedure = {
+        ...(slotAnnotations.physical_access_procedure ?? {}),
+        recommendedDestinationIdx: 0,
+        contextNote:
+          (slotAnnotations.physical_access_procedure?.contextNote ?? "") +
+          " Coworking space — Charlie will require privacy-screen + auto-lock + clear-desk policy in the procedure, and recommend a private suite if you regularly print FCI.",
+      };
+    } else if (answers.shared_space === "yes_office_tenants") {
+      slotAnnotations.physical_access_procedure = {
+        ...(slotAnnotations.physical_access_procedure ?? {}),
+        recommendedDestinationIdx: 0,
+        contextNote:
+          (slotAnnotations.physical_access_procedure?.contextNote ?? "") +
+          " Shared office tenants — the procedure will name who's authorized to be in your suite and how shared-area FCI exposure is prevented.",
+      };
+    }
+
+    const situationSummary = [
+      `Operating environment: ${PE3101_WORK_ENV_LABEL[answers.work_environment] ?? "unspecified"}.`,
+      `Access control: ${PE3101_ACCESS_METHOD_LABEL[answers.access_control_method] ?? "unspecified"}.`,
+      `Roster: ${PE3101_ROSTER_STATE_LABEL[answers.roster_state] ?? "unspecified"}.`,
+      `Shared space: ${PE3101_SHARED_SPACE_LABEL[answers.shared_space] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's physical-access posture",
+      `- Operating environment: ${PE3101_WORK_ENV_LABEL[answers.work_environment] ?? "(not specified)"}`,
+      `- Access control method: ${PE3101_ACCESS_METHOD_LABEL[answers.access_control_method] ?? "(not specified)"}`,
+      `- Roster state: ${PE3101_ROSTER_STATE_LABEL[answers.roster_state] ?? "(not specified)"}`,
+      `- Shared space: ${PE3101_SHARED_SPACE_LABEL[answers.shared_space] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the operating environment in one sentence, then drive toward the missing objective letter. If `work_environment = cloud_only_no_physical`, all four objectives are satisfied by attestation — confirm it's signed rather than chasing a roster. If `access_control_method = residential_lock_only`, the procedure must state the home address is the operating environment and household membership is the roster. If `shared_space != no_dedicated`, the procedure has compensating-control language baked in; emphasize that as the priority finding.",
+    ].join("\n");
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — PE.L1-3.10.3 (Escort Visitors)
+//
+// Two objectives [a]/[b]: visitors are escorted; visitor activity is
+// monitored. The common reality at L1 is "we rarely have visitors" —
+// the attestation path is the default for that case.
+//
+// Anchored to:
+//   • NIST SP 800-171A Rev 2 §3.10.3 determination statements [a], [b]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, PE.L1-b.1.ix
+//   • FAR 52.204-21(b)(1)(ix)
+// ────────────────────────────────────────────────────────────────────────
+const PE3103_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "visitor_frequency",
+    objectives: ["a", "b"],
+    prompt:
+      "How often does anyone who isn't on your authorized list physically enter the FCI workspace?",
+    helpText:
+      "Visitors include the IT contractor, the cleaning crew, family members visiting a home office, and the building HVAC technician.",
+    regAnchor:
+      "NIST SP 800-171A §3.10.3 [a]/[b]; CMMC L1 SAG (v2.13) PE.L1-b.1.ix Further Discussion",
+    regQuote:
+      "Determine if: [a] visitors are escorted; [b] visitor activity is monitored. … Anyone who is not authorized for unrestricted access to the area is considered a visitor … including former employees, vendors, and family members.",
+    options: [
+      {
+        value: "none_ever",
+        label: "Essentially never — outsiders don't physically enter",
+        description:
+          "Cloud-only work or a locked solo home office. We'll convert the log into a signed attestation.",
+      },
+      {
+        value: "rare_monthly",
+        label: "Rarely — a few times a year",
+        description:
+          "Cleaning, IT visits, occasional family in a home office. A short historical log is enough.",
+      },
+      {
+        value: "weekly",
+        label: "Weekly — cleaning crew, contractors, or regular guests",
+      },
+      {
+        value: "daily",
+        label: "Daily — open office, shared building, regular foot traffic",
+      },
+    ],
+  },
+  {
+    id: "who_escorts",
+    objectives: ["a"],
+    prompt:
+      "When a visitor IS in the space, who walks them in and stays with them?",
+    helpText:
+      "Pick the actual person/role that does this today. \"No one — they sign in and roam\" is an answer we need to hear honestly.",
+    regAnchor:
+      "NIST SP 800-171A §3.10.3 [a]; CMMC L1 SAG (v2.13) PE.L1-b.1.ix Further Discussion",
+    regQuote:
+      "Determine if: [a] visitors are escorted. … An escort is someone authorized to be in the facility … the escort is responsible for the visitor's activity while in the controlled area.",
+    options: [
+      {
+        value: "always_owner",
+        label: "The owner / a designated escort, always",
+      },
+      {
+        value: "any_employee",
+        label: "Any employee who's there at the time",
+        description:
+          "We'll add a sentence to the procedure naming who has escort authority.",
+      },
+      {
+        value: "none_self_sign",
+        label: "Visitors sign in themselves and walk where they need to go",
+        description:
+          "This is a finding — Charlie will walk the smallest fix: name an escort default and put it in the procedure.",
+      },
+      {
+        value: "na_no_visitors",
+        label: "Not applicable — we have no visitors",
+        description: "Pairs with the \"essentially never\" answer above.",
+      },
+    ],
+  },
+  {
+    id: "monitoring_method",
+    objectives: ["b"],
+    prompt:
+      "How is the visitor's activity actually watched while they're inside?",
+    helpText:
+      "Pick whichever method you can point to most often. \"The escort doesn't leave their side\" is a perfectly good answer.",
+    regAnchor:
+      "NIST SP 800-171A §3.10.3 [b]; CMMC L1 SAG (v2.13) PE.L1-b.1.ix Further Discussion",
+    regQuote:
+      "Determine if: [b] visitor activity is monitored. … monitor activity using cameras, sign-in/out logs, or by accompanying the visitor at all times.",
+    options: [
+      {
+        value: "escort_present",
+        label: "The escort stays with them the entire visit",
+      },
+      {
+        value: "security_camera",
+        label: "Security camera covering the FCI area",
+      },
+      {
+        value: "badge_zone_limit",
+        label: "Visitor badge that only opens public-area doors",
+      },
+      {
+        value: "signed_nda_only",
+        label: "Signed NDA on the way in, no other monitoring",
+        description:
+          "This is a finding — Charlie will walk the smallest fix to pair the NDA with an actual monitoring control.",
+      },
+      {
+        value: "na_no_visitors",
+        label: "Not applicable — we have no visitors",
+      },
+    ],
+  },
+];
+
+const PE3103_FREQ_LABEL: Record<string, string> = {
+  none_ever: "essentially never — no visitors enter the FCI space",
+  rare_monthly: "rare — a few visits per year",
+  weekly: "weekly — regular cleaning / contractor / guest traffic",
+  daily: "daily — open office or shared building",
+};
+
+const PE3103_ESCORT_LABEL: Record<string, string> = {
+  always_owner: "owner or designated escort, always",
+  any_employee: "any employee present at the time",
+  none_self_sign: "no escort — visitors self-route (FINDING)",
+  na_no_visitors: "not applicable — no visitors",
+};
+
+const PE3103_MONITORING_LABEL: Record<string, string> = {
+  escort_present: "escort stays present the entire visit",
+  security_camera: "security camera covers the FCI area",
+  badge_zone_limit: "visitor badge restricts access to public-only zones",
+  signed_nda_only: "signed NDA but no active monitoring (FINDING)",
+  na_no_visitors: "not applicable — no visitors",
+};
+
+const pe3103Intake: PracticeIntakeSpec = {
+  preamble:
+    "Three quick questions about how visitors are handled in the FCI workspace. Each maps to a NIST 800-171A determination statement for PE.L1-3.10.3. If visitors essentially never enter, both objectives collapse into a single signed attestation — every objective still gets covered.",
+  questions: PE3103_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // ─── No-visitors special case ───
+    // visitor_frequency = none_ever → both objectives by attestation.
+    if (answers.visitor_frequency === "none_ever") {
+      slotAnnotations.visitor_log = {
+        attestation: {
+          buttonLabel: "Attest: no visitors enter the FCI space",
+          autoNarrative:
+            "The organization attests that no visitors physically enter the workspace where Federal Contract Information is processed or stored. The operating environment is restricted to authorized individuals identified in PE.L1-3.10.1; no third-party access (cleaning, IT, vendors, guests) occurs in the FCI area. This attestation satisfies NIST SP 800-171A §3.10.3 determination statements [a] and [b] for this environment. If a visit occurs in the future, the documented escort and monitoring procedure (attached) governs that event and the first such visit will be logged.",
+          reason:
+            "You said visitors essentially never enter the FCI space — under NIST 800-171A both objectives are satisfied by a signed attestation, with the written procedure waiting in case anything changes.",
+        },
+      };
+      slotAnnotations.visitor_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "No visitors yet — the procedure is the standing safety net. Charlie will write one that names the default escort (you), the monitoring method (escort-present), and where the log will live once a visit happens.",
+      };
+      return {
+        slotAnnotations,
+        dynamicSlots,
+        hiddenSlotKeys,
+        situationSummary:
+          "No-visitors environment — both PE.L1-3.10.3 objectives satisfied by attestation; procedure carries forward.",
+      };
+    }
+
+    // ─── Visitor log path ───
+    if (answers.visitor_frequency === "rare_monthly") {
+      slotAnnotations.visitor_log = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "A few visits a year — Charlie will draft a short historical log from a 1-minute interview (last 3-5 visits with date, who, why, who escorted).",
+      };
+    } else if (
+      answers.visitor_frequency === "weekly" ||
+      answers.visitor_frequency === "daily"
+    ) {
+      slotAnnotations.visitor_log = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Regular visitor traffic — upload the most recent sign-in book pages or visitor-management export. The log needs the basics: name, organization, host/escort, time in/out.",
+      };
+    }
+
+    // ─── Escort method ───
+    if (answers.who_escorts === "none_self_sign") {
+      slotAnnotations.visitor_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "FINDING: visitors currently self-route. Charlie's procedure will name one default escort (typically you) and require that escort to be present for every visit. This is the priority fix before the next audit.",
+      };
+    } else if (answers.who_escorts === "any_employee") {
+      slotAnnotations.visitor_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Any-employee escort — Charlie's procedure will name the escort authority (\"any employee on the authorized roster may escort\") and clarify what \"escort\" actually means (stay with the visitor, sign them in/out).",
+      };
+    } else if (answers.who_escorts === "always_owner") {
+      slotAnnotations.visitor_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Owner-only escort — Charlie's procedure will codify that as the policy: no visitors enter unless the designated escort is present.",
+      };
+    }
+
+    // ─── Monitoring method ───
+    if (answers.monitoring_method === "signed_nda_only") {
+      slotAnnotations.visitor_procedure = {
+        ...(slotAnnotations.visitor_procedure ?? {}),
+        recommendedDestinationIdx: 0,
+        contextNote:
+          (slotAnnotations.visitor_procedure?.contextNote ?? "") +
+          " FINDING: NDA-only is not a monitoring control. Charlie will pair it with escort-present as the actual [b] control.",
+      };
+    }
+
+    const situationSummary = [
+      `Visitor frequency: ${PE3103_FREQ_LABEL[answers.visitor_frequency] ?? "unspecified"}.`,
+      `Escort: ${PE3103_ESCORT_LABEL[answers.who_escorts] ?? "unspecified"}.`,
+      `Monitoring: ${PE3103_MONITORING_LABEL[answers.monitoring_method] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's visitor-handling posture",
+      `- Visitor frequency: ${PE3103_FREQ_LABEL[answers.visitor_frequency] ?? "(not specified)"}`,
+      `- Escort method: ${PE3103_ESCORT_LABEL[answers.who_escorts] ?? "(not specified)"}`,
+      `- Monitoring method: ${PE3103_MONITORING_LABEL[answers.monitoring_method] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the visitor posture in one sentence, then drive toward the missing objective. If `visitor_frequency = none_ever`, both objectives are satisfied by attestation — confirm it's signed rather than chasing a log. If `who_escorts = none_self_sign` or `monitoring_method = signed_nda_only`, name those as priority findings and walk the smallest remediation (default escort + escort-present monitoring).",
+    ].join("\n");
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — PE.L1-3.10.4 (Physical Access Logs)
+//
+// One objective [a]: physical access audit logs are maintained.
+//
+// Anchored to:
+//   • NIST SP 800-171A Rev 2 §3.10.4 determination statement [a]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, PE.L1-b.1.x
+//   • FAR 52.204-21(b)(1)(x)
+// ────────────────────────────────────────────────────────────────────────
+const PE3104_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "log_format",
+    objectives: ["a"],
+    prompt:
+      "What format do your physical-access records actually live in today?",
+    helpText:
+      "Pick the one with the most entries. If you have multiple, we'll prioritize the digital export.",
+    regAnchor:
+      "NIST SP 800-171A §3.10.4 [a]; CMMC L1 SAG (v2.13) PE.L1-b.1.x Further Discussion",
+    regQuote:
+      "Determine if: [a] audit logs of physical access are maintained. … Audit logs are records that document who is physically entering the facility, when, and what areas they accessed.",
+    options: [
+      {
+        value: "badge_system_export",
+        label: "Cloud badge system audit log (Kisi / Verkada / Brivo)",
+      },
+      {
+        value: "smart_lock_history",
+        label: "Smart-lock activity history (August / Yale / Schlage)",
+      },
+      {
+        value: "paper_book",
+        label: "Paper sign-in book or sheet",
+      },
+      {
+        value: "alarm_log",
+        label: "Alarm-system event log (arm/disarm with user codes)",
+      },
+      {
+        value: "none_yet",
+        label: "No log exists yet",
+        description:
+          "Charlie will draft a starter log from a quick interview, and the procedure will name where future entries go.",
+      },
+    ],
+  },
+  {
+    id: "log_retention",
+    objectives: ["a"],
+    prompt:
+      "How long do you keep physical-access records before they're destroyed or overwritten?",
+    helpText:
+      "The common assessor bar is one year. If your system retains forever or you don't know, pick the closest match.",
+    regAnchor:
+      "NIST SP 800-171A §3.10.4 [a]; CMMC L1 SAG (v2.13) PE.L1-b.1.x Potential Assessment Considerations",
+    regQuote:
+      "Examine: physical access logs; … Are the logs maintained for sufficient time to support investigations and reviews?",
+    options: [
+      {
+        value: "one_year_plus",
+        label: "At least one year",
+      },
+      {
+        value: "less_than_year",
+        label: "Less than a year",
+        description:
+          "We'll bring this up in the procedure — most assessors expect at least 12 months.",
+      },
+      {
+        value: "until_full",
+        label: "Until the book/log is full, then archived",
+      },
+      {
+        value: "no_policy",
+        label: "No retention policy yet",
+        description: "Charlie will write a one-line policy in the procedure.",
+      },
+    ],
+  },
+];
+
+const PE3104_LOG_FORMAT_LABEL: Record<string, string> = {
+  badge_system_export: "cloud badge audit log (Kisi/Verkada/Brivo)",
+  smart_lock_history: "smart-lock activity history",
+  paper_book: "paper sign-in book/sheet",
+  alarm_log: "alarm-system event log",
+  none_yet: "no log yet — will be drafted with Charlie",
+};
+
+const PE3104_RETENTION_LABEL: Record<string, string> = {
+  one_year_plus: "at least one year",
+  less_than_year: "less than one year (FINDING — bar is typically 12 months)",
+  until_full: "until full, then archived",
+  no_policy: "no retention policy yet",
+};
+
+const pe3104Intake: PracticeIntakeSpec = {
+  preamble:
+    "Two quick questions about how physical-entry events are recorded and how long the records survive. Both questions map to NIST 800-171A §3.10.4 [a]. Whichever format you actually use is fine — we just need the evidence path to match it.",
+  questions: PE3104_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // ─── Log format path ───
+    const lf = answers.log_format;
+    if (lf === "badge_system_export" || lf === "alarm_log") {
+      slotAnnotations.physical_access_log = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          lf === "badge_system_export"
+            ? "Cloud badge system — export the last 30-90 days of access events (CSV or PDF) and upload. The assessor wants to see at least one named person per row, with timestamps."
+            : "Alarm event log — export the arm/disarm events with user codes and upload. Each row should map a code to a named person.",
+      };
+    } else if (lf === "smart_lock_history") {
+      slotAnnotations.physical_access_log = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Smart-lock history — screenshot the last month's activity feed (showing user names or codes) and upload as a PDF or image.",
+      };
+    } else if (lf === "paper_book") {
+      slotAnnotations.physical_access_log = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Paper sign-in book — photograph each filled page or scan as a PDF and upload. Charlie can also transcribe the rows into the digital template if you'd rather.",
+      };
+    } else if (lf === "none_yet") {
+      slotAnnotations.physical_access_log = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "No log yet — Charlie will draft a starter log from a 1-minute interview (any recent visitor, any recent badge swap). The procedure below will name where future entries go.",
+      };
+    }
+
+    // ─── Retention procedure path ───
+    const rt = answers.log_retention;
+    if (rt === "less_than_year") {
+      slotAnnotations.log_retention_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "FINDING: retention is under one year. Charlie's procedure will set the target at 12 months and name where archived logs live — that closes [a] cleanly.",
+      };
+    } else if (rt === "no_policy") {
+      slotAnnotations.log_retention_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "No retention policy yet — Charlie will write a one-paragraph procedure setting retention at 12 months and naming the archive location.",
+      };
+    } else {
+      slotAnnotations.log_retention_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          rt === "one_year_plus"
+            ? "You retain ≥ 1 year — Charlie's procedure will codify that, name the archive location, and clarify who's allowed to destroy old logs."
+            : "Retain-until-full — Charlie's procedure will codify the archive step (which folder/drawer/system) and the destroy step.",
+      };
+    }
+
+    const situationSummary = [
+      `Log format: ${PE3104_LOG_FORMAT_LABEL[answers.log_format] ?? "unspecified"}.`,
+      `Retention: ${PE3104_RETENTION_LABEL[answers.log_retention] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's physical-access logging",
+      `- Log format: ${PE3104_LOG_FORMAT_LABEL[answers.log_format] ?? "(not specified)"}`,
+      `- Retention: ${PE3104_RETENTION_LABEL[answers.log_retention] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the log format in one sentence, then drive toward [a]. If `log_format = none_yet`, draft the log + write the procedure are equal-priority. If `log_retention = less_than_year`, name the 12-month bar as the priority finding.",
+    ].join("\n");
+  },
+};
+
+// ────────────────────────────────────────────────────────────────────────
+// Intake spec — PE.L1-3.10.5 (Manage Physical Access Devices)
+//
+// Three objectives [a]/[b]/[c]: physical access devices are identified,
+// controlled, and managed.
+//
+// Anchored to:
+//   • NIST SP 800-171A Rev 2 §3.10.5 determination statements [a], [b], [c]
+//   • CMMC Self-Assessment Guide — Level 1 v2.13, PE.L1-b.1.xi
+//   • FAR 52.204-21(b)(1)(xi)
+// ────────────────────────────────────────────────────────────────────────
+const PE3105_QUESTIONS: IntakeQuestion[] = [
+  {
+    id: "device_types",
+    objectives: ["a"],
+    prompt:
+      "Which physical access devices are actually in use today?",
+    helpText:
+      "Pick the option that names what you issue. \"My household has front-door keys\" counts — the register will list them.",
+    regAnchor:
+      "NIST SP 800-171A §3.10.5 [a]; CMMC L1 SAG (v2.13) PE.L1-b.1.xi Further Discussion",
+    regQuote:
+      "Determine if: [a] physical access devices are identified. … Physical access devices include keys, locks, combinations, biometric readers, and card readers.",
+    options: [
+      {
+        value: "cloud_badge",
+        label: "Badges / fobs tied to a cloud badge system",
+        description: "Verkada, Kisi, Brivo, Openpath, etc.",
+      },
+      {
+        value: "physical_keys",
+        label: "Physical metal keys",
+      },
+      {
+        value: "fobs_only",
+        label: "RFID fobs / prox cards (not cloud-managed)",
+      },
+      {
+        value: "alarm_codes",
+        label: "Alarm-panel user codes",
+      },
+      {
+        value: "smart_lock_pin",
+        label: "Smart-lock PINs / app-paired phones",
+      },
+      {
+        value: "multiple",
+        label: "More than one of the above",
+        description:
+          "We'll have the register cover every device type with a column for kind/serial/assignee.",
+      },
+      {
+        value: "none_inside_unit",
+        label: "None — no issued devices (residential unit only)",
+        description:
+          "Solo home office with the regular front-door key. We'll attest to that with a 1-row register.",
+      },
+    ],
+  },
+  {
+    id: "register_state",
+    objectives: ["a"],
+    prompt:
+      "Do you already track which keys/fobs/codes are issued to whom?",
+    helpText:
+      "Anything that names every device + every assignee works — a Notion doc, a printed sheet, the badge system's own list.",
+    regAnchor:
+      "NIST SP 800-171A §3.10.5 [a]; CMMC L1 SAG (v2.13) PE.L1-b.1.xi Potential Assessment Considerations",
+    regQuote:
+      "Examine: list of physical access devices; … Are the keys, locks, combinations, and other physical access devices being effectively managed?",
+    options: [
+      {
+        value: "yes_csv",
+        label: "Yes — a spreadsheet or doc I can export",
+      },
+      {
+        value: "paper_log",
+        label: "Yes — but it's on paper",
+      },
+      {
+        value: "in_my_head",
+        label: "Not written down — I know who has what",
+        description: "Charlie will draft the register from a 2-minute interview.",
+      },
+      {
+        value: "none",
+        label: "No register yet",
+      },
+    ],
+  },
+  {
+    id: "revocation_method",
+    objectives: ["b", "c"],
+    prompt:
+      "When someone leaves or changes roles, how do you take their access device back?",
+    helpText:
+      "Pick the most realistic answer for your team. \"There's only me\" is a fine answer.",
+    regAnchor:
+      "NIST SP 800-171A §3.10.5 [b]/[c]; CMMC L1 SAG (v2.13) PE.L1-b.1.xi Further Discussion",
+    regQuote:
+      "Determine if: [b] physical access devices are controlled; [c] physical access devices are managed. … Establish a process for issuing, recovering, replacing, and managing physical access devices.",
+    options: [
+      {
+        value: "badge_system_disable",
+        label: "Disable the badge/fob in the cloud system",
+      },
+      {
+        value: "collect_physical",
+        label: "Collect the physical key/fob and mark it returned",
+      },
+      {
+        value: "change_locks",
+        label: "Re-key the locks (rare events, but it's what we'd do)",
+      },
+      {
+        value: "change_codes",
+        label: "Change the alarm/smart-lock code or rotate PINs",
+      },
+      {
+        value: "na_solo",
+        label: "Not applicable — solo operator, no other holders",
+        description:
+          "We'll attest to that and the register becomes a one-row entry naming you.",
+      },
+    ],
+  },
+];
+
+const PE3105_DEVICE_LABEL: Record<string, string> = {
+  cloud_badge: "badges/fobs in a cloud badge system",
+  physical_keys: "physical metal keys",
+  fobs_only: "RFID fobs / prox cards (not cloud-managed)",
+  alarm_codes: "alarm-panel user codes",
+  smart_lock_pin: "smart-lock PINs / app-paired phones",
+  multiple: "multiple device types in use",
+  none_inside_unit: "no issued devices — residential unit only",
+};
+
+const PE3105_REGISTER_LABEL: Record<string, string> = {
+  yes_csv: "existing spreadsheet/doc",
+  paper_log: "paper register",
+  in_my_head: "not written down — Charlie will draft from interview",
+  none: "no register yet",
+};
+
+const PE3105_REVOKE_LABEL: Record<string, string> = {
+  badge_system_disable: "disable badge/fob in the cloud system",
+  collect_physical: "collect the physical key/fob and mark returned",
+  change_locks: "re-key the locks",
+  change_codes: "rotate alarm/lock codes/PINs",
+  na_solo: "not applicable — solo operator",
+};
+
+const pe3105Intake: PracticeIntakeSpec = {
+  preamble:
+    "Three quick questions about the keys, fobs, badges, and codes that control physical access. Every question maps to a NIST 800-171A determination statement for PE.L1-3.10.5. The register, the issue/revoke procedure, or both will be drafted or pulled based on your answers.",
+  questions: PE3105_QUESTIONS,
+  personalize: (answers) => {
+    const slotAnnotations: Record<string, SlotAnnotation> = {};
+    const dynamicSlots: EvidenceSlot[] = [];
+    const hiddenSlotKeys: string[] = [];
+
+    // ─── Solo operator + residential-only special case ───
+    if (
+      answers.device_types === "none_inside_unit" &&
+      answers.revocation_method === "na_solo"
+    ) {
+      slotAnnotations.access_device_register = {
+        attestation: {
+          buttonLabel: "Attest: solo operator, no issued devices",
+          autoNarrative:
+            "The organization attests that no physical access devices are issued. The operating environment is a residential unit secured by the standard front-door lock; the sole operator holds the only key and no badges, fobs, alarm codes, or smart-lock PINs are provisioned for other individuals. This attestation satisfies NIST SP 800-171A §3.10.5 determination statements [a], [b], and [c] for this environment. If a second person is granted physical access in the future, an access-device register will be created at that time.",
+          reason:
+            "You said you're a solo operator with no issued devices — under NIST 800-171A all three objectives are satisfied by a signed attestation. The procedure remains as a forward-looking placeholder.",
+        },
+      };
+      slotAnnotations.access_device_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Solo operator — Charlie will write a one-paragraph procedure that names the trigger (first issued device) and the issue/revoke steps that will run from that point on.",
+      };
+      return {
+        slotAnnotations,
+        dynamicSlots,
+        hiddenSlotKeys,
+        situationSummary:
+          "Solo operator, residential unit, no issued devices — all three PE.L1-3.10.5 objectives satisfied by attestation.",
+      };
+    }
+
+    // ─── Register path ───
+    const rs = answers.register_state;
+    if (rs === "yes_csv") {
+      slotAnnotations.access_device_register = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "You already have a register — upload it and Charlie will check that every row has a device ID/serial, assignee, issue date, and status.",
+      };
+    } else if (rs === "paper_log") {
+      slotAnnotations.access_device_register = {
+        recommendedDestinationIdx: 1,
+        contextNote:
+          "Paper register — scan as a PDF and upload, or have Charlie transcribe into the template.",
+      };
+    } else {
+      slotAnnotations.access_device_register = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          rs === "in_my_head"
+            ? "Not written down — Charlie will draft the register from a 2-minute interview (who has what, issued when)."
+            : "No register yet — Charlie will draft one from a quick interview.",
+      };
+    }
+
+    // ─── Device type colors the register's column emphasis ───
+    if (answers.device_types === "cloud_badge") {
+      slotAnnotations.access_device_register = {
+        ...(slotAnnotations.access_device_register ?? {}),
+        contextNote:
+          (slotAnnotations.access_device_register?.contextNote ?? "") +
+          " You're on a cloud badge system — the fastest path is to export the system's roster (Kisi/Verkada/Brivo all have one-click CSV) and upload that directly.",
+      };
+    }
+
+    // ─── Revocation method drives the procedure ───
+    const rm = answers.revocation_method;
+    if (rm === "badge_system_disable") {
+      slotAnnotations.access_device_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Badge-system revocation — Charlie's procedure will name the badge system, the admin role, and the SLA (\"disable within 1 business day of termination\").",
+      };
+    } else if (rm === "collect_physical") {
+      slotAnnotations.access_device_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Physical collection — Charlie's procedure will name who's responsible for collecting the key at exit and how the register is updated.",
+      };
+    } else if (rm === "change_locks") {
+      slotAnnotations.access_device_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Re-key on departure — Charlie's procedure will codify the trigger conditions (key not returned, locks compromised, departure of a long-tenured holder).",
+      };
+    } else if (rm === "change_codes") {
+      slotAnnotations.access_device_procedure = {
+        recommendedDestinationIdx: 0,
+        contextNote:
+          "Code rotation — Charlie's procedure will name how often codes are rotated and the trigger (departure, role change, suspected compromise).",
+      };
+    }
+
+    const situationSummary = [
+      `Device types: ${PE3105_DEVICE_LABEL[answers.device_types] ?? "unspecified"}.`,
+      `Register: ${PE3105_REGISTER_LABEL[answers.register_state] ?? "unspecified"}.`,
+      `Revocation: ${PE3105_REVOKE_LABEL[answers.revocation_method] ?? "unspecified"}.`,
+    ].join(" ");
+
+    return { slotAnnotations, dynamicSlots, hiddenSlotKeys, situationSummary };
+  },
+  charlieBrief: (answers) => {
+    return [
+      "## What we already know about this user's access-device posture",
+      `- Device types: ${PE3105_DEVICE_LABEL[answers.device_types] ?? "(not specified)"}`,
+      `- Register state: ${PE3105_REGISTER_LABEL[answers.register_state] ?? "(not specified)"}`,
+      `- Revocation method: ${PE3105_REVOKE_LABEL[answers.revocation_method] ?? "(not specified)"}`,
+      "",
+      "Do NOT re-ask these facts. Open by naming the device posture in one sentence, then drive toward the missing objective. If `device_types = none_inside_unit` AND `revocation_method = na_solo`, all three objectives are satisfied by attestation — confirm it's signed rather than chasing a register. If `device_types = cloud_badge`, point the user at the one-click roster export from their badge system as the fastest path.",
+    ].join("\n");
+  },
+};
+
 export const practiceSpecs: Record<string, PracticeSpec> = {
   "AC.L1-3.1.1": {
     controlId: "AC.L1-3.1.1",
@@ -3727,6 +4790,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
   "PE.L1-3.10.1": {
     controlId: "PE.L1-3.10.1",
     shortName: "Limit Physical Access",
+    intake: pe3101Intake,
     oneLiner:
       "Only people you've named can walk into rooms where FCI lives — write the list and lock the door.",
     statement:
@@ -3828,6 +4892,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
   "PE.L1-3.10.3": {
     controlId: "PE.L1-3.10.3",
     shortName: "Escort Visitors",
+    intake: pe3103Intake,
     oneLiner:
       "Anyone who isn't on your roster gets escorted and watched while they're in FCI areas.",
     statement: "Escort visitors and monitor visitor activity.",
@@ -3901,6 +4966,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
   "PE.L1-3.10.4": {
     controlId: "PE.L1-3.10.4",
     shortName: "Physical Access Logs",
+    intake: pe3104Intake,
     oneLiner:
       "Keep a record of who came in and when — paper sign-in book or cloud badge audit log both work.",
     statement: "Maintain audit logs of physical access.",
@@ -3973,6 +5039,7 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
   "PE.L1-3.10.5": {
     controlId: "PE.L1-3.10.5",
     shortName: "Manage Physical Access Devices",
+    intake: pe3105Intake,
     oneLiner:
       "Inventory every key, fob, and badge — and revoke them when someone leaves.",
     statement: "Control and manage physical access devices.",
