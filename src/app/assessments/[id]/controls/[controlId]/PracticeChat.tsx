@@ -1787,9 +1787,7 @@ function InlineDraftButton({
   const onClick = () => {
     setWaiting(true);
     // Slot-focused directive. Plain-English required, ban jargon, ONE
-    // question at a time, then call generate_evidence_artifact when
-    // there's enough info. The slot_key + filename + format are passed
-    // verbatim so Charlie can't fumble the arguments.
+    // question at a time, then save the artifact when there's enough info.
     //
     // Critical: explicitly forbid `navigate_user_to`. The chat tool loop
     // will happily call it (especially when this practice already looks
@@ -1797,23 +1795,36 @@ function InlineDraftButton({
     // — that's how a click here was bouncing the user to the next
     // control page. Pin Charlie to this practice until the artifact is
     // generated.
+    //
+    // Equally critical: do NOT include the literal tokens
+    // `generate_evidence_artifact` or `slot_key:`/`slot_key=` in this
+    // message. The stream.ts pre-flight heuristic (see
+    // `decideForcedToolChoiceForFirstTurn`) detects that exact pattern and
+    // force-pins `tool_choice` to `generate_evidence_artifact` on turn 1,
+    // which causes Charlie to fire the tool immediately using
+    // profile-context guesses instead of asking the user any questions.
+    // Charlie's system prompt + the tool definition already know how to
+    // call the tool with the right slot key + filename + format; we just
+    // need to name the slot, hand it the filename/format, and tell it to
+    // ASK FIRST.
     const message =
       `**SLOT-DRAFT REQUEST — override any prior context.** ` +
-      `I just clicked the "${label}" button on the EMPTY \`${slot.key}\` slot card for this practice. ` +
+      `I just clicked the "${label}" button on the EMPTY **${slot.label}** evidence card for this practice (key: ${slot.key.replace(/_/g, "-")}). ` +
       `The slot is currently empty — ignore anything the prior chat history says about this slot being filled, drafted, or done. The reset button wiped it. ` +
       `Your job RIGHT NOW: draft the **${slot.label}** as a fresh artifact. ` +
       `What it's for: ${slot.hint} ` +
       `\n\n**Behavior rules (these override the general system prompt for this turn):**\n` +
-      `1. DO NOT call \`navigate_user_to\` — I am staying on this page.\n` +
-      `2. DO NOT call \`interview_for_control_narrative\` — this is a slot-draft, not the SSP narrative interview.\n` +
+      `1. DO NOT navigate me anywhere — I am staying on this page.\n` +
+      `2. DO NOT start the SSP narrative interview — this is a slot draft, not the narrative.\n` +
       `3. DO NOT recap "what's left", "outstanding objectives", "want to continue the interview", "tackle the enforcement proof", or any other slot. Pretend you have never seen this practice before.\n` +
       `4. DO NOT ask a multiple-choice question or offer menus ("a/b/c", "option 1/2/3"). Just ask one short plain-English question at a time.\n` +
-      `5. Ban these words from your replies: FCI, NIST, baseline, attestation, objective, satisfies, AC.L1, 800-171.\n` +
+      `5. DO NOT produce the artifact yet. Even if my profile or scope data looks like it has enough to fill the file, you MUST ask me to confirm the specifics out loud before saving anything. No profile guesses, no placeholders, no "I'll start from what I see."\n` +
+      `6. Ban these words from your replies: FCI, NIST, baseline, attestation, objective, satisfies, AC.L1, 800-171.\n` +
       `\n**What to do:**\n` +
-      `Ask me ONE short plain-English question to learn the facts you need for the ${slot.label}. After my answer, ask the next one. Three or four short questions total, max. ` +
-      `Then call \`generate_evidence_artifact\` with slot_key="${slot.key}", filename="${filename}", format="${format}", using ONLY my real answers (no "[FILL IN]" placeholders — if a field doesn't apply to my setup, leave it out entirely). ` +
-      `After the tool returns, give me a one-sentence "I dropped it in your evidence" summary and stop. ` +
-      `\n\n**Start now with your first question.**`;
+      `Ask me ONE short plain-English question to learn the facts you need for the ${slot.label}. After I answer, ask the next one. Three or four short questions total, max — only what you actually need to fill this artifact, nothing more. ` +
+      `Once I've answered, save the artifact into the **${slot.label}** slot — filename **${filename}**, format **${format}** — using ONLY my real answers (no "[FILL IN]" placeholders, no profile-guessed names — if a field doesn't apply to my setup, leave it out entirely). ` +
+      `After it's saved, give me a one-sentence "I dropped it in your evidence" summary and stop. ` +
+      `\n\n**Start now with your first question. Do not save anything yet.**`;
     window.dispatchEvent(
       new CustomEvent("charlie-send-message", { detail: { message } }),
     );
