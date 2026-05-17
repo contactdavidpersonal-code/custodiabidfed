@@ -124,13 +124,24 @@ const domainLabels: Record<(typeof controlDomains)[number], string> = {
 function rollupRequirementStatus(
   responses: Map<string, ControlResponseRow>,
   legacyIds: string[],
+  practiceProgress: Map<string, PracticeProgress>,
 ): ControlResponseRow["status"] {
   const statuses = legacyIds.map(
     (id) => responses.get(id)?.status ?? "unanswered",
   );
   if (statuses.includes("no")) return "no";
   if (statuses.includes("partial")) return "partial";
-  if (statuses.includes("unanswered")) return "unanswered";
+  // New 4-layer working model: the legacy yes/no/partial answer is never
+  // touched until the user finalizes. So a requirement where the user has
+  // answered intake questions / generated verdicts / uploaded evidence still
+  // reads as "unanswered" in the legacy table. Promote it to "partial" so
+  // the dashboard shows real in-flight work instead of NOT STARTED.
+  const anyTouched = legacyIds.some(
+    (id) => practiceProgress.get(id)?.touched === true,
+  );
+  if (statuses.includes("unanswered")) {
+    return anyTouched ? "partial" : "unanswered";
+  }
   if (statuses.every((s) => s === "not_applicable")) return "not_applicable";
   return "yes";
 }
@@ -159,6 +170,24 @@ export default async function AssessmentOverviewPage(
   ]);
   const responseByControl = new Map(responses.map((r) => [r.control_id, r]));
   const progress = computeProgress(responses);
+  // Count requirements that are still legacy-unanswered but where the user
+  // has touched the practice (intake answers / verdicts / evidence). These
+  // shift from "Not started" to "Partial" on the dashboard pills so the
+  // counts stay consistent with the per-row pills below, which already use
+  // the touched signal via rollupRequirementStatus.
+  const touchedUnansweredCount = cmmcL1Requirements.filter((reqId) => {
+    const legacyIds = requirementToLegacy[reqId];
+    const statuses = legacyIds.map(
+      (id) => responseByControl.get(id)?.status ?? "unanswered",
+    );
+    if (!statuses.includes("unanswered")) return false;
+    if (statuses.includes("no") || statuses.includes("partial")) return false;
+    return legacyIds.some(
+      (id) => practiceProgress.get(id)?.touched === true,
+    );
+  }).length;
+  const displayPartial = progress.partial + progress.notMet + touchedUnansweredCount;
+  const displayUnanswered = Math.max(0, progress.unanswered - touchedUnansweredCount);
   const profileDone = isProfileComplete(ctx.organization);
   const allAnswered = progress.unanswered === 0;
   const hasBlockers = progress.notMet > 0 || progress.partial > 0;
@@ -223,13 +252,13 @@ export default async function AssessmentOverviewPage(
         <ProgressPill label="Met" value={progress.met} tone="emerald" />
         <ProgressPill
           label="Partial"
-          value={progress.partial + progress.notMet}
+          value={displayPartial}
           tone="amber"
         />
         <ProgressPill label="N/A" value={progress.notApplicable} tone="sky" />
         <ProgressPill
           label="Not started"
-          value={progress.unanswered}
+          value={displayUnanswered}
           tone="slate"
         />
       </section>
@@ -257,6 +286,7 @@ export default async function AssessmentOverviewPage(
               status: rollupRequirementStatus(
                 responseByControl,
                 requirementToLegacy[reqId],
+                practiceProgress,
               ),
             }));
             const answered = domainRollups.filter(

@@ -32,6 +32,15 @@ export type PracticeProgress = {
   filledRequiredSlots: number;
   /** Total required slots in this practice (spec-driven). */
   totalRequiredSlots: number;
+  /**
+   * True when the user has done *real* work on the practice beyond just
+   * opening the page — answered at least one intake question, produced an
+   * objective verdict, or uploaded evidence. The overview page uses this to
+   * promote a still-unanswered legacy status from NOT STARTED → PARTIAL so
+   * the dashboard reflects in-flight work. Set by the server batch loader;
+   * the pure `computePracticePercent` helper leaves this undefined.
+   */
+  touched?: boolean;
 };
 
 type EvidenceLike = {

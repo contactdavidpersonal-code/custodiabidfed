@@ -41,10 +41,11 @@ export async function listPracticeProgressForAssessment(
   type ConvRow = {
     control_id: string;
     objective_verdicts: Record<string, ObjectiveVerdict> | null;
+    intake_answers: Record<string, string> | null;
   };
   const [convRows, evidenceRows] = await Promise.all([
     sql`
-      SELECT control_id, objective_verdicts
+      SELECT control_id, objective_verdicts, intake_answers
       FROM practice_conversations
       WHERE assessment_id = ${assessmentId}
     ` as unknown as Promise<ConvRow[]>,
@@ -56,8 +57,21 @@ export async function listPracticeProgressForAssessment(
     string,
     Record<string, ObjectiveVerdict>
   >();
+  // "Touched" = the user has done *something* on this practice beyond just
+  // visiting the page: answered an intake question, generated a verdict, or
+  // uploaded evidence. The overview page promotes a touched-but-unanswered
+  // requirement from NOT STARTED → PARTIAL so the row reflects real work.
+  const touchedControls = new Set<string>();
   for (const row of convRows) {
     verdictsByControl.set(row.control_id, row.objective_verdicts ?? {});
+    const hasIntake =
+      row.intake_answers != null && Object.keys(row.intake_answers).length > 0;
+    const hasVerdicts =
+      row.objective_verdicts != null &&
+      Object.keys(row.objective_verdicts).length > 0;
+    if (hasIntake || hasVerdicts) {
+      touchedControls.add(row.control_id);
+    }
   }
   const evidenceByControl = new Map<
     string,
@@ -71,6 +85,8 @@ export async function listPracticeProgressForAssessment(
       ai_review_verdict: ev.ai_review_verdict,
     });
     evidenceByControl.set(ev.control_id, list);
+    // Any uploaded evidence counts as a touch.
+    touchedControls.add(ev.control_id);
   }
 
   const controlIds = new Set<string>([
@@ -87,7 +103,7 @@ export async function listPracticeProgressForAssessment(
       verdicts: verdictsByControl.get(controlId) ?? {},
       evidence: evidenceByControl.get(controlId) ?? [],
     });
-    out.set(controlId, progress);
+    out.set(controlId, { ...progress, touched: touchedControls.has(controlId) });
   }
   return out;
 }
