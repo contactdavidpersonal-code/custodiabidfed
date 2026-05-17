@@ -19,11 +19,18 @@ import {
 import { listPracticeProgressForAssessment } from "@/lib/cmmc/practice-progress-server";
 import type { PracticeProgress } from "@/lib/cmmc/practice-progress";
 
+// CMMC L1 v2.13 has three terminal states per the Assessment Guide: MET,
+// NOT MET, NOT APPLICABLE. In the guided 4-layer working model the user
+// never explicitly chooses "NOT MET" — a practice walks Not started →
+// Partial (intake answered, evidence missing) → MET. The legacy `no` row
+// only exists for back-compat with the old yes/no/partial answer schema,
+// so we fold it into Partial for the dashboard pill + row pill (it still
+// counts as a blocker for signing — see computeProgress + sign/page.tsx).
 const statusLabels: Record<ControlResponseRow["status"], string> = {
   unanswered: "Not started",
   yes: "MET",
   partial: "Partial",
-  no: "NOT MET",
+  no: "Partial",
   not_applicable: "N/A",
 };
 
@@ -31,7 +38,7 @@ const statusDotStyles: Record<ControlResponseRow["status"], string> = {
   unanswered: "bg-[#cfe3d9]",
   yes: "bg-[#2f8f6d]",
   partial: "bg-[#7ba87f]",
-  no: "bg-[#b03a2e]",
+  no: "bg-[#7ba87f]",
   not_applicable: "bg-[#5a7d70]",
 };
 
@@ -39,7 +46,7 @@ const statusPillStyles: Record<ControlResponseRow["status"], string> = {
   unanswered: "bg-[#f1f6f3] text-[#5a7d70] ring-[#cfe3d9]",
   yes: "bg-[#eaf3ee] text-[#0e2a23] ring-[#bde0cc]",
   partial: "bg-[#eef6ea] text-[#3d6b3a] ring-[#cfe3c2]",
-  no: "bg-[#fbe9e6] text-[#b03a2e] ring-[#f1c4bd]",
+  no: "bg-[#eef6ea] text-[#3d6b3a] ring-[#cfe3c2]",
   not_applicable: "bg-[#f1f6f3] text-[#5a7d70] ring-[#cfe3d9]",
 };
 
@@ -85,7 +92,7 @@ const statusBarColor: Record<ControlResponseRow["status"], string> = {
   unanswered: "bg-[#cfe3d9]",
   yes: "bg-[#2f8f6d]",
   partial: "bg-[#7ba87f]",
-  no: "bg-[#b03a2e]",
+  no: "bg-[#7ba87f]",
   not_applicable: "bg-[#5a7d70]",
 };
 
@@ -207,10 +214,18 @@ export default async function AssessmentOverviewPage(
         assessmentId={ctx.assessment.id}
       />
 
-      <section className="mb-12 grid gap-3 md:grid-cols-5">
+      {/* Status pills — 4 buckets, not 5. CMMC L1 only has three terminal
+          states (MET / NOT MET / N/A); during the guided walk a practice is
+          Not started → Partial → MET (or N/A). "NOT MET" is folded into
+          Partial because both mean "work remaining" — see statusLabels above.
+          The full breakdown still lives in `progress` for signing checks. */}
+      <section className="mb-12 grid gap-3 md:grid-cols-4">
         <ProgressPill label="Met" value={progress.met} tone="emerald" />
-        <ProgressPill label="Partial" value={progress.partial} tone="amber" />
-        <ProgressPill label="Not met" value={progress.notMet} tone="rose" />
+        <ProgressPill
+          label="Partial"
+          value={progress.partial + progress.notMet}
+          tone="amber"
+        />
         <ProgressPill label="N/A" value={progress.notApplicable} tone="sky" />
         <ProgressPill
           label="Not started"
