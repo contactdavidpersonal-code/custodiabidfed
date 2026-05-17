@@ -5102,9 +5102,9 @@ const SI3144_QUESTIONS: IntakeQuestion[] = [
   {
     id: "av_update_mode",
     objectives: ["a"],
-    prompt: "How do AV definitions get updated on your endpoints?",
+    prompt: "How does your antivirus software get its latest threat list?",
     helpText:
-      "Modern AV products auto-update by default. Pick whatever's actually true.",
+      "Most modern antivirus software downloads its own updates in the background. Pick whatever's actually true for your computers.",
     regAnchor:
       "NIST SP 800-171A §3.14.4 [a]; CMMC L1 SAG (v2.13) SI.L1-b.1.xvi Further Discussion",
     regQuote:
@@ -5112,32 +5112,35 @@ const SI3144_QUESTIONS: IntakeQuestion[] = [
     options: [
       {
         value: "auto_default",
-        label: "Auto-updates are on (Defender / vendor default)",
-        description: "The factory default for almost every AV product.",
+        label: "It updates itself automatically in the background",
+        description:
+          "This is the factory default for almost every antivirus, including Microsoft Defender (the antivirus built into Windows).",
       },
       {
         value: "mdm_pushed",
-        label: "Pushed via MDM / Intune / endpoint manager",
+        label: "Our IT tool pushes updates out to every computer",
+        description:
+          "You use something like Microsoft Intune, Jamf, or Google Workspace's device management to keep computers updated centrally.",
       },
       {
         value: "manual_user_runs",
-        label: "Users run updates manually",
+        label: "Each person runs updates by hand",
         description:
-          "Risky — if a user forgets, definitions go stale. Charlie will recommend turning on auto-updates.",
+          "Risky — if someone forgets, their antivirus stops recognizing new threats. We'll recommend turning on automatic updates.",
       },
       {
         value: "unknown",
         label: "Not sure",
-        description: "Charlie will walk you through verifying it.",
+        description: "Charlie will walk you through checking it.",
       },
     ],
   },
   {
     id: "av_update_verification",
     objectives: ["a"],
-    prompt: "How do you confirm definitions are actually current?",
+    prompt: "How do you check that the antivirus is actually staying current?",
     helpText:
-      "An MDM compliance report, a quick screenshot, or \"I checked last week\" — any verification mechanism counts.",
+      "A report from your IT tool, a quick screenshot, or even \"I check it every Monday\" — any way of confirming counts.",
     regAnchor:
       "NIST SP 800-171A §3.14.4 [a]; CMMC L1 SAG (v2.13) SI.L1-b.1.xvi Further Discussion",
     regQuote:
@@ -5145,21 +5148,21 @@ const SI3144_QUESTIONS: IntakeQuestion[] = [
     options: [
       {
         value: "mdm_compliance_report",
-        label: "MDM compliance report shows update timestamps",
+        label: "A report from our IT management tool shows when each computer last updated",
       },
       {
         value: "vendor_console",
-        label: "Vendor console / dashboard with last-update times",
+        label: "The antivirus's own dashboard shows when each computer last updated",
       },
       {
         value: "manual_spot_check",
-        label: "Manual spot check (we look every so often)",
+        label: "We check by hand every so often",
       },
       {
         value: "never_verified",
-        label: "Never verified — we assume it's working",
+        label: "We've never checked — we just assume it's working",
         description:
-          "Smallest fix: take ONE screenshot today of Defender's About page showing the definition timestamp. That's the [a] evidence.",
+          "Smallest fix: open Windows Security on one computer today and take a screenshot of the page that shows when the antivirus last updated. That's all the assessor needs.",
       },
     ],
   },
@@ -5181,7 +5184,7 @@ const SI3144_VERIFY_LABEL: Record<string, string> = {
 
 const si3144Intake: PracticeIntakeSpec = {
   preamble:
-    "Two quick questions about AV definition updates. Both map to NIST 800-171A §3.14.4 [a]. Modern Defender / vendor AV auto-updates by default — the assessor just wants one screenshot confirming definitions are current.",
+    "Two quick questions about keeping your antivirus software up to date. Microsoft Defender (the antivirus built into Windows) and most other modern antivirus products update themselves automatically — the assessor just wants one screenshot proving yours is actually staying current.",
   questions: SI3144_QUESTIONS,
   personalize: (answers) => {
     const slotAnnotations: Record<string, SlotAnnotation> = {};
@@ -7072,43 +7075,43 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
     shortName: "Update Malicious Code Protection",
     intake: si3144Intake,
     oneLiner:
-      "Keep your AV definitions auto-updating — outdated AV is the same as no AV.",
+      "Keep your antivirus software updating itself automatically — antivirus that hasn't updated in a while is about as useful as no antivirus at all.",
     statement:
       "Update malicious code protection mechanisms when new releases are available.",
     objectives: [
       { letter: "a", text: "malicious code protection mechanisms are updated when new releases are available" },
     ],
     furtherDiscussion:
-      "Modern AV products auto-update by default. The assessor just wants to confirm: a screenshot of the AV showing recent definition updates + a one-line note in your AV policy that auto-updates are required and not disabled.",
+      "Almost every modern antivirus product updates itself automatically. The assessor just wants two things: a screenshot of your antivirus showing a recent update, and one sentence in your antivirus policy saying \"automatic updates must stay on.\"",
     evidenceSlots: [
       {
         key: "av_update_screenshot",
-        label: "AV update screenshot",
-        hint: "Screenshot showing recent definition update timestamp on at least one endpoint — Defender's About page, CrowdStrike sensor health, etc.",
+        label: "Screenshot showing antivirus is up to date",
+        hint: "A screenshot from one of your computers showing the antivirus updated recently — for example, the Windows Security page that shows the date of the last update.",
         kind: "screenshot",
         satisfies: ["a"],
         required: true,
         destinations: [
           {
             type: "connect",
-            label: "Pull AV update state from Intune / Google Endpoint",
+            label: "Pull antivirus update info from Microsoft 365 or Google Workspace",
             providers: ["m365", "google_workspace"],
             describes:
-              "Pulls last-update timestamps for AV signatures across managed devices.",
+              "If you manage computers through Microsoft 365 or Google Workspace, we can pull the last-update date for every computer automatically.",
           },
           {
             type: "upload",
-            label: "Upload AV-update screenshots",
+            label: "Upload a screenshot of your antivirus",
             describes:
-              "PNG/JPEG of Windows Security / Defender / your AV showing recent definition update timestamps.",
+              "A picture (PNG, JPEG, or PDF) of Windows Security, Microsoft Defender, or your antivirus showing the date of its most recent update.",
             accept: ["image/png", "image/jpeg", "image/webp", "application/pdf"],
           },
         ],
       },
       {
         key: "av_update_policy_note",
-        label: "Policy note: AV auto-updates required",
-        hint: "One sentence in your AV policy: \"AV definition auto-updates must be enabled and not disabled by users.\" If your 3.14.2 policy already says this, point to it.",
+        label: "One sentence in your antivirus policy saying auto-updates must stay on",
+        hint: "Just one line: \"Antivirus automatic updates must stay turned on and users cannot disable them.\" If your existing antivirus policy already says this, point to it.",
         kind: "policy_doc",
         satisfies: ["a"],
         required: false,
@@ -7121,9 +7124,9 @@ export const practiceSpecs: Record<string, PracticeSpec> = {
           },
           {
             type: "upload",
-            label: "Upload existing policy excerpt",
+            label: "Upload your existing policy excerpt",
             describes:
-              "Drag in your existing AV policy or the relevant excerpt.",
+              "Drag in your existing antivirus policy or the section that mentions updates.",
             accept: [
               "application/pdf",
               "text/markdown",
