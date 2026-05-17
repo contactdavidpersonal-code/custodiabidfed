@@ -92,9 +92,14 @@ export function ComplianceOfficerRail({
   const [streaming, setStreaming] = useState(false);
   // While a turn is streaming we keep the composer fully writable. If the
   // user hits Send/Enter before the officer finishes talking we stash the
-  // draft here and fire it the moment streaming flips false. Beats the
-  // “textarea is disabled for 8 seconds and looks broken” UX.
-  const pendingDraftRef = useRef<string | null>(null);
+  // draft in this FIFO queue and fire each one the moment streaming flips
+  // false. Array (not single slot) so the user can fire off several
+  // follow-ups while Charlie is still mid-stream and not lose any of them.
+  // Beats the “textarea is disabled for 8 seconds and looks broken” UX.
+  const pendingQueueRef = useRef<string[]>([]);
+  // Mirror queue length into state for the “message queued” chip — refs
+  // don't trigger renders.
+  const [queuedCount, setQueuedCount] = useState(0);
   const [hydrated, setHydrated] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   // Last user message we tried to send — so the banner's Retry button
@@ -287,10 +292,14 @@ export function ComplianceOfficerRail({
   >(new Map());
   useEffect(() => {
     if (streaming) return;
-    const queued = pendingDraftRef.current;
-    if (!queued) return;
-    pendingDraftRef.current = null;
-    sendRef.current?.(queued);
+    if (pendingQueueRef.current.length === 0) return;
+    const fn = sendRef.current;
+    // If the send closure hasn't been wired yet (initial render race),
+    // leave the queue intact — the next streaming-state change will retry.
+    if (!fn) return;
+    const queued = pendingQueueRef.current.shift();
+    setQueuedCount(pendingQueueRef.current.length);
+    if (queued) void fn(queued);
   }, [streaming]);
 
   const toggle = useCallback(() => {
@@ -330,13 +339,17 @@ export function ComplianceOfficerRail({
     const text = (textOverride ?? draft).trim();
     if (!text) return;
     // Mid-stream: don't drop the user's message and don't fire a second
-    // request. Stash the draft, clear the input so it feels submitted, and
-    // the streaming-falling-edge effect below will resend it for real.
+    // request. Push the text onto the FIFO queue, clear the input so it
+    // feels submitted, and the streaming-falling-edge effect below will
+    // drain the queue once Charlie finishes the current turn. We push
+    // regardless of whether this call came from the user (textOverride
+    // undefined) OR from the queue drain itself (textOverride set) \u2014 if
+    // streaming flipped back to true between turns (e.g. a tool follow-up),
+    // we need to re-queue the replay instead of silently dropping it.
     if (streaming) {
-      if (textOverride === undefined) {
-        pendingDraftRef.current = text;
-        setDraft("");
-      }
+      pendingQueueRef.current.push(text);
+      setQueuedCount(pendingQueueRef.current.length);
+      if (textOverride === undefined) setDraft("");
       return;
     }
     setErrorMsg(null);
@@ -936,6 +949,18 @@ export function ComplianceOfficerRail({
         }}
         className="border-t border-[#cfe3d9] bg-[#f7fcf9] p-3"
       >
+        {queuedCount > 0 ? (
+          <div
+            className="mb-2 inline-flex items-center gap-1.5 border border-[#cfe3d9] bg-white px-2 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#0e2a23]"
+            role="status"
+            aria-live="polite"
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-[#2f8f6d] animate-pulse" />
+            {queuedCount === 1
+              ? "1 message queued — sending when officer finishes"
+              : `${queuedCount} messages queued — sending in order`}
+          </div>
+        ) : null}
         <div className="flex items-end gap-2  border border-[#cfe3d9] bg-white p-2 focus-within:border-[#2f8f6d] focus-within:ring-2 focus-within:ring-[#2f8f6d]/20">
           <textarea
             ref={textareaRef}
