@@ -8,9 +8,19 @@
  *      — the canonical source of truth under CMMC Assessment Guide v2.13.
  *
  * Per 32 CFR § 170.24, a requirement is MET iff every objective is MET or
- * NOT APPLICABLE; one NOT MET objective fails the entire requirement. Enduring
- * Exceptions documented in the system security plan and Temporary Deficiencies
- * tracked in an operational plan of action with milestones both score as MET.
+ * NOT APPLICABLE; one NOT MET objective fails the entire requirement.
+ *
+ * IMPORTANT — CMMC LEVEL 1 IS BINARY (32 CFR § 170.15(b)).
+ * Level 1 self-assessment does NOT permit Plans of Action & Milestones.
+ * Every requirement MUST be MET (or N/A) at the moment the Senior Official
+ * signs the annual affirmation under § 170.22. Therefore:
+ *   • Enduring Exceptions (permanent architectural realities documented in
+ *     the SSP) remain valid and roll up to MET.
+ *   • Temporary Deficiencies — which are POA&Ms by another name — are
+ *     NEVER accepted as MET at L1. The DB schema still permits the value
+ *     for backward compatibility with rows that may exist, but every
+ *     code path that touches the affirmation gate, rollup, or coverage
+ *     treats `temporary` as NOT MET.
  *
  * Source: CMMC Assessment Guide – Level 1, Version 2.13 (Sept 2024) and
  * 32 CFR § 170 (CMMC Program final rule).
@@ -142,20 +152,20 @@ export async function setObjectiveResponse(args: {
 }
 
 /**
- * "Effective" status for an objective: MET counts MET; N/A is equivalent
- * to MET (32 CFR § 170.24); a documented Enduring Exception or Temporary
- * Deficiency rolls up to MET as well, per Assessment Guide §"Assessment
- * Findings". Anything else is NOT MET (or NOT YET).
+ * "Effective" status for an objective at CMMC Level 1:
+ *  - MET                 → met
+ *  - NOT_APPLICABLE      → met (32 CFR § 170.24)
+ *  - NOT_MET + enduring  → met (Enduring Exception documented in SSP)
+ *  - NOT_MET + temporary → NOT MET (POA&M is forbidden at L1, § 170.15(b))
+ *  - everything else     → not_met / unanswered
  */
 export function effectiveObjectiveStatus(
   row: Pick<ObjectiveResponseRow, "status" | "exception_type">,
 ): "met" | "not_met" | "unanswered" {
   if (row.status === "met" || row.status === "not_applicable") return "met";
   if (row.status === "unanswered") return "unanswered";
-  // status is not_met
-  if (row.exception_type === "enduring" || row.exception_type === "temporary") {
-    return "met";
-  }
+  // status is not_met — Enduring Exception is the ONLY accepted L1 cover.
+  if (row.exception_type === "enduring") return "met";
   return "not_met";
 }
 
@@ -263,15 +273,15 @@ export async function syncLegacyStatusToObjectives(args: {
 }
 
 /**
- * Apply an Enduring Exception or Temporary Deficiency to every objective
- * under a single legacy control. The objectives table treats EE/TD on a
- * NOT_MET row as "rolls up to MET" (see `effectiveObjectiveStatus`), so this
- * is the operation that lets a user document a defensible MET-equivalent.
+ * Apply an Enduring Exception to every objective under a single legacy
+ * control. The objectives table treats EE on a NOT_MET row as "rolls up
+ * to MET" (see `effectiveObjectiveStatus`), so this is the operation that
+ * lets a user document a defensible MET-equivalent at L1.
  *
- * Per Assessment Guide v2.13:
- *  - Enduring Exception requires SSP narrative (we capture in `exception_notes`).
- *  - Temporary Deficiency requires an operational plan of action with at
- *    least one milestone (caller must add a milestone row separately).
+ * Per Assessment Guide v2.13 + 32 CFR § 170.15(b): Level 1 forbids
+ * Plans-of-Action/POA&M, so Temporary Deficiencies are NOT accepted. This
+ * helper hard-rejects any non-enduring type to keep the affirmation gate
+ * defensible.
  */
 export async function setControlException(args: {
   assessmentId: string;
@@ -279,6 +289,11 @@ export async function setControlException(args: {
   exceptionType: ObjectiveExceptionType;
   notes: string;
 }): Promise<void> {
+  if (args.exceptionType !== "enduring") {
+    throw new Error(
+      "CMMC Level 1 does not permit Temporary Deficiencies (32 CFR § 170.15(b)). Only Enduring Exceptions may be declared.",
+    );
+  }
   const sql = getSql();
   await sql`
     UPDATE control_objective_responses
@@ -439,9 +454,9 @@ export async function computeExceptionCoverage(
     }
   >();
   for (const row of rows) {
-    const covered =
-      row.exception_type === "enduring" ||
-      (row.exception_type === "temporary" && row.milestone_count > 0);
+    // CMMC L1 (32 CFR § 170.15(b)): only Enduring Exceptions count as
+    // coverage. Temporary Deficiencies are POA&Ms and are forbidden at L1.
+    const covered = row.exception_type === "enduring";
     out.set(row.control_id, {
       exceptionType: row.exception_type,
       milestoneCount: row.milestone_count,
@@ -481,15 +496,15 @@ export async function controlsBlockingAffirmation(
       reason = "Practice has not been answered.";
     } else if (cov?.exceptionType === "temporary") {
       reason =
-        "Temporary Deficiency declared but no operational plan-of-action milestones on file.";
+        "Temporary Deficiency on file. CMMC Level 1 does not permit POA&Ms (32 CFR § 170.15(b)) — convert to an Enduring Exception or remediate to MET before signing.";
     } else if (cov?.exceptionType === "enduring") {
       // Should not reach here because EE always covers; defensive only.
       reason = "Enduring Exception is in an inconsistent state.";
     } else {
       reason =
         r.status === "partial"
-          ? "Marked Partial. Either move to Met/N/A or declare an Enduring Exception or Temporary Deficiency."
-          : "Marked Not met. Either move to Met/N/A or declare an Enduring Exception or Temporary Deficiency.";
+          ? "Marked Partial. Move to Met / N/A, or declare an Enduring Exception. POA&Ms are not permitted at CMMC L1."
+          : "Marked Not met. Move to Met / N/A, or declare an Enduring Exception. POA&Ms are not permitted at CMMC L1.";
     }
     blockers.push({
       controlId: r.control_id,

@@ -9,8 +9,12 @@ import {
   listResponsesForAssessment,
   type ControlResponseRow,
 } from "@/lib/assessment";
-import { controlDomains, playbook } from "@/lib/playbook";
-import { listObjectivesForAssessment } from "@/lib/cmmc/objectives";
+import { controlDomains, playbook, practiceObjectives } from "@/lib/playbook";
+import {
+  effectiveObjectiveStatus,
+  listObjectivesForAssessment,
+  type ObjectiveResponseRow,
+} from "@/lib/cmmc/objectives";
 import { resolveOrgBranding, displayUrl } from "@/lib/org-branding";
 import { PrintButton } from "../PrintButton";
 
@@ -52,25 +56,25 @@ export default async function SystemSecurityPlanPage(
     evidenceByControl.set(e.control_id, list);
   }
 
-  // Per CMMC AG v2.13, Enduring Exceptions and Temporary Deficiencies must
-  // be documented in the SSP. Pull the EE/TD declared on the objectives
-  // table and surface the first non-null per control alongside the
-  // implementation narrative.
+  // Per CMMC Assessment Guide L1 v2.13 §§5–7 and NIST SP 800-171A, the
+  // SSP must document each of the 59 individual assessment objectives
+  // [a]–[f] under the 15 practices — not just a single per-practice
+  // verdict. A 3PAO / DCMA reviewer reads the per-objective findings to
+  // confirm the basis of attestation. We surface every objective row
+  // here with its status, narrative or N/A justification, assessment
+  // method, and any Enduring Exception coverage.
   const objectives =
     ctx.assessment.framework === "cmmc_l1"
       ? await listObjectivesForAssessment(id)
       : [];
-  const exceptionByControl = new Map<
-    string,
-    { type: "enduring" | "temporary"; notes: string }
-  >();
+  const objectivesByControl = new Map<string, ObjectiveResponseRow[]>();
   for (const o of objectives) {
-    if (o.exception_type && !exceptionByControl.has(o.control_id)) {
-      exceptionByControl.set(o.control_id, {
-        type: o.exception_type,
-        notes: o.exception_notes ?? "",
-      });
-    }
+    const list = objectivesByControl.get(o.control_id) ?? [];
+    list.push(o);
+    objectivesByControl.set(o.control_id, list);
+  }
+  for (const list of objectivesByControl.values()) {
+    list.sort((a, b) => a.objective_letter.localeCompare(b.objective_letter));
   }
 
   const org = ctx.organization;
@@ -231,7 +235,19 @@ export default async function SystemSecurityPlanPage(
                     {practices.map((practice) => {
                       const r = responseByControl.get(practice.id);
                       const arts = evidenceByControl.get(practice.id) ?? [];
-                      const exc = exceptionByControl.get(practice.id);
+                      const practiceObjs =
+                        objectivesByControl.get(practice.id) ?? [];
+                      const objCatalog = practiceObjectives[practice.id] ?? [];
+                      // For backward-compatibility with legacy data the
+                      // exception summary here only fires for ENDURING
+                      // rows. Temporary rows are surfaced as blocking on
+                      // the Exceptions page and via the affirmation gate.
+                      const enduringObj = practiceObjs.find(
+                        (o) => o.exception_type === "enduring",
+                      );
+                      const legacyTempObj = practiceObjs.find(
+                        (o) => o.exception_type === "temporary",
+                      );
                       return (
                         <div
                           key={practice.id}
@@ -279,19 +295,140 @@ export default async function SystemSecurityPlanPage(
                               </ul>
                             </div>
                           )}
-                          {exc && (
+                          {/* Per-objective findings — required by CMMC AG
+                              L1 v2.13 §§5–7 and NIST SP 800-171A. */}
+                          {practiceObjs.length > 0 && (
+                            <div className="mt-4 border-t border-[#e6efe9] pt-3">
+                              <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#5a7d70]">
+                                Assessment objectives · NIST SP 800-171A
+                              </div>
+                              <div className="mt-2 grid gap-2">
+                                {practiceObjs.map((obj) => {
+                                  const eff = effectiveObjectiveStatus(obj);
+                                  const ask =
+                                    objCatalog.find(
+                                      (c) => c.letter === obj.objective_letter,
+                                    )?.ask ?? "";
+                                  const badge =
+                                    eff === "met"
+                                      ? {
+                                          label:
+                                            obj.status === "not_applicable"
+                                              ? "N/A"
+                                              : "MET",
+                                          bg: "#e8f1ec",
+                                          fg: "#0e2a23",
+                                          bd: "#bde0cc",
+                                        }
+                                      : eff === "not_met"
+                                      ? {
+                                          label: "NOT MET",
+                                          bg: "#fdecea",
+                                          fg: "#7a2e1c",
+                                          bd: "#f5c6cb",
+                                        }
+                                      : {
+                                          label: "UNANSWERED",
+                                          bg: "#fff8eb",
+                                          fg: "#a06b1a",
+                                          bd: "#f5e0b3",
+                                        };
+                                  const detail =
+                                    obj.status === "not_applicable"
+                                      ? obj.na_justification
+                                      : obj.narrative;
+                                  return (
+                                    <div
+                                      key={obj.id}
+                                      className="border border-[#e6efe9] bg-[#fafbfa] p-2.5"
+                                    >
+                                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                        <div className="font-mono text-[11px] text-[#5a7d70]">
+                                          [{obj.objective_letter}]{" "}
+                                          <span className="text-[#10231d]">
+                                            {ask}
+                                          </span>
+                                        </div>
+                                        <span
+                                          className="border px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em]"
+                                          style={{
+                                            background: badge.bg,
+                                            color: badge.fg,
+                                            borderColor: badge.bd,
+                                          }}
+                                        >
+                                          {badge.label}
+                                        </span>
+                                      </div>
+                                      {detail && (
+                                        <p className="mt-1.5 whitespace-pre-wrap text-xs leading-relaxed text-[#10231d]">
+                                          {detail}
+                                        </p>
+                                      )}
+                                      {obj.method && (
+                                        <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#5a7d70]">
+                                          Method:{" "}
+                                          <span className="text-[#10231d]">
+                                            {obj.method}
+                                          </span>
+                                        </p>
+                                      )}
+                                      {obj.exception_type === "enduring" &&
+                                        obj.exception_notes && (
+                                          <div className="mt-1.5 border-l-2 border-[#f59e0b] bg-[#fff8eb] px-2 py-1">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#8a5a00]">
+                                              Enduring Exception
+                                            </span>
+                                            <p className="mt-0.5 whitespace-pre-wrap text-[11px] text-[#10231d]">
+                                              {obj.exception_notes}
+                                            </p>
+                                          </div>
+                                        )}
+                                      {obj.exception_type === "temporary" && (
+                                        <div className="mt-1.5 border-l-2 border-[#7a2e1c] bg-[#fdecea] px-2 py-1">
+                                          <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7a2e1c]">
+                                            Temporary Deficiency — not permitted at L1
+                                          </span>
+                                          {obj.exception_notes && (
+                                            <p className="mt-0.5 whitespace-pre-wrap text-[11px] text-[#5a1f10]">
+                                              {obj.exception_notes}
+                                            </p>
+                                          )}
+                                          <p className="mt-0.5 text-[10px] text-[#5a1f10]">
+                                            32 CFR § 170.15(b) forbids POA&amp;Ms
+                                            at L1. Convert to an Enduring
+                                            Exception or remediate to MET
+                                            before signing.
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                          {enduringObj?.exception_notes && (
                             <div className="mt-3 border-l-4 border-[#f59e0b] bg-[#fff8eb] px-3 py-2">
                               <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#8a5a00]">
-                                {exc.type === "enduring"
-                                  ? "Enduring Exception"
-                                  : "Temporary Deficiency"}
-                                {" · scores MET per CMMC AG v2.13"}
+                                Enduring Exception · scores MET per CMMC AG v2.13
                               </div>
-                              {exc.notes && (
-                                <p className="mt-1 whitespace-pre-wrap text-sm text-[#10231d]">
-                                  {exc.notes}
-                                </p>
-                              )}
+                              <p className="mt-1 whitespace-pre-wrap text-sm text-[#10231d]">
+                                {enduringObj.exception_notes}
+                              </p>
+                            </div>
+                          )}
+                          {legacyTempObj && !enduringObj && (
+                            <div className="mt-3 border-l-4 border-[#7a2e1c] bg-[#fdecea] px-3 py-2">
+                              <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7a2e1c]">
+                                Legacy Temporary Deficiency — must be cleared
+                              </div>
+                              <p className="mt-1 text-xs text-[#5a1f10]">
+                                CMMC L1 does not permit POA&amp;Ms under 32 CFR
+                                &sect; 170.15(b). This practice cannot be
+                                affirmed until the row is converted to an
+                                Enduring Exception or remediated to MET.
+                              </p>
                             </div>
                           )}
                         </div>

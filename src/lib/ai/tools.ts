@@ -637,7 +637,7 @@ export const officerTools = [
   {
     name: "set_objective_status",
     description:
-      "Set a NIST SP 800-171A objective verdict (a/b/c/d/e/f letter) for one of the 15 CMMC L1 practices. Status MET = the objective is satisfied. NOT_MET = a real gap that blocks attestation. NA = does-not-apply (must justify in rationale). EE = enduring exception (permanent business reason it can't be met). TD = temporary deficiency (will be remediated; pair with propose_milestone). Rationale is REQUIRED and MUST be at least 20 chars — this is what the user (or 3PAO) will read later. Do NOT call this without explicit user confirmation of the verdict and reasoning.",
+      "Set a NIST SP 800-171A objective verdict (a/b/c/d/e/f letter) for one of the 15 CMMC L1 practices. Status MET = the objective is satisfied. NOT_MET = a real gap that blocks attestation. NA = does-not-apply (must justify in rationale). EE = enduring exception (permanent architectural reason it can't be met — documented in SSP). Rationale is REQUIRED and MUST be at least 20 chars — this is what the user (or 3PAO) will read later. CMMC L1 is BINARY under 32 CFR § 170.15(b) — Temporary Deficiencies / POA&Ms are NOT permitted; do not attempt to use 'TD' here. Do NOT call this without explicit user confirmation of the verdict and reasoning.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -653,9 +653,9 @@ export const officerTools = [
         },
         status: {
           type: "string",
-          enum: ["MET", "NOT_MET", "NA", "EE", "TD"],
+          enum: ["MET", "NOT_MET", "NA", "EE"],
           description:
-            "MET, NOT_MET, NA (not applicable), EE (enduring exception), TD (temporary deficiency).",
+            "MET, NOT_MET, NA (not applicable), EE (enduring exception). CMMC L1 does not permit Temporary Deficiencies.",
         },
         rationale: {
           type: "string",
@@ -863,7 +863,7 @@ export const officerTools = [
   {
     name: "record_exception",
     description:
-      "Declare an Enduring Exception (EE — permanent business reason an objective can't be met) or Temporary Deficiency (TD — known gap with a remediation plan) at the CONTROL level. Sets exception_type + exception_notes on every not-met objective of that practice. For TD you MUST also call propose_milestone afterward (no plan-of-action = no rollup to MET).",
+      "Declare an Enduring Exception (EE — permanent architectural reason an objective can't be met) at the CONTROL level. Sets exception_type='enduring' + exception_notes on every not-met objective of that practice so it rolls up to MET in the affirmation. CMMC L1 is BINARY under 32 CFR § 170.15(b) — Temporary Deficiencies / POA&Ms are NOT permitted; only Enduring Exceptions are valid coverage.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -873,13 +873,14 @@ export const officerTools = [
         },
         kind: {
           type: "string",
-          enum: ["enduring_exception", "temporary_deficiency"],
-          description: "EE = permanent, TD = temporary with remediation plan.",
+          enum: ["enduring_exception"],
+          description:
+            "Only 'enduring_exception' is permitted at CMMC L1. POA&Ms / Temporary Deficiencies are forbidden by 32 CFR § 170.15(b).",
         },
         rationale: {
           type: "string",
           description:
-            "Required justification (≥ 20 chars). For EE: the permanent business reason. For TD: what's broken and the fix.",
+            "Required justification (≥ 20 chars): the permanent architectural reason this objective can never be met in the conventional sense. This is exported verbatim into the SSP.",
         },
         assessment_id: { type: "string" },
       },
@@ -902,7 +903,7 @@ export const officerTools = [
   {
     name: "preflight_affirmation",
     description:
-      "Run the pre-attestation readiness check. Returns every blocker that would prevent the affirming official from signing: unanswered controls, NOT_MET with no exception, TD without milestones, evidence still pending review, boundary findings flagged 'fail'. Charlie MUST call this before recommending the user submit the attestation.",
+      "Run the pre-attestation readiness check. Returns every blocker that would prevent the affirming official from signing: unanswered controls, NOT_MET with no Enduring Exception, evidence still pending review, boundary findings flagged 'fail'. Any Temporary Deficiency rows still on file are surfaced as blockers (CMMC L1 forbids POA&Ms under 32 CFR § 170.15(b)). Charlie MUST call this before recommending the user submit the attestation.",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -2687,10 +2688,11 @@ async function handleSetObjectiveStatus(
       error: `Practice ${controlIdRaw} has no objective '${letterRaw}'. Valid letters: ${objectives.map((o) => o.letter).join(", ")}.`,
     };
   }
-  if (!["MET", "NOT_MET", "NA", "EE", "TD"].includes(statusRaw)) {
+  if (!["MET", "NOT_MET", "NA", "EE"].includes(statusRaw)) {
     return {
       ok: false,
-      error: "status must be one of: MET, NOT_MET, NA, EE, TD.",
+      error:
+        "status must be one of: MET, NOT_MET, NA, EE. CMMC L1 does not permit Temporary Deficiencies (32 CFR § 170.15(b)).",
     };
   }
   if (rationaleRaw.length < 20) {
@@ -2753,15 +2755,6 @@ async function handleSetObjectiveStatus(
         exceptionNotes: rationaleRaw,
       };
       appliedStatus = "met (rolled up from enduring exception)";
-      break;
-    case "TD":
-      update = {
-        status: "not_met",
-        exceptionType: "temporary",
-        exceptionNotes: rationaleRaw,
-      };
-      appliedStatus =
-        "met (rolled up from temporary deficiency — pair with propose_milestone)";
       break;
     default:
       return { ok: false, error: "unreachable status" };
@@ -3414,10 +3407,11 @@ async function handleRecordException(
   const kindRaw = typeof input.kind === "string" ? input.kind : "";
   const rationale = typeof input.rationale === "string" ? input.rationale.trim() : "";
   if (!controlId) return { ok: false, error: "control_id is required." };
-  if (kindRaw !== "enduring_exception" && kindRaw !== "temporary_deficiency") {
+  if (kindRaw !== "enduring_exception") {
     return {
       ok: false,
-      error: "kind must be 'enduring_exception' or 'temporary_deficiency'.",
+      error:
+        "kind must be 'enduring_exception'. CMMC Level 1 is binary (32 CFR § 170.15(b)) — Temporary Deficiencies / POA&Ms are not permitted. Either remediate to MET, mark N/A with justification, or declare an Enduring Exception.",
     };
   }
   if (rationale.length < 20) {
@@ -3432,11 +3426,10 @@ async function handleRecordException(
   const assessmentId = await resolveAssessmentId(input, ctx);
   if (!assessmentId) return { ok: false, error: "No assessment found." };
   await getAssessmentForUser(assessmentId, ctx.userId);
-  const exceptionType = kindRaw === "enduring_exception" ? "enduring" : "temporary";
   await setControlException({
     assessmentId,
     controlId,
-    exceptionType,
+    exceptionType: "enduring",
     notes: rationale,
   });
   return {
@@ -3444,8 +3437,7 @@ async function handleRecordException(
     data: {
       assessment_id: assessmentId,
       control_id: controlId,
-      exception_type: exceptionType,
-      needs_milestone: exceptionType === "temporary",
+      exception_type: "enduring",
     },
   };
 }
