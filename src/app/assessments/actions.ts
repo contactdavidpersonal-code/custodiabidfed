@@ -1322,6 +1322,37 @@ export async function submitAffirmationAction(formData: FormData) {
   const ctx = await getAssessmentForUser(assessmentId, userId);
   if (!ctx) bail("Assessment not found");
 
+  // ── 32 CFR § 170.21(a)(2) signer identity gate ──────────────────────
+  // The CMMC L1 affirmation is a personal act by the *Senior Official
+  // of the contractor*. Federal law (32 CFR § 170.21(a)(2)) places
+  // liability on a specific designated human, not on "whoever has
+  // admin in the platform." Even though SPRS itself can't tell us who
+  // is logged in, we refuse to let anyone other than the designated
+  // senior official submit through Custodia — that protects the user
+  // from accidental delegation that would invalidate the affirmation
+  // and create personal FCA (31 U.S.C. §§ 3729-3733) and
+  // 18 U.S.C. § 1001 exposure.
+  //
+  // The designation is auto-stamped on org creation and transferable
+  // from /settings/team (ships PR #2). For PR #1 only the org's sole
+  // owner can sign — which is the only safe default.
+  const designated = ctx.organization.senior_official_user_id;
+  if (!designated) {
+    bail(
+      "No senior official is designated for this workspace. Visit /welcome/senior-official to confirm the designation before signing.",
+    );
+  }
+  if (designated !== userId) {
+    bail(
+      "Only the designated Senior Official can sign this affirmation. 32 CFR § 170.21(a)(2) places personal liability on a specific human — have the designated official sign in with their own account to submit.",
+    );
+  }
+  if (!ctx.organization.senior_official_acknowledged_at) {
+    bail(
+      "Please confirm your role as Senior Official before signing. Visit /welcome/senior-official.",
+    );
+  }
+
   // Stale-affirmation hard gate. Per 32 CFR § 170.15(c)(2), L1
   // affirmations are an annual obligation — a Senior Official cannot
   // legitimately "refresh" a memo signed 14 months ago and pretend it's
@@ -2434,4 +2465,156 @@ export async function affirmPracticeAction(formData: FormData) {
   revalidatePath(`/assessments/${assessmentId}`);
   revalidatePath(`/assessments/${assessmentId}/sign`);
   revalidatePath(`/assessments/${assessmentId}/bid-packet`);
+}
+
+/**
+ * Senior Official acknowledgement (32 CFR § 170.21(a)(2)).
+ *
+ * Confirms the signed-in user (a) understands they have been designated
+ * as the Senior Official for the active organization and (b) has read
+ * the personal-liability summary on /welcome/senior-official. Stamps
+ * `senior_official_acknowledged_at` and writes an audit-log entry so
+ * the trail can be reproduced years later for an OIG / IG / DCMA
+ * review.
+ *
+ * The action is a *self*-affirmation: only the user whose userId matches
+ * `senior_official_user_id` may acknowledge for themselves. We do not
+ * accept a target user — designation transfer is a separate flow
+ * (PR #2, `/settings/team`).
+ */
+export async function acknowledgeSeniorOfficialAction(_formData: FormData) {
+  const userId = await requireUserId();
+  const { getActiveOrgFromAuth } = await import("@/lib/assessment");
+  const org = await getActiveOrgFromAuth();
+  if (!org) {
+    redirect("/onboard");
+  }
+
+  if (org.senior_official_user_id !== userId) {
+    // Someone else (or a yet-undesignated visitor) hit the action. We
+    // refuse silently and route them to /assessments — the gate in the
+    // sign action will block any unauthorised sign attempt downstream.
+    redirect("/assessments");
+  }
+
+  if (org.senior_official_acknowledged_at) {
+    redirect("/assessments");
+  }
+
+  const sql = getSql();
+  await sql`
+    UPDATE organizations
+    SET senior_official_acknowledged_at = NOW(),
+        updated_at = NOW()
+    WHERE id = ${org.id}::uuid
+      AND senior_official_user_id = ${userId}
+  `;
+
+  await recordAuditEvent({
+    userId,
+    organizationId: org.id,
+    action: "organization.senior_official_acknowledged",
+    resourceType: "organization",
+    resourceId: org.id,
+    metadata: {
+      regulation: "32 CFR § 170.21(a)(2)",
+      orgName: org.name,
+    },
+  });
+
+  revalidatePath("/assessments");
+  redirect("/assessments");
+}
+
+/**
+ * Transfer the Senior Official designation to another member of the active
+ * workspace.
+ *
+ * Only the *current* Senior Official may hand off the designation — this
+ * mirrors 32 CFR § 170.21(a)(2), which places the personal-affirmation
+ * responsibility on a specific human and does not allow a third party
+ * (admin, MSP, employer) to reassign it without the current SO's consent.
+ *
+ * The new SO must already be a member of the workspace's Clerk organization
+ * (invite them first via Clerk's OrganizationProfile on the same page).
+ *
+ * Side-effects:
+ *   1. Stamp the new `senior_official_user_id`.
+ *   2. Clear `senior_official_acknowledged_at` so the new SO is forced
+ *      through `/welcome/senior-official` before signing anything.
+ *   3. Write an audit-log entry with both userIds for evidentiary trail.
+ */
+export async function designateSeniorOfficialAction(formData: FormData) {
+  const userId = await requireUserId();
+  const targetUserId = String(formData.get("targetUserId") ?? "").trim();
+  if (!targetUserId) {
+    throw new Error("Missing target user.");
+  }
+
+  const { getActiveOrgFromAuth } = await import("@/lib/assessment");
+  const org = await getActiveOrgFromAuth();
+  if (!org) {
+    redirect("/onboard");
+  }
+
+  if (org.senior_official_user_id !== userId) {
+    throw new Error(
+      "Only the current Senior Official can transfer the designation. " +
+        "32 CFR § 170.21(a)(2) requires the affirmation to be made personally; " +
+        "the designation may not be reassigned without the current SO's consent.",
+    );
+  }
+
+  if (targetUserId === userId) {
+    throw new Error("You are already the Senior Official for this workspace.");
+  }
+
+  if (!org.clerk_org_id) {
+    throw new Error(
+      "This workspace doesn't yet have a Clerk organization linked, so team transfers aren't available. Contact support.",
+    );
+  }
+
+  // Verify the target is actually a member of the active workspace.
+  const cc = await clerkClient();
+  const memberships = await cc.organizations.getOrganizationMembershipList({
+    organizationId: org.clerk_org_id,
+  });
+  const targetMembership = memberships.data.find(
+    (m) => m.publicUserData?.userId === targetUserId,
+  );
+  if (!targetMembership) {
+    throw new Error(
+      "That user is not a member of this workspace. Invite them first, then designate.",
+    );
+  }
+
+  const sql = getSql();
+  await sql`
+    UPDATE organizations
+    SET senior_official_user_id = ${targetUserId},
+        senior_official_acknowledged_at = NULL,
+        updated_at = NOW()
+    WHERE id = ${org.id}::uuid
+      AND senior_official_user_id = ${userId}
+  `;
+
+  await recordAuditEvent({
+    userId,
+    organizationId: org.id,
+    action: "organization.senior_official_designated",
+    resourceType: "organization",
+    resourceId: org.id,
+    metadata: {
+      regulation: "32 CFR § 170.21(a)(2)",
+      fromUserId: userId,
+      toUserId: targetUserId,
+      toIdentifier: targetMembership.publicUserData?.identifier ?? null,
+      orgName: org.name,
+    },
+  });
+
+  revalidatePath("/settings/team");
+  revalidatePath("/assessments");
+  redirect("/settings/team?designated=1");
 }

@@ -199,6 +199,8 @@ export default async function AssessmentOverviewPage(
   const attested = ctx.assessment.status === "attested";
   const search = await props.searchParams;
   const justSigned = search?.signed === "1" && attested;
+  const isSeniorOfficial =
+    ctx.organization.senior_official_user_id === userId;
 
   return (
     <main className="relative mx-auto max-w-6xl px-6 py-10 md:px-10 md:py-16">
@@ -210,6 +212,20 @@ export default async function AssessmentOverviewPage(
             <span className="h-1.5 w-1.5 rounded-full bg-[#063f2e]" />
             CMMC Level 1 · FY{ctx.assessment.fiscal_year}
           </p>
+          {isSeniorOfficial ? (
+            <p className="ml-2 inline-flex items-center gap-2 rounded-full border border-[#0e2a23] bg-[#0e2a23] px-3.5 py-1.5 text-[11px] font-semibold tracking-wide text-[#bdf2cf]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#bdf2cf]" />
+              You · Senior Official
+            </p>
+          ) : (
+            <Link
+              href="/settings/team"
+              className="ml-2 inline-flex items-center gap-2 rounded-full border border-[#063f2e]/30 bg-white/70 px-3.5 py-1.5 text-[11px] font-semibold tracking-wide text-[#063f2e] hover:bg-white"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-[#2f8f6d]" />
+              Contributor · view-only on signing
+            </Link>
+          )}
           <div className="mt-6 flex flex-wrap items-end justify-between gap-6">
             <div className="max-w-2xl">
               <h1 className="font-serif text-5xl font-normal leading-[1.05] tracking-[-0.04em] text-[#063f2e] md:text-6xl">

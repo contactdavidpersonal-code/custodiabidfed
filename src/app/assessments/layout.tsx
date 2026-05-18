@@ -112,6 +112,12 @@ export default async function AssessmentsLayout({
             >
               Home
             </Link>
+            <Link
+              href="/settings/team"
+              className=" px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
+            >
+              Team
+            </Link>
             <AdminLink className="bg-[#0f2f26] px-3 py-2 font-bold text-[#bdf2cf] transition-colors hover:bg-[#10231d]" />
             <div className="h-6 w-px bg-[#cfe3d9]" />
             <OrgSwitcher />

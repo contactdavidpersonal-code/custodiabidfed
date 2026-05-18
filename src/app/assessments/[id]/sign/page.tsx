@@ -1,4 +1,4 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import {
@@ -150,6 +150,33 @@ export default async function SignPage(
     missingEvidence.length === 0 &&
     pendingCarryForward.length === 0 &&
     boundaryBlockers.length === 0;
+
+  // 32 CFR § 170.21(a)(2) — the affirmation is a personal act by the
+  // designated Senior Official. Contributors can see this page (so they
+  // know the readiness state and can prep the workspace), but the sign
+  // form is replaced with a read-only banner directing them to nudge the
+  // SO. The server action also enforces this — UI is informational.
+  const isSeniorOfficial =
+    ctx.organization.senior_official_user_id === userId;
+  let seniorOfficialLabel: string | null = null;
+  let seniorOfficialEmail: string | null = null;
+  if (!isSeniorOfficial && ctx.organization.senior_official_user_id) {
+    try {
+      const cc = await clerkClient();
+      const so = await cc.users.getUser(
+        ctx.organization.senior_official_user_id,
+      );
+      const composed = [so.firstName, so.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      seniorOfficialEmail =
+        so.primaryEmailAddress?.emailAddress ?? null;
+      seniorOfficialLabel = composed || seniorOfficialEmail;
+    } catch (err) {
+      console.error("[sign] failed to load senior official identity", err);
+    }
+  }
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-6 md:px-6 md:py-10">
@@ -544,11 +571,65 @@ export default async function SignPage(
         </div>
       )}
 
+      {!isSeniorOfficial && (
+        <div className="mb-8 rounded-lg border border-[#cfe3d9] bg-[#0e2a23] p-6 text-[#bdf2cf]">
+          <p className="font-serif text-xs tracking-[0.2em] uppercase text-[#bdf2cf]/80">
+            Contributor view · sign-only restriction
+          </p>
+          <h2 className="mt-2 font-serif text-2xl font-bold tracking-tight text-white">
+            Only the Senior Official can sign this affirmation
+          </h2>
+          <p className="mt-3 text-sm leading-relaxed text-[#bdf2cf]/90">
+            32 CFR § 170.21(a)(2) requires the CMMC Level 1 affirmation to be made
+            personally by a designated Senior Official — it is not a corporate
+            act and cannot be delegated. You can keep editing practices,
+            evidence, and the boundary; only the signature itself is locked.
+          </p>
+          {seniorOfficialLabel ? (
+            <p className="mt-4 rounded-md border border-[#bdf2cf]/30 bg-[#10231d] px-4 py-3 text-sm">
+              <span className="font-serif text-xs tracking-[0.2em] uppercase text-[#bdf2cf]/70">
+                Designated signer
+              </span>
+              <br />
+              <span className="font-semibold text-white">{seniorOfficialLabel}</span>
+              {seniorOfficialEmail && seniorOfficialEmail !== seniorOfficialLabel ? (
+                <span className="ml-2 text-[#bdf2cf]/80">· {seniorOfficialEmail}</span>
+              ) : null}
+            </p>
+          ) : (
+            <p className="mt-4 text-sm text-[#bdf2cf]/80">
+              No Senior Official is currently designated for this workspace.
+            </p>
+          )}
+          <div className="mt-5 flex flex-wrap gap-3">
+            <Link
+              href="/settings/team"
+              className="inline-flex items-center rounded-md bg-[#bdf2cf] px-4 py-2 text-sm font-semibold text-[#0e2a23] hover:bg-white"
+            >
+              Open team settings
+            </Link>
+            {seniorOfficialEmail ? (
+              <a
+                href={`mailto:${seniorOfficialEmail}?subject=${encodeURIComponent(
+                  `CMMC L1 affirmation ready for your signature — ${ctx.organization.name}`,
+                )}&body=${encodeURIComponent(
+                  "The workspace is ready for your CMMC L1 affirmation. Sign in and visit the sign step to complete it.",
+                )}`}
+                className="inline-flex items-center rounded-md border border-[#bdf2cf]/40 px-4 py-2 text-sm font-semibold text-[#bdf2cf] hover:bg-[#10231d]"
+              >
+                Email the Senior Official
+              </a>
+            ) : null}
+          </div>
+        </div>
+      )}
+
       <AffirmForm
         assessmentId={id}
         organizationName={ctx.organization.name}
-        disabled={!ready}
+        disabled={!ready || !isSeniorOfficial}
         submitError={submitError}
+        hidden={!isSeniorOfficial}
       />
     </main>
   );

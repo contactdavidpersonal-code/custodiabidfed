@@ -27,6 +27,12 @@ type Props = {
   organizationName: string;
   disabled: boolean;
   submitError: string | null;
+  /**
+   * When true (contributor view), the form is not rendered at all —
+   * the page surfaces a contributor banner instead. Server action still
+   * enforces the SO-only gate.
+   */
+  hidden?: boolean;
 };
 
 type StepStatus = "idle" | "running" | "done" | "failed";
@@ -95,6 +101,7 @@ export function AffirmForm({
   organizationName,
   disabled,
   submitError,
+  hidden = false,
 }: Props) {
   const [isPending, startTransition] = useTransition();
   const [activeStep, setActiveStep] = useState<number>(-1);
@@ -165,6 +172,8 @@ export function AffirmForm({
     if (isPending) return;
     setShowOverlay(false);
   };
+
+  if (hidden) return null;
 
   return (
     <>

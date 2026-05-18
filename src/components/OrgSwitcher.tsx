@@ -72,14 +72,21 @@ export function OrgSwitcher({ className, hideUntilJoined = false }: Props) {
     }
   }
 
-  // MSP-only feature: only Squad/Platoon plans see the multi-org switcher.
-  // Solo (`cmmc_lv1_full_access`) and free users never see this UI — they
-  // operate on their personal Clerk account exclusively.
+  // Capacity nag is MSP-only (Squad/Platoon are the only plans with a cap > 1).
+  // The switcher itself is shown for ALL signed-in users so solo customers can
+  // invite teammates and manage their single workspace.
   const isMspPlan =
     cap?.plan === "custodia_squad" || cap?.plan === "msp_platoon_20";
-  if (!isMspPlan) return null;
 
-  const atCap = cap !== null && cap.limit > 0 && cap.current >= cap.limit;
+  // Non-MSP users who don't yet belong to any Clerk org get nothing to switch
+  // between — hide the trigger entirely until they have at least one org.
+  const hasNoOrgs =
+    isLoaded &&
+    (!userMemberships?.data || userMemberships.data.length === 0);
+  if (!isMspPlan && hasNoOrgs) return null;
+
+  const atCap =
+    isMspPlan && cap !== null && cap.limit > 0 && cap.current >= cap.limit;
 
   return (
     <div className={className}>

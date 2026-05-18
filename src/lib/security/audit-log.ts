@@ -14,6 +14,8 @@ export type AuditAction =
   | "bid_package.exported"
   | "bid_packet.exported"
   | "organization.fields_updated"
+  | "organization.senior_official_acknowledged"
+  | "organization.senior_official_designated"
   | "cron.unauthorized"
   | "cron.executed"
   | "cron.audit_retention.purged"

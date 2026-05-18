@@ -18,6 +18,13 @@ import { tryDecryptField } from "@/lib/security/field-encryption";
 export type OrganizationRow = {
   id: string;
   owner_user_id: string;
+  /**
+   * Clerk Organization id this workspace is linked to. Null for legacy
+   * personal-account workspaces (single-user). Required for team
+   * features (invites, Senior Official transfer) which are surfaced on
+   * /settings/team.
+   */
+  clerk_org_id: string | null;
   name: string;
   entity_type: string | null;
   cage_code: string | null;
@@ -25,6 +32,19 @@ export type OrganizationRow = {
   naics_codes: string[];
   tier: "solo" | "bootcamp" | "command";
   scoped_systems: string | null;
+  /**
+   * Clerk user_id of the designated Senior Official for this org — the
+   * only person allowed to sign the CMMC L1 affirmation under
+   * 32 CFR § 170.21(a)(2). Auto-set to the org creator on first
+   * provision; transferable later via designateSeniorOfficialAction.
+   */
+  senior_official_user_id: string | null;
+  /**
+   * Timestamp the senior official confirmed they understand the
+   * personal-liability implications (FCA + 18 U.S.C. § 1001) on
+   * /welcome/senior-official. Pre-flight gate before any assessment work.
+   */
+  senior_official_acknowledged_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -196,8 +216,10 @@ async function ensureLegacyPersonalOrg(
   const sql = getSql();
 
   const existing = (await sql`
-    SELECT id, owner_user_id, name, entity_type, cage_code, sam_uei,
-           naics_codes, tier, scoped_systems, created_at, updated_at
+    SELECT id, owner_user_id, clerk_org_id, name, entity_type, cage_code, sam_uei,
+           naics_codes, tier, scoped_systems,
+           senior_official_user_id, senior_official_acknowledged_at,
+           created_at, updated_at
     FROM organizations
     WHERE owner_user_id = ${userId}
       AND clerk_org_id IS NULL
@@ -209,11 +231,21 @@ async function ensureLegacyPersonalOrg(
     return existing[0];
   }
 
+  // First-time provision: the creator is auto-designated as the Senior
+  // Official (32 CFR § 170.21(a)(2)). They confirm the role on
+  // /welcome/senior-official before any assessment work begins. If the
+  // creator is actually setting this up *for* someone else (e.g. IT
+  // manager preparing the workspace for the owner), they can transfer
+  // the designation from /settings/team once team invites ship (PR #2).
   const inserted = (await sql`
-    INSERT INTO organizations (owner_user_id, name, tier)
-    VALUES (${userId}, ${"My Organization"}, 'solo')
-    RETURNING id, owner_user_id, name, entity_type, cage_code, sam_uei,
-              naics_codes, tier, scoped_systems, created_at, updated_at
+    INSERT INTO organizations (
+      owner_user_id, name, tier, senior_official_user_id
+    )
+    VALUES (${userId}, ${"My Organization"}, 'solo', ${userId})
+    RETURNING id, owner_user_id, clerk_org_id, name, entity_type, cage_code, sam_uei,
+              naics_codes, tier, scoped_systems,
+              senior_official_user_id, senior_official_acknowledged_at,
+              created_at, updated_at
   `) as OrganizationRow[];
 
   await ensureBusinessProfile(inserted[0].id);
@@ -248,8 +280,10 @@ export async function resolveActiveOrg(args: {
   const sql = getSql();
 
   const existing = (await sql`
-    SELECT id, owner_user_id, name, entity_type, cage_code, sam_uei,
-           naics_codes, tier, scoped_systems, created_at, updated_at
+    SELECT id, owner_user_id, clerk_org_id, name, entity_type, cage_code, sam_uei,
+           naics_codes, tier, scoped_systems,
+           senior_official_user_id, senior_official_acknowledged_at,
+           created_at, updated_at
     FROM organizations
     WHERE clerk_org_id = ${args.clerkOrgId}
     LIMIT 1
@@ -265,11 +299,21 @@ export async function resolveActiveOrg(args: {
       ? args.clerkOrgName.trim()
       : "Managed business");
 
+  // First-provision senior_official: stamp the first visitor as the
+  // designated Senior Official. They'll confirm the role on
+  // /welcome/senior-official before any assessment work begins. If a
+  // contributor was the first to visit a brand-new Clerk org (e.g. an
+  // IT manager setting up for an owner), the designation can be
+  // transferred from /settings/team (PR #2).
   const inserted = (await sql`
-    INSERT INTO organizations (owner_user_id, clerk_org_id, name, tier)
-    VALUES (${args.userId}, ${args.clerkOrgId}, ${displayName}, 'solo')
-    RETURNING id, owner_user_id, name, entity_type, cage_code, sam_uei,
-              naics_codes, tier, scoped_systems, created_at, updated_at
+    INSERT INTO organizations (
+      owner_user_id, clerk_org_id, name, tier, senior_official_user_id
+    )
+    VALUES (${args.userId}, ${args.clerkOrgId}, ${displayName}, 'solo', ${args.userId})
+    RETURNING id, owner_user_id, clerk_org_id, name, entity_type, cage_code, sam_uei,
+              naics_codes, tier, scoped_systems,
+              senior_official_user_id, senior_official_acknowledged_at,
+              created_at, updated_at
   `) as OrganizationRow[];
 
   await ensureBusinessProfile(inserted[0].id);
@@ -713,8 +757,9 @@ export async function getAssessmentForUser(
            a.sprs_filed_at, a.sprs_confirmation_number, a.sprs_status_date,
            a.sprs_attestation_hash, a.custodia_verification_id,
            a.created_at AS a_created_at, a.updated_at AS a_updated_at,
-           o.id AS o_id, o.owner_user_id, o.name AS o_name, o.entity_type,
+           o.id AS o_id, o.owner_user_id, o.clerk_org_id, o.name AS o_name, o.entity_type,
            o.cage_code, o.sam_uei, o.naics_codes, o.tier, o.scoped_systems,
+           o.senior_official_user_id, o.senior_official_acknowledged_at,
            o.created_at AS o_created_at, o.updated_at AS o_updated_at
     FROM assessments a
     JOIN organizations o ON o.id = a.organization_id
@@ -771,6 +816,7 @@ export async function getAssessmentForUser(
     organization: {
       id: r.o_id as string,
       owner_user_id: r.owner_user_id as string,
+      clerk_org_id: (r.clerk_org_id as string | null) ?? null,
       name: r.o_name as string,
       entity_type: r.entity_type as string | null,
       cage_code: r.cage_code as string | null,
@@ -778,6 +824,10 @@ export async function getAssessmentForUser(
       naics_codes: (r.naics_codes as string[]) ?? [],
       tier: r.tier as OrganizationRow["tier"],
       scoped_systems: r.scoped_systems as string | null,
+      senior_official_user_id:
+        (r.senior_official_user_id as string | null) ?? null,
+      senior_official_acknowledged_at:
+        (r.senior_official_acknowledged_at as string | null) ?? null,
       created_at: r.o_created_at as string,
       updated_at: r.o_updated_at as string,
     },

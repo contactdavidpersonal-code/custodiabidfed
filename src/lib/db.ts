@@ -340,6 +340,51 @@ async function runInitDdl() {
       ADD COLUMN IF NOT EXISTS sam_radar_emails_enabled BOOLEAN NOT NULL DEFAULT TRUE
   `;
 
+  // ── Senior Official designation (32 CFR § 170.21(a)(2)) ──────────────
+  // The CMMC L1 affirmation is a personal act by the *Senior Official of
+  // the contractor*. The reg places liability on a specific human, not on
+  // "whoever has admin in the platform." We pin that human at the org
+  // level so:
+  //   1. Only the designated senior official can sign the affirmation
+  //      (enforced server-side in submitAffirmationAction).
+  //   2. Contributors invited later (PR #2) inherit zero signing
+  //      authority — they can fill intake and upload evidence, but the
+  //      gate refuses their sign request.
+  //   3. The acknowledgement timestamp proves the senior official saw
+  //      the personal-liability language (18 U.S.C. § 1001 + FCA
+  //      31 U.S.C. §§ 3729-3733) BEFORE investing hours in the
+  //      assessment — not just at sign time.
+  // `senior_official_user_id` holds the Clerk user_id of the designated
+  // senior official; transferable via designateSeniorOfficialAction.
+  // `senior_official_acknowledged_at` is set when they confirm the
+  // 32 CFR § 170.21(a)(2) language on /welcome/senior-official.
+  await sql`
+    ALTER TABLE organizations
+      ADD COLUMN IF NOT EXISTS senior_official_user_id TEXT
+  `;
+  await sql`
+    ALTER TABLE organizations
+      ADD COLUMN IF NOT EXISTS senior_official_acknowledged_at TIMESTAMPTZ
+  `;
+  // Backfill: pre-PR-#1 orgs auto-default the senior official to the
+  // org's owner. They've already been operating as "the sole user can do
+  // everything," so this preserves their UX exactly while opting them in
+  // to the new gate.
+  await sql`
+    UPDATE organizations
+    SET senior_official_user_id = owner_user_id
+    WHERE senior_official_user_id IS NULL
+  `;
+  // Backfill: existing orgs are treated as already-acknowledged so we
+  // don't drop a new wall in front of users who are mid-flow. Only
+  // brand-new orgs (created after this migration) will see the
+  // acknowledgement screen.
+  await sql`
+    UPDATE organizations
+    SET senior_official_acknowledged_at = updated_at
+    WHERE senior_official_acknowledged_at IS NULL
+  `;
+
   // Tier 2 zero-trust: per-tenant Data Encryption Key (DEK), wrapped under
   // the platform Key Encryption Key (KEK). NULL = not yet provisioned (lazy
   // create on first encrypt). `dek_shredded_at` set non-null means the

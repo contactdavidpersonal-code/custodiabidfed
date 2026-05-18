@@ -28,6 +28,20 @@ export default async function AssessmentsIndexPage() {
   const org = await ensureOrgForUser(userId);
   await ensureWelcomeEmailSent(org.id, userId);
 
+  // 32 CFR § 170.21(a)(2) acknowledgement gate. Pre-flight: if the
+  // signed-in user is the designated Senior Official AND hasn't yet
+  // confirmed they read the personal-liability summary, route them to
+  // /welcome/senior-official before any assessment work begins. Other
+  // users (contributors, viewers) skip this gate — only the SO needs
+  // to read it. Pre-existing orgs were backfilled as already-acknow-
+  // ledged at migration time, so this only fires for brand-new signups.
+  if (
+    org.senior_official_user_id === userId &&
+    !org.senior_official_acknowledged_at
+  ) {
+    redirect("/welcome/senior-official");
+  }
+
   const profile = await getBusinessProfile(org.id);
   if (!isOnboardingComplete(org, profile)) {
     redirect("/onboard");
