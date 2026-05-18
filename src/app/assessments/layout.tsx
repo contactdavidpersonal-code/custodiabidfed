@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getActiveOrgFromAuth } from "@/lib/assessment";
 import { countUnreadOfficerRepliesForOrg } from "@/lib/escalations";
 import {
+  hasActiveSoloSubscription,
   hasOfficerFeature,
   hasWorkspaceAccess,
 } from "@/lib/billing/plans";
@@ -22,7 +23,13 @@ export default async function AssessmentsLayout({
   const { userId, has } = await auth();
   if (!userId) redirect("/sign-in");
   // Workspace gate: any active Custodia plan (self-service, +officer, or legacy).
-  if (!hasWorkspaceAccess(has)) redirect("/upgrade");
+  // JWT claim first (fast, free); fall back to the Billing API as the
+  // source of truth so we don't bounce a brand-new trialer to /upgrade
+  // while their session JWT is still catching up to the new plan claim.
+  if (!hasWorkspaceAccess(has)) {
+    const hasActive = await hasActiveSoloSubscription(userId);
+    if (!hasActive) redirect("/upgrade");
+  }
 
   const officerEnabled = hasOfficerFeature(has);
   const org = (await getActiveOrgFromAuth())!;
