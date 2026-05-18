@@ -31,6 +31,9 @@ const cspDirectives: Record<string, string[]> = {
     "https://accounts.bidfedcmmc.com",
     "https://challenges.cloudflare.com",
     "https://va.vercel-scripts.com",
+    // Vercel Live feedback widget (preview deployments and prod when the
+    // Vercel toolbar is enabled) loads /_next-live/feedback/feedback.js.
+    "https://vercel.live",
   ],
   "style-src": ["'self'", "'unsafe-inline'"],
   "img-src": [
@@ -41,6 +44,8 @@ const cspDirectives: Record<string, string[]> = {
     "https://images.clerk.dev",
     "https://clerk.bidfedcmmc.com",
     "https://*.public.blob.vercel-storage.com",
+    // "Powered by AWS" badge on the landing page.
+    "https://d0.awsstatic.com",
   ],
   "font-src": ["'self'", "data:"],
   "connect-src": [
@@ -71,7 +76,11 @@ const cspDirectives: Record<string, string[]> = {
   "base-uri": ["'self'"],
   "form-action": ["'self'"],
   "frame-ancestors": ["'none'"],
-  "upgrade-insecure-requests": [],
+  // NOTE: `upgrade-insecure-requests` is intentionally omitted while CSP
+  // ships as Content-Security-Policy-Report-Only. Chrome ignores the
+  // directive in report-only mode and logs a console warning on every
+  // page load if it is present, which floods DevTools. We will add it
+  // back the moment we flip the header to enforce mode.
 };
 
 const cspValue = Object.entries(cspDirectives)
