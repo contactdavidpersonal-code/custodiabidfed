@@ -32,6 +32,7 @@ import {
   type MaterialChangeQuestionKey,
 } from "@/lib/assessment";
 import { stampFreshnessOnInsert } from "@/lib/freshness";
+import { inferAssessmentMethod } from "@/lib/cmmc/assessmentMethod";
 import {
   getSamEntityStatus,
   summarizeSamStatus,
@@ -478,11 +479,21 @@ export async function uploadEvidenceAction(formData: FormData) {
   const sql = getSql();
   // CMMC AG L1 v2.13 §§ 5–7 assessment method (optional). Stored on the
   // artifact so the SSP can render the per-method tally per practice.
+  // When the user picked a method explicitly via the EvidenceMethodPicker
+  // that value wins; otherwise we auto-infer from filename + mime type so
+  // the SSP tally is reasonable on day one. User can still override later
+  // via setEvidenceMethodAction.
   const methodRaw = String(formData.get("method") ?? "").trim().toLowerCase();
-  const method =
+  const explicitMethod =
     methodRaw === "examine" || methodRaw === "interview" || methodRaw === "test"
       ? methodRaw
       : null;
+  const method =
+    explicitMethod ??
+    inferAssessmentMethod({
+      filename: file.name,
+      mimeType: file.type || null,
+    }).method;
   const inserted = (await sql`
     INSERT INTO evidence_artifacts
       (assessment_id, control_id, filename, blob_url, mime_type, size_bytes, uploaded_by_user_id, assessment_method)

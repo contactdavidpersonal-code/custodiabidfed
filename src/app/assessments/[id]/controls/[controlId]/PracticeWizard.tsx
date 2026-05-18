@@ -16,6 +16,7 @@ import type {
   ProviderTemplate,
 } from "@/lib/playbook";
 import { EvidenceDropzone } from "./EvidenceDropzone";
+import { inferAssessmentMethod } from "@/lib/cmmc/assessmentMethod";
 
 /**
  * Client-side evidence shape: identical to EvidenceArtifactRow minus
@@ -1029,6 +1030,19 @@ function MethodPicker({
 }) {
   const [pending, startTransition] = useTransition();
   const current = a.assessment_method ?? null;
+  // Inline guidance: show what the auto-inference heuristic *would* pick for
+  // this file. Helps the user understand why a method was pre-filled at
+  // upload time, and gives them a sane default to fall back to if they
+  // clear it. Pure-function helper — no network.
+  const inferred = useMemo(
+    () =>
+      inferAssessmentMethod({
+        filename: a.filename,
+        mimeType: a.mime_type ?? null,
+      }),
+    [a.filename, a.mime_type],
+  );
+  const matchesInference = current === inferred.method;
 
   const choose = (method: "examine" | "interview" | "test" | "") => {
     const fd = new FormData();
@@ -1090,6 +1104,24 @@ function MethodPicker({
           Click again to clear
         </span>
       )}
+      {!current && inferred.confident && (
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => choose(inferred.method)}
+          className="ml-1 border border-[#a06b1a] bg-[#fdf6e9] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#7a5210] transition-colors hover:bg-[#f8e8c4] disabled:opacity-60"
+          title={inferred.rationale}
+        >
+          Suggested: {inferred.method}
+        </button>
+      )}
+      <span className="basis-full text-[10px] italic text-[#7a9b8e]">
+        {current
+          ? matchesInference
+            ? `Auto-set from filename. ${inferred.rationale} Override if the assessor used a different method.`
+            : "You set this manually. Click the active button again to clear."
+          : `${inferred.rationale} Examine = read the artifact. Interview = talked to the responsible person. Test = operated the control.`}
+      </span>
     </div>
   );
 }

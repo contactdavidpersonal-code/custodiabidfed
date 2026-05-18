@@ -16,6 +16,7 @@ export type AuditAction =
   | "organization.fields_updated"
   | "cron.unauthorized"
   | "cron.executed"
+  | "cron.audit_retention.purged"
   | "auth.unauthorized"
   | "rate_limit.exceeded"
   | "connector.connected"

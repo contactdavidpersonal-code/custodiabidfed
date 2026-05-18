@@ -117,6 +117,62 @@ export default async function ScopePage(
         </div>
       </section>
 
+      <section className="mb-10 border-l-4 border-[#a06b1a] bg-[#fdf6e9] p-6">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#7a5210]">
+          Out-of-scope segregation · 32 CFR § 170.19(c)
+        </p>
+        <h2 className="mt-2 font-serif text-lg font-bold text-[#10231d]">
+          Anything you leave out of scope must be <em>provably</em> separated from FCI.
+        </h2>
+        <div className="mt-3 space-y-3 text-sm leading-relaxed text-[#3d5a51]">
+          <p>
+            The Scoping Guide lets you exclude assets that don&apos;t process,
+            store, or transmit FCI — <strong>but only if you can show they
+            can&apos;t.</strong> A &ldquo;personal laptop on the guest Wi-Fi&rdquo; is
+            out of scope; a personal laptop that opens email attachments from a
+            government customer is in scope. Assessors will ask how you enforce
+            the line.
+          </p>
+          <p className="font-semibold text-[#10231d]">
+            Acceptable segregation evidence (pick what fits your environment):
+          </p>
+          <ul className="ml-5 list-disc space-y-1">
+            <li>
+              <strong>Network:</strong> separate VLAN / SSID / subnet for the
+              out-of-scope segment, with firewall rules blocking traffic to the
+              FCI segment (screenshot the rule).
+            </li>
+            <li>
+              <strong>Identity:</strong> separate tenant or directory — e.g. a
+              personal Google account vs. the company M365 tenant where FCI
+              lives. Document that the two cannot federate.
+            </li>
+            <li>
+              <strong>Physical:</strong> a different building, locked room, or
+              keyed cabinet that the out-of-scope users can&apos;t reach.
+            </li>
+            <li>
+              <strong>Policy + technical control:</strong> an AUP that forbids
+              FCI on the excluded asset <em>plus</em> a DLP rule, MAM
+              restriction, or device-attestation check that enforces it.
+            </li>
+          </ul>
+          <p>
+            <strong>If you can&apos;t show separation, include the asset.</strong>{" "}
+            Over-scoping is annoying; under-scoping is a finding. Ask Charlie if
+            you&apos;re unsure — it&apos;ll walk through the segregation question
+            for any asset you name.
+          </p>
+        </div>
+        <div className="mt-4">
+          <ScopeCharlieButton
+            label="Ask Charlie about a borderline asset"
+            helper="Tell Charlie what the asset does and how it's networked — get a clear in/out call."
+            prompt="I have an asset I'm not sure whether to put in scope. Help me decide. Ask me what the asset is, who uses it, what data flows through it, how it's networked and authenticated, and whether it can reach anything that holds FCI. Then tell me clearly: in scope or out of scope, what evidence I'd need to defend the call, and how to record it. Cite 32 CFR § 170.19 sections where relevant."
+          />
+        </div>
+      </section>
+
       <ScopeSection
         kind="people"
         title="People"
