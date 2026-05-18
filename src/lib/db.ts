@@ -217,7 +217,12 @@ async function runInitDdl() {
   await sql`
     CREATE TABLE IF NOT EXISTS organizations (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      owner_user_id TEXT UNIQUE NOT NULL,
+      -- NB: no global UNIQUE on owner_user_id. MSP multi-tenancy lets a
+      -- single user legitimately own one personal org plus many
+      -- Clerk-org-linked managed businesses. Uniqueness is enforced by
+      -- the two partial indexes created further down
+      -- (organizations_personal_owner_uidx / organizations_clerk_org_uidx).
+      owner_user_id TEXT NOT NULL,
       name TEXT NOT NULL,
       entity_type TEXT,
       cage_code TEXT,
@@ -253,31 +258,10 @@ async function runInitDdl() {
       END IF;
     END $$
   `;
-  await sql`
-    DO $$ BEGIN
-      -- Only attempt the legacy global UNIQUE if neither the constraint
-      -- itself nor its MSP-era replacement (the partial index keyed on
-      -- clerk_org_id IS NULL) exists yet. Once MSP multi-tenancy has run,
-      -- a single user can legitimately own multiple organization rows
-      -- (one personal + many Clerk-org-linked managed businesses), so the
-      -- global UNIQUE would now fail with duplicate keys — see the cron
-      -- 500s in production logs ("could not create unique index
-      -- organizations_owner_user_id_key").
-      IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint
-        WHERE conname = 'organizations_owner_user_id_key'
-      ) AND NOT EXISTS (
-        SELECT 1 FROM pg_indexes
-        WHERE indexname = 'organizations_personal_owner_uidx'
-      ) AND NOT EXISTS (
-        SELECT 1 FROM information_schema.columns
-        WHERE table_name = 'organizations' AND column_name = 'clerk_org_id'
-      ) THEN
-        ALTER TABLE organizations
-          ADD CONSTRAINT organizations_owner_user_id_key UNIQUE (owner_user_id);
-      END IF;
-    END $$
-  `;
+  // (Legacy global UNIQUE on owner_user_id intentionally NOT re-added
+  // here. The MSP-era partial indexes below are the canonical uniqueness
+  // contract — see the failure described at
+  // organizations_owner_user_id_key in production logs.)
   await sql`ALTER TABLE organizations ALTER COLUMN owner_user_id SET NOT NULL`;
   await sql`DROP TABLE IF EXISTS memberships`;
 
