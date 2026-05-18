@@ -81,7 +81,6 @@ export async function hasActiveSoloSubscription(
 ): Promise<boolean> {
   try {
     const client = await clerkClient();
-    // @ts-expect-error — Billing API is experimental in @clerk/backend 3.x
     const sub = await client.billing.getUserBillingSubscription(userId);
     const items: Array<{
       status: string;
