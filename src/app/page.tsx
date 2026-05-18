@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useState, type ComponentProps } from "react";
 import { motion } from "motion/react";
 import { AdminLink } from "@/components/AdminLink";
+import { LandingQualifierWidget } from "@/components/LandingQualifierWidget";
 
 // Cinematic Apple-style easing
 const SECTION_EASE = [0.16, 1, 0.3, 1] as const;
@@ -2315,6 +2316,10 @@ export default function Home() {
           </Link>
         </div>
       </Show>
+
+      {/* Free public CMMC L1 qualifier — isolated Haiku-backed agent.
+          Floating bottom-right, sits above the mobile sticky CTA. */}
+      <LandingQualifierWidget />
 
     </div>
   );
