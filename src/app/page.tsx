@@ -255,7 +255,7 @@ export default function Home() {
               Federally Secure Your Business With CMMC Level&nbsp;1<span className="text-[#8dd2b1]">.</span>
             </span>
             <span className="block bg-gradient-to-br from-[#d4f9e0] via-[#8dd2b1] to-[#5fb893] bg-clip-text pb-2 text-transparent leading-[1.15] text-[1.4rem] sm:text-[1.7rem] md:text-4xl lg:text-5xl">
-              Unlock Federal Opportunities Year Round<span className="text-[#8dd2b1] [-webkit-text-fill-color:#8dd2b1]">.</span>
+              Unlock FCI Opportunities Year Round<span className="text-[#8dd2b1] [-webkit-text-fill-color:#8dd2b1]">.</span>
             </span>
           </h1>
 
