@@ -173,8 +173,22 @@ export default async function SignUpPage({
             </Link>
           </p>
         </div>
-        <div className="flex justify-center lg:justify-end">
+        <div className="flex flex-col items-center gap-3 lg:items-end">
           <SignUp path="/sign-up" signInUrl={signInHref} fallbackRedirectUrl={redirectAfter} forceRedirectUrl={redirectAfter} />
+          {/*
+            Clerk's bot protection mounts a Cloudflare Turnstile widget. When
+            Clerk has no explicit container it injects one inside the SignUp
+            tree, which gets unmounted on every React re-render — the
+            Turnstile iframe is destroyed before it can return a token, and
+            the script then spams postMessage() at a recipient whose origin
+            no longer matches `https://challenges.cloudflare.com`, leaving
+            the Continue button stuck on "Loading…". An explicit
+            #clerk-captcha node outside the SignUp subtree gives Turnstile a
+            stable home so the token actually resolves. Clerk auto-detects
+            this id; nothing else needs to change.
+            Ref: https://clerk.com/docs/customization/customize-captcha
+          */}
+          <div id="clerk-captcha" />
         </div>
       </div>
     </main>

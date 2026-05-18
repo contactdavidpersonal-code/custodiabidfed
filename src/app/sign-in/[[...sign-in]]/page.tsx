@@ -33,8 +33,10 @@ export default function SignInPage() {
             </Link>
           </p>
         </div>
-        <div className="flex justify-center lg:justify-end">
+        <div className="flex flex-col items-center gap-3 lg:items-end">
           <SignIn path="/sign-in" signUpUrl="/sign-up" fallbackRedirectUrl="/assessments" />
+          {/* See src/app/sign-up/[[...sign-up]]/page.tsx for why this exists. */}
+          <div id="clerk-captcha" />
         </div>
       </div>
     </main>
