@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 import { getActiveOrgFromAuth } from "@/lib/assessment";
 import { countUnreadOfficerRepliesForOrg } from "@/lib/escalations";
 import {
-  hasMspAccess,
   hasOfficerFeature,
   hasWorkspaceAccess,
 } from "@/lib/billing/plans";
@@ -22,8 +21,7 @@ export default async function AssessmentsLayout({
 }) {
   const { userId, has } = await auth();
   if (!userId) redirect("/sign-in");
-  // Allow either self-service solo plan, the legacy full-access plan, or
-  // either MSP tier through the workspace gate.
+  // Workspace gate: any active Custodia plan (self-service, +officer, or legacy).
   if (!hasWorkspaceAccess(has)) redirect("/upgrade");
 
   const officerEnabled = hasOfficerFeature(has);
@@ -85,14 +83,6 @@ export default async function AssessmentsLayout({
             >
               Boundary
             </Link>
-            {hasMspAccess(has) && (
-              <Link
-                href="/assessments/clients"
-                className=" px-3 py-2 font-medium text-[#456c5f] transition-colors hover:bg-[#f1f6f3] hover:text-[#10231d]"
-              >
-                Clients
-              </Link>
-            )}
             {officerEnabled && (
               <Link
                 href="/assessments/tickets"

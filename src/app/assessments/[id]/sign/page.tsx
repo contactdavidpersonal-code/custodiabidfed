@@ -160,6 +160,22 @@ export default async function SignPage(
     ctx.organization.senior_official_user_id === userId;
   let seniorOfficialLabel: string | null = null;
   let seniorOfficialEmail: string | null = null;
+  let currentUserLabel: string | null = null;
+  let currentUserEmail: string | null = null;
+  if (isSeniorOfficial) {
+    try {
+      const cc = await clerkClient();
+      const me = await cc.users.getUser(userId);
+      const composed = [me.firstName, me.lastName]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      currentUserEmail = me.primaryEmailAddress?.emailAddress ?? null;
+      currentUserLabel = composed || currentUserEmail;
+    } catch (err) {
+      console.error("[sign] failed to load current user identity", err);
+    }
+  }
   if (!isSeniorOfficial && ctx.organization.senior_official_user_id) {
     try {
       const cc = await clerkClient();
@@ -225,6 +241,15 @@ export default async function SignPage(
                     },
                   )}
                 </strong>
+                {ctx.assessment.affirmed_by_name ? (
+                  <>
+                    {" "}by{" "}
+                    <strong>{ctx.assessment.affirmed_by_name}</strong>
+                    {ctx.assessment.affirmed_by_title ? (
+                      <>, {ctx.assessment.affirmed_by_title}</>
+                    ) : null}
+                  </>
+                ) : null}
                 .{" "}
               </>
             ) : null}
@@ -620,6 +645,34 @@ export default async function SignPage(
                 Email the Senior Official
               </a>
             ) : null}
+          </div>
+        </div>
+      )}
+
+      {isSeniorOfficial && (
+        <div className="mb-6 flex items-start gap-3 rounded-md border border-[#cfe3d9] bg-[#f1f6f3] p-4">
+          <span
+            aria-hidden
+            className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[#2f8f6d] text-xs font-bold text-white"
+          >
+            &#10003;
+          </span>
+          <div className="text-sm text-[#10231d]">
+            <div className="font-serif text-[11px] tracking-[0.2em] uppercase text-[#2f8f6d]">
+              Signing as designated Senior Official
+            </div>
+            <div className="mt-1">
+              <span className="font-semibold">
+                {currentUserLabel ?? "You"}
+              </span>
+              {currentUserEmail && currentUserEmail !== currentUserLabel ? (
+                <span className="ml-1 text-[#456c5f]">· {currentUserEmail}</span>
+              ) : null}
+            </div>
+            <p className="mt-1 text-xs text-[#456c5f]">
+              Per 32 CFR § 170.21(a)(2), this affirmation is a personal act
+              by the designated Senior Official for {ctx.organization.name}.
+            </p>
           </div>
         </div>
       )}

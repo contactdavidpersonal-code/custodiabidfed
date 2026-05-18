@@ -2,8 +2,6 @@ import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
 
 const ALLOWED_PLANS = new Set([
-  // MSP plans (custodia_squad, msp_platoon_20) are temporarily disabled —
-  // re-add when the /for-msps page is brought back online.
   "bidfedcmmc_self_service_",
   "bidfedcmmc_self_service_custodia_officer_",
   // Legacy plan slug kept for grandfathered links.
@@ -48,55 +46,6 @@ const SOLO_COPY: PlanCopy = {
   backLabel: "← Back to home",
 };
 
-const SQUAD_COPY: PlanCopy = {
-  eyebrow: "MSP · Squad · 14-day trial · No credit card",
-  headlinePrefix: "Run CMMC Level 1 for ",
-  headlineHighlight: "up to 5 client businesses",
-  headlineSuffix: " from one login.",
-  sub: "Squad gives you a multi-tenant control room — every client gets their own SSP, affirmation, evidence, and SPRS record, all walked by Charlie. 14 days free. No card until day 14.",
-  whyTitle: "Why MSPs pick Squad",
-  whyBody:
-    "Stop juggling spreadsheets per client. One workspace, five tenants, all walked by Charlie before any client submits.",
-  bullets: [
-    { strong: "Up to 5 client businesses", rest: " managed from one MSP login" },
-    { strong: "Per-client SSP + affirmation + evidence", rest: " generated automatically" },
-    { strong: "Year-round monitoring per client", rest: " on M365 or Google" },
-    { strong: "Annual SPRS re-affirmation", rest: " handled per client" },
-    { strong: "Daily Discover", rest: " — SAM.gov bids matched to each client's NAICS" },
-  ],
-  compare: [
-    { label: "DIY per client", body: "3–6 mo each, $5k+ each" },
-    { label: "Audit firm", body: "$25k+ per client" },
-    { label: "Squad", body: "$499/mo · all 5 clients", emphasis: true },
-  ],
-  backHref: "/for-msps",
-  backLabel: "← Back to MSP plans",
-};
-
-const PLATOON_COPY: PlanCopy = {
-  ...SQUAD_COPY,
-  eyebrow: "MSP · Platoon · 14-day trial · No credit card",
-  headlinePrefix: "Run CMMC Level 1 for ",
-  headlineHighlight: "up to 20 client businesses",
-  headlineSuffix: " from one login.",
-  sub: "Platoon scales the MSP control room to a full client roster. 14 days free. No card until day 14.",
-  whyTitle: "Why MSPs pick Platoon",
-  whyBody:
-    "When five tenants is the floor, not the ceiling. Same Charlie-walked workflow, scaled to your whole book.",
-  bullets: [
-    { strong: "Up to 20 client businesses", rest: " managed from one MSP login" },
-    { strong: "Everything in Squad", rest: ", scaled across the roster" },
-    { strong: "Priority support", rest: " from a Custodia compliance officer" },
-    { strong: "Per-client monitoring + SPRS", rest: " handled across the book" },
-    { strong: "Daily Discover per client", rest: " — never miss a matched bid" },
-  ],
-  compare: [
-    { label: "DIY per client", body: "3–6 mo each, $5k+ each" },
-    { label: "Audit firm", body: "$25k+ per client" },
-    { label: "Platoon", body: "$1,499/mo · 20 clients", emphasis: true },
-  ],
-};
-
 const OFFICER_COPY: PlanCopy = {
   eyebrow: "+ Custodia Officer · 14-day trial · No credit card",
   headlinePrefix: "Get bid-ready for ",
@@ -123,8 +72,6 @@ const OFFICER_COPY: PlanCopy = {
 };
 
 function copyFor(plan: string | null): PlanCopy {
-  if (plan === "custodia_squad") return SQUAD_COPY;
-  if (plan === "msp_platoon_20") return PLATOON_COPY;
   if (plan === "bidfedcmmc_self_service_custodia_officer_") return OFFICER_COPY;
   return SOLO_COPY;
 }

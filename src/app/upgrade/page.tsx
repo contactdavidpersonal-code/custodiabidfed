@@ -2,16 +2,12 @@ import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
-  PLAN_PLATOON,
   PLAN_SELF_SERVICE,
   PLAN_SELF_SERVICE_OFFICER,
-  PLAN_SQUAD,
 } from "@/lib/billing/plans";
 import { TrialCheckoutButton } from "./TrialCheckoutButton";
 
 type PlanKey =
-  | typeof PLAN_SQUAD
-  | typeof PLAN_PLATOON
   | typeof PLAN_SELF_SERVICE
   | typeof PLAN_SELF_SERVICE_OFFICER;
 
@@ -52,44 +48,6 @@ const PLAN_CONFIG: Record<
     hasFeatureKey: string;
   }
 > = {
-  custodia_squad: {
-    slug: PLAN_SQUAD,
-    title: "Squad — manage up to 5 client businesses",
-    badge: "MSP · Squad",
-    price: "$499",
-    priceSuffix: "/mo after trial",
-    capLine: "Up to 5 client businesses · 14 days free, no card",
-    ctaText: "Start my Squad trial",
-    bullets: [
-      "Up to 5 client businesses managed from one login",
-      "All 15 FAR 52.204-21 controls walked per client by Charlie, your vCO",
-      "Bid-ready package per client: SSP, affirmation, evidence",
-      "Year-round M365/Google monitoring across every client",
-      "Annual SPRS re-affirmation handled per client",
-      "BONUS: Daily Discover (SAM.gov bids matched to each client's NAICS)",
-      "BONUS: Monday Bid Digest emailed weekly",
-    ],
-    hasFeatureKey: PLAN_SQUAD,
-  },
-  msp_platoon_20: {
-    slug: PLAN_PLATOON,
-    title: "Platoon — manage up to 20 client businesses",
-    badge: "MSP · Platoon",
-    price: "$1,499",
-    priceSuffix: "/mo after trial",
-    capLine: "Up to 20 client businesses · 14 days free, no card",
-    ctaText: "Start my Platoon trial",
-    bullets: [
-      "Up to 20 client businesses managed from one login",
-      "Everything in Squad, scaled to a full client roster",
-      "Year-round M365/Google monitoring across every client",
-      "Annual SPRS re-affirmation handled per client",
-      "Priority support",
-      "BONUS: Daily Discover per client",
-      "BONUS: Monday Bid Digest emailed weekly",
-    ],
-    hasFeatureKey: PLAN_PLATOON,
-  },
   [PLAN_SELF_SERVICE]: {
     slug: PLAN_SELF_SERVICE,
     title: "CMMC Level 1 — Self Service",
@@ -116,8 +74,6 @@ const PLAN_CONFIG: Record<
 
 function isPlanKey(value: string | undefined): value is PlanKey {
   return (
-    value === PLAN_SQUAD ||
-    value === PLAN_PLATOON ||
     value === PLAN_SELF_SERVICE ||
     value === PLAN_SELF_SERVICE_OFFICER
   );
@@ -146,10 +102,6 @@ export default async function UpgradePage({
   // If the user already has active access (paid OR active trial) on the
   // requested plan, send them to the workspace.
   if (has({ plan: `user:${cfg.hasFeatureKey}` })) redirect("/onboard");
-  // Higher-tier plans satisfy lower-tier checks.
-  if (planKey !== PLAN_PLATOON && has({ plan: `user:${PLAN_PLATOON}` })) {
-    redirect("/onboard");
-  }
   if (
     planKey === PLAN_SELF_SERVICE &&
     has({ plan: `user:${PLAN_SELF_SERVICE_OFFICER}` })
@@ -157,13 +109,11 @@ export default async function UpgradePage({
     redirect("/onboard");
   }
 
-  const isMsp = planKey === PLAN_SQUAD || planKey === PLAN_PLATOON;
   const isSoloSelfService = planKey === PLAN_SELF_SERVICE;
   const isSoloOfficer = planKey === PLAN_SELF_SERVICE_OFFICER;
   const isSolo = isSoloSelfService || isSoloOfficer;
 
   // For solo flows we stack a second card with the "other" solo plan.
-  // MSP flows stay compact (one card, small links).
   const secondaryCfg = isSoloSelfService
     ? PLAN_CONFIG[PLAN_SELF_SERVICE_OFFICER]
     : isSoloOfficer
@@ -185,7 +135,7 @@ export default async function UpgradePage({
                 Custodia
               </div>
               <div className="font-serif text-xs font-semibold text-white">
-                {isMsp ? "MSP control room" : "CMMC Level 1 workspace"}
+                CMMC Level 1 workspace
               </div>
             </div>
           </Link>
@@ -210,14 +160,10 @@ export default async function UpgradePage({
               : "14 days free · No credit card required"}
           </div>
           <h1 className="font-serif text-3xl font-bold leading-[1.1] tracking-tight text-white md:text-5xl">
-            {isMsp
-              ? "Start your Custodia MSP trial."
-              : "Start your 14-day free trial."}
+            Start your 14-day free trial.
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[#a8cfc0]">
-            {isMsp
-              ? "Full Custodia MSP workspace — multi-tenant, vCO-walked. No card until day 14, only if you stay."
-              : "Full Custodia workspace — CMMC Level 1 build, freshness alerts, Charlie on call. No card until day 14, only if you stay."}
+            Full Custodia workspace — CMMC Level 1 build, freshness alerts, Charlie on call. No card until day 14, only if you stay.
           </p>
         </div>
 
@@ -229,26 +175,7 @@ export default async function UpgradePage({
             ) : null}
 
           </div>
-        ) : (
-          <PlanCard cfg={cfg} primary compact>
-            <p className="mt-4 border-t border-[#e3dcc7] pt-3 text-center text-[11px] text-[#5a7f72]">
-              Want the solo plan instead?{" "}
-              <Link
-                href={`/upgrade?plan=${PLAN_SELF_SERVICE}`}
-                className="font-medium text-[#20684f] underline underline-offset-2 hover:text-[#174f3c]"
-              >
-                Self Service — $249/mo
-              </Link>
-              {" · "}
-              <Link
-                href={`/upgrade?plan=${PLAN_SELF_SERVICE_OFFICER}`}
-                className="font-medium text-[#20684f] underline underline-offset-2 hover:text-[#174f3c]"
-              >
-                + Custodia Officer — $397/mo
-              </Link>
-            </p>
-          </PlanCard>
-        )}
+        ) : null}
 
         <p className="mt-6 text-center text-[11px] text-[#7fae9c]">
           Questions before you start?{" "}

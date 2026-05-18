@@ -18,7 +18,6 @@
 - [Free SPRS quiz](https://bidfedcmmc.com/sprs-check): 4-minute interactive readiness check against the 15 FAR 52.204-21 safeguarding requirements.
 - [Free CMMC scoping check](https://bidfedcmmc.com/cmmc-check): 5-minute scoping interview that tells a contractor whether they need CMMC Level 1, Level 2, or nothing at all.
 - [Monday Bid Digest signup](https://bidfedcmmc.com/bid-digest): Free weekly email of CMMC Level 1-fit SAM.gov opportunities by NAICS.
-- [For MSPs](https://bidfedcmmc.com/for-msps): How managed service providers white-label Custodia for their small-business DoD-subcontractor clients.
 - [SAM.gov registration guide](https://bidfedcmmc.com/sam-guide): The free, plain-English walkthrough of registering for federal contracting.
 - [Audit support](https://bidfedcmmc.com/audit-support): What Custodia does when a prime or contracting officer challenges your package.
 - [Meet Charlie](https://bidfedcmmc.com/meet-charlie): Custodia's AI compliance officer — what it does and how it works.
