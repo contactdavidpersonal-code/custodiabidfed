@@ -100,13 +100,22 @@ export default function TermsPage() {
           <h2 className="text-lg font-semibold text-slate-900">5. Subscriptions, fees, renewal, cancellation</h2>
           <ul className="list-disc pl-5 space-y-1">
             <li>
-              <strong>Plans and pricing.</strong> The Self Service plan is one hundred
-              forty-nine U.S. dollars ($149) per month (currently offered at a Federal
-              Compliance Grant rate; standard list price is one hundred ninety-seven U.S.
-              dollars ($197) per month). The Self Service + Compliance Officer plan is two
-              hundred ninety-seven U.S. dollars ($297) per month. All fees are exclusive
-              of applicable sales, use, value-added, or similar taxes, which the Customer
-              is responsible for paying.
+              <strong>Plans and pricing.</strong> The Self Service plan is two hundred
+              forty-nine U.S. dollars ($249) per month, or two thousand four hundred ninety-
+              six U.S. dollars ($2,496) billed annually. The Self Service + Custodia Officer
+              plan is three hundred ninety-seven U.S. dollars ($397) per month, or three
+              thousand nine hundred ninety-six U.S. dollars ($3,996) billed annually. The
+              Custodia Officer tier provides asynchronous, ticket-based access to a
+              credentialed Custodia Compliance Officer assigned to the Customer&apos;s account,
+              scoped to CMMC Level 1 guidance; target response time is one (1) business
+              day during Custodia&apos;s business hours (Monday through Friday, 9:00 a.m. to
+              4:00 p.m. U.S. Eastern Time, excluding U.S. federal holidays). The Officer
+              tier does not constitute 24/7 consulting, implementation services, third-
+              party assessment, or coverage of frameworks outside CMMC Level 1 (including
+              but not limited to CMMC Level 2, DFARS 252.204-7012, CUI handling, ITAR,
+              EAR, FedRAMP, HIPAA, SOC 2, or ISO 27001), which are separately scoped
+              engagements. All fees are exclusive of applicable sales, use, value-added,
+              or similar taxes, which the Customer is responsible for paying.
             </li>
             <li>
               <strong>Free trial.</strong> New customers receive a fourteen (14) day free

@@ -137,7 +137,7 @@ const FAQS: Array<{ q: string; a: string }> = [
   },
   {
     q: "What does CMMC Level 1 cost in 2026?",
-    a: "There is no government filing fee. Real costs are time (20–40 hours DIY) and tooling. Typical 2026 paths: do-it-yourself with existing Microsoft 365 or Google Workspace tenants ($0 cash + 30 hours), vCISO consultant ($6,000–$18,000), or guided SaaS like Custodia ($149/month Self Service under the current Federal Compliance Grant, or $297/month with a credentialed human officer). The SPRS affirmation itself is free.",
+    a: "There is no government filing fee. Real costs are time (20–40 hours DIY) and tooling. Typical 2026 paths: do-it-yourself with existing Microsoft 365 or Google Workspace tenants ($0 cash + 30 hours), vCISO consultant ($6,000–$18,000), or guided SaaS like Custodia ($249/month Self Service — or $2,496/year on annual — or $397/month with a credentialed Custodia Compliance Officer assigned to your account). The SPRS affirmation itself is free.",
   },
   {
     q: "Can I bid on DoD contracts without CMMC Level 1?",
@@ -750,9 +750,9 @@ export default function CmmcLevel1PillarPage() {
             </li>
             <li>
               <strong>Guided SaaS (Custodia):</strong>{" "}
-              <strong>$149/month</strong> Self Service (Federal
-              Compliance Grant, was $197/mo) or{" "}
-              <strong>$297/month</strong> with a credentialed human
+              <strong>$249/month</strong> Self Service (or $2,496/year on
+              annual — two months free) or{" "}
+              <strong>$397/month</strong> with a credentialed Custodia
               compliance officer on call. 14-day free trial, no card.
             </li>
           </ul>
@@ -801,7 +801,7 @@ export default function CmmcLevel1PillarPage() {
                 </tr>
                 <tr>
                   <td className="border border-[#cfe3d9] px-3 py-2 font-medium">Typical cost</td>
-                  <td className="border border-[#cfe3d9] px-3 py-2">$0–$18k one-time + $149/mo SaaS</td>
+                  <td className="border border-[#cfe3d9] px-3 py-2">$0–$18k one-time + $249/mo SaaS</td>
                   <td className="border border-[#cfe3d9] px-3 py-2">$20k–$200k+ per assessment cycle</td>
                 </tr>
               </tbody>
@@ -1027,8 +1027,8 @@ export default function CmmcLevel1PillarPage() {
             Custodia walks you through all 15 FAR 52.204-21 safeguarding
             requirements, drafts your SSP and affirmation memo, and posts
             you to SPRS — all inside a 14-day free trial. No credit card.
-            $149/month after if you stay (Federal Compliance Grant, locked
-            through Sept 30), or $297/month with a credentialed human
+            $249/month after if you stay (or $2,496/year on annual — two
+            months free), or $397/month with a credentialed Custodia
             compliance officer on call.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">

@@ -89,7 +89,7 @@ export default function AuditSupportPage() {
             <li>
               &middot; CMMC Level 2 / DFARS 252.204-7012 / FedRAMP — those are
               separate, officer-led engagements (we sell them; they are not
-              the $297/mo Custodia Officer plan).
+              the $397/mo Custodia Officer plan).
             </li>
             <li>
               &middot; Onsite assessment travel — virtual is included; onsite
@@ -100,7 +100,7 @@ export default function AuditSupportPage() {
 
         <section className=" border border-slate-200 bg-slate-900 p-8 text-center text-white shadow-sm">
           <h2 className="mb-2 font-serif text-2xl">
-            All of this is included on the $297/mo Custodia Officer plan. Self Service ($149/mo) gets you the platform and Charlie; the human-officer support that owns audit prep lives on the $297 tier.
+            All of this is included on the $397/mo Custodia Officer plan ($3,996/yr on annual — two months free). Self Service ($249/mo) gets you the platform and Charlie; the human-officer support that owns audit prep lives on the $397 tier.
           </h2>
           <p className="mb-6 text-slate-300">
             One flat price. No add-ons. No tier upsells when an assessor

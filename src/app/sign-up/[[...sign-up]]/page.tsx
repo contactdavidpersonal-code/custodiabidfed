@@ -42,7 +42,7 @@ const SOLO_COPY: PlanCopy = {
   compare: [
     { label: "DIY", body: "3–6 mo, $5k+, stale fast" },
     { label: "Audit firm", body: "$25k+, no monitoring" },
-    { label: "Custodia", body: "Days, $149/mo, watched", emphasis: true },
+    { label: "Custodia", body: "Days, $249/mo, watched", emphasis: true },
   ],
   backHref: "/",
   backLabel: "← Back to home",
@@ -116,7 +116,7 @@ const OFFICER_COPY: PlanCopy = {
   compare: [
     { label: "DIY", body: "3–6 mo, $5k+, stale fast" },
     { label: "Audit firm", body: "$25k+, no monitoring" },
-    { label: "Custodia + Officer", body: "Days, $297/mo, human-backed", emphasis: true },
+    { label: "Custodia + Officer", body: "Days, $397/mo, human-backed", emphasis: true },
   ],
   backHref: "/upgrade",
   backLabel: "← Back to pricing",

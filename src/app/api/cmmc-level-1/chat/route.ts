@@ -68,13 +68,13 @@ function tooFast(retryAfterSec: number): Response {
 function hourlyCap(retryAfterSec: number): Response {
   const mins = Math.max(1, Math.ceil(retryAfterSec / 60));
   const reply =
-    `We've covered a lot of ground in the last hour. I'm a free public helper, so I take a short break between heavy sessions to keep this available for everyone. We can pick back up in about ${mins} minute${mins === 1 ? "" : "s"}.\n\nIf you want a deeper, uninterrupted Level 1 walk-through, the [14-day Custodia trial](/sign-up) is no credit card and removes the pause entirely \u2014 same Charlie, persistent memory, evidence review, and a human Compliance Officer on the $297 plan.`;
+    `We've covered a lot of ground in the last hour. I'm a free public helper, so I take a short break between heavy sessions to keep this available for everyone. We can pick back up in about ${mins} minute${mins === 1 ? "" : "s"}.\n\nIf you want a deeper, uninterrupted Level 1 walk-through, the [14-day Custodia trial](/sign-up) is no credit card and removes the pause entirely — same Charlie, persistent memory, evidence review, and a credentialed Custodia Compliance Officer assigned to your account on the $397 plan.`;
   return jsonReply(reply, retryAfterSec);
 }
 function dailyCap(retryAfterSec: number): Response {
   const hours = Math.max(1, Math.ceil(retryAfterSec / 3_600));
   const reply =
-    `We've covered the public-helper allotment for today. I want to make sure I'm here for the next small business owner who needs help, so I take a longer break after a full day of questions. We can pick back up in about ${hours} hour${hours === 1 ? "" : "s"}.\n\nIf today's questions are time-sensitive, the [14-day Custodia trial](/sign-up) is free, no credit card, and gives you the full guided Level 1 self-assessment without the pause \u2014 with a human Compliance Officer on call on the $297 plan.`;
+    `We've covered the public-helper allotment for today. I want to make sure I'm here for the next small business owner who needs help, so I take a longer break after a full day of questions. We can pick back up in about ${hours} hour${hours === 1 ? "" : "s"}.\n\nIf today's questions are time-sensitive, the [14-day Custodia trial](/sign-up) is free, no credit card, and gives you the full guided Level 1 self-assessment without the pause — with a credentialed Custodia Compliance Officer assigned to your account on the $397 plan.`;
   return jsonReply(reply, retryAfterSec);
 }
 function promptAbuse(): Response {

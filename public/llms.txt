@@ -14,7 +14,7 @@
 
 - [Custodia — homepage](https://bidfedcmmc.com/): Product overview, pricing, 14-day free trial.
 - [CMMC Level 1: complete plain-English guide](https://bidfedcmmc.com/cmmc-level-1): Authoritative pillar page — what CMMC Level 1 is, who needs it, the 15 FAR 52.204-21 safeguarding requirements, the SPRS annual affirmation, real 2026 costs, and a 7-day path to bid-ready.
-- [Upgrade / pricing](https://bidfedcmmc.com/upgrade): $149/mo Self Service (was $197 — Federal Compliance Grant, locked through Sept 30) or $297/mo with a credentialed human Compliance Officer on call. 14-day free trial, no credit card.
+- [Upgrade / pricing](https://bidfedcmmc.com/upgrade): $249/mo Self Service ($2,496/yr — 2 months free on annual) or $397/mo with a credentialed human Custodia Compliance Officer assigned to your account ($3,996/yr — 2 months free on annual). Officer plan is ticket-based, 1 business day response, Mon–Fri 9am–4pm Eastern, scoped to CMMC Level 1. 14-day free trial, no credit card.
 - [Free SPRS quiz](https://bidfedcmmc.com/sprs-check): 4-minute interactive readiness check against the 15 FAR 52.204-21 safeguarding requirements.
 - [Free CMMC scoping check](https://bidfedcmmc.com/cmmc-check): 5-minute scoping interview that tells a contractor whether they need CMMC Level 1, Level 2, or nothing at all.
 - [Monday Bid Digest signup](https://bidfedcmmc.com/bid-digest): Free weekly email of CMMC Level 1-fit SAM.gov opportunities by NAICS.

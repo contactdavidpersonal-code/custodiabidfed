@@ -92,11 +92,11 @@ const GUARANTEES = [
 const FAQ_ITEMS = [
   {
     q: "How does the 14-day free trial work?",
-    a: "Sign up with just an email &mdash; no credit card required. You get the full platform free for 14 days: Charlie (your vCO) walks you through CMMC Level 1, generates your bid-ready package, sources opportunities from SAM.gov on demand, and runs the officer chat. Most users complete their initial CMMC L1 package in 3&ndash;5 business days, well inside the trial. If you stay past day 14, you add your card and start at $149/mo on Self Service (down from $197 &mdash; Federal Compliance Grant, locked through FY end on September 30), or $297/mo if you want a credentialed human Custodia Compliance Officer on call too. The Custodia Success Guarantee continues for the life of your membership: if your package isn&apos;t defensible to standard, we rebuild it with you until it is &mdash; and on the Officer plan, that&apos;s done by an assigned credentialed officer.",
+    a: "Sign up with just an email &mdash; no credit card required. You get the full platform free for 14 days: Charlie (your vCO) walks you through CMMC Level 1, generates your bid-ready package, sources opportunities from SAM.gov on demand, and runs the officer chat. Most users complete their initial CMMC L1 package in 3&ndash;5 business days, well inside the trial. If you stay past day 14, you add your card and start at $249/mo on Self Service (or $2,496/yr &mdash; two months free on annual), or $397/mo if you want a credentialed Custodia Compliance Officer assigned to your account (or $3,996/yr &mdash; two months free on annual). The Custodia Success Guarantee continues for the life of your membership: if your package isn&apos;t defensible to standard, we rebuild it with you until it is &mdash; and on the Officer plan, that&apos;s done by your assigned credentialed officer.",
   },
   {
-    q: "Why $149 instead of $197? What's the catch?",
-    a: "No catch. We&apos;re running a Federal Compliance Grant: $149/mo on Self Service, locked through fiscal-year end (September 30). After that the list price returns to $197/mo. The math: $149/mo &times; 12 = $1,788/yr &mdash; less than the profit on a single micro-purchase contract. If you want a credentialed human Custodia Compliance Officer on call too, that&apos;s $297/mo. Both plans include the same platform; the difference is whether there&apos;s a human in the loop on tickets, audit prep, and pre-submission review.",
+    q: "What does the Custodia Officer plan actually include?",
+    a: "A credentialed Custodia Compliance Officer assigned to your account. You message them from inside the platform &mdash; like an internal email channel to your officer &mdash; and they reply with target turnaround of one business day, Monday through Friday 9am&ndash;4pm Eastern (Pittsburgh). They can look at your account, your evidence, and your scoping to answer questions specific to your business. Scope is CMMC Level 1: anything a prime or government contracting officer asks about your Level 1 posture, your officer helps you answer. They are NOT 24/7 consultants, do not perform implementation work for you, and do not cover Level 2 / CUI / DFARS 7012 / FedRAMP / ITAR (those are separately scoped engagements). $397/mo or $3,996/yr (two months free on annual).",
   },
   {
     q: "How do you keep my FCI secure?",
@@ -334,7 +334,7 @@ export default function Home() {
           </div>
 
           <p className="mt-5 text-xs font-medium tracking-wide text-[#7aab98]">
-            14-day free trial &middot; No credit card required &middot; $149/mo <span className="line-through opacity-60">$197</span> Fiscal-Year Special &middot; Cancel anytime
+            14-day free trial &middot; No credit card required &middot; $249/mo or $2,496/yr (two months free) &middot; Cancel anytime
           </p>
 
           {/* Powered by AWS — credibility under CTA */}
@@ -1330,7 +1330,7 @@ export default function Home() {
               You, bidding with a defensible package &mdash; and watched all year.
             </h3>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#cce5da]">
-              All 8 steps happen inside your 14-day free trial. Steps 1&ndash;6 (build to bid-ready) typically wrap up in week 1. Steps 7&ndash;8 are where membership earns its keep: continuous monitoring through your M365 or Google Workspace tenant, freshness alerts, year-round vCO, and your annual SPRS re-affirmation. $149/mo Self Service (was $197 &mdash; Federal Compliance Grant) only kicks in if you stay past day 14, or $297/mo if you want a human Custodia Compliance Officer on call too.
+              All 8 steps happen inside your 14-day free trial. Steps 1&ndash;6 (build to bid-ready) typically wrap up in week 1. Steps 7&ndash;8 are where membership earns its keep: continuous monitoring through your M365 or Google Workspace tenant, freshness alerts, year-round vCO, and your annual SPRS re-affirmation. $249/mo Self Service (or $2,496/yr &mdash; two months free) only kicks in if you stay past day 14, or $397/mo if you want a credentialed Custodia Compliance Officer assigned to your account ($3,996/yr on annual).
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Show when="signed-out">
@@ -1358,7 +1358,7 @@ export default function Home() {
               </Show>
             </div>
             <p className="mt-4 text-xs text-[#7aab98]">
-              14-day free trial &middot; No credit card required &middot; $149/mo after (Federal Compliance Grant, locked through Sept 30)
+              14-day free trial &middot; No credit card required &middot; $249/mo after (or $2,496/yr on annual &mdash; two months free)
             </p>
           </div>
         </div>
@@ -1503,7 +1503,7 @@ export default function Home() {
               Every capability above is included in your 14-day free trial &mdash; the build, Charlie&apos;s opportunity sourcing, the bid generator, year-round monitoring, and the officer.
             </p>
             <p className="mt-3 text-sm text-[#5a7d70]">
-              Sign up with email &mdash; no credit card required. Build your CMMC Level 1 package in week 1, connect M365 or Google Workspace for continuous monitoring, and let Charlie surface matched opportunities. $149/mo Self Service (was $197 &mdash; Federal Compliance Grant) only kicks in if you stay past day 14.
+              Sign up with email &mdash; no credit card required. Build your CMMC Level 1 package in week 1, connect M365 or Google Workspace for continuous monitoring, and let Charlie surface matched opportunities. $249/mo Self Service (or $2,496/yr on annual &mdash; two months free) only kicks in if you stay past day 14.
             </p>
           </div>
         </div>
@@ -1589,10 +1589,10 @@ export default function Home() {
                   You pay
                 </div>
                 <div className="mt-2 font-serif text-3xl font-bold text-white md:text-5xl">
-                  $149/mo
+                  $249/mo
                 </div>
                 <div className="mt-1 text-sm text-[#a8cfc0]">
-                  $1,788/year &middot; Federal Compliance Grant &middot; cancel anytime
+                  $2,496/year on annual &middot; two months free &middot; cancel anytime
                 </div>
               </div>
 
@@ -1628,13 +1628,13 @@ export default function Home() {
       {/* 10 — Pricing: ONE OFFER, Hormozi-stacked */}
       <RevealSection id="pricing" className="scroll-mt-16 border-y border-[#d5e5dd] bg-white px-6 py-24">
         <div className="mx-auto max-w-5xl">
-          {/* Scarcity banner */}
-          <div className="mb-8 flex flex-col items-center gap-2 border border-[#a06b1a] bg-[#fff8e8] px-6 py-4 text-center md:flex-row md:justify-center md:gap-4">
-            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#a06b1a]">
-              ⚡ Federal Compliance Grant
+          {/* Annual savings banner */}
+          <div className="mb-8 flex flex-col items-center gap-2 border border-[#2f8f6d] bg-[#f7fcf9] px-6 py-4 text-center md:flex-row md:justify-center md:gap-4">
+            <span className="text-[10px] font-black uppercase tracking-[0.22em] text-[#2f8f6d]">
+              Save two months on annual
             </span>
-            <span className="text-sm font-semibold text-[#5d4f30]">
-              Lock in <span className="font-black text-[#10231d]">$149/mo</span> Self Service &mdash; through fiscal-year end (Sept 30). After that: $197/mo list. Add a human Compliance Officer for $297/mo.
+            <span className="text-sm font-semibold text-[#10231d]">
+              <span className="font-black">$249/mo</span> Self Service — or <span className="font-black">$2,496/yr</span> (two months free). Add a Custodia Compliance Officer assigned to your account for <span className="font-black">$397/mo</span> ($3,996/yr).
             </span>
           </div>
 
@@ -1643,7 +1643,7 @@ export default function Home() {
             <h2 className="font-serif text-4xl font-bold tracking-tight text-[#10231d] md:text-6xl">
               Everything you need to bid federal &mdash; and stay compliant year-round.
               <br />
-              <span className="text-[#2f8f6d]">$0 today. $149/mo if you stay.</span>
+              <span className="text-[#2f8f6d]">$0 today. $249/mo if you stay.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-lg text-[#44695c]">
               Try the entire platform &mdash; build, bid, monitor, maintain &mdash; free for 14 days. No credit card required. Cancel any time inside the platform. If you stay, your assigned compliance officer is on call year-round &mdash; that is the Custodia Success Guarantee.
@@ -1736,19 +1736,19 @@ export default function Home() {
 
                 <div className="mt-5 flex flex-wrap items-baseline justify-between gap-2">
                   <div className="text-base font-bold text-[#10231d]">
-                    What it costs after the trial (list)
+                    Save two months on annual
                   </div>
-                  <div className="font-serif text-2xl font-bold text-[#7a9c90] line-through decoration-[#a06b1a] decoration-2">
-                    $197/mo
+                  <div className="font-serif text-2xl font-bold text-[#2f8f6d]">
+                    $2,496<span className="text-base font-normal text-[#5a7d70]">/yr</span>
                   </div>
                 </div>
 
                 <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2">
                   <div className="text-base font-bold text-[#10231d]">
-                    Your Federal Compliance Grant price (through Sept 30)
+                    Self Service monthly
                   </div>
                   <div className="font-serif text-4xl font-bold text-[#2f8f6d] md:text-5xl">
-                    $149<span className="text-lg font-normal text-[#5a7d70]">/mo</span>
+                    $249<span className="text-lg font-normal text-[#5a7d70]">/mo</span>
                   </div>
                 </div>
 
@@ -1762,7 +1762,7 @@ export default function Home() {
                 </div>
 
                 <p className="mt-4 text-xs italic leading-relaxed text-[#5a7d70]">
-                  Math check: at $149/mo, your Self Service subscription costs $1,788/year &mdash; less than the profit on a single micro-purchase contract. Want a credentialed human Custodia Compliance Officer on call too? Add Custodia Officer for $297/mo. Either way, your CMMC posture stays watched the whole time.
+                  Math check: at $249/mo your Self Service subscription is $2,988/year &mdash; or pay $2,496 upfront and skip two months. Want a credentialed Custodia Compliance Officer assigned to your account? Add Custodia Officer for $397/mo ($3,996/yr). Either way, your CMMC posture stays watched the whole time.
                 </p>
               </div>
 
@@ -1791,8 +1791,8 @@ export default function Home() {
                 <p className="text-center text-xs font-medium tracking-wide text-[#5a7d70]">
                   14-day free trial &middot; No credit card required &middot; Cancel anytime &middot; CMMC L1 Success Guarantee
                 </p>
-                <p className="text-center text-[11px] italic text-[#a06b1a]">
-                  After fiscal-year end (Sept 30), the Federal Compliance Grant is gone. Self Service returns to $197/mo list.
+                <p className="text-center text-[11px] italic text-[#2f8f6d]">
+                  Prefer annual? $2,496/year on Self Service or $3,996/year on Self Service + Custodia Officer — two months free either way.
                 </p>
               </div>
             </div>
@@ -1916,7 +1916,7 @@ export default function Home() {
                 {
                   day: "Day 14",
                   stat: "Decision",
-                  label: "Trial ends. Add a card to stay at $149/mo Self Service (Fiscal-Year Special) or $297/mo with a human Compliance Officer \u2014 or cancel, and you keep the bid-ready package you built either way.",
+                  label: "Trial ends. Add a card to stay at $249/mo Self Service (or $2,496/yr on annual) or $397/mo with a credentialed Custodia Compliance Officer assigned to your account ($3,996/yr on annual) \u2014 or cancel, and you keep the bid-ready package you built either way.",
                 },
                 {
                   day: "Quarter 1",
@@ -2042,13 +2042,13 @@ export default function Home() {
           <div className="mb-10 text-center sm:mb-14">
             <div className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.28em] text-[#2f8f6d]">
               <span className="bg-[#2f8f6d] px-2 py-1 text-white">Upgrade</span>
-              Self Service + Custodia Officer &middot; $297/mo
+              Self Service + Custodia Officer &middot; $397/mo
             </div>
             <h2 className="mx-auto mt-4 max-w-3xl font-serif text-3xl font-bold leading-[1.1] text-[#10231d] sm:text-4xl md:text-5xl">
               Add a credentialed human officer. <span className="italic text-[#2f8f6d]">Assigned to you.</span>
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-[#3d5a4f] sm:text-lg">
-              Self Service ($149/mo) gets you Charlie, the platform, and the bid-ready package. Upgrade to <span className="font-bold text-[#10231d]">Self Service + Custodia Officer ($297/mo)</span> and a credentialed human Compliance Officer is assigned to your business &mdash; on call for anything CMMC Level 1 throws at you, year&#8209;round.
+              Self Service ($249/mo) gets you Charlie, the platform, and the bid-ready package. Upgrade to <span className="font-bold text-[#10231d]">Self Service + Custodia Officer ($397/mo or $3,996/yr)</span> and a credentialed Custodia Compliance Officer is assigned to your account &mdash; ticket-based messaging from inside the platform, one business day response, Mon&ndash;Fri 9am&ndash;4pm Eastern (Pittsburgh), scoped to CMMC Level 1 for your business.
             </p>
           </div>
 
@@ -2145,7 +2145,7 @@ export default function Home() {
                 Upgrade anytime
               </div>
               <p className="mt-2 font-serif text-lg leading-[1.45] text-[#10231d] sm:text-xl">
-                Self Service + Custodia Officer &mdash; <span className="font-black">$297/mo</span>. Add a credentialed human to your bid-ready posture. Cancel anytime.
+                Self Service + Custodia Officer &mdash; <span className="font-black">$397/mo</span> or <span className="font-black">$3,996/yr</span>. Add a credentialed Custodia Compliance Officer assigned to your account. Cancel anytime.
               </p>
             </div>
             <Link
@@ -2204,12 +2204,11 @@ export default function Home() {
           {/* Top CTA strip */}
           <div className="mb-12 flex flex-col items-start justify-between gap-4  border border-[#cfe3d9] bg-white p-6 md:flex-row md:items-center">
             <div>
-              <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#a06b1a]">
-                Federal Compliance Grant &middot; Locked through Sept 30
+              <div className="text-xs font-bold uppercase tracking-[0.2em] text-[#2f8f6d]">
+                Save two months on annual
               </div>
               <div className="mt-1 font-serif text-lg font-bold text-[#0f2f26]">
-                14 days free, no credit card &mdash; $149/mo after
-                <span className="ml-2 text-sm font-normal text-[#7a9c90] line-through">$197</span>
+                14 days free, no credit card &mdash; $249/mo (or $2,496/yr)
               </div>
             </div>
             <Link

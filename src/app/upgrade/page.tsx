@@ -94,9 +94,8 @@ const PLAN_CONFIG: Record<
     slug: PLAN_SELF_SERVICE,
     title: "CMMC Level 1 — Self Service",
     badge: "Solo · Self Service",
-    price: "$149",
-    strikePrice: "$197",
-    priceSuffix: "/mo after trial",
+    price: "$249",
+    priceSuffix: "/mo after trial · $2,496/yr on annual",
     capLine: "1 business · 14 days free, no card",
     ctaText: "Start my 14-day free trial",
     bullets: SELF_SERVICE_BULLETS,
@@ -106,9 +105,9 @@ const PLAN_CONFIG: Record<
     slug: PLAN_SELF_SERVICE_OFFICER,
     title: "CMMC Level 1 — Self Service + Custodia Officer",
     badge: "Solo · + Custodia Officer",
-    price: "$297",
-    priceSuffix: "/mo after trial",
-    capLine: "1 business · Human officer included · 14 days free, no card",
+    price: "$397",
+    priceSuffix: "/mo after trial · $3,996/yr on annual",
+    capLine: "1 business · Officer assigned to your account · 14 days free, no card",
     ctaText: "Start my 14-day free trial",
     bullets: OFFICER_BULLETS,
     hasFeatureKey: PLAN_SELF_SERVICE_OFFICER,
@@ -207,7 +206,7 @@ export default async function UpgradePage({
               className="inline-block h-1.5 w-1.5 rounded-full bg-[#bef4be]"
             />
             {isSoloSelfService
-              ? "Federal Compliance Grant · 14 days free, no card"
+              ? "Save two months on annual · 14 days free, no card"
               : "14 days free · No credit card required"}
           </div>
           <h1 className="font-serif text-3xl font-bold leading-[1.1] tracking-tight text-white md:text-5xl">
@@ -238,14 +237,14 @@ export default async function UpgradePage({
                 href={`/upgrade?plan=${PLAN_SELF_SERVICE}`}
                 className="font-medium text-[#20684f] underline underline-offset-2 hover:text-[#174f3c]"
               >
-                Self Service — $149/mo
+                Self Service — $249/mo
               </Link>
               {" · "}
               <Link
                 href={`/upgrade?plan=${PLAN_SELF_SERVICE_OFFICER}`}
                 className="font-medium text-[#20684f] underline underline-offset-2 hover:text-[#174f3c]"
               >
-                + Custodia Officer — $297/mo
+                + Custodia Officer — $397/mo
               </Link>
             </p>
           </PlanCard>
@@ -286,12 +285,12 @@ function PlanCard({
       }
     >
       {highlight && (
-        <div className="absolute -top-3 left-6 inline-flex items-center gap-1.5 border border-[#a06b1a]/40 bg-[#1a1108] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.22em] text-[#e7c98a]">
+        <div className="absolute -top-3 left-6 inline-flex items-center gap-1.5 border border-[#2f8f6d]/40 bg-[#0e2a23] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf]">
           <span
             aria-hidden
-            className="inline-block h-1 w-1 rounded-full bg-[#e7c98a]"
+            className="inline-block h-1 w-1 rounded-full bg-[#bdf2cf]"
           />
-          Federal Compliance Grant
+          Save two months on annual
         </div>
       )}
       <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#a06b1a]">
@@ -312,8 +311,8 @@ function PlanCard({
         </span>
       </div>
       {highlight && (
-        <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#a06b1a]">
-          Locked through FY end (Sept 30)
+        <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#2f8f6d]">
+          $2,496/yr on annual — two months free
         </p>
       )}
       <p className="mt-3 font-serif text-lg font-semibold text-[#0e2a23]">

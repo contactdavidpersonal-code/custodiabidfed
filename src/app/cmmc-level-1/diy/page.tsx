@@ -295,7 +295,7 @@ export default function DiyHubPage() {
               href="/sign-up"
               className="inline-flex items-center gap-2 border border-white/20 bg-transparent px-6 py-3 text-sm font-bold tracking-tight text-white transition-colors hover:border-[#8dd2b1] hover:text-[#bdf2cf]"
             >
-              Or have us do it &mdash; $149/mo &rarr;
+              Or have us do it &mdash; $249/mo &rarr;
             </Link>
           </div>
         </div>
@@ -329,7 +329,7 @@ export default function DiyHubPage() {
                 the annual affirmation, evidence collection, or the next
                 contract&apos;s renewal you decide you&apos;d rather not
                 think about this every year &mdash; that&apos;s when
-                you&apos;ll come back. The platform is $149/mo and we
+                you&apos;ll come back. The platform is $249/mo and we
                 run the whole thing for you.
               </p>
             </div>
@@ -599,7 +599,7 @@ export default function DiyHubPage() {
               },
               {
                 q: "When should I just pay someone?",
-                a: "(a) When you handle CUI — that's Level 2, not Level 1, and is a different process. (b) When your prime requires evidence collection on a recurring basis and the manual cycle would eat more than $149/mo of your time. (c) When the annual renewal is what keeps slipping — that's exactly the failure mode the platform is built to prevent.",
+                a: "(a) When you handle CUI — that's Level 2, not Level 1, and is a different process. (b) When your prime requires evidence collection on a recurring basis and the manual cycle would eat more than $249/mo of your time. (c) When the annual renewal is what keeps slipping — that's exactly the failure mode the platform is built to prevent.",
               },
             ].map((f, i) => (
               <details
@@ -662,7 +662,7 @@ export default function DiyHubPage() {
                 Custodia platform
               </div>
               <div className="mt-3 font-serif text-3xl font-bold">
-                $149<span className="text-base font-medium text-[#a8cfc0]">/mo &middot; 14-day free trial</span>
+                $249<span className="text-base font-medium text-[#a8cfc0]">/mo &middot; 14-day free trial</span>
               </div>
               <Link
                 href="/sign-up"

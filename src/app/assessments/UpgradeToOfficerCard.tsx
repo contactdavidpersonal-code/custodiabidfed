@@ -54,7 +54,7 @@ export function UpgradeToOfficerCard({
             +$148<span className="text-sm font-normal text-[#8dd2b1]">/mo</span>
           </span>
           <span className="text-[11px] text-[#8dd2b1]">
-            on top of your $149 Self Service plan ($297/mo total)
+            on top of your $249 Self Service plan ($397/mo total)
           </span>
           <span className="text-xs text-[#bdf2cf]">
             Unlimited officer tickets · audit support · pre-submission review

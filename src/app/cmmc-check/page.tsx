@@ -71,7 +71,7 @@ export default function CmmcCheckPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2 text-[11px] text-white/40 sm:px-6">
           <span>© Custodia · bidfedcmmc.com</span>
           <span className="hidden sm:inline">
-            $149/mo Self Service (was $197) locked through end of fiscal year for arrivals from this page.
+            $249/mo Self Service (or $2,496/yr on annual — two months free).
           </span>
         </div>
       </footer>

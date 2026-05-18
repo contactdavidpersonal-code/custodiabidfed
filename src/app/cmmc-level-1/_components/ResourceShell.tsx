@@ -73,7 +73,7 @@ export function ResourceShell({
           <h2 className="mt-4 font-serif text-3xl font-bold leading-tight md:text-4xl">
             We give this away because we sell the
             <span className="italic text-[#8dd2b1]"> easy version</span>{" "}
-            for $149/mo.
+            for $249/mo.
           </h2>
           <p className="mt-4 max-w-2xl text-[15px] leading-relaxed text-[#a8cfc0]">
             This {title.toLowerCase()} is genuinely complete and yours to

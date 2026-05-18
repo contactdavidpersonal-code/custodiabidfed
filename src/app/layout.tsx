@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     template: "%s | Custodia",
   },
   description:
-    "Federal compliance for small contractors, in plain English. Charlie — your AI compliance officer — walks you through CMMC Level 1 in 7 days. $149/month Self Service (was $197, Federal Compliance Grant), or $297/month with a credentialed human Compliance Officer on call. 14-day free trial. No credit card required.",
+    "Federal compliance for small contractors, in plain English. Charlie — your AI compliance officer — walks you through CMMC Level 1 in 7 days. $249/month Self Service, or $397/month with a credentialed human Custodia Compliance Officer assigned to your account (ticket-based, 1 business day response). Save 2 months on annual. 14-day free trial. No credit card required.",
   applicationName: "Custodia",
   keywords: [
     "CMMC Level 1",
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Custodia | Guided CMMC Level 1 Compliance",
     description:
-      "Federal bid-ready in 7 days. $149/month Self Service (was $197, Fiscal-Year Special) or $297/month with a human Compliance Officer. 14-day free trial. No credit card required. Built by Carnegie Mellon-trained information security engineers.",
+      "Federal bid-ready in 7 days. $249/month Self Service or $397/month with a human Custodia Compliance Officer assigned to your account. 14-day free trial. No credit card required. Built by Carnegie Mellon-trained information security engineers.",
     type: "website",
     url: APP_URL,
     siteName: "Custodia",

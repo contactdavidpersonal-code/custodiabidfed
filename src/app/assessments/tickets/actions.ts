@@ -58,7 +58,7 @@ export async function createTicketAction(formData: FormData): Promise<void> {
     // We surface upgrade UI on the form route; this is the belt-and-
     // suspenders server check.
     throw new Error(
-      "Officer tickets aren't on your plan. Upgrade to Self Service + Custodia Officer ($297/mo) to send tickets.",
+      "Officer tickets aren't on your plan. Upgrade to Self Service + Custodia Officer ($397/mo or $3,996/yr) to send tickets.",
     );
   }
   const org = await ensureOrgForUser(userId);
