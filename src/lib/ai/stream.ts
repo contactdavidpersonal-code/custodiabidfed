@@ -238,10 +238,7 @@ function decideForcedToolChoiceForFirstTurn(
     if (m.role !== "assistant") continue;
     const text = extractText(m.content).trim();
     if (!text) continue;
-    const endsInQuestion = text.trimEnd().endsWith("?");
-    const looksLikeOffer =
-      endsInQuestion || ASSISTANT_OFFER_HEURISTIC_RX.test(text);
-    if (!looksLikeOffer) return undefined;
+    // Require an action-verb keyword \u2014 not just a question mark. Clarifying\n    // questions like "did you mean X or Y?" end in '?' but have no tool to\n    // call; forcing tool_choice on those caused Anthropic to reject the\n    // request with invalid_request_error and broke onboarding mid-chat.\n    const looksLikeOffer = ASSISTANT_OFFER_HEURISTIC_RX.test(text);\n    if (!looksLikeOffer) return undefined;
     // If the assistant message also mentions evidence-generation keywords
     // AND we're on a control page, pin to the specific evidence tool —
     // same behavior as the "Draft with Charlie" button.
@@ -372,13 +369,52 @@ export function runOfficerAgentStream(
             }
           }
 
-          const turn = await runOneTurn({
-            priorMessages,
-            systemText: input.systemPrompt,
-            contextText: input.contextBlock,
-            send,
-            toolChoice: forceToolChoice,
-          });
+          // Defensive: if forced tool_choice causes Anthropic to reject
+          // the call (invalid_request_error — happens when no tool sensibly
+          // fits the user's confirmation, e.g. confirming a spelling), fall
+          // back to a plain auto-tool-choice turn instead of surfacing a
+          // hard error to the user. This is the difference between Charlie
+          // sometimes deciding to reply with text vs. the chat hard-stopping.
+          let turn: Awaited<ReturnType<typeof runOneTurn>>;
+          const attemptedToolChoice = forceToolChoice;
+          try {
+            turn = await runOneTurn({
+              priorMessages,
+              systemText: input.systemPrompt,
+              contextText: input.contextBlock,
+              send,
+              toolChoice: forceToolChoice,
+            });
+          } catch (turnErr) {
+            const rawMsg =
+              turnErr instanceof Error ? turnErr.message : String(turnErr);
+            const isInvalidRequest =
+              /invalid_request_error|invalid request|400/i.test(rawMsg);
+            console.error("[charlie] runOneTurn error", {
+              conversationId: input.conversationId,
+              iteration: i,
+              forcedToolChoice: attemptedToolChoice,
+              isInvalidRequest,
+              rawMsg,
+            });
+            if (isInvalidRequest && attemptedToolChoice) {
+              // Retry once with auto tool_choice. Most common cause: we
+              // forced "any" on a confirmation that doesn't map to a tool
+              // (e.g. confirming a spelling clarification).
+              console.warn(
+                "[charlie] retrying turn without forced tool_choice after invalid_request_error",
+                { conversationId: input.conversationId },
+              );
+              turn = await runOneTurn({
+                priorMessages,
+                systemText: input.systemPrompt,
+                contextText: input.contextBlock,
+                send,
+              });
+            } else {
+              throw turnErr;
+            }
+          }
           // tool_choice is per-turn; reset before persistence so it can't
           // leak into the next iteration.
           forceToolChoice = undefined;
@@ -703,6 +739,12 @@ export function runOfficerAgentStream(
         send("done", {});
       } catch (err) {
         const rawMsg = err instanceof Error ? err.message : String(err);
+        const stack = err instanceof Error ? err.stack : undefined;
+        console.error("[charlie] stream fatal error", {
+          conversationId: input.conversationId,
+          rawMsg,
+          stack,
+        });
         send("error", { message: friendlyErrorMessage(rawMsg) });
       } finally {
         controller.close();
