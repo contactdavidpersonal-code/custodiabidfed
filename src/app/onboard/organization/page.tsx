@@ -71,7 +71,6 @@ export default async function OnboardOrganizationPage() {
           <CreateOrganization
             afterCreateOrganizationUrl="/onboard"
             skipInvitationScreen
-            hideSlug
           />
         </div>
       </div>
