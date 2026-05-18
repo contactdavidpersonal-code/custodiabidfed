@@ -5,72 +5,11 @@ import {
   PLAN_SELF_SERVICE,
   PLAN_SELF_SERVICE_OFFICER,
 } from "@/lib/billing/plans";
-import { TrialCheckoutButton } from "./TrialCheckoutButton";
+import { PlanCards } from "./PlanCards";
 
 type PlanKey =
   | typeof PLAN_SELF_SERVICE
   | typeof PLAN_SELF_SERVICE_OFFICER;
-
-const SELF_SERVICE_BULLETS = [
-  "Charlie, your virtual Compliance Officer, 24/7",
-  "All 15 FAR 52.204-21 safeguarding requirements walked",
-  "Bid-ready package: SSP, affirmation, evidence",
-  "Year-round M365 / Google Workspace monitoring",
-  "Evidence freshness alerts (green/yellow/red)",
-  "Annual SPRS re-affirmation handled",
-  "Signed, hash-anchored artifact pack",
-  "Public Trust Page (opt-in)",
-  "BONUS: Daily Discover — 15 fresh SAM.gov bids/day",
-  "BONUS: Monday Bid Digest emailed weekly",
-];
-
-const OFFICER_BULLETS = [
-  "Everything in Self Service, plus:",
-  "Ask a credentialed Custodia Compliance Officer anytime",
-  "Officer ticket inbox — answers thread back into the platform",
-  "Officer-led audit support: same-day prep + evidence pack",
-  "Officer review before you submit or affirm",
-  "Priority escalation when Charlie flags something complex",
-];
-
-const PLAN_CONFIG: Record<
-  PlanKey,
-  {
-    slug: string;
-    title: string;
-    badge: string;
-    price: string;
-    strikePrice?: string;
-    priceSuffix: string;
-    capLine: string;
-    ctaText: string;
-    bullets: string[];
-    hasFeatureKey: string;
-  }
-> = {
-  [PLAN_SELF_SERVICE]: {
-    slug: PLAN_SELF_SERVICE,
-    title: "CMMC Level 1 — Self Service",
-    badge: "Solo · Self Service",
-    price: "$249",
-    priceSuffix: "/mo after trial · $2,496/yr on annual",
-    capLine: "1 business · 14 days free, no card",
-    ctaText: "Start my 14-day free trial",
-    bullets: SELF_SERVICE_BULLETS,
-    hasFeatureKey: PLAN_SELF_SERVICE,
-  },
-  [PLAN_SELF_SERVICE_OFFICER]: {
-    slug: PLAN_SELF_SERVICE_OFFICER,
-    title: "CMMC Level 1 — Self Service + Custodia Officer",
-    badge: "Solo · + Custodia Officer",
-    price: "$397",
-    priceSuffix: "/mo after trial · $3,996/yr on annual",
-    capLine: "1 business · Officer assigned to your account · 14 days free, no card",
-    ctaText: "Start my 14-day free trial",
-    bullets: OFFICER_BULLETS,
-    hasFeatureKey: PLAN_SELF_SERVICE_OFFICER,
-  },
-};
 
 function isPlanKey(value: string | undefined): value is PlanKey {
   return (
@@ -97,28 +36,16 @@ export default async function UpgradePage({
         ? PLAN_SELF_SERVICE_OFFICER
         : rawPlanParam;
   const planKey: PlanKey = isPlanKey(planParam) ? planParam : PLAN_SELF_SERVICE;
-  const cfg = PLAN_CONFIG[planKey];
 
   // If the user already has active access (paid OR active trial) on the
   // requested plan, send them to the workspace.
-  if (has({ plan: `user:${cfg.hasFeatureKey}` })) redirect("/onboard");
+  if (has({ plan: `user:${planKey}` })) redirect("/onboard");
   if (
     planKey === PLAN_SELF_SERVICE &&
     has({ plan: `user:${PLAN_SELF_SERVICE_OFFICER}` })
   ) {
     redirect("/onboard");
   }
-
-  const isSoloSelfService = planKey === PLAN_SELF_SERVICE;
-  const isSoloOfficer = planKey === PLAN_SELF_SERVICE_OFFICER;
-  const isSolo = isSoloSelfService || isSoloOfficer;
-
-  // For solo flows we stack a second card with the "other" solo plan.
-  const secondaryCfg = isSoloSelfService
-    ? PLAN_CONFIG[PLAN_SELF_SERVICE_OFFICER]
-    : isSoloOfficer
-      ? PLAN_CONFIG[PLAN_SELF_SERVICE]
-      : null;
 
   return (
     <div className="min-h-screen bg-[#052e22] text-[#f6f4ec]">
@@ -155,9 +82,7 @@ export default async function UpgradePage({
               aria-hidden
               className="inline-block h-1.5 w-1.5 rounded-full bg-[#bef4be]"
             />
-            {isSoloSelfService
-              ? "Save two months on annual · 14 days free, no card"
-              : "14 days free · No credit card required"}
+            14 days free · No credit card · Yearly saves 2 months
           </div>
           <h1 className="font-serif text-3xl font-bold leading-[1.1] tracking-tight text-white md:text-5xl">
             Start your 14-day free trial.
@@ -167,15 +92,7 @@ export default async function UpgradePage({
           </p>
         </div>
 
-        {isSolo ? (
-          <div className="space-y-5">
-            <PlanCard cfg={cfg} primary highlight={isSoloSelfService} />
-            {secondaryCfg ? (
-              <PlanCard cfg={secondaryCfg} primary={false} />
-            ) : null}
-
-          </div>
-        ) : null}
+        <PlanCards primaryPlan={planKey} />
 
         <p className="mt-6 text-center text-[11px] text-[#7fae9c]">
           Questions before you start?{" "}
@@ -187,105 +104,6 @@ export default async function UpgradePage({
           </a>
         </p>
       </main>
-    </div>
-  );
-}
-
-function PlanCard({
-  cfg,
-  primary,
-  highlight = false,
-  compact = false,
-  children,
-}: {
-  cfg: (typeof PLAN_CONFIG)[PlanKey];
-  primary: boolean;
-  highlight?: boolean;
-  compact?: boolean;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div
-      className={
-        "relative border bg-[#f7f4ea] p-6 md:p-8 shadow-[0_2px_0_rgba(5,46,34,0.06),0_30px_80px_-20px_rgba(0,0,0,0.55)] " +
-        (primary ? "border-[#d9d2bd]" : "border-[#d9d2bd]/70")
-      }
-    >
-      {highlight && (
-        <div className="absolute -top-3 left-6 inline-flex items-center gap-1.5 border border-[#2f8f6d]/40 bg-[#0e2a23] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.22em] text-[#bdf2cf]">
-          <span
-            aria-hidden
-            className="inline-block h-1 w-1 rounded-full bg-[#bdf2cf]"
-          />
-          Save two months on annual
-        </div>
-      )}
-      <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#a06b1a]">
-        {cfg.badge}
-      </div>
-      <div className="mt-2 flex items-baseline gap-2 flex-wrap">
-        {cfg.strikePrice && (
-          <span className="font-serif text-xl text-[#7a8a82] line-through decoration-[#a06b1a] decoration-2">
-            {cfg.strikePrice}
-          </span>
-        )}
-        <span className="font-serif text-4xl font-bold tracking-tight text-[#0e2a23] md:text-5xl">
-          {cfg.price}
-        </span>
-        <span className="text-xs text-[#5a7f72]">{cfg.priceSuffix}</span>
-        <span className="ml-auto text-[11px] font-semibold text-[#1d6a4a]">
-          {cfg.capLine}
-        </span>
-      </div>
-      {highlight && (
-        <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#2f8f6d]">
-          $2,496/yr on annual — two months free
-        </p>
-      )}
-      <p className="mt-3 font-serif text-lg font-semibold text-[#0e2a23]">
-        {cfg.title}
-      </p>
-
-      <ul
-        className={
-          "mt-4 grid grid-cols-1 gap-x-5 gap-y-1.5 text-[13px] text-[#2c4940] " +
-          (compact ? "" : "sm:grid-cols-2")
-        }
-      >
-        {cfg.bullets.map((b) => (
-          <li key={b} className="flex items-start gap-2">
-            <span aria-hidden className="mt-0.5 font-bold text-[#2f8f6d]">
-              &#10003;
-            </span>
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-
-      <div className="mt-6">
-        <TrialCheckoutButton
-          planId={cfg.slug}
-          className={
-            "group flex w-full items-center justify-center gap-2 px-6 py-4 text-sm font-bold transition-colors " +
-            (primary
-              ? "bg-[#bef4be] text-[#063f2e] shadow-[0_15px_40px_-10px_rgba(190,244,190,0.45)] hover:bg-[#a8e6c0]"
-              : "border border-[#0e2a23] bg-transparent text-[#0e2a23] hover:bg-[#0e2a23] hover:text-[#bef4be]")
-          }
-        >
-          {cfg.ctaText}
-          <span
-            aria-hidden
-            className="text-base transition-transform group-hover:translate-x-0.5"
-          >
-            &rarr;
-          </span>
-        </TrialCheckoutButton>
-        <p className="mt-2 text-center text-[11px] text-[#5a7f72]">
-          No charge for 14 days &middot; Cancel anytime
-        </p>
-      </div>
-
-      {children}
     </div>
   );
 }

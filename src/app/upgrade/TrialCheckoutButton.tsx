@@ -32,11 +32,15 @@ type ClerkWithCheckout = ReturnType<typeof useClerk> & {
  */
 export function TrialCheckoutButton({
   planId: planSlug,
+  planPeriod = "annual",
   className,
   children,
 }: {
   /** The plan slug as configured in Clerk (e.g. "cmmc_lv1_full_access"). */
   planId: string;
+  /** Yearly vs monthly billing. Defaults to "annual" — that's the price
+   *  we lead with on /upgrade, and it gives the user two months free. */
+  planPeriod?: "month" | "annual";
   className?: string;
   children: React.ReactNode;
 }) {
@@ -95,7 +99,7 @@ export function TrialCheckoutButton({
 
       clerk.__internal_openCheckout({
         planId: resolvedId,
-        planPeriod: "month",
+        planPeriod,
         for: "user",
         newSubscriptionRedirectUrl: redirectUrl,
       });
