@@ -83,12 +83,15 @@ export function TrialCheckoutButton({
       // Officer upgrades almost always come from someone trying to open a
       // ticket — drop them straight on the ticket composer so the next
       // click is the one they were trying to make before they hit the
-      // paywall. Everyone else goes through /onboard (which handles solo
-      // setup and MSP first-client provisioning).
+      // paywall. Everyone else goes through /onboard/activating, which
+      // forces a session-token reload so the freshly-granted plan claim
+      // is visible to server-side `has()` checks. Without that hop the
+      // user bounces straight back to /upgrade because their JWT still
+      // carries the pre-trial claim set.
       const isOfficerUpgrade = planSlug.includes("officer");
       const redirectUrl = isOfficerUpgrade
         ? "/assessments/tickets/new"
-        : "/onboard";
+        : "/onboard/activating";
 
       clerk.__internal_openCheckout({
         planId: resolvedId,
