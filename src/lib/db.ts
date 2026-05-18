@@ -255,9 +255,23 @@ async function runInitDdl() {
   `;
   await sql`
     DO $$ BEGIN
+      -- Only attempt the legacy global UNIQUE if neither the constraint
+      -- itself nor its MSP-era replacement (the partial index keyed on
+      -- clerk_org_id IS NULL) exists yet. Once MSP multi-tenancy has run,
+      -- a single user can legitimately own multiple organization rows
+      -- (one personal + many Clerk-org-linked managed businesses), so the
+      -- global UNIQUE would now fail with duplicate keys — see the cron
+      -- 500s in production logs ("could not create unique index
+      -- organizations_owner_user_id_key").
       IF NOT EXISTS (
         SELECT 1 FROM pg_constraint
         WHERE conname = 'organizations_owner_user_id_key'
+      ) AND NOT EXISTS (
+        SELECT 1 FROM pg_indexes
+        WHERE indexname = 'organizations_personal_owner_uidx'
+      ) AND NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'organizations' AND column_name = 'clerk_org_id'
       ) THEN
         ALTER TABLE organizations
           ADD CONSTRAINT organizations_owner_user_id_key UNIQUE (owner_user_id);
