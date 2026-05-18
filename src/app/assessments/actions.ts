@@ -1311,6 +1311,23 @@ export async function submitAffirmationAction(formData: FormData) {
   const ctx = await getAssessmentForUser(assessmentId, userId);
   if (!ctx) bail("Assessment not found");
 
+  // Stale-affirmation hard gate. Per 32 CFR § 170.15(c)(2), L1
+  // affirmations are an annual obligation — a Senior Official cannot
+  // legitimately "refresh" a memo signed 14 months ago and pretend it's
+  // current. If the user is re-signing the SAME assessment row whose
+  // previous affirmation lapsed past 365 days, refuse and force them to
+  // create a new fiscal-year cycle (which carries forward evidence but
+  // re-walks every objective). Brand-new cycles are not affected.
+  if (
+    ctx.assessment.affirmed_at &&
+    Date.now() - new Date(ctx.assessment.affirmed_at).getTime() >
+      365 * 24 * 60 * 60 * 1000
+  ) {
+    bail(
+      "This affirmation lapsed more than 365 days ago. Per 32 CFR § 170.15(c)(2) you must start a new fiscal-year cycle to re-affirm — open the assessment list and click 'Start FY' to begin a fresh annual walk.",
+    );
+  }
+
   if (!ctx.organization.scoped_systems) {
     bail("Complete your business profile before signing");
   }

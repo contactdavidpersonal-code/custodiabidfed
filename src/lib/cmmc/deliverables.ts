@@ -24,7 +24,7 @@ import {
   type RemediationPlanRow,
 } from "@/lib/assessment";
 import { getSql } from "@/lib/db";
-import { controlDomains, playbook } from "@/lib/playbook";
+import { controlDomains, playbook, cmmcL1Requirements, requirementMeta, requirementToLegacy } from "@/lib/playbook";
 import {
   computeExceptionCoverage,
   listObjectivesForAssessment,
@@ -547,8 +547,8 @@ ${outcomeLine}
 | --- | --- |
 | 01-SSP.html | System Security Plan. Open in a browser, File → Print → Save as PDF when a prime asks for the SSP. |
 | 02-Affirmation.html | Senior Official Annual Affirmation memo (per 32 CFR § 170.22). Print + sign + file. |
-| 03-controls.csv | Per-practice status + narrative (17 rows). Handy for a prime's compliance questionnaire. |
-| 04-evidence-inventory.csv | Every artifact on file with its Platform review verdict + summary. |
+| 03-controls.csv | Per-CMMC-v2.13: 15 FAR 52.204-21 requirements with status + narrative. The canonical row count for primes counting safeguarding requirements. |
+| 04-evidence-inventory.csv | Every artifact on file with its Platform review verdict, summary, and the NIST SP 800-171A objective letters ([a]/[b]/...) each artifact attests to. |
 | 05-remediation-plans.csv | Operational notes on any remediation work the user tracked. Informational only — see note below. |
 | 06-exceptions-register.csv | Enduring Exceptions + Temporary Deficiencies per CMMC Assessment Guide L1 v2.13. Empty when none apply. |
 | 07-audit-log.csv | Append-only state-change history for this assessment + organization. Six-year retention evidence. |
@@ -857,6 +857,18 @@ export function buildAffirmationHtml(input: AffirmationInput): string {
 </html>`;
 }
 
+/**
+ * Per CMMC v2.13: 15 FAR 52.204-21 requirements (one row per requirement).
+ *
+ * The CMMC L1 Final Rule (32 CFR § 170) keys compliance off the 15 basic
+ * safeguarding requirements at FAR 52.204-21(b)(1)(i)–(xv), not the 17
+ * legacy NIST 800-171 r2 control IDs we still carry internally for back-
+ * compat. Earlier versions of this CSV emitted 17 rows, which let primes
+ * counting safeguards land on the wrong number. We now emit exactly 15
+ * rows keyed by `cmmcL1Requirements`, with each row rolling up the legacy
+ * sub-control status (worst-case wins — one NOT MET sub-control fails the
+ * parent requirement per 32 CFR § 170.24).
+ */
 export function buildControlsCsv(
   responses: ControlResponseRow[],
   evidence: EvidenceArtifactRow[],
@@ -866,37 +878,83 @@ export function buildControlsCsv(
     evidenceCount.set(e.control_id, (evidenceCount.get(e.control_id) ?? 0) + 1);
   }
   const responseByControl = new Map(responses.map((r) => [r.control_id, r]));
-  const rows = [
+
+  // Worst-case rollup matching the dashboard's `rollupRequirementStatus`.
+  // not_met > partial > unanswered > not_applicable > yes — one bad child
+  // sinks the parent, per 32 CFR § 170.24.
+  function rollupStatus(legacyIds: string[]): ControlResponseRow["status"] {
+    const statuses = legacyIds.map(
+      (id) => responseByControl.get(id)?.status ?? "unanswered",
+    );
+    if (statuses.includes("no")) return "no";
+    if (statuses.includes("partial")) return "partial";
+    if (statuses.includes("unanswered")) return "unanswered";
+    if (statuses.every((s) => s === "not_applicable")) return "not_applicable";
+    return "yes";
+  }
+
+  const rows: string[][] = [
+    // Per-CMMC v2.13 provenance line so primes counting rows know they're
+    // looking at the canonical 15-requirement set (not the legacy 17).
     [
-      "control_id",
-      "far_reference",
-      "nist_reference",
+      "# Per CMMC v2.13: 15 FAR 52.204-21 requirements (b.1.i \u2013 b.1.xv). Source: CMMC Assessment Guide Level 1 v2.13 (Sept 2024) / 32 CFR \u00a7 170.24.",
+    ],
+    [
+      "requirement_id",
+      "far_clause",
+      "domain",
       "short_name",
+      "statement",
       "status",
       "narrative",
       "evidence_count",
+      "legacy_nist_controls",
     ],
   ];
-  for (const p of playbook) {
-    const r = responseByControl.get(p.id);
+  for (const reqId of cmmcL1Requirements) {
+    const meta = requirementMeta[reqId];
+    const legacyIds = requirementToLegacy[reqId];
+    const status = rollupStatus(legacyIds);
+    // Concatenate narratives from each legacy sub-control so the prime sees
+    // the full picture for bundled requirements (PE.L1-b.1.ix wraps three).
+    const narrative = legacyIds
+      .map((id) => responseByControl.get(id)?.narrative ?? "")
+      .filter((n) => n.length > 0)
+      .join(" \u2014 ");
+    const evCount = legacyIds.reduce(
+      (acc, id) => acc + (evidenceCount.get(id) ?? 0),
+      0,
+    );
     rows.push([
-      p.id,
-      p.farReference,
-      p.nistReference,
-      p.shortName,
-      r?.status ?? "unanswered",
-      r?.narrative ?? "",
-      String(evidenceCount.get(p.id) ?? 0),
+      reqId,
+      meta.farClause,
+      meta.domain,
+      meta.shortName,
+      meta.statement,
+      status,
+      narrative,
+      String(evCount),
+      legacyIds.join(";"),
     ]);
   }
   return rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
 }
 
 export function buildEvidenceCsv(evidence: EvidenceArtifactRow[]): string {
-  const rows = [
+  const rows: string[][] = [
+    // Per-CMMC v2.13 provenance line. The `objectives` column lists the
+    // NIST SP 800-171A assessment objective letters ([a]/[b]/...) that
+    // each artifact attests to. Tagging is captured at upload time via
+    // `evidence_artifact_practices.objectives` — see Assessment Guide L1
+    // v2.13 § 2 ("Assessment Objectives") for the per-requirement letter
+    // map.
+    [
+      "# Per CMMC v2.13: artifacts mapped to FAR 52.204-21 requirements (15 total) + NIST SP 800-171A assessment objective letters per requirement.",
+    ],
     [
       "artifact_id",
       "control_id",
+      "objectives",
       "filename",
       "mime_type",
       "size_bytes",
@@ -911,9 +969,11 @@ export function buildEvidenceCsv(evidence: EvidenceArtifactRow[]): string {
     ],
   ];
   for (const e of evidence) {
+    const objectives = (e.tagged_objectives ?? []).join(";");
     rows.push([
       e.id,
       e.control_id,
+      objectives,
       e.filename,
       e.mime_type ?? "",
       String(e.size_bytes ?? ""),

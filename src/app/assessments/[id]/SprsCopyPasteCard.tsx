@@ -107,6 +107,19 @@ export function SprsCopyPasteCard({
       note: "Level 1 is binary — Custodia's sign-time gate confirms all 15 are MET.",
     },
     {
+      // Per SPRS Quick Entry Guide v4.0 § 4.2 the "CMMC Status Date" is the
+      // date the L1 "Met" status was determined — which for a Custodia-
+      // generated affirmation is exactly the date the Senior Official signed
+      // the memo. We auto-populate so the user doesn't have to look it up
+      // and can't accidentally pick today's date (which would over-state
+      // freshness if they're posting late).
+      label: "CMMC Status Date",
+      value: affirmedAtIso ? affirmedAtIso.slice(0, 10) : null,
+      placeholder: "Sign your affirmation memo first",
+      monospace: true,
+      note: "The date your L1 \u201CMet\u201D status was determined \u2014 equal to your affirmation signature date. SPRS will auto-fill this on first save; verify it matches before submitting.",
+    },
+    {
       label: "Assessment Scope",
       value: scopedSystems,
       placeholder: "Complete your business profile to capture scope",

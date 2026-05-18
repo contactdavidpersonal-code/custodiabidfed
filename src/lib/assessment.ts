@@ -408,6 +408,48 @@ export type AssessmentWithProgress = AssessmentRow & {
   percentAnswered: number;
 };
 
+/**
+ * Annual re-affirmation lapse status for an organization. Per 32 CFR
+ * § 170.15(c)(2) the Senior Official must re-affirm CMMC L1 annually —
+ * SPRS automatically flips a posting to expired after 365 days. We track
+ * the same window so the dashboard can scream when an org has drifted
+ * past it, and the sign action can refuse to "refresh" a stale memo
+ * (forcing the user to create a fresh fiscal-year cycle instead).
+ *
+ * Returns `null` when the org has never filed (no prior affirmation to
+ * lapse).
+ */
+export async function getOrgAffirmationLapse(
+  organizationId: string,
+): Promise<{
+  lastAffirmedAt: string;
+  lastAssessmentId: string;
+  lastCycleLabel: string;
+  daysSince: number;
+  isLapsed: boolean;
+} | null> {
+  const sql = getSql();
+  const rows = (await sql`
+    SELECT id, cycle_label, affirmed_at
+    FROM assessments
+    WHERE organization_id = ${organizationId}
+      AND affirmed_at IS NOT NULL
+    ORDER BY affirmed_at DESC
+    LIMIT 1
+  `) as Array<{ id: string; cycle_label: string; affirmed_at: string }>;
+  if (rows.length === 0) return null;
+  const row = rows[0];
+  const ageMs = Date.now() - new Date(row.affirmed_at).getTime();
+  const daysSince = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+  return {
+    lastAffirmedAt: row.affirmed_at,
+    lastAssessmentId: row.id,
+    lastCycleLabel: row.cycle_label,
+    daysSince,
+    isLapsed: daysSince > 365,
+  };
+}
+
 export async function listAssessmentsWithProgress(
   organizationId: string,
 ): Promise<AssessmentWithProgress[]> {
@@ -843,19 +885,36 @@ export async function listEvidenceForAssessment(
 ): Promise<EvidenceArtifactRow[]> {
   const sql = getSql();
   return (await sql`
-    SELECT id, assessment_id, control_id, filename, blob_url, mime_type,
-           size_bytes, captured_at, uploaded_by_user_id,
-           ai_review_verdict, ai_review_summary, ai_review_mapped_controls,
-           ai_reviewed_at, ai_review_model,
-           prior_artifact_id, carry_forward_status,
-           is_final_policy, final_adopted_at, final_adopted_by,
-           assessment_method,
-           source_provider, source_kind, source_run_id,
-           data_hash, synced_at,
-           '{}'::text[] AS tagged_objectives
-    FROM evidence_artifacts
-    WHERE assessment_id = ${assessmentId}
-    ORDER BY control_id, captured_at DESC
+    SELECT a.id, a.assessment_id, a.control_id, a.filename, a.blob_url, a.mime_type,
+           a.size_bytes, a.captured_at, a.uploaded_by_user_id,
+           a.ai_review_verdict, a.ai_review_summary, a.ai_review_mapped_controls,
+           a.ai_reviewed_at, a.ai_review_model,
+           a.prior_artifact_id, a.carry_forward_status,
+           a.is_final_policy, a.final_adopted_at, a.final_adopted_by,
+           a.assessment_method,
+           a.source_provider, a.source_kind, a.source_run_id,
+           a.data_hash, a.synced_at,
+           -- Aggregate objective letters across every (practice) tag this
+           -- artifact has within this assessment. Per CMMC Assessment Guide
+           -- L1 v2.13 section 2, each requirement has 1-6 NIST SP 800-171A
+           -- objectives (a/b/c/...); we tag at the objective level on the
+           -- join so the evidence inventory CSV can show exactly which
+           -- objectives an artifact attests to (audit traceability beyond
+           -- a coarse practice tag). When no tags exist (legacy artifacts
+           -- uploaded before per-objective tagging) the column is empty,
+           -- and the artifact still rolls up to its primary control_id
+           -- for status purposes.
+           COALESCE(
+             (SELECT array_agg(DISTINCT obj ORDER BY obj)
+              FROM evidence_artifact_practices eap
+              CROSS JOIN LATERAL UNNEST(eap.objectives) AS obj
+              WHERE eap.artifact_id = a.id
+                AND eap.assessment_id = a.assessment_id),
+             '{}'::text[]
+           ) AS tagged_objectives
+    FROM evidence_artifacts a
+    WHERE a.assessment_id = ${assessmentId}
+    ORDER BY a.control_id, a.captured_at DESC
   `) as EvidenceArtifactRow[];
 }
 

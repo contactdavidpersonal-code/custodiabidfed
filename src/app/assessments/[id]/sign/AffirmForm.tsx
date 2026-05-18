@@ -413,6 +413,36 @@ export function AffirmForm({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-6">
+          {/*
+            Loud red banner directly above the Sign button. The earlier
+            "What happens after you click Sign" section mentions in passing
+            that Custodia doesn't auto-submit, but it lives inside a green
+            box that reads as "everything is fine" reassurance — users were
+            walking out the door thinking we'd posted to SPRS for them.
+            This banner makes the boundary impossible to miss: the
+            submission to SPRS is yours to make, not ours, period.
+          */}
+          <div className="w-full border-l-4 border-[#7a2e1c] bg-[#fdecea] p-4">
+            <p className="text-sm font-bold uppercase tracking-wider text-[#7a2e1c]">
+              ⚠ Custodia does NOT submit to SPRS for you
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-[#5a1f10]">
+              After you sign, log into PIEE at{" "}
+              <a
+                href="https://piee.eb.mil"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold underline underline-offset-2"
+              >
+                https://piee.eb.mil
+              </a>{" "}
+              and file your CMMC Level 1 self-assessment in SPRS yourself —
+              only your Senior Official&rsquo;s PIEE account can post the
+              affirmation (32 CFR § 170.22). Custodia generates the artifacts
+              and the copy-paste card, but an unsubmitted affirmation is
+              invisible to contracting officers.
+            </p>
+          </div>
           <button
             type="submit"
             disabled={disabled || isPending}

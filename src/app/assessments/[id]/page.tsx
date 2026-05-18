@@ -5,6 +5,7 @@ import {
   computeProgress,
   enforceStepOrder,
   getAssessmentForUser,
+  getOrgAffirmationLapse,
   listCarryForwardPending,
   listResponsesForAssessment,
   type ControlResponseRow,
@@ -171,6 +172,7 @@ export default async function AssessmentOverviewPage(
     listPracticeProgressForAssessment(id),
   ]);
   const connectorTokens = await getConnectorTokenStatus(ctx.organization.id);
+  const affirmationLapse = await getOrgAffirmationLapse(ctx.organization.id);
   const responseByControl = new Map(responses.map((r) => [r.control_id, r]));
   const progress = computeProgress(responses);
   // Count requirements that are still legacy-unanswered but where the user
@@ -227,6 +229,16 @@ export default async function AssessmentOverviewPage(
         <MaterialChangeReassessBanner
           assessmentId={ctx.assessment.id}
           reviewedAt={ctx.assessment.material_change_reviewed_at}
+        />
+      )}
+
+      {affirmationLapse?.isLapsed && (
+        <StaleAffirmationBanner
+          lastAffirmedAt={affirmationLapse.lastAffirmedAt}
+          lastCycleLabel={affirmationLapse.lastCycleLabel}
+          daysSince={affirmationLapse.daysSince}
+          lastAssessmentId={affirmationLapse.lastAssessmentId}
+          currentAssessmentId={ctx.assessment.id}
         />
       )}
 
@@ -428,6 +440,70 @@ export default async function AssessmentOverviewPage(
       </section>
       </div>
     </main>
+  );
+}
+
+function StaleAffirmationBanner({
+  lastAffirmedAt,
+  lastCycleLabel,
+  daysSince,
+  lastAssessmentId,
+  currentAssessmentId,
+}: {
+  lastAffirmedAt: string;
+  lastCycleLabel: string;
+  daysSince: number;
+  lastAssessmentId: string;
+  currentAssessmentId: string;
+}) {
+  // Per 32 CFR § 170.15(c)(2), L1 affirmations must be renewed annually.
+  // SPRS auto-flips a posting to "expired" 365 days after the CMMC Status
+  // Date — at that point the contractor is technically out of compliance
+  // with their basic safeguarding contract clause. We blast a red banner
+  // here so it's impossible to miss on the assessment dashboard.
+  const expiredOn = new Date(
+    new Date(lastAffirmedAt).getTime() + 365 * 24 * 60 * 60 * 1000,
+  );
+  const expiredOnLabel = expiredOn.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const daysLapsed = daysSince - 365;
+  const isCurrentLapsed = lastAssessmentId === currentAssessmentId;
+  return (
+    <div className="mb-6 border-l-4 border-[#7a2e1c] bg-[#fdecea] p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-[#7a2e1c]">
+            ⚠ Annual affirmation lapsed
+          </div>
+          <h2 className="mt-1 text-lg font-bold tracking-tight text-[#5a1f10]">
+            Your CMMC L1 affirmation expired {daysLapsed} day
+            {daysLapsed === 1 ? "" : "s"} ago.
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-[#5a1f10]">
+            Your {lastCycleLabel} affirmation hit its 365-day mark on{" "}
+            <strong>{expiredOnLabel}</strong>. Per 32 CFR § 170.15(c)(2) you
+            must re-affirm annually — SPRS has likely flipped your posting
+            to <em>expired</em>, which means primes searching for your CAGE
+            will see no current attestation. You cannot legally bid on
+            FAR 52.204-21-covered contracts until you re-affirm.
+          </p>
+          <p className="mt-2 text-sm font-semibold text-[#5a1f10]">
+            {isCurrentLapsed
+              ? "This assessment is the stale one — start a fresh fiscal-year cycle from the assessment list to re-walk the 15 requirements and sign a new memo."
+              : "Finish this assessment and sign as soon as possible to restore your posting."}
+          </p>
+        </div>
+        <Link
+          href="/assessments"
+          className="border border-[#7a2e1c] bg-white px-4 py-2.5 text-sm font-bold text-[#7a2e1c] transition-colors hover:bg-[#fdecea]"
+        >
+          Open assessment list
+        </Link>
+      </div>
+    </div>
   );
 }
 
