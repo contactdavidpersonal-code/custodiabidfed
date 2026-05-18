@@ -51,6 +51,16 @@ export default async function ChooseOrganizationPage() {
             skipInvitationScreen
             afterSelectOrganizationUrl="/onboard"
             afterCreateOrganizationUrl="/onboard"
+            appearance={{
+              elements: {
+                // One subscription = one business. Suppress the inline
+                // "Create organization" row so users can't add extra
+                // workspaces from this picker. First-time org creation
+                // happens at /onboard/organization right after signup;
+                // after that they pick from existing memberships only.
+                organizationListCreateOrganizationActionButton: "hidden",
+              },
+            }}
           />
         </div>
       </div>

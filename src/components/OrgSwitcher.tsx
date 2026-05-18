@@ -56,16 +56,18 @@ export function OrgSwitcher({ className, hideUntilJoined = false }: Props) {
         // workspace is a business org. The personal account is just login
         // identity, not a workspace.
         hidePersonal
-        // Modal create flow is friendlier inside an existing app shell.
-        createOrganizationMode="modal"
         // Land on the workspace after switching so the user sees data for the
         // org they just selected.
         afterSelectOrganizationUrl="/assessments"
-        // New business → walk through onboarding (which seeds the row from
-        // the Clerk org name on first server hit).
-        afterCreateOrganizationUrl="/onboard"
         appearance={{
           elements: {
+            // Subscriptions are per-business; one Clerk user = one business
+            // org. Hide the "Create organization" action so a single paid
+            // seat can't spin up CMMC L1 packages for additional companies.
+            // Backstop: max-orgs-per-user is also enforced in the Clerk
+            // dashboard (Configure → Organizations → Limits).
+            organizationSwitcherPopoverActionButton__createOrganization:
+              "hidden",
             organizationSwitcherTrigger:
               "px-3 py-1.5 rounded-full border border-[#cfe3d9] bg-white hover:bg-[#f1f6f3] text-sm font-medium text-[#10231d]",
             organizationPreviewMainIdentifier__organizationSwitcherTrigger:
