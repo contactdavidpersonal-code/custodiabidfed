@@ -15,6 +15,7 @@
  */
 
 import type { auth } from "@clerk/nextjs/server";
+import { clerkClient } from "@clerk/nextjs/server";
 
 export const PLAN_SELF_SERVICE = "bidfedcmmc_self_service_" as const;
 export const PLAN_SELF_SERVICE_OFFICER =
@@ -60,4 +61,47 @@ export function hasOfficerFeature(has: HasFn): boolean {
   if (has({ feature: OFFICER_FEATURE })) return true;
   if (has({ plan: `user:${PLAN_LEGACY_FULL_ACCESS}` })) return true;
   return false;
+}
+
+/**
+ * Source-of-truth subscription check via Clerk's Billing Backend API.
+ *
+ * The session-token `has({ plan })` check used by `hasWorkspaceAccess`
+ * is fast but lags by a few seconds after a fresh checkout (the JWT in
+ * the browser cookie still carries the pre-trial claim set). When the
+ * lag bounces a brand-new trialer back to `/upgrade` we ask Clerk's
+ * Billing API directly — it has no JWT cache and reflects the
+ * subscription the instant Clerk's checkout finishes writing it.
+ *
+ * Returns `true` if the user has an active subscription item (paid or
+ * trialing) on any of our workspace plan slugs.
+ */
+export async function hasActiveSoloSubscription(
+  userId: string,
+): Promise<boolean> {
+  try {
+    const client = await clerkClient();
+    // @ts-expect-error — Billing API is experimental in @clerk/backend 3.x
+    const sub = await client.billing.getUserBillingSubscription(userId);
+    const items: Array<{
+      status: string;
+      plan?: { slug?: string | null } | null;
+    }> =
+      (sub as { subscriptionItems?: unknown })?.subscriptionItems &&
+      Array.isArray((sub as { subscriptionItems: unknown }).subscriptionItems)
+        ? (sub as { subscriptionItems: Array<{ status: string; plan?: { slug?: string | null } | null }> })
+            .subscriptionItems
+        : [];
+    return items.some(
+      (item) =>
+        item.status === "active" &&
+        !!item.plan?.slug &&
+        (SOLO_PLAN_SLUGS as readonly string[]).includes(item.plan.slug),
+    );
+  } catch {
+    // Treat any failure (404 = no subscription, 5xx = transient) as "no access"
+    // so the caller falls back to the upgrade gate. The Clerk JWT path is the
+    // happy-path anyway.
+    return false;
+  }
 }

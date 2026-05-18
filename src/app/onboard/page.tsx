@@ -7,7 +7,10 @@ import {
   getBusinessProfile,
   isOnboardingComplete,
 } from "@/lib/assessment";
-import { hasWorkspaceAccess } from "@/lib/billing/plans";
+import {
+  hasActiveSoloSubscription,
+  hasWorkspaceAccess,
+} from "@/lib/billing/plans";
 import { ensureWelcomeEmailSent } from "@/lib/email/welcome";
 import { OnboardingChat } from "./OnboardingChat";
 
@@ -17,8 +20,14 @@ export default async function OnboardPage() {
   const { userId, has } = await auth();
   if (!userId) redirect("/sign-in");
 
-  // No active plan/trial → upgrade gate.
-  if (!hasWorkspaceAccess(has)) redirect("/upgrade");
+  // No active plan/trial → upgrade gate. We check the JWT claim first
+  // (fast, free) and fall back to the Billing API (source of truth,
+  // bypasses the post-checkout JWT propagation lag that would otherwise
+  // bounce a brand-new trialer back to /upgrade).
+  if (!hasWorkspaceAccess(has)) {
+    const hasActive = await hasActiveSoloSubscription(userId);
+    if (!hasActive) redirect("/upgrade");
+  }
 
   const org = await ensureOrgForUser(userId);
   await ensureWelcomeEmailSent(org.id, userId);

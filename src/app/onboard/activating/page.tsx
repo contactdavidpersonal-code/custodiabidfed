@@ -1,100 +1,50 @@
-"use client";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { hasActiveSoloSubscription } from "@/lib/billing/plans";
+import { ActivatingClient } from "./ActivatingClient";
 
 /**
  * Post-checkout interstitial.
  *
  * Clerk's `__internal_openCheckout` redirects here after the trial /
- * subscription is created. The user's JWT still carries the *old* set
- * of plan claims at that moment (no `user:bidfedcmmc_self_service_`
- * yet), so if we sent them straight to `/onboard`, the server-side
- * `hasWorkspaceAccess(has)` check would return false and bounce them
- * right back to `/upgrade` — the "stuck on upgrade after starting the
- * trial" bug.
+ * subscription is created. Two problems we have to solve before sending
+ * the user to `/onboard`:
  *
- * We call `clerk.session.reload()` to force Clerk to refetch a fresh
- * session token (which includes the just-activated plan claim) before
- * navigating. We retry a couple of times in case the subscription
- * write is still propagating on Clerk's side.
+ * 1. The browser's session token (JWT) still carries the pre-trial
+ *    plan-claim set. The `auth().has({ plan })` check on `/onboard`
+ *    would return false and bounce the user right back to `/upgrade`
+ *    — that's the "stuck on /upgrade after starting trial" bug.
+ *
+ * 2. Clerk's subscription write is eventually-consistent. The Billing
+ *    API can briefly 404 immediately after `openCheckout` finishes.
+ *
+ * Fix: server-side, poll the Billing API (no JWT cache) until we see
+ * an `active` subscription item on one of our workspace plan slugs.
+ * Then hand off to a tiny client component that forces a single
+ * `clerk.session.reload()` so the next server render sees the fresh
+ * plan claim, and finally navigates to `/onboard`.
  */
 
-import { useClerk } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+export const dynamic = "force-dynamic";
 
 const MAX_ATTEMPTS = 8;
 const ATTEMPT_DELAY_MS = 750;
 
-export default function ActivatingPage() {
-  const clerk = useClerk();
-  const router = useRouter();
-  const startedRef = useRef(false);
-  const [stalled, setStalled] = useState(false);
+export default async function ActivatingPage() {
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in");
 
-  useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-
-    let cancelled = false;
-
-    async function go() {
-      for (let i = 0; i < MAX_ATTEMPTS; i++) {
-        try {
-          await clerk.session?.reload();
-        } catch {
-          // ignore — try again
-        }
-        if (cancelled) return;
-        await new Promise((r) => setTimeout(r, ATTEMPT_DELAY_MS));
-      }
-      // Give the user an escape hatch in case something is genuinely wrong.
-      if (!cancelled) setStalled(true);
-      // Either way, push to /onboard — the server will gate it.
-      router.replace("/onboard");
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (await hasActiveSoloSubscription(userId)) {
+      return <ActivatingClient destination="/onboard" />;
     }
+    if (attempt < MAX_ATTEMPTS - 1) {
+      await new Promise((r) => setTimeout(r, ATTEMPT_DELAY_MS));
+    }
+  }
 
-    // Fire and forget; we navigate on completion.
-    go();
-
-    // Optimistically try sooner — after the very first reload, push.
-    // (We don't wait for the full retry loop in the happy path.)
-    const fast = setTimeout(async () => {
-      if (cancelled) return;
-      try {
-        await clerk.session?.reload();
-      } catch {
-        // ignore
-      }
-      if (!cancelled) router.replace("/onboard");
-    }, 1200);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(fast);
-    };
-  }, [clerk, router]);
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[#052e22] px-6 text-[#f6f4ec]">
-      <div className="flex flex-col items-center gap-4 text-center">
-        <div
-          aria-hidden
-          className="h-10 w-10 animate-spin rounded-full border-2 border-[#bdf2cf]/30 border-t-[#bdf2cf]"
-        />
-        <h1 className="font-serif text-2xl font-bold text-white">
-          Activating your trial…
-        </h1>
-        <p className="max-w-sm text-sm text-[#a8cfc0]">
-          One second while we finish setting up your Custodia workspace.
-        </p>
-        {stalled ? (
-          <a
-            href="/onboard"
-            className="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#bdf2cf] underline underline-offset-4"
-          >
-            Continue manually →
-          </a>
-        ) : null}
-      </div>
-    </div>
-  );
+  // Backend never confirmed the subscription within ~6s. /onboard has
+  // its own backend fallback check, so let it make the final decision
+  // (it will redirect to /upgrade if there really is no subscription).
+  return <ActivatingClient destination="/onboard" />;
 }
