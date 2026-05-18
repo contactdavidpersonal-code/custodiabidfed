@@ -24,6 +24,11 @@ const cspDirectives: Record<string, string[]> = {
     "'unsafe-inline'",
     "https://*.clerk.accounts.dev",
     "https://*.clerk.com",
+    // Clerk production satellite frontend (clerk.<root>, accounts.<root>).
+    // These are subdomains of bidfedcmmc.com so `*.clerk.com` does NOT cover
+    // them; Clerk's browser SDK loads scripts directly from this host.
+    "https://clerk.bidfedcmmc.com",
+    "https://accounts.bidfedcmmc.com",
     "https://challenges.cloudflare.com",
     "https://va.vercel-scripts.com",
   ],
@@ -34,6 +39,7 @@ const cspDirectives: Record<string, string[]> = {
     "blob:",
     "https://img.clerk.com",
     "https://images.clerk.dev",
+    "https://clerk.bidfedcmmc.com",
     "https://*.public.blob.vercel-storage.com",
   ],
   "font-src": ["'self'", "data:"],
@@ -41,6 +47,10 @@ const cspDirectives: Record<string, string[]> = {
     "'self'",
     "https://*.clerk.accounts.dev",
     "https://*.clerk.com",
+    // Clerk production satellite endpoints — the SDK calls /v1/environment,
+    // /v1/client, /v1/me, etc. on this exact host, not on *.clerk.com.
+    "https://clerk.bidfedcmmc.com",
+    "https://accounts.bidfedcmmc.com",
     "https://clerk-telemetry.com",
     // Sentry ingest — required for browser-side error reporting.
     "https://*.sentry.io",
@@ -50,7 +60,11 @@ const cspDirectives: Record<string, string[]> = {
   "frame-src": [
     "'self'",
     "https://*.clerk.accounts.dev",
+    "https://clerk.bidfedcmmc.com",
+    "https://accounts.bidfedcmmc.com",
     "https://challenges.cloudflare.com",
+    // Vercel Live toolbar / comments iframe on preview deployments.
+    "https://vercel.live",
   ],
   "worker-src": ["'self'", "blob:"],
   "object-src": ["'none'"],
