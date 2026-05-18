@@ -78,10 +78,15 @@ const securityHeaders = [
   },
   { key: "X-DNS-Prefetch-Control", value: "off" },
   // Cross-origin isolation: defends against Spectre-class side-channels and
-  // window-target confusion. COOP same-origin makes window.opener relationships
-  // safe; CORP same-site keeps our blob/asset responses from being embedded
-  // in arbitrary cross-origin contexts.
-  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  // window-target confusion. We use `same-origin-allow-popups` (not pure
+  // `same-origin`) because Clerk's bot protection embeds a Cloudflare
+  // Turnstile challenge that needs to postMessage back to the opener — pure
+  // `same-origin` severs that channel and Turnstile hangs with error 300030
+  // (signup form stuck on the spinner). `-allow-popups` preserves the
+  // tabnabbing protections that matter while letting Turnstile complete.
+  // CORP same-site keeps our blob/asset responses from being embedded in
+  // arbitrary cross-origin contexts.
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
   { key: "Cross-Origin-Resource-Policy", value: "same-site" },
   { key: "Content-Security-Policy-Report-Only", value: cspValue },
 ];
