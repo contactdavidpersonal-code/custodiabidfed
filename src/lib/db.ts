@@ -291,6 +291,38 @@ async function runInitDdl() {
       END IF;
     END $$
   `;
+  // Dedupe before installing the partial unique indexes: production hit
+  // a state where the broken migration above (pre-fix) inserted duplicate
+  // personal-org rows for the same owner_user_id. Collapse to the oldest
+  // row per (owner_user_id) when clerk_org_id IS NULL — FKs cascade so
+  // child rows tied to the duplicates are cleaned up automatically. Same
+  // shape for the Clerk-keyed dedup. Idempotent: the SELECT returns
+  // nothing on a healthy DB so the DELETE is a no-op.
+  await sql`
+    DELETE FROM organizations o
+    USING (
+      SELECT owner_user_id, MIN(created_at) AS keep_at
+      FROM organizations
+      WHERE clerk_org_id IS NULL
+      GROUP BY owner_user_id
+      HAVING COUNT(*) > 1
+    ) dup
+    WHERE o.owner_user_id = dup.owner_user_id
+      AND o.clerk_org_id IS NULL
+      AND o.created_at > dup.keep_at
+  `;
+  await sql`
+    DELETE FROM organizations o
+    USING (
+      SELECT clerk_org_id, MIN(created_at) AS keep_at
+      FROM organizations
+      WHERE clerk_org_id IS NOT NULL
+      GROUP BY clerk_org_id
+      HAVING COUNT(*) > 1
+    ) dup
+    WHERE o.clerk_org_id = dup.clerk_org_id
+      AND o.created_at > dup.keep_at
+  `;
   await sql`
     CREATE UNIQUE INDEX IF NOT EXISTS organizations_personal_owner_uidx
       ON organizations (owner_user_id)

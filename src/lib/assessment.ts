@@ -237,16 +237,37 @@ async function ensureLegacyPersonalOrg(
   // creator is actually setting this up *for* someone else (e.g. IT
   // manager preparing the workspace for the owner), they can transfer
   // the designation from /settings/team once team invites ship (PR #2).
+  //
+  // ON CONFLICT against the partial unique index makes this race-proof:
+  // if a concurrent RSC render inserted first, we fall through to a
+  // re-SELECT of the winning row instead of throwing 23505.
   const inserted = (await sql`
     INSERT INTO organizations (
       owner_user_id, name, tier, senior_official_user_id
     )
     VALUES (${userId}, ${"My Organization"}, 'solo', ${userId})
+    ON CONFLICT (owner_user_id) WHERE clerk_org_id IS NULL DO NOTHING
     RETURNING id, owner_user_id, clerk_org_id, name, entity_type, cage_code, sam_uei,
               naics_codes, tier, scoped_systems,
               senior_official_user_id, senior_official_acknowledged_at,
               created_at, updated_at
   `) as OrganizationRow[];
+
+  if (inserted.length === 0) {
+    // Lost the race — the row exists, fetch it.
+    const winner = (await sql`
+      SELECT id, owner_user_id, clerk_org_id, name, entity_type, cage_code, sam_uei,
+             naics_codes, tier, scoped_systems,
+             senior_official_user_id, senior_official_acknowledged_at,
+             created_at, updated_at
+      FROM organizations
+      WHERE owner_user_id = ${userId}
+        AND clerk_org_id IS NULL
+      LIMIT 1
+    `) as OrganizationRow[];
+    await ensureBusinessProfile(winner[0].id);
+    return winner[0];
+  }
 
   await ensureBusinessProfile(inserted[0].id);
   return inserted[0];
@@ -305,16 +326,34 @@ export async function resolveActiveOrg(args: {
   // contributor was the first to visit a brand-new Clerk org (e.g. an
   // IT manager setting up for an owner), the designation can be
   // transferred from /settings/team (PR #2).
+  //
+  // ON CONFLICT against the Clerk-org partial unique index makes this
+  // race-proof under concurrent RSC fan-out.
   const inserted = (await sql`
     INSERT INTO organizations (
       owner_user_id, clerk_org_id, name, tier, senior_official_user_id
     )
     VALUES (${args.userId}, ${args.clerkOrgId}, ${displayName}, 'solo', ${args.userId})
+    ON CONFLICT (clerk_org_id) WHERE clerk_org_id IS NOT NULL DO NOTHING
     RETURNING id, owner_user_id, clerk_org_id, name, entity_type, cage_code, sam_uei,
               naics_codes, tier, scoped_systems,
               senior_official_user_id, senior_official_acknowledged_at,
               created_at, updated_at
   `) as OrganizationRow[];
+
+  if (inserted.length === 0) {
+    const winner = (await sql`
+      SELECT id, owner_user_id, clerk_org_id, name, entity_type, cage_code, sam_uei,
+             naics_codes, tier, scoped_systems,
+             senior_official_user_id, senior_official_acknowledged_at,
+             created_at, updated_at
+      FROM organizations
+      WHERE clerk_org_id = ${args.clerkOrgId}
+      LIMIT 1
+    `) as OrganizationRow[];
+    await ensureBusinessProfile(winner[0].id);
+    return winner[0];
+  }
 
   await ensureBusinessProfile(inserted[0].id);
   return inserted[0];
