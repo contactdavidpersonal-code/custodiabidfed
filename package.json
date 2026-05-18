@@ -12,7 +12,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.95.0",
     "@aws-sdk/client-kms": "^3.1044.0",
-    "@clerk/nextjs": "^7.3.1",
+    "@clerk/nextjs": "^7.3.6",
     "@neondatabase/serverless": "^1.1.0",
     "@sentry/nextjs": "^10.51.0",
     "@types/pdfkit": "^0.17.6",
